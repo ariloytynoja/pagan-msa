@@ -1,0 +1,252 @@
+//
+// This file is partly based on the code from the Bio++ library.
+// The following copyright information is given.
+//
+
+//
+// File: TreeTemplateTools.cpp
+// Created by: Julien Dutheil
+// Created on: Fri Oct  13 13:00 2006
+// From file TreeTools.cpp
+// Created on: Wed Aug  6 13:45:28 2003
+//
+
+/*
+Copyright or <A9> or Copr. CNRS, (November 16, 2004)
+
+This software is a computer program whose purpose is to provide classes
+for phylogenetic data analysis.
+
+This software is governed by the CeCILL  license under French law and
+abiding by the rules of distribution of free software.  You can  use,
+modify and/ or redistribute the software under the terms of the CeCILL
+license as circulated by CEA, CNRS and INRIA at the following URL
+"http://www.cecill.info".
+
+As a counterpart to the access to the source code and  rights to copy,
+modify and redistribute granted by the license, users are provided only
+with a limited warranty  and the software's author,  the holder of the
+economic rights,  and the successive licensors  have only  limited
+liability.
+
+In this respect, the user's attention is drawn to the risks associated
+with loading,  using,  modifying and/or developing or reproducing the
+software by the user in light of its specific status of free software,
+that may mean  that it is complicated to manipulate,  and  that  also
+therefore means  that it is reserved for developers  and  experienced
+professionals having in-depth computer knowledge. Users are therefore
+encouraged to load and test the software's suitability as regards their
+requirements in conditions enabling the security of their systems and/or
+data to be ensured and,  more generally, to use and operate it in the
+same conditions as regards security.
+
+The fact that you are presently reading this means that you have had
+knowledge of the CeCILL license and that you accept its terms.
+*/
+
+
+#include <iostream>
+#include <fstream>
+#include <vector>
+
+#include "newick_reader.h"
+#include "text_utils.h"
+
+using namespace std;
+
+using namespace ppa;
+
+Newick_reader::Newick_reader()
+{
+
+}
+
+/*******************************************/
+
+string Newick_reader::read_tree(const string & filename) throw (IOException)
+{
+    ifstream ist(filename.c_str());
+    if (!ist) throw IOException("Newick_reader::read_tree. Can't open input file: "+filename);
+
+    string tree;
+    string row;
+    while (ist>>row)
+    {
+        tree += Text_utils::remove_whitespaces(row);
+    }
+
+    return tree;
+}
+
+/*******************************************/
+
+Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exception)
+{
+    //cout << "NODE: " << description << endl;
+    Newick_reader::Element elt = Newick_reader::get_element(description);
+
+    //New node:
+    Node * node = new Node();
+    if(!Text_utils::is_empty(elt.length))
+    {
+        node->set_distance_to_parent(Text_utils::to_double(elt.length));
+        //cout << "NODE: LENGTH: " << elt.length << endl;
+    }
+
+    Node_tokenizer nt(elt.content);
+    vector<string> elements;
+    while(nt.hasNext())
+    {
+        elements.push_back(nt.next());
+    }
+
+    if(elements.size() == 1)
+    {
+        //This is a leaf:
+        //cout << "NODE: LEAF: " << elements[0] << endl;
+        string name = Text_utils::remove_surrounding_whitespaces(elements[0]);
+        node->set_name(name);
+    }
+
+    else if(elements.size()!=2)
+    {
+        // Alignment requires a binary guide tree!
+        throw Exception("Newick_reader::parenthesis_to_node. Not a binary tree: " + elt.content + ":" + elt.length);
+    }
+
+    else
+    {
+
+        //This is a node: 
+        //cout << "NODE: SUBNODE: 0, " << elements[0] << endl;
+        //cout << "NODE: SUBNODE: 1, " << elements[1] << endl;
+        try
+        {
+            Node * child_0 = parenthesis_to_node(elements[0]);
+            node->add_left_child(child_0);
+
+            Node * child_1 = parenthesis_to_node(elements[1]);
+            node->add_right_child(child_1);
+
+        }
+        catch(exception e)
+        {
+            throw e;
+        }
+    }
+    return node;
+}
+
+/*******************************************/
+
+Node * Newick_reader::parenthesis_to_tree(const string & description) throw (Exception)
+{
+    string::size_type lastP  = description.rfind(')');
+    if(lastP == string::npos)
+        throw Exception("Newick_reader::parenthesis_to_tree(). Bad format: no closing parenthesis found.");
+    string::size_type firstP = description.find('(');
+    if(firstP == string::npos)
+        throw Exception("Newick_reader::parenthesis_to_tree(). Bad format: no opening parenthesis found.");
+    string::size_type semi = description.rfind(';');
+    if(semi == string::npos)
+        throw Exception("Newick_reader::parenthesis_to_tree(). Bad format: no semi-colon found.");
+    if(lastP <= firstP)
+        throw Exception("Newick_reader::parenthesis_to_tree(). Bad format: closing parenthesis before opening parenthesis.");
+
+    string content = description.substr(firstP + 1, lastP - firstP - 1);
+    string element = semi == string::npos ? description.substr(lastP + 1) : description.substr(lastP + 1, semi - lastP - 1);
+    //cout << "TREE: " << content << endl;
+    //New root node:
+    Node * node = new Node();
+
+    Node_tokenizer nt(content);
+    vector<string> elements;
+    while(nt.hasNext())
+    {
+        elements.push_back(nt.next());
+    }
+
+    if(elements.size()!=2)
+    {
+        // Alignment requires a binary guide tree!
+        throw Exception("Newick_reader::parenthesis_to_tree(). Not a binary tree: " + content);
+    }
+
+    else
+    {
+        //This is a node:
+        //cout << "NODE: SUBNODE: 0, " << elements[0] << endl;
+        //cout << "NODE: SUBNODE: 1, " << elements[1] << endl;
+        try
+        {
+            Node * child_0 = parenthesis_to_node(elements[0]);
+            node->add_left_child(child_0);
+
+            Node * child_1 = parenthesis_to_node(elements[1]);
+            node->add_right_child(child_1);
+
+        }
+        catch(exception e)
+        {
+            throw e;
+        }
+
+    }
+    return node;
+}
+
+/*******************************************/
+
+Newick_reader::Element Newick_reader::get_element(const string & elt) throw (Exception)
+{
+    Element element;
+    element.length    = ""; //default
+
+    string::size_type colon = elt.rfind(':');
+    try
+    {
+        string::size_type endP = elt.rfind(')');
+
+        string elt2;
+        if(colon != string::npos)
+        {
+            if(endP == string::npos || colon>endP){
+                //this is an element with length:
+                elt2 = elt.substr(0, colon);
+                element.length = elt.substr(colon + 1);
+            }
+            else
+            {
+                //this is an element without length;
+                elt2 = elt;
+            }
+        }
+        else
+        {
+            //this is an element without length;
+            elt2 = elt;
+        }
+
+        string::size_type lastP = elt2.rfind(')');
+        string::size_type firstP = elt2.find('(');
+        if(firstP == string::npos)
+        {
+            //This is a leaf:
+            element.content = elt2;
+        }
+        else
+        {
+            //This is a node:
+            if(lastP < firstP) throw Exception("Newick_reader::get_element. Invalid format: bad closing parenthesis in " + elt2);
+                element.content = elt2.substr(firstP + 1, lastP - firstP - 1);
+        }
+    }
+    catch(exception e)
+    {
+        throw Exception("Newick_reader::get_element. Bad tree description: " + elt);
+    }
+    return element;
+}
+
+/*******************************************/
+
