@@ -49,11 +49,14 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("mpost-graphfile", po::value<string>(), "sequence graphfile for metapost")
         ("output-alignment-graphs", "include aligned graphs")
         ("output-leaf-graphs", "include terminal sequences")
-
     ;
 
+    boost::program_options::options_description debug("Debugging options");
+    debug.add_options()
+        ("check-valid-graphs", "check that fwd and bwd edges are identical")
+    ;
 
-    desc.add(generic).add(model).add(alignment).add(graphs);
+    desc.add(generic).add(model).add(alignment).add(graphs).add(debug);
 
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);

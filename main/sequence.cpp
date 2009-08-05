@@ -135,12 +135,12 @@ void Sequence::print_sequence(vector<Site> *sites)
             {
                 Edge *tedge = tsite->get_first_fwd_edge();
                 cout<<" F "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
-                        <<" "<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+                        <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
                 while(tsite->has_next_fwd_edge())
                 {
                     tedge = tsite->get_next_fwd_edge();
                     cout<<"; f "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
-                        <<" "<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+                        <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
                 }
             }
             cout<<"; \t";
@@ -149,17 +149,60 @@ void Sequence::print_sequence(vector<Site> *sites)
         {
             Edge *tedge = tsite->get_first_bwd_edge();
             cout<<"B "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
-                    <<" "<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+                    <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
             while(tsite->has_next_bwd_edge())
             {
                 tedge = tsite->get_next_bwd_edge();
                 cout<<"; b "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
-                    <<" "<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+                    <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
             }
         }
         cout << setprecision (4);
         
         cout<<"\n";
 
+    }
+}
+
+void Sequence::print_path(vector<Site> *sites)
+{
+    cout<<endl;
+
+   for(unsigned int i=0;i<sites->size();i++)
+    {
+        Site *tsite =  &sites->at(i);
+
+        cout<<i<<" "<<tsite->get_state()<<" "<<endl;
+
+        int ps = tsite->path_state;
+        switch(ps)
+        {
+            case Site::matched:
+                cout<<"M";
+                continue;
+            case Site::xgapped:
+                cout<<"X";
+                continue;
+            case Site::ygapped:
+                cout<<"Y";
+                continue;
+            case Site::xskipped:
+                cout<<"x";
+                continue;
+            case Site::yskipped:
+                cout<<"y";
+                continue;
+            default:
+                cout<<"o";
+                continue;
+        }
+        cout<<": ";
+
+        if(tsite->get_site_type()==Site::real_site)
+            cout<<tsite->get_index()<<" "<<full_dna_alphabet.at(tsite->get_state());
+        else
+            cout<<tsite->get_index()<<" +";
+
+//        cout<<tsite->
     }
 }

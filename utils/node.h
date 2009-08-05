@@ -152,11 +152,16 @@ public:
         if(Settings::noise>0)
             cout<<"aligning node "<<this->get_name()<<": "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
 
+        int oldv = Settings::noise;
+//        if(name=="#31#")
+//            Settings::noise = 7;
         double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
         Dna_model model = mf->dna_alignment_model(dist);
 
         Simple_alignment sa;
         sa.align(left_child->get_sequence(),right_child->get_sequence(),&model,left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
+
+        Settings::noise = oldv;
 
         if(Settings::noise>1)
             cout<<" finished...\n";
@@ -165,6 +170,10 @@ public:
 
         if(Settings::noise>1)
             cout<<" leaving!\n";
+
+        if( Settings_handle::st.is("check-valid-graphs") )
+            this->check_valid_graph();
+
     }
 
     /************************************/
@@ -334,6 +343,8 @@ public:
     void add_ancestral_sequence( Sequence* s ) { sequence = s; }
 
     Sequence *get_sequence() { return sequence; }
+
+    void check_valid_graph() const;
 
 };
 

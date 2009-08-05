@@ -58,7 +58,7 @@ struct Edge_history
 
     Edge_history(int lr,int rr,int ls=-1,int rs=-1) : left_real_site_index(lr), right_real_site_index(rr),
                                                       left_skip_site_index(ls), right_skip_site_index(rs),
-                                                      real_site_index(-1), match_site_index(-1), path_state(-1) {}
+                                                      real_site_index(-1), match_site_index(0), path_state(-1) {}
 };
 
 class Simple_alignment
@@ -330,6 +330,24 @@ class Simple_alignment
             cout<<"\nLEFT";left->print_sequence(left->get_sites());
             cout<<"\nRIGHT";right->print_sequence(right->get_sites());
             cout<<endl;
+        }
+    }
+
+    void print_path(vector<Path_pointer> *path)
+    {
+        cout<<endl;
+
+        for(unsigned int i=0;i<path->size();i++)
+        {
+            Path_pointer *tsite =  &path->at(i);
+
+            cout<<i<<" ";
+            if(tsite->real_site)
+                cout<<" r: ";
+            else
+                cout<<" s: ";
+
+            cout<<tsite->mp.x_ind<<" "<<tsite->mp.y_ind<<" "<<tsite->mp.matrix<<": "<<tsite->mp.score<<" "<<fixed<<log(tsite->mp.full_score)<<" "<<fixed<<log(tsite->mp.bwd_score)<<endl;
         }
     }
 

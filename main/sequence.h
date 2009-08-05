@@ -286,18 +286,67 @@ public:
         return &edges->at(current_bwd_edge_index);
     }
 
-    bool contains_bwd_edge(Edge *copy)
+    bool contains_bwd_edge(Edge *copy, bool thorough=false)
     {
         if( this->has_bwd_edge() )
         {
             Edge *edge = this->get_first_bwd_edge();
-            if(*copy == *edge)
-                return true;
+            if(thorough)
+            {
+                if(*copy == *edge && copy->get_posterior_weight()==edge->get_posterior_weight())
+                    return true;
+            }
+            else
+            {
+                if(*copy == *edge)
+                    return true;
+            }
             while(this->has_next_bwd_edge())
             {
                 edge = this->get_next_bwd_edge();
+                if(thorough)
+                {
+                    if(*copy == *edge && copy->get_posterior_weight()==edge->get_posterior_weight())
+                        return true;
+                }
+                else
+                {
+                    if(*copy == *edge)
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    bool contains_fwd_edge(Edge *copy, bool thorough=false)
+    {
+        if( this->has_fwd_edge() )
+        {
+            Edge *edge = this->get_first_fwd_edge();
+            if(thorough)
+            {
+                if(*copy == *edge && copy->get_posterior_weight()==edge->get_posterior_weight())
+                    return true;
+            }
+            else
+            {
                 if(*copy == *edge)
                     return true;
+            }
+            while(this->has_next_fwd_edge())
+            {
+                edge = this->get_next_fwd_edge();
+                if(thorough)
+                {
+                    if(*copy == *edge && copy->get_posterior_weight()==edge->get_posterior_weight())
+                        return true;
+                }
+                else
+                {
+                    if(*copy == *edge)
+                        return true;
+                }
             }
         }
         return false;
@@ -508,6 +557,8 @@ public:
 
     void print_sequence(vector<Site> *sites);
     void print_sequence() { this->print_sequence(this->get_sites()); }
+    void print_path(vector<Site> *sites);
+    void print_path(){ this->print_path(this->get_sites()); }
 
 
     Sequence(const string &seq_string,const string &alphabet);

@@ -437,3 +437,66 @@ void Node::write_metapost_alignment_graph(ostream *output, ostream *output2, int
 
     ++*count;
 }
+
+void Node::check_valid_graph() const
+{
+    vector<Site> *sites = sequence->get_sites();
+
+    for(unsigned int i=0;i<sites->size();i++)
+    {
+        Site *ssite = &sites->at(i);
+//cout<<i<<endl;
+        if( ssite->has_fwd_edge() )
+        {
+            Edge *edge = ssite->get_first_fwd_edge();
+//cout<<"*"<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<endl;
+        Site *esite = &sites->at(edge->get_end_site_index());
+
+            if(!esite->contains_bwd_edge(edge,true))
+            {
+                cout<<"site "<<i<<" has fwd edge from "<<edge->get_start_site_index()<<" to "
+                        <<edge->get_end_site_index()<<" but no return\n";
+            }
+
+            while( ssite->has_next_fwd_edge() )
+            {
+                edge = ssite->get_next_fwd_edge();
+//cout<<"+"<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<endl;
+                esite = &sites->at(edge->get_end_site_index());
+
+                if(!esite->contains_bwd_edge(edge,true))
+                {
+                    cout<<"site "<<i<<" has fwd edge from "<<edge->get_start_site_index()<<" to "
+                            <<edge->get_end_site_index()<<" but no return\n";
+                }
+            }
+        }
+
+        if( ssite->has_bwd_edge() )
+        {
+            Edge *edge = ssite->get_first_bwd_edge();
+//cout<<"="<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<endl;
+            Site *esite = &sites->at(edge->get_start_site_index());
+
+            if(!esite->contains_fwd_edge(edge,true))
+            {
+                cout<<"site "<<i<<" has bwd edge from "<<edge->get_start_site_index()<<" to "
+                        <<edge->get_end_site_index()<<" but no return\n";
+            }
+
+            while( ssite->has_next_bwd_edge() )
+            {
+                edge = ssite->get_next_bwd_edge();
+//cout<<"+"<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<endl;
+                esite = &sites->at(edge->get_start_site_index());
+
+                if(!esite->contains_fwd_edge(edge,true))
+                {
+                    cout<<"site "<<i<<" has bwd edge from "<<edge->get_start_site_index()<<" to "
+                            <<edge->get_end_site_index()<<" but no return\n";
+                }
+            }
+        }
+
+    }
+}
