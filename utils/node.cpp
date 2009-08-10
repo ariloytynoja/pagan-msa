@@ -125,7 +125,7 @@ void Node::write_metapost_sequence_graph(ostream *output, ostream *output2, int 
         else if(tsite->get_site_type()==Site::stop_site)
             c = 'e';
 
-        string color = get_node_fill_color(c);
+        string color = this->get_node_fill_color(c);
         if(tsite->get_branch_count_since_last_used()>0)
             color = "0.5white";
 
@@ -201,7 +201,7 @@ void Node::write_metapost_sequence_graph(ostream *output, ostream *output2, int 
     *output<<"endfig;\n";
 
 
-    string file = Settings_handle::st.get("mpost-graphfile").as<string>();
+    string file = Settings_handle::st.get("mpost-graph-file").as<string>();
     float width = (float)this->sequence->get_sites()->size()/(float)root_length;
 
     *output2<<"\\includegraphics[width="<<width<<"\\columnwidth]{"<<file<<"."<<*count<<"}\n\n\\bigskip\n";
@@ -254,7 +254,7 @@ void Node::write_metapost_alignment_graph(ostream *output, ostream *output2, int
             else if(lsite->get_site_type()==Site::stop_site)
                 lc = 'e';
 
-            string color = get_node_fill_color(lc);
+            string color = this->get_node_fill_color(lc);
             if(lsite->get_branch_count_since_last_used()>0)
                 color = "0.5white";
 
@@ -270,7 +270,7 @@ void Node::write_metapost_alignment_graph(ostream *output, ostream *output2, int
             else if(rsite->get_site_type()==Site::stop_site)
                 rc = 'e';
 
-            string color = get_node_fill_color(rc);
+            string color = this->get_node_fill_color(rc);
             if(rsite->get_branch_count_since_last_used()>0)
                 color = "0.5white";
 
@@ -429,7 +429,7 @@ void Node::write_metapost_alignment_graph(ostream *output, ostream *output2, int
 
     *output<<"endfig;\n";
 
-    string file = Settings_handle::st.get("mpost-graphfile").as<string>();
+    string file = Settings_handle::st.get("mpost-graph-file").as<string>();
     float width = (float)this->sequence->get_sites()->size()/(float)root_length;
 
     *output2<<"\\includegraphics[width="<<width<<"\\columnwidth]{"<<file<<"."<<*count<<"}\n\n\\bigskip\n";
@@ -445,12 +445,10 @@ void Node::check_valid_graph() const
     for(unsigned int i=0;i<sites->size();i++)
     {
         Site *ssite = &sites->at(i);
-//cout<<i<<endl;
         if( ssite->has_fwd_edge() )
         {
             Edge *edge = ssite->get_first_fwd_edge();
-//cout<<"*"<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<endl;
-        Site *esite = &sites->at(edge->get_end_site_index());
+            Site *esite = &sites->at(edge->get_end_site_index());
 
             if(!esite->contains_bwd_edge(edge,true))
             {
@@ -461,7 +459,6 @@ void Node::check_valid_graph() const
             while( ssite->has_next_fwd_edge() )
             {
                 edge = ssite->get_next_fwd_edge();
-//cout<<"+"<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<endl;
                 esite = &sites->at(edge->get_end_site_index());
 
                 if(!esite->contains_bwd_edge(edge,true))
@@ -475,7 +472,6 @@ void Node::check_valid_graph() const
         if( ssite->has_bwd_edge() )
         {
             Edge *edge = ssite->get_first_bwd_edge();
-//cout<<"="<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<endl;
             Site *esite = &sites->at(edge->get_start_site_index());
 
             if(!esite->contains_fwd_edge(edge,true))
@@ -487,7 +483,6 @@ void Node::check_valid_graph() const
             while( ssite->has_next_bwd_edge() )
             {
                 edge = ssite->get_next_bwd_edge();
-//cout<<"+"<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<endl;
                 esite = &sites->at(edge->get_start_site_index());
 
                 if(!esite->contains_fwd_edge(edge,true))

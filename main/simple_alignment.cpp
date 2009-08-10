@@ -1,6 +1,9 @@
 #include "main/simple_alignment.h"
 #include "main/sequence.h"
+#include "utils/exceptions.h"
+#include "utils/node.h"
 #include <iomanip>
+#include <fstream>
 
 using namespace std;
 using namespace ppa;
@@ -110,7 +113,7 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
 
         if(Settings::noise>0 && (ratio<0.99 || ratio>1.01))
         {
-            cout<<"fwd: "<<max_end.full_score<<", bwd: "<<max_start.bwd_score<<endl;
+            cout<<"Problem in computation? fwd: "<<max_end.full_score<<", bwd: "<<max_start.bwd_score<<endl;
         }
     }
 
@@ -131,6 +134,11 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
     if(Settings::noise>1)
         cout<<"Simple_alignment: sequence built\n";
 
+    if(Settings_handle::st.is("mpost-posterior-plot-file") &&
+       Settings_handle::st.is("full-probability") )
+    {
+        this->plot_posterior_probabilities(max_end);
+    }
 }
 
 
@@ -349,8 +357,6 @@ void Simple_alignment::find_best_transition(int i,int j)
 
 void Simple_alignment::compute_bwd_full_score(int i,int j)
 {
-//if(Settings::noise>6) cout<<i<<" "<<j<<"\n ";
-//cout<<i<<" "<<j;
     int i_end = match->shape()[0]-1;
     int j_end = match->shape()[1]-1;
 
@@ -370,12 +376,8 @@ void Simple_alignment::compute_bwd_full_score(int i,int j)
         return;
     }
 
-//if(Settings::noise>6) cout<<i<<" "<<j<<" "<<scientific<<max_m->bwd_score<<" before\n ";
-if(Settings::noise>6) cout<<i<<" "<<j<<" "<<log(max_m->bwd_score)<<" before\n ";
-
     if(left_index<i_end)
     {
-//    cout<<" x";
         left_site = left->get_site_at(left_index);
 
         align_slice x_slice = (*xgap)[ indices[ range( 0,xgap->shape()[0] ) ][j] ];
@@ -386,7 +388,6 @@ if(Settings::noise>6) cout<<i<<" "<<j<<" "<<log(max_m->bwd_score)<<" before\n ";
 
     if(right_index<j_end)
     {
-//    cout<<" y";
         right_site = right->get_site_at(right_index);
 
         align_slice y_slice = (*ygap)[ indices[i][ range( 0,ygap->shape()[1] ) ] ];
@@ -397,16 +398,12 @@ if(Settings::noise>6) cout<<i<<" "<<j<<" "<<log(max_m->bwd_score)<<" before\n ";
 
     if(left_index<i_end && right_index<j_end)
     {
-//    cout<<" m";
         left_site = left->get_site_at(left_index);
         right_site = right->get_site_at(right_index);
 
         this->iterate_fwd_edges_for_match(left_site,right_site,max_x,max_y,max_m);
 
     }
-//if(Settings::noise>6) cout<<i<<" "<<j<<" "<<scientific<<max_m->bwd_score<<" after\n ";
-if(Settings::noise>6) cout<<i<<" "<<j<<" "<<log(max_m->bwd_score)<<" after\n ";
-//cout<<endl;
 }
 
 /********************************************/
@@ -438,7 +435,6 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
     {
         while(i>=0)
         {
-//            cout<<i<<" "<<j<<": ";
             if(vit_mat == Simple_alignment::m_mat)
             {
 
@@ -450,14 +446,13 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
                 right_edges->at((*match)[i][j].y_edge_ind).is_used(true);
 
                 Path_pointer pp( (*match)[i][j], true );
-//if(Settings::noise>2){ cout<<"m "<<i<<" "<<j<<": "<<pp.mp.x_ind<<" "<<pp.mp.y_ind<<" "<<pp.mp.matrix<<": "<<pp.mp.score<<endl; }
 
                 i--; j--;
 
                 // Pre-existing gaps in the middle skipped over
                 //
                 this->insert_preexisting_gap(path, &i, &j, x_ind, y_ind);
-//if(Settings::noise>2){ cout<<"m "<<i<<" "<<j<<": "<<pp.mp.x_ind<<" "<<pp.mp.y_ind<<" "<<pp.mp.matrix<<": "<<pp.mp.score<<endl; }
+
                 this->insert_new_path_pointer(path,&i,&j,pp);
             }
             else if(vit_mat == Simple_alignment::x_mat)
@@ -469,7 +464,6 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
                 left_edges->at((*xgap)[i][j].x_edge_ind).is_used(true);
 
                 Path_pointer pp( (*xgap)[i][j], true );
-//if(Settings::noise>2){ cout<<"x "<<i<<" "<<j<<": "<<pp.mp.x_ind<<" "<<pp.mp.y_ind<<" "<<pp.mp.matrix<<": "<<pp.mp.score<<endl; }
 
                 i--;
 
@@ -477,7 +471,6 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
                 //
                 this->insert_preexisting_gap(path, &i, &j, x_ind, y_ind);
 
-//if(Settings::noise>2){ cout<<"x "<<i<<" "<<j<<": "<<pp.mp.x_ind<<" "<<pp.mp.y_ind<<" "<<pp.mp.matrix<<": "<<pp.mp.score<<endl; }
                 this->insert_new_path_pointer(path,&i,&j,pp);
             }
             else if(vit_mat == Simple_alignment::y_mat)
@@ -489,7 +482,6 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
                 right_edges->at((*ygap)[i][j].y_edge_ind).is_used(true);
 
                 Path_pointer pp( (*ygap)[i][j], true );
-//if(Settings::noise>2){ cout<<"y "<<i<<" "<<j<<": "<<pp.mp.x_ind<<" "<<pp.mp.y_ind<<" "<<pp.mp.matrix<<": "<<pp.mp.score<<endl; }
 
                 j--;
 
@@ -497,7 +489,6 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
                 //
                 this->insert_preexisting_gap(path, &i, &j, x_ind, y_ind);
 
-//if(Settings::noise>2){ cout<<"y "<<i<<" "<<j<<": "<<pp.mp.x_ind<<" "<<pp.mp.y_ind<<" "<<pp.mp.matrix<<": "<<pp.mp.score<<endl; }
                 this->insert_new_path_pointer(path,&i,&j,pp);
             }
             else
@@ -537,17 +528,14 @@ void Simple_alignment::build_ancestral_sequence(vector<Path_pointer> *path)
     // The path is given as input.
     // This will create sites with correct child sites.
     this->create_ancestral_sequence(path);
-//cout<<"seq created\n";
 
     // This will add the edges connecting sites.
     this->create_ancestral_edges();
-//cout<<"edges created\n";
 
     // This will do a check-up and delete edges if needed:
     // " To mimic PRANK+F: one has to scan the sequence again to find boundaries 'Match/Skipped' and 'Skipped/Matched'
     //   and record them on the edges. If they are above a limit, the edges (and all between them) are deleted. "
     this->check_skipped_boundaries();
-//cout<<"skips checked\n";
 
 
     if(Settings::noise>4)
@@ -750,7 +738,6 @@ void Simple_alignment::create_ancestral_edges()
                 {
                     Edge *child = &left->get_edges()->at(ind);
                     Edge edge( prev.match_site_index, i );
-//                    Edge edge( left_child_index.at(prev.match_site_index), i );
                     this->transfer_child_edge(edge, child, left_branch_length );
                 }
 
@@ -763,7 +750,6 @@ void Simple_alignment::create_ancestral_edges()
 
             if(pstate == Site::matched)
                 prev.match_site_index = i;
-//                prev.match_site_index = offspring->left_index;
         }
 
         if(offspring->right_index>=0)
@@ -804,7 +790,6 @@ void Simple_alignment::create_ancestral_edges()
                 if(ind>=0)
                 {
                     Edge *child = &right->get_edges()->at(ind);
-//                    Edge edge( right_child_index.at(prev.match_site_index), i );
                     Edge edge( prev.match_site_index, i );
                     this->transfer_child_edge(edge, child, right_branch_length );
                 }
@@ -887,16 +872,6 @@ void Simple_alignment::check_skipped_boundaries()
 
             if( tsite->has_bwd_edge() )
             {
-//                Edge *edge = tsite->get_first_bwd_edge();
-//                if(edge->get_branch_count_as_skipped_edge()>max_allowed_match_skip_branches)
-//                    skip_start = i;
-//
-//                while( tsite->has_next_bwd_edge() )
-//                {
-//                    edge = tsite->get_next_bwd_edge();
-//                    if(edge->get_branch_count_as_skipped_edge()>max_allowed_match_skip_branches)
-//                        skip_start = i;
-//                }
                 Edge *edge = tsite->get_first_bwd_edge();
                 while( tsite->has_next_bwd_edge() )
                 {
@@ -917,17 +892,6 @@ void Simple_alignment::check_skipped_boundaries()
             int edge_ind = -1;
             if( tsite->has_bwd_edge() )
             {
-//                Edge *edge = tsite->get_first_bwd_edge();
-//                if(edge->get_branch_count_as_skipped_edge()>max_allowed_match_skip_branches)
-//                    edge_ind = edge->get_index();
-//
-//                while( tsite->has_next_bwd_edge() )
-//                {
-//                    edge = tsite->get_next_bwd_edge();
-//                    if(edge->get_branch_count_as_skipped_edge()>max_allowed_match_skip_branches)
-//                        edge_ind = edge->get_index();
-//                }
-
                 Edge *edge = tsite->get_first_bwd_edge();
 
                 while( tsite->has_next_bwd_edge() )
@@ -944,7 +908,7 @@ void Simple_alignment::check_skipped_boundaries()
 
             if(edge_ind>=0)
             {
-                cout<<"delete: "<<edge_ind<<" "<<skip_start<<" "<<i<<endl;
+                if(Settings::noise>2) cout<<"delete: "<<edge_ind<<" "<<skip_start<<" "<<i<<endl;
                 this->delete_edge_range(edge_ind,skip_start);
             }
 
@@ -1177,13 +1141,13 @@ void Simple_alignment::iterate_bwd_edges_for_end_corner(Site * left_site,Site * 
         //
         double m_log_match = model->log_non_gap();
         double m_match = model->non_gap();
-//cout<< setprecision (8)<<"f0 "<<max->full_score<<endl;
+
         this->score_m_match(left_edge,right_edge,m_log_match,max,m_match);
         double best_score = max->score;
-//cout<<"f1 "<<max->full_score<<endl;
+
         align_slice x_slice = (*xgap)[ indices[ range( 0,xgap->shape()[0] ) ][xgap->shape()[1]-1] ];
         this->score_gap_close(left_edge,&x_slice,max,true);
-//cout<<"f2 "<<max->full_score<<endl;
+
         if(this->first_is_bigger(max->score,best_score) )
         {
             best_score = max->score;
@@ -1192,7 +1156,7 @@ void Simple_alignment::iterate_bwd_edges_for_end_corner(Site * left_site,Site * 
 
         align_slice y_slice = (*ygap)[ indices[ygap->shape()[0]-1][ range( 0,ygap->shape()[1] ) ] ];
         this->score_gap_close(right_edge,&y_slice,max,false);
-//cout<<"f3 "<<max->full_score<< setprecision (4)<<endl;
+
         if(this->first_is_bigger(max->score,best_score) )
         {
             best_score = max->score;
@@ -1293,7 +1257,6 @@ void Simple_alignment::iterate_fwd_edges_for_gap(Site * site,align_slice *g_slic
                                    Matrix_pointer *max_s,Matrix_pointer *max_d,Matrix_pointer *max_m)
 {
     if(site->has_fwd_edge()) {
-//if(Settings::noise>6) cout<<"new\n ";
 
         Edge * edge = site->get_first_fwd_edge();
         int slice_end = (int)g_slice->shape()[0];
@@ -1301,11 +1264,8 @@ void Simple_alignment::iterate_fwd_edges_for_gap(Site * site,align_slice *g_slic
         if(edge->get_end_site_index() < slice_end )
         {
             this->score_gap_ext_bwd(edge,g_slice,max_s);
-//if(Settings::noise>6) cout<<"1 "<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<"; "<<scientific<<max_s->bwd_score<<endl;
             this->score_gap_double_bwd(edge,g_slice,max_d);
-//if(Settings::noise>6) cout<<"2 "<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<"; "<<scientific<<max_d->bwd_score<<endl;
             this->score_gap_open_bwd(edge,g_slice,max_m);
-//if(Settings::noise>6) cout<<"3 "<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<"; "<<scientific<<max_m->bwd_score<<endl;
         }
         while(site->has_next_fwd_edge())
         {
@@ -1314,11 +1274,8 @@ void Simple_alignment::iterate_fwd_edges_for_gap(Site * site,align_slice *g_slic
             if(edge->get_end_site_index() < slice_end )
             {
                 this->score_gap_ext_bwd(edge,g_slice,max_s);
-//if(Settings::noise>6) cout<<"4 "<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<"; "<<scientific<<max_s->bwd_score<<endl;
                 this->score_gap_double_bwd(edge,g_slice,max_d);
-//if(Settings::noise>6) cout<<"5 "<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<"; "<<scientific<<max_d->bwd_score<<endl;
                 this->score_gap_open_bwd(edge,g_slice,max_m);
-//if(Settings::noise>6) cout<<"6 "<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<"; "<<scientific<<max_m->bwd_score<<endl;
             }
         }
     }
@@ -1344,8 +1301,6 @@ void Simple_alignment::iterate_fwd_edges_for_match(Site * left_site,Site * right
            && right_edge->get_end_site_index() < right_end )
         {
             this->score_match_bwd(left_edge,right_edge,max_x,max_y,max_m);
-//if(Settings::noise>6) cout<<"A "<<left_edge->get_start_site_index()<<" "<<left_edge->get_end_site_index()<<"; "<<right_edge->get_start_site_index()<<" "<<right_edge->get_end_site_index()<<"; "<<scientific<<max_m->bwd_score<<endl;
-//if(Settings::noise>6) cout<<"A "<<left_edge->get_start_site_index()<<" "<<left_edge->get_end_site_index()<<"; "<<right_edge->get_start_site_index()<<" "<<right_edge->get_end_site_index()<<"; "<<log(max_m->bwd_score)<<endl;
         }
 
         // then right site extra edges
@@ -1359,8 +1314,6 @@ void Simple_alignment::iterate_fwd_edges_for_match(Site * left_site,Site * right
                && right_edge->get_end_site_index() < right_end )
             {
                 this->score_match_bwd(left_edge,right_edge,max_x,max_y,max_m);
-//if(Settings::noise>6) cout<<"D "<</*edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<*/"; "<<scientific<<max_m->bwd_score<<endl;
-//if(Settings::noise>6) cout<<"D "<<left_edge->get_start_site_index()<<" "<<left_edge->get_end_site_index()<<"; "<<right_edge->get_start_site_index()<<" "<<right_edge->get_end_site_index()<<"; "<<log(max_m->bwd_score)<<endl;
             }
         }
 
@@ -1375,8 +1328,6 @@ void Simple_alignment::iterate_fwd_edges_for_match(Site * left_site,Site * right
                && right_edge->get_end_site_index() < right_end )
             {
                 this->score_match_bwd(left_edge,right_edge,max_x,max_y,max_m);
-//if(Settings::noise>6) cout<<"B "<<left_edge->get_start_site_index()<<" "<<left_edge->get_end_site_index()<<"; "<<right_edge->get_start_site_index()<<" "<<right_edge->get_end_site_index()<<"; "<<scientific<<max_m->bwd_score<<endl;
-//if(Settings::noise>6) cout<<"B "<<left_edge->get_start_site_index()<<" "<<left_edge->get_end_site_index()<<"; "<<right_edge->get_start_site_index()<<" "<<right_edge->get_end_site_index()<<"; "<<log(max_m->bwd_score)<<endl;
             }
 
             while(right_site->has_next_fwd_edge())
@@ -1388,8 +1339,6 @@ void Simple_alignment::iterate_fwd_edges_for_match(Site * left_site,Site * right
                    && right_edge->get_end_site_index() < right_end )
                 {
                     this->score_match_bwd(left_edge,right_edge,max_x,max_y,max_m);
-//if(Settings::noise>6) cout<<"C "<</*edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<*/"; "<<scientific<<max_m->bwd_score<<endl;
-//if(Settings::noise>6) cout<<"C "<<left_edge->get_start_site_index()<<" "<<left_edge->get_end_site_index()<<"; "<<right_edge->get_start_site_index()<<" "<<right_edge->get_end_site_index()<<"; "<<log(max_m->bwd_score)<<endl;
                 }
             }
         }
@@ -1661,14 +1610,247 @@ void Simple_alignment::score_gap_open_bwd(Edge *edge,align_slice *m_slice,Matrix
     max->bwd_score += this_full_score;
 }
 
-//void Simple_alignment::score_gap_close_bwd(Edge *edge,align_slice *z_slice,Matrix_pointer *max)
-//{
-//    int prev_index = edge->get_end_site_index();
-//
-//    double this_full_score =  (*z_slice)[prev_index].bwd_score * model->gap_close() * this->get_edge_weight(edge);
-//    max->bwd_score += this_full_score;
-//}
 
+/********************************************/
+int Simple_alignment::plot_number = 1;
+
+void Simple_alignment::plot_posterior_probabilities(Matrix_pointer max_end)
+{
+    string file = Settings_handle::st.get("mpost-posterior-plot-file").as<string>();
+
+    string path = file;
+    path.append(".mp");
+
+    string path2 = file;
+    path2.append(".tex");
+
+    ofstream output(path.c_str(), (ios::out|ios::app));
+    if (! output) { throw IOException ("Simple_alignment::plot_posterior_probabilities. Failed to open file"); }
+
+    ofstream output2(path2.c_str(), (ios::out|ios::app));
+    if (! output2) { throw IOException ("Simple_alignment::plot_posterior_probabilities. Failed to open file"); }
+
+    output<<"beginfig("<<plot_number<<");\n"
+            "u := 1mm;\ndefaultscale := 1.5pt/fontsize(defaultfont);\n"
+            "path l[]; path r[]; path sqr; sqr := unitsquare scaled u;\n"
+            "pickup pencircle scaled 0.1; labeloffset := 1bp; \n";
+
+    for(unsigned int j=1;j<match->shape()[1];j++)
+    {
+        for(unsigned int i=1;i<match->shape()[0];i++)
+        {
+            if((*match)[i][j].full_score>0){
+                int score = int(abs(log((*match)[i][j].full_score*(*match)[i][j].bwd_score/max_end.full_score)));
+                float red = 1;
+
+                float green = score*7;
+                if(green>255) green = 255;
+                green /= 255;
+
+                float blue = (score-39)*7;
+                if(blue<0) blue = 0;
+                if(blue>255) blue = 255;
+                blue /= 255;
+
+                output<<"fill sqr shifted ("<<i<<"*u,"<<j<<"*u)\n";
+                output<<"withcolor ("<<red<<","<<green<<","<<blue<<");\n";
+            }
+            output<<"draw sqr shifted ("<<i<<"*u,"<<j<<"*u);\n";
+
+        }
+    }
+
+    output<<"label.lft(\"#"<<plot_number<<"#\" infont defaultfont scaled 0.2,(0mm,-0.5mm));\n";
+
+    vector<Site> *left_sites = left->get_sites();
+    vector<Site> *right_sites = right->get_sites();
+    string full_alphabet = left->get_full_alphabet();
+
+    for(unsigned int i=0;i<left_sites->size();i++)
+    {
+        Site *tsite =  &left_sites->at(i);
+
+        char c = 's';
+        if(tsite->get_site_type()==Site::real_site)
+            c = full_alphabet.at(tsite->get_state());
+        else if(tsite->get_site_type()==Site::stop_site)
+            c = 'e';
+
+        string color = Node::get_node_fill_color(c);
+        if(tsite->get_branch_count_since_last_used()>0)
+            color = "0.5white";
+
+        output<<"l"<<i<<" = circle"<<"(("<<0.5+i<<"mm,-0.5mm),\""<<c<<"\","<<color<<");\n";
+    }
+
+    for(unsigned int i=1;i<left_sites->size();i++)
+    {
+        Site *tsite =  &left_sites->at(i);
+
+        if(tsite->has_bwd_edge())
+        {
+            Edge *tedge = tsite->get_first_bwd_edge();
+            int start = tedge->get_start_site_index();
+            int stop  = tedge->get_end_site_index();
+
+            int angle = 0;
+            string place = "edgebot";
+            if(start+1==stop)
+                place = "edgetop";
+            else if(start+2==stop)
+                angle = 45;
+            else if(start+3==stop)
+                angle = 35;
+            else if(start+4<=stop)
+                angle = 25;
+
+            stringstream label;
+            if(tedge->get_branch_count_since_last_used()>0)
+                label<<"["<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+
+            output<<place<<"(l"<<start<<",l"<<stop<<","<<angle<<",\""<<label.str()<<"\",0.5);\n";
+
+            while(tsite->has_next_bwd_edge())
+            {
+                tedge = tsite->get_next_bwd_edge();
+                start = tedge->get_start_site_index();
+                stop  = tedge->get_end_site_index();
+
+                angle = 0;
+                place = "edgebot";
+                if(start+1==stop)
+                    place = "edgetop";
+                else if(start+2==stop)
+                    angle = 45;
+                else if(start+3==stop)
+                    angle = 35;
+                else if(start+4<=stop)
+                    angle = 25;
+
+                label.str("");
+
+                if(tedge->get_branch_count_since_last_used()>0)
+                    label<<"["<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+
+                output<<place<<"(l"<<start<<",l"<<stop<<","<<angle<<",\""<<label.str()<<"\",0.5);\n";
+
+            }
+        }
+    }
+
+    for(unsigned int i=0;i<right_sites->size();i++)
+    {
+        Site *tsite =  &right_sites->at(i);
+
+        char c = 's';
+        if(tsite->get_site_type()==Site::real_site)
+            c = full_alphabet.at(tsite->get_state());
+        else if(tsite->get_site_type()==Site::stop_site)
+            c = 'e';
+
+        string color = Node::get_node_fill_color(c);
+        if(tsite->get_branch_count_since_last_used()>0)
+            color = "0.5white";
+
+        output<<"r"<<i<<" = circle"<<"((-0.5mm,"<<0.5+i<<"mm),\""<<c<<"\","<<color<<");\n";
+    }
+
+    for(unsigned int i=1;i<right_sites->size();i++)
+    {
+        Site *tsite =  &right_sites->at(i);
+
+        if(tsite->has_bwd_edge())
+        {
+            Edge *tedge = tsite->get_first_bwd_edge();
+            int start = tedge->get_start_site_index();
+            int stop  = tedge->get_end_site_index();
+
+            int angle = 90;
+            string place = "edgelft";
+            if(start+1==stop)
+                place = "edgergt";
+            else if(start+2==stop)
+                angle = 135;
+            else if(start+3==stop)
+                angle = 125;
+            else if(start+4<=stop)
+                angle = 115;
+
+            stringstream label;
+            if(tedge->get_branch_count_since_last_used()>0)
+                label<<"["<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+
+            output<<place<<"(r"<<start<<",r"<<stop<<","<<angle<<",\""<<label.str()<<"\",0.5);\n";
+
+            while(tsite->has_next_bwd_edge())
+            {
+                tedge = tsite->get_next_bwd_edge();
+                start = tedge->get_start_site_index();
+                stop  = tedge->get_end_site_index();
+
+                angle = 90;
+                place = "edgelft";
+                if(start+1==stop)
+                    place = "edgergt";
+                else if(start+2==stop)
+                    angle = 135;
+                else if(start+3==stop)
+                    angle = 125;
+                else if(start+4<=stop)
+                    angle = 115;
+
+                label.str("");
+
+                if(tedge->get_branch_count_since_last_used()>0)
+                    label<<"["<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+
+                output<<place<<"(r"<<start<<",r"<<stop<<","<<angle<<",\""<<label.str()<<"\",0.5);\n";
+
+            }
+        }
+    }
+
+    vector<Site> *sites = ancestral_sequence->get_sites();
+
+    for(unsigned int i=0;i<sites->size();i++)
+    {
+        Site *tsite = &sites->at(i);
+
+        if(tsite->get_site_type()==Site::real_site)
+        {
+
+            Site_children *offspring = sites->at(i).get_children();
+            int lc = offspring->left_index;
+            int rc = offspring->right_index;
+
+            if(lc>=0 && rc>=0)
+            {
+                output<<"draw sqr shifted ("<<lc<<"*u,"<<rc<<"*u) withcolor (0,0,1) withpen pencircle scaled 0.5;\n";
+            }
+        }
+    }
+
+    output<<"endfig;\n";
+    output.close();
+
+    output2<<"\\includegraphics[width=0.9\\columnwidth]{"<<file<<"."<<plot_number<<"}\n\n\\bigskip\n";
+    output2<<"~\n\n\\bigskip\n";
+
+    output2.close();
+
+//        for(unsigned int j=1;j<match->shape()[1];j++)
+//        {
+//            for(unsigned int i=1;i<match->shape()[0];i++)
+//            {
+//                cout<<setw(8)<<log((*match)[i][j].full_score*(*match)[i][j].bwd_score/max_end.full_score);
+//                if(i+1<match->shape()[0])
+//                    cout<<",";
+//            }
+//            cout<<endl;
+//        }
+//        cout<<endl;
+    Simple_alignment::plot_number += 1;
+}
 
 /********************************************/
 

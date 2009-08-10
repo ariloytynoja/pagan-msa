@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
     int count = 1;
     root->name_internal_nodes(&count);
 
-    root->align_sequences(&mf);
+    root->start_alignment(&mf);
 
 
     // Collect results.
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    if(Settings_handle::st.is("mpost-graphfile")){
+    if(Settings_handle::st.is("mpost-graph-file")){
         root->write_sequence_graphs();
     }
 }

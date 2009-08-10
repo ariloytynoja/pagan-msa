@@ -135,6 +135,22 @@ public:
 
     /************************************/
 
+    void start_alignment(Model_factory *mf)
+    {
+        if(Settings_handle::st.is("mpost-posterior-plot-file"))
+        {
+            this->start_mpost_plot_file();
+        }
+
+        this->align_sequences(mf);
+
+        if(Settings_handle::st.is("mpost-posterior-plot-file"))
+        {
+            this->finish_mpost_plot_file();
+        }
+
+    }
+
     void align_sequences(Model_factory *mf)
     {
         if(leaf)
@@ -152,27 +168,87 @@ public:
         if(Settings::noise>0)
             cout<<"aligning node "<<this->get_name()<<": "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
 
-        int oldv = Settings::noise;
-//        if(name=="#31#")
-//            Settings::noise = 7;
         double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
         Dna_model model = mf->dna_alignment_model(dist);
 
         Simple_alignment sa;
         sa.align(left_child->get_sequence(),right_child->get_sequence(),&model,left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
 
-        Settings::noise = oldv;
-
-        if(Settings::noise>1)
-            cout<<" finished...\n";
-
         this->add_ancestral_sequence( sa.get_simple_sequence() );
-
-        if(Settings::noise>1)
-            cout<<" leaving!\n";
 
         if( Settings_handle::st.is("check-valid-graphs") )
             this->check_valid_graph();
+
+    }
+
+    void start_mpost_plot_file()
+    {
+        string file = Settings_handle::st.get("mpost-posterior-plot-file").as<string>();
+
+        string path = file;
+        path.append(".mp");
+
+        string path2 = file;
+        path2.append(".tex");
+
+        ofstream output(path.c_str(), (ios::out) );
+        if (! output) { throw IOException ("Node::start_mpost_plot_file. Failed to open file"); }
+
+        ofstream output2(path2.c_str(), (ios::out) );
+        if (! output2) { throw IOException ("Node::start_mpost_plot_file. Failed to open file"); }
+
+
+        output<<"vardef circle(expr a,c,col) =\n path p;\n h := 0.6mm;\n"
+                " p = a+(-h/2,0){up}..{right}a+(0,h/2){right}..{down}a+(h/2,0){down}..{left}a+(0,-h/2){left}..{up}cycle;\n"
+                " fill p withcolor col;\n draw(p);\n pair x;\n x = ((point(0) of p)+(point(2) of p))/2;\n"
+                " label(c,x);\n p\nenddef;\n\n";
+
+        output<<"vardef edge(expr px,ax,py,ay,s) =\n pair x,y;\n x = ((point(0) of px)+(point(2) of px))/2;\n"
+                " y = ((point(0) of py)+(point(2) of py))/2;\n path p; p = (x){dir(ax)}..{dir(ay)}(y);\n"
+                " draw (p) cutbefore px cutafter py withpen pencircle scaled (0.3*s);\n point .5*length p of p\n"
+                "enddef;\n\n";
+
+        output<<"def edgetop(expr px,py,a,c,s) =\n label.top(c,edge(px,a,py,-1*a,s));\nenddef;\n"
+                "def edgebot(expr px,py,a,c,s) =\n label.bot(c,edge(px,360-a,py,360+1*a,s));\nenddef;\n\n";
+        output<<"def edgelft(expr px,py,a,c,s) =\n label.lft(c,edge(px,a,py,180-1*a,s));\nenddef;\n"
+                "def edgergt(expr px,py,a,c,s) =\n label.rt(c,edge(px,180-a,py,a,s));\nenddef;\n\n";
+
+        output2<<"\\documentclass{article}\n\\usepackage{geometry,graphicx}\n"
+                 "\\geometry{a4paper,tmargin=0.5in,bmargin=0.5in,lmargin=.5in,rmargin=0.5in}\n"
+                 "\\begin{document}\n";
+
+
+        output.close();
+        output2.close();
+    }
+
+    void finish_mpost_plot_file()
+    {
+        string file = Settings_handle::st.get("mpost-posterior-plot-file").as<string>();
+        cout<<"Plot file: "<<file<<endl;
+
+        string path = file;
+        path.append(".mp");
+
+        string path2 = file;
+        path2.append(".tex");
+
+        ofstream output(path.c_str(), (ios::out|ios::app) );
+        if (! output) { throw IOException ("Node::start_mpost_plot_file. Failed to open file"); }
+
+        ofstream output2(path2.c_str(), (ios::out|ios::app) );
+        if (! output2) { throw IOException ("Node::start_mpost_plot_file. Failed to open file"); }
+
+        output<<"end;\n";
+        output2<<"\\end{document}\n";
+
+        output.close();
+        output2.close();
+
+        cout<<"\nThe posterior probability plot files can generated using following commands:\n"
+              "  mpost "<<file<<".mp\n"
+              "  latex "<<file<<".tex\n"
+              "  dvipdf "<<file<<".dvi\n\n";
 
     }
 
@@ -240,7 +316,7 @@ public:
     void write_sequence_graphs(bool overwrite=true) const throw (Exception)
     {
 
-        string file = Settings_handle::st.get("mpost-graphfile").as<string>();
+        string file = Settings_handle::st.get("mpost-graph-file").as<string>();
         cout<<"Graph file: "<<file<<endl;
 
         string path = file;
@@ -315,7 +391,7 @@ public:
 
     void write_metapost_alignment_graph(ostream *output, ostream *output2, int *count, int root_length) const throw (Exception);
 
-    string get_node_fill_color(char c) const
+    static string get_node_fill_color(char c)
     {
         string color = "white";
         switch(c)

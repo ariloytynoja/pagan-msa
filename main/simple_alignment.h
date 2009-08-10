@@ -152,7 +152,6 @@ class Simple_alignment
     void score_gap_ext_bwd(Edge *edge,align_slice *z_slice,Matrix_pointer *max);
     void score_gap_double_bwd(Edge *edge,align_slice *w_slice,Matrix_pointer *max);
     void score_gap_open_bwd(Edge *edge,align_slice *m_slice,Matrix_pointer *max);
-//    void score_gap_close_bwd(Edge *edge,align_slice *z_slice,Matrix_pointer *max);
 
     void score_match_bwd(Edge * left_edge,Edge * right_edge,
                                        Matrix_pointer *max_x,Matrix_pointer *max_y,Matrix_pointer *max_m);
@@ -310,6 +309,9 @@ class Simple_alignment
 
         cout << noshowpos;
     }
+
+    static int plot_number;
+    void plot_posterior_probabilities(Matrix_pointer max_end);
 
     void print_matrices();
     void print_sequences(vector<Site> *sites);

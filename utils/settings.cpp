@@ -46,9 +46,10 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description graphs("Graph output options");
     graphs.add_options()
-        ("mpost-graphfile", po::value<string>(), "sequence graphfile for metapost")
+        ("mpost-graph-file", po::value<string>(), "sequence graph file for metapost")
         ("output-alignment-graphs", "include aligned graphs")
         ("output-leaf-graphs", "include terminal sequences")
+        ("mpost-posterior-plot-file", po::value<string>(), "posterior plot file for metapost")
     ;
 
     boost::program_options::options_description debug("Debugging options");
