@@ -5,6 +5,7 @@
 #include "utils/newick_reader.h"
 #include "utils/node.h"
 #include "utils/fasta_reader.h"
+#include "utils/xml_writer.h"
 #include "utils/model_factory.h"
 #include "utils/dna_model.h"
 
@@ -116,18 +117,37 @@ int main(int argc, char *argv[])
 
     if(1) {
         if(Settings_handle::st.is("outfile")){
+            string outfile =  Settings_handle::st.get("outfile").as<string>();
+            cout<<"Alignment files: "<<outfile<<".fas, "<<outfile<<".xml"<<endl;
+
             Fasta_reader fr;
             fr.set_chars_by_line(70);
-            string outfile =  Settings_handle::st.get("outfile").as<string>();
-            cout<<"Alignment file: "<<outfile<<endl;
-
             fr.write(outfile, aligned_sequences, true);
+
+
+            int count = 1;
+            root->set_name_ids(&count);
+
+            Xml_writer xw;
+            xw.write(outfile, root, aligned_sequences, true);
+
+        }
+    }
+
+    if(Settings::noise>1 )
+    {
+        if( Settings_handle::st.is("scale-branches") ||
+            Settings_handle::st.is("truncate-branches") ||
+            Settings_handle::st.is("fixed-branches") )
+        {
+            cout << "modified guide tree: " << root->print_tree()<<endl;
         }
     }
 
     if(Settings_handle::st.is("mpost-graph-file")){
         root->write_sequence_graphs();
     }
+
 }
 /*
 

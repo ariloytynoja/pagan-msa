@@ -19,7 +19,8 @@ SOURCES += main.cpp \
     main/sequence.cpp \
     main/simple_alignment.cpp \
     utils/int_matrix.cpp \
-    utils/settings_handle.cpp
+    utils/settings_handle.cpp \
+    utils/xml_writer.cpp
 HEADERS += utils/text_utils.h \
     utils/settings.h \
     utils/node.h \
@@ -34,7 +35,8 @@ HEADERS += utils/text_utils.h \
     main/simple_alignment.h \
     utils/int_matrix.h \
     utils/fasta_entry.h \
-    utils/settings_handle.h
+    utils/settings_handle.h \
+    utils/xml_writer.h
 LIBS += -lboost_program_options
 INCLUDEPATH += /usr/include/boost
 OTHER_FILES += missing_things.txt

@@ -34,6 +34,13 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("dna-rho", po::value<float>(), "rho")
     ;
 
+    boost::program_options::options_description tree_edit("Tree manipulation options");
+    tree_edit.add_options()
+        ("scale-branches", po::value<float>(), "scale tree branches")
+        ("truncate-branches", po::value<float>(), "truncate tree branches")
+        ("fixed-branches", po::value<float>(), "use fixed-length tree branches")
+    ;
+
     boost::program_options::options_description alignment("Alignment model options");
     alignment.add_options()
         ("any-skips-confirm-insertion", po::value<int>(), "number of skips to confirm site as insertion")
@@ -57,7 +64,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("check-valid-graphs", "check that fwd and bwd edges are identical")
     ;
 
-    desc.add(generic).add(model).add(alignment).add(graphs).add(debug);
+    desc.add(generic).add(model).add(tree_edit).add(alignment).add(graphs).add(debug);
 
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);

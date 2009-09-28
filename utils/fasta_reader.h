@@ -37,7 +37,7 @@ public:
     void write(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception);
     void write(const string & path, const vector<Fasta_entry> & seqs, bool overwrite=true) const throw (Exception)
     {
-        ofstream output(path.c_str(), overwrite ? (ios::out) : (ios::out|ios::app));
+        ofstream output( (path+".fas").c_str(), overwrite ? (ios::out) : (ios::out|ios::app));
         write(output, seqs);
         output.close();
     }

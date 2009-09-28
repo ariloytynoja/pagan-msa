@@ -27,6 +27,7 @@ class Node
     double dist_to_parent;
     string name;
     string name_comment;
+    string name_id;
 
     Sequence *sequence;
 public:
@@ -38,6 +39,27 @@ public:
     void set_distance_to_parent(double d)
     {
         dist_to_parent = d;
+
+        if( Settings_handle::st.is("scale-branches") || Settings_handle::st.is("truncate-branches")  )
+        {
+            if( Settings_handle::st.is("scale-branches") &&
+                  Settings_handle::st.get("scale-branches").as<float>() > 0 )
+            {
+                dist_to_parent *= Settings_handle::st.get("scale-branches").as<float>();
+            }
+
+            if( Settings_handle::st.is("truncate-branches") &&
+                  Settings_handle::st.get("truncate-branches").as<float>() > 0 &&
+                    dist_to_parent > Settings_handle::st.get("truncate-branches").as<float>() )
+            {
+                dist_to_parent = Settings_handle::st.get("truncate-branches").as<float>();
+            }
+        }
+        else if( Settings_handle::st.is("fixed-branches") )
+        {
+            dist_to_parent = Settings_handle::st.get("fixed-branches").as<float>();
+        }
+
         if(Settings::noise>5) cout<<"node.set_distance_to_parent("<<d<<")\n";
     }
 
@@ -51,7 +73,45 @@ public:
         if(Settings::noise>5) cout<<"node.set_name("<<name<<")\n";
     }
 
+    void set_name_ids(int *count)
+    {
+        if(!leaf)
+        {
+            left_child->set_name_ids(count);
+            right_child->set_name_ids(count);
+        } else {
+            stringstream ss;
+            ss << "seq" << (++*count);
+            this->name_id = ss.str();
+        }
+    }
+
     string get_name() const { return name; }
+
+    string get_name_id() const { return name_id; }
+
+    string get_id_for_name(string query) const
+    {
+        if(this->name == query)
+        {
+            return this->name_id;
+        }
+        else if(!leaf)
+        {
+            string tmp;
+            tmp = left_child->get_id_for_name(query);
+            if(tmp!="")
+                return tmp;
+
+            tmp = right_child->get_id_for_name(query);
+            if(tmp!="")
+                return tmp;
+
+            return "";
+        }
+
+        return "";
+    }
 
     /**************************************/
 
@@ -312,6 +372,33 @@ public:
             return ss.str();
         }
     }
+
+    string print_xml_tree() const {
+        if(!leaf)
+        {
+            stringstream ss;
+            ss<<"("<<left_child->print_xml_subtree()<<","<<right_child->print_xml_subtree()<<")"<<name<<":0;";
+            return ss.str();
+        } else {
+            return "";
+        }
+    }
+
+    /************************************/
+
+    string print_xml_subtree() const {
+        if(!leaf)
+        {
+            stringstream ss;
+            ss<<"("<<left_child->print_xml_subtree()<<","<<right_child->print_xml_subtree()<<")"<<name<<":"<<dist_to_parent;
+            return ss.str();
+        } else {
+            stringstream ss;
+            ss<<name_id<<":"<<dist_to_parent;
+            return ss.str();
+        }
+    }
+
 
     void write_sequence_graphs(bool overwrite=true) const throw (Exception)
     {
