@@ -106,8 +106,9 @@ class Simple_alignment
     void initialise_array_corner();
     void initialise_array_corner_bwd();
 
-    void find_best_transition(int i,int j);
+    void compute_fwd_viterbi_path(int i,int j);
     void compute_bwd_full_score(int i,int j);
+    void compute_posterior_score(int i,int j,double full_score);
 
     void backtrack_new_path(vector<Path_pointer> *path,Path_pointer pp);
     void build_ancestral_sequence(vector<Path_pointer> *path);
@@ -135,6 +136,18 @@ class Simple_alignment
     void iterate_fwd_edges_for_match(Site * left_site,Site * right_site,
                                      Matrix_pointer *max_x,Matrix_pointer *max_y,Matrix_pointer *max_m);
 
+    /*********************************/
+
+    void iterate_bwd_edges_for_sampled_end_corner(Site * left_site,Site * right_site,Matrix_pointer *sample);
+
+    void add_sample_m_match(Edge * left_edge,Edge * right_edge,vector<Matrix_pointer> *bwd_pointers,double *sum_score,double m_match = 0);
+    void add_sample_x_match(Edge * left_edge,Edge * right_edge,vector<Matrix_pointer> *bwd_pointers,double *sum_score,double x_match = 0);
+    void add_sample_y_match(Edge * left_edge,Edge * right_edge,vector<Matrix_pointer> *bwd_pointers,double *sum_score,double y_match = 0);
+
+    void add_sample_gap_ext(Edge * edge,align_slice *z_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix);
+    void add_sample_gap_double(Edge * edge,align_slice *z_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix);
+    void add_sample_gap_open(Edge * edge,align_slice *m_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix);
+    void add_sample_gap_close(Edge * edge,align_slice *z_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix);
 
     /*********************************/
 
@@ -311,8 +324,8 @@ class Simple_alignment
     }
 
     static int plot_number;
-    void plot_posterior_probabilities_up(Matrix_pointer max_end);
-    void plot_posterior_probabilities_down(Matrix_pointer max_end);
+    void plot_posterior_probabilities_up();
+    void plot_posterior_probabilities_down();
 
     void print_matrices();
     void print_sequences(vector<Site> *sites);

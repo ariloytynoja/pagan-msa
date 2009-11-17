@@ -60,24 +60,44 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
     int j_max = match->shape()[1];
     int i_max = match->shape()[0];
 
+    Site * left_site = left->get_site_at(i_max);
+    Site * right_site = right->get_site_at(j_max);
+
+
+
     // Dynamic programming loop
+    // Note that fwd full probability is integrated in
+    // the main dp loop but bwd comutation is done separately
     //
     for(int j=0;j<j_max;j++)
     {
         for(int i=0;i<i_max;i++)
         {
-            this->find_best_transition(i,j);
+            this->compute_fwd_viterbi_path(i,j);
         }
     }
 
     if(Settings::noise>1)
         cout<<"Simple_alignment: matrix filled\n";
 
+
+
+    // Find the incoming edge in the end corner
+    //
+    Matrix_pointer max_end;
+    this->iterate_bwd_edges_for_end_corner(left_site,right_site,&max_end);
+
+    if(Settings::noise>1)
+        cout<<"Simple_alignment: corner found\n";
+
+
+
+    // If needed, compute the bwd posterior probabilities
+    //
     if(compute_full_score)
     {
         this->initialise_array_corner_bwd();
 
-        // do the same loop backwards to compute the full probability
         for(int j=j_max-1;j>=0;j--)
         {
             for(int i=i_max-1;i>=0;i--)
@@ -85,40 +105,42 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
                 this->compute_bwd_full_score(i,j);
             }
         }
-    }
 
-    // It is more convenient to build the sequence forward;
-    // thus, backtrace the path into a vector and use that in the next step
-    //
-    Site * left_site = left->get_site_at(i_max);
-    Site * right_site = right->get_site_at(j_max);
-
-    Matrix_pointer max_end;
-    this->iterate_bwd_edges_for_end_corner(left_site,right_site,&max_end);
-
-    if(Settings::noise>1)
-        cout<<"Simple_alignment: corner found\n";
-
-    Matrix_pointer max_start;
-    if(compute_full_score)
-    {
-        max_start = (*match)[0][0];
+        // Check that full probability computation worked
+        //
+        Matrix_pointer max_start = (*match)[0][0];
 
         if(Settings::noise>1)
         {
             cout<<" bwd full probability: "<<setprecision(8)<<log(max_start.bwd_score)<<" ["<<max_start.bwd_score<<"]"<<setprecision(4)<<endl; /*DEBUG*/
         }
-    
+
         double ratio = max_end.full_score/max_start.bwd_score;
 
         if(Settings::noise>0 && (ratio<0.99 || ratio>1.01))
         {
             cout<<"Problem in computation? fwd: "<<max_end.full_score<<", bwd: "<<max_start.bwd_score<<endl;
         }
+
+        double full_score = max_end.full_score;
+
+        for(int j=j_max-1;j>=0;j--)
+        {
+            for(int i=i_max-1;i>=0;i--)
+            {
+                this->compute_posterior_score(i,j,full_score);
+            }
+        }
+
     }
 
-    Path_pointer pp(max_end,true);
 
+
+
+    // It is more convenient to build the sequence forward;
+    // thus, backtrace the path into a vector ('path') and use that in the next step
+    //
+    Path_pointer pp(max_end,true);
     this->backtrack_new_path(&path,pp);
 
     if(Settings::noise>1)
@@ -126,22 +148,38 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
 
 
     // Now build the sequence forward following the path saved in a vector;
-    // This doesn't copy the edges in the child sequences; they may need
-    // extra information (e.g., brach length) and need to be done later
-
+    //
     this->build_ancestral_sequence(&path);
 
     if(Settings::noise>1)
         cout<<"Simple_alignment: sequence built\n";
 
+
+    // Find the incoming edge in the end corner
+    //
+    if( compute_full_score && Settings_handle::st.is("sample-paths") )
+    {
+        int iter = Settings_handle::st.get("sample-paths").as<int>();
+        for(int i=0;i<iter;i++)
+        {
+            Matrix_pointer sample_end;
+            this->iterate_bwd_edges_for_sampled_end_corner(left_site,right_site,&sample_end);
+
+        }
+    }
+
+
+    // Make the posterior probability plots
+    //
     if(Settings_handle::st.is("mpost-posterior-plot-file") &&
        Settings_handle::st.is("full-probability") )
     {
         if(Settings_handle::st.is("plot-slope-up") )
-            this->plot_posterior_probabilities_up(max_end);
+            this->plot_posterior_probabilities_up();
         else
-            this->plot_posterior_probabilities_down(max_end);
+            this->plot_posterior_probabilities_down();
     }
+
 }
 
 
@@ -277,7 +315,7 @@ void Simple_alignment::initialise_array_corner_bwd()
 
 }
 
-void Simple_alignment::find_best_transition(int i,int j)
+void Simple_alignment::compute_fwd_viterbi_path(int i,int j)
 {
     if(i==0 && j==0)
         return;
@@ -407,6 +445,14 @@ void Simple_alignment::compute_bwd_full_score(int i,int j)
         this->iterate_fwd_edges_for_match(left_site,right_site,max_x,max_y,max_m);
 
     }
+}
+
+
+void Simple_alignment::compute_posterior_score(int i,int j,double full_score)
+{
+    (*match)[i][j].full_score = (*match)[i][j].full_score * (*match)[i][j].bwd_score / full_score;
+    (*xgap)[i][j].full_score = (*xgap)[i][j].full_score * (*xgap)[i][j].bwd_score / full_score;
+    (*ygap)[i][j].full_score = (*ygap)[i][j].full_score * (*ygap)[i][j].bwd_score / full_score;
 }
 
 /********************************************/
@@ -1265,6 +1311,271 @@ void Simple_alignment::iterate_bwd_edges_for_end_corner(Site * left_site,Site * 
     }
 }
 
+/********************************************/
+
+/* from here */
+
+
+/********************************************/
+void Simple_alignment::add_sample_m_match(Edge * left_edge,Edge * right_edge,vector<Matrix_pointer> *bwd_pointers,double *sum_score,double m_match)
+{
+    int left_prev_index = left_edge->get_start_site_index();
+    int right_prev_index = right_edge->get_start_site_index();
+
+    double this_score =   (*match)[left_prev_index][right_prev_index].full_score * m_match
+                               * this->get_edge_weight(left_edge) * this->get_edge_weight(right_edge);
+
+    Matrix_pointer bwd_p;
+    bwd_p.score = this_score;
+    bwd_p.x_ind = left_prev_index;
+    bwd_p.y_ind = right_prev_index;
+    bwd_p.x_edge_ind = left_edge->get_index();
+    bwd_p.y_edge_ind = right_edge->get_index();
+    bwd_p.matrix = Simple_alignment::m_mat;
+
+    (*sum_score)  += this_score;
+    bwd_pointers->push_back( bwd_p );
+
+}
+
+void Simple_alignment::add_sample_x_match(Edge * left_edge,Edge * right_edge,vector<Matrix_pointer> *bwd_pointers,double *sum_score,double x_match)
+{
+    int left_prev_index = left_edge->get_start_site_index();
+    int right_prev_index = right_edge->get_start_site_index();
+
+    double this_score =   (*xgap)[left_prev_index][right_prev_index].full_score * x_match
+                               * this->get_edge_weight(left_edge) * this->get_edge_weight(right_edge);
+
+    Matrix_pointer bwd_p;
+    bwd_p.score = this_score;
+    bwd_p.x_ind = left_prev_index;
+    bwd_p.y_ind = right_prev_index;
+    bwd_p.x_edge_ind = left_edge->get_index();
+    bwd_p.y_edge_ind = right_edge->get_index();
+    bwd_p.matrix = Simple_alignment::x_mat;
+
+    (*sum_score)  += this_score;
+    bwd_pointers->push_back( bwd_p );
+}
+
+void Simple_alignment::add_sample_y_match(Edge * left_edge,Edge * right_edge,vector<Matrix_pointer> *bwd_pointers,double *sum_score,double y_match)
+{
+    int left_prev_index = left_edge->get_start_site_index();
+    int right_prev_index = right_edge->get_start_site_index();
+
+    double this_score =   (*ygap)[left_prev_index][right_prev_index].full_score * y_match
+                               * this->get_edge_weight(left_edge) * this->get_edge_weight(right_edge);
+
+    Matrix_pointer bwd_p;
+    bwd_p.score = this_score;
+    bwd_p.x_ind = left_prev_index;
+    bwd_p.y_ind = right_prev_index;
+    bwd_p.x_edge_ind = left_edge->get_index();
+    bwd_p.y_edge_ind = right_edge->get_index();
+    bwd_p.matrix = Simple_alignment::y_mat;
+
+    (*sum_score)  += this_score;
+    bwd_pointers->push_back( bwd_p );
+}
+
+/************************************************/
+
+void Simple_alignment::add_sample_gap_ext(Edge * edge,align_slice *z_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix)
+{
+    int prev_index = edge->get_start_site_index();
+
+    double this_score =  (*z_slice)[prev_index].full_score * model->gap_ext() * this->get_edge_weight(edge);
+
+    Matrix_pointer bwd_p;
+    bwd_p.score = this_score;
+
+    if(is_x_matrix)
+    {
+        bwd_p.matrix = Simple_alignment::x_mat;
+        bwd_p.x_ind = prev_index;
+        bwd_p.x_edge_ind = edge->get_index();
+    }
+    else
+    {
+        bwd_p.matrix = Simple_alignment::y_mat;
+        bwd_p.y_ind = prev_index;
+        bwd_p.y_edge_ind = edge->get_index();
+    }
+
+    (*sum_score)  += this_score;
+    bwd_pointers->push_back( bwd_p );
+}
+
+void Simple_alignment::add_sample_gap_double(Edge * edge,align_slice *w_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix)
+{
+    int prev_index = edge->get_start_site_index();
+
+    double this_score =  (*w_slice)[prev_index].full_score * model->gap_close() * model->gap_open() * this->get_edge_weight(edge);
+
+    Matrix_pointer bwd_p;
+    bwd_p.score = this_score;
+
+    if(is_x_matrix)
+    {
+        bwd_p.matrix = Simple_alignment::x_mat;
+        bwd_p.x_ind = prev_index;
+        bwd_p.x_edge_ind = edge->get_index();
+    }
+    else
+    {
+        bwd_p.matrix = Simple_alignment::y_mat;
+        bwd_p.y_ind = prev_index;
+        bwd_p.y_edge_ind = edge->get_index();
+    }
+
+    (*sum_score)  += this_score;
+    bwd_pointers->push_back( bwd_p );
+
+}
+
+void Simple_alignment::add_sample_gap_open(Edge * edge,align_slice *m_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix)
+{
+    int prev_index = edge->get_start_site_index();
+
+    double this_score =  (*m_slice)[prev_index].full_score * model->non_gap() * model->gap_open() * this->get_edge_weight(edge);
+
+    Matrix_pointer bwd_p;
+    bwd_p.score = this_score;
+
+    if(is_x_matrix)
+    {
+        bwd_p.matrix = Simple_alignment::x_mat;
+        bwd_p.x_ind = prev_index;
+        bwd_p.x_edge_ind = edge->get_index();
+    }
+    else
+    {
+        bwd_p.matrix = Simple_alignment::y_mat;
+        bwd_p.y_ind = prev_index;
+        bwd_p.y_edge_ind = edge->get_index();
+    }
+
+    (*sum_score)  += this_score;
+    bwd_pointers->push_back( bwd_p );
+
+}
+
+void Simple_alignment::add_sample_gap_close(Edge * edge,align_slice *z_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix)
+{
+    int prev_index = edge->get_start_site_index();
+
+    double this_score =  (*z_slice)[prev_index].full_score * model->gap_close() * this->get_edge_weight(edge);
+
+    Matrix_pointer bwd_p;
+    bwd_p.score = this_score;
+
+    if(is_x_matrix)
+    {
+        bwd_p.matrix = Simple_alignment::x_mat;
+        bwd_p.x_ind = prev_index;
+        bwd_p.x_edge_ind = edge->get_index();
+    }
+    else
+    {
+        bwd_p.matrix = Simple_alignment::y_mat;
+        bwd_p.y_ind = prev_index;
+        bwd_p.y_edge_ind = edge->get_index();
+    }
+
+    (*sum_score)  += this_score;
+    bwd_pointers->push_back( bwd_p );
+
+}
+
+
+/********************************************/
+
+
+
+/* until here */
+
+void Simple_alignment::iterate_bwd_edges_for_sampled_end_corner(Site * left_site,Site * right_site,Matrix_pointer *end_p)
+{
+
+    ///
+    if(left_site->has_bwd_edge() && right_site->has_bwd_edge())
+    {
+
+        Edge * left_edge = left_site->get_first_bwd_edge();
+        Edge * right_edge = right_site->get_first_bwd_edge();
+
+        vector<Matrix_pointer> bwd_pointers;
+        double sum_score = 0;
+
+
+        // match score & gap close scores for this match
+        //
+        double m_match = model->non_gap();
+
+        this->add_sample_m_match(left_edge,right_edge,&bwd_pointers,&sum_score,m_match);
+
+        align_slice x_slice = (*xgap)[ indices[ range( 0,xgap->shape()[0] ) ][xgap->shape()[1]-1] ];
+        this->add_sample_gap_close(left_edge,&x_slice,&bwd_pointers,&sum_score,true);
+
+        align_slice y_slice = (*ygap)[ indices[ygap->shape()[0]-1][ range( 0,ygap->shape()[1] ) ] ];
+        this->add_sample_gap_close(right_edge,&y_slice,&bwd_pointers,&sum_score,false);
+
+
+        // first right site extra edges
+        //
+        while(right_site->has_next_bwd_edge())
+        {
+            right_edge = right_site->get_next_bwd_edge();
+            left_edge = left_site->get_first_bwd_edge();
+
+            this->add_sample_m_match(left_edge,right_edge,&bwd_pointers,&sum_score,m_match);
+
+            align_slice y_slice = (*ygap)[ indices[ygap->shape()[0]-1][ range( 0,ygap->shape()[1] ) ] ];
+            this->add_sample_gap_close(right_edge,&y_slice,&bwd_pointers,&sum_score,false);
+
+        }
+
+        // left site extra edges then
+        //
+        while(left_site->has_next_bwd_edge())
+        {
+            left_edge = left_site->get_next_bwd_edge();
+            right_edge = right_site->get_first_bwd_edge();
+
+            this->add_sample_m_match(left_edge,right_edge,&bwd_pointers,&sum_score,m_match);
+
+            align_slice x_slice = (*xgap)[ indices[ range( 0,xgap->shape()[0] ) ][xgap->shape()[1]-1] ];
+            this->add_sample_gap_close(left_edge,&x_slice,&bwd_pointers,&sum_score,true);
+
+
+            while(right_site->has_next_bwd_edge())
+            {
+
+                right_edge = right_site->get_next_bwd_edge();
+
+                this->add_sample_m_match(left_edge,right_edge,&bwd_pointers,&sum_score,m_match);
+
+                align_slice y_slice = (*ygap)[ indices[ygap->shape()[0]-1][ range( 0,ygap->shape()[1] ) ] ];
+                this->add_sample_gap_close(right_edge,&y_slice,&bwd_pointers,&sum_score,false);
+
+            }
+        }
+
+        cout<<"sum: "<<sum_score<<endl;
+        for(int i=0;i<bwd_pointers.size();i++)
+        {
+            cout<<i<<" "<<bwd_pointers.at(i).score<<endl;
+        }
+    }
+
+    ///
+
+
+    if(Settings::noise>1)
+    {
+    }
+}
+
 
 /********************************************/
 
@@ -1629,7 +1940,7 @@ void Simple_alignment::score_gap_open_bwd(Edge *edge,align_slice *m_slice,Matrix
 /********************************************/
 int Simple_alignment::plot_number = 1;
 
-void Simple_alignment::plot_posterior_probabilities_down(Matrix_pointer max_end)
+void Simple_alignment::plot_posterior_probabilities_down()
 {
     string file = Settings_handle::st.get("mpost-posterior-plot-file").as<string>();
 
@@ -1655,7 +1966,7 @@ void Simple_alignment::plot_posterior_probabilities_down(Matrix_pointer max_end)
         for(unsigned int i=1;i<match->shape()[0];i++)
         {
             if((*match)[i][j].full_score>0){
-                int score = int(abs(log((*match)[i][j].full_score*(*match)[i][j].bwd_score/max_end.full_score)));
+                int score = int( abs( log( (*match)[i][j].full_score ) ) );
                 float red = 1;
 
                 float green = score*7;
@@ -1856,7 +2167,7 @@ void Simple_alignment::plot_posterior_probabilities_down(Matrix_pointer max_end)
     Simple_alignment::plot_number += 1;
 }
 
-void Simple_alignment::plot_posterior_probabilities_up(Matrix_pointer max_end)
+void Simple_alignment::plot_posterior_probabilities_up()
 {
     string file = Settings_handle::st.get("mpost-posterior-plot-file").as<string>();
 
@@ -1882,7 +2193,7 @@ void Simple_alignment::plot_posterior_probabilities_up(Matrix_pointer max_end)
         for(unsigned int i=1;i<match->shape()[0];i++)
         {
             if((*match)[i][j].full_score>0){
-                int score = int(abs(log((*match)[i][j].full_score*(*match)[i][j].bwd_score/max_end.full_score)));
+                int score = int( abs( log( (*match)[i][j].full_score ) ) );
                 float red = 1;
 
                 float green = score*7;
@@ -2080,17 +2391,6 @@ void Simple_alignment::plot_posterior_probabilities_up(Matrix_pointer max_end)
 
     output2.close();
 
-//        for(unsigned int j=1;j<match->shape()[1];j++)
-//        {
-//            for(unsigned int i=1;i<match->shape()[0];i++)
-//            {
-//                cout<<setw(8)<<log((*match)[i][j].full_score*(*match)[i][j].bwd_score/max_end.full_score);
-//                if(i+1<match->shape()[0])
-//                    cout<<",";
-//            }
-//            cout<<endl;
-//        }
-//        cout<<endl;
     Simple_alignment::plot_number += 1;
 }
 
