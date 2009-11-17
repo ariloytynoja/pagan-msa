@@ -195,6 +195,11 @@ public:
 
     /************************************/
 
+    /*
+     * Note on graphical output: posterior plots have to written *during* the alignment
+     * as the dynamic programming matrices aren't stored for later use.
+     * In contrast, sequence graphs exist till the very end.
+     */
     void start_alignment(Model_factory *mf)
     {
         if(Settings_handle::st.is("mpost-posterior-plot-file"))

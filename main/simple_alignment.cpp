@@ -137,7 +137,10 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
     if(Settings_handle::st.is("mpost-posterior-plot-file") &&
        Settings_handle::st.is("full-probability") )
     {
-        this->plot_posterior_probabilities(max_end);
+        if(Settings_handle::st.is("plot-slope-up") )
+            this->plot_posterior_probabilities_up(max_end);
+        else
+            this->plot_posterior_probabilities_down(max_end);
     }
 }
 
@@ -830,7 +833,7 @@ void Simple_alignment::check_skipped_boundaries()
 
             Site *psite = &sites->at( edge->get_start_site_index() );
 
-            if( psite->get_path_state()==Site::matched
+            if( ( psite->get_path_state()==Site::matched || psite->get_path_state()==Site::start_site )
                 && ( tsite->get_path_state()==Site::xskipped || tsite->get_path_state()==Site::yskipped ) )
             {
                 edge->increase_branch_count_as_skipped_edge();
@@ -851,7 +854,7 @@ void Simple_alignment::check_skipped_boundaries()
             Site *nsite = &sites->at( edge->get_end_site_index() );
 
             if( ( tsite->get_path_state()==Site::xskipped || tsite->get_path_state()==Site::yskipped )
-                && nsite->get_path_state()==Site::matched )
+                && ( nsite->get_path_state()==Site::matched || nsite->get_path_state()==Site::ends_site ) )
             {
                 edge->increase_branch_count_as_skipped_edge();
             }
@@ -880,12 +883,14 @@ void Simple_alignment::check_skipped_boundaries()
                         edge = another;
                 }
                 if(edge->get_branch_count_as_skipped_edge()>max_allowed_match_skip_branches)
+                {
                     skip_start = i;
-
+                }
             }
 
             non_skipped = false;
         }
+
         if(!non_skipped && skip_start>=0 && tstate == Site::matched)
         {
 
@@ -894,15 +899,24 @@ void Simple_alignment::check_skipped_boundaries()
             {
                 Edge *edge = tsite->get_first_bwd_edge();
 
-                while( tsite->has_next_bwd_edge() )
-                {
-                    Edge *another = tsite->get_next_bwd_edge();
-                    if( another->get_start_site_index() < edge->get_start_site_index() )
-                        edge = another;
-                }
-
                 if(edge->get_branch_count_as_skipped_edge()>max_allowed_match_skip_branches)
                     edge_ind = edge->get_index();
+
+                while( tsite->has_next_bwd_edge() )
+                {
+                    edge = tsite->get_next_bwd_edge();
+
+                    if(edge->get_branch_count_as_skipped_edge()>max_allowed_match_skip_branches)
+                        edge_ind = edge->get_index();
+
+//                    Edge *another = tsite->get_next_bwd_edge();
+
+//                    if( another->get_start_site_index() < edge->get_start_site_index() )
+//                        edge = another;
+                }
+
+//                if(edge->get_branch_count_as_skipped_edge()>max_allowed_match_skip_branches)
+//                    edge_ind = edge->get_index();
 
             }
 
@@ -933,8 +947,9 @@ void Simple_alignment::delete_edge_range(int edge_ind,int skip_start_site)
     int this_site_index = edge->get_start_site_index();
 
     // if not the start of the range, delete further
-    if(this_site_index >= skip_start_site)
+    while(this_site_index >= skip_start_site)
     {
+//        cout<<"delete this: "<<this_site_index<<" ("<<skip_start_site<<")\n";
         ancestral_sequence->delete_all_bwd_edges_at_site(this_site_index);
         ancestral_sequence->delete_all_fwd_edges_at_site(this_site_index);
         --this_site_index;
@@ -1614,7 +1629,234 @@ void Simple_alignment::score_gap_open_bwd(Edge *edge,align_slice *m_slice,Matrix
 /********************************************/
 int Simple_alignment::plot_number = 1;
 
-void Simple_alignment::plot_posterior_probabilities(Matrix_pointer max_end)
+void Simple_alignment::plot_posterior_probabilities_down(Matrix_pointer max_end)
+{
+    string file = Settings_handle::st.get("mpost-posterior-plot-file").as<string>();
+
+    string path = file;
+    path.append(".mp");
+
+    string path2 = file;
+    path2.append(".tex");
+
+    ofstream output(path.c_str(), (ios::out|ios::app));
+    if (! output) { throw IOException ("Simple_alignment::plot_posterior_probabilities. Failed to open file"); }
+
+    ofstream output2(path2.c_str(), (ios::out|ios::app));
+    if (! output2) { throw IOException ("Simple_alignment::plot_posterior_probabilities. Failed to open file"); }
+
+    output<<"beginfig("<<plot_number<<");\n"
+            "u := 1mm;\ndefaultscale := 1.5pt/fontsize(defaultfont);\n"
+            "path l[]; path r[]; path sqr; sqr := unitsquare scaled u;\n"
+            "pickup pencircle scaled 0.1; labeloffset := 1bp; \n";
+
+    for(unsigned int j=1;j<match->shape()[1];j++)
+    {
+        for(unsigned int i=1;i<match->shape()[0];i++)
+        {
+            if((*match)[i][j].full_score>0){
+                int score = int(abs(log((*match)[i][j].full_score*(*match)[i][j].bwd_score/max_end.full_score)));
+                float red = 1;
+
+                float green = score*7;
+                if(green>255) green = 255;
+                green /= 255;
+
+                float blue = (score-39)*7;
+                if(blue<0) blue = 0;
+                if(blue>255) blue = 255;
+                blue /= 255;
+
+                output<<"fill sqr shifted ("<<i<<"*u,-"<<j<<"*u)\n";
+                output<<"withcolor ("<<red<<","<<green<<","<<blue<<");\n";
+            }
+            output<<"draw sqr shifted ("<<i<<"*u,-"<<j<<"*u);\n";
+
+        }
+    }
+
+    output<<"label.lft(\"#"<<plot_number<<"#\" infont defaultfont scaled 0.2,(0mm,1.5mm));\n";
+
+    vector<Site> *left_sites = left->get_sites();
+    vector<Site> *right_sites = right->get_sites();
+    string full_alphabet = left->get_full_alphabet();
+
+    for(unsigned int i=0;i<left_sites->size();i++)
+    {
+        Site *tsite =  &left_sites->at(i);
+
+        char c = 's';
+        if(tsite->get_site_type()==Site::real_site)
+            c = full_alphabet.at(tsite->get_state());
+        else if(tsite->get_site_type()==Site::stop_site)
+            c = 'e';
+
+        string color = Node::get_node_fill_color(c);
+        if(tsite->get_branch_count_since_last_used()>0)
+            color = "0.5white";
+
+        output<<"l"<<i<<" = circle"<<"(("<<0.5+i<<"mm,1.5mm),\""<<c<<"\","<<color<<");\n";
+    }
+
+    for(unsigned int i=1;i<left_sites->size();i++)
+    {
+        Site *tsite =  &left_sites->at(i);
+
+        if(tsite->has_bwd_edge())
+        {
+            Edge *tedge = tsite->get_first_bwd_edge();
+            int start = tedge->get_start_site_index();
+            int stop  = tedge->get_end_site_index();
+
+            int angle = 0;
+            string place = "edgetop";
+            if(start+1==stop)
+                place = "edgebot";
+            else if(start+2==stop)
+                angle = 45;
+            else if(start+3==stop)
+                angle = 35;
+            else if(start+4<=stop)
+                angle = 25;
+
+            stringstream label;
+            if(tedge->get_branch_count_since_last_used()>0)
+                label<<"["<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+
+            output<<place<<"(l"<<start<<",l"<<stop<<","<<angle<<",\""<<label.str()<<"\",0.5);\n";
+
+            while(tsite->has_next_bwd_edge())
+            {
+                tedge = tsite->get_next_bwd_edge();
+                start = tedge->get_start_site_index();
+                stop  = tedge->get_end_site_index();
+
+                angle = 0;
+                place = "edgetop";
+                if(start+1==stop)
+                    place = "edgebot";
+                else if(start+2==stop)
+                    angle = 45;
+                else if(start+3==stop)
+                    angle = 35;
+                else if(start+4<=stop)
+                    angle = 25;
+
+                label.str("");
+
+                if(tedge->get_branch_count_since_last_used()>0)
+                    label<<"["<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+
+                output<<place<<"(l"<<start<<",l"<<stop<<","<<angle<<",\""<<label.str()<<"\",0.5);\n";
+
+            }
+        }
+    }
+
+    for(unsigned int i=0;i<right_sites->size();i++)
+    {
+        Site *tsite =  &right_sites->at(i);
+
+        char c = 's';
+        if(tsite->get_site_type()==Site::real_site)
+            c = full_alphabet.at(tsite->get_state());
+        else if(tsite->get_site_type()==Site::stop_site)
+            c = 'e';
+
+        string color = Node::get_node_fill_color(c);
+        if(tsite->get_branch_count_since_last_used()>0)
+            color = "0.5white";
+
+        output<<"r"<<i<<" = circle"<<"((-0.5mm,"<<0.5-i<<"mm),\""<<c<<"\","<<color<<");\n";
+    }
+
+    for(unsigned int i=1;i<right_sites->size();i++)
+    {
+        Site *tsite =  &right_sites->at(i);
+
+        if(tsite->has_bwd_edge())
+        {
+            Edge *tedge = tsite->get_first_bwd_edge();
+            int start = tedge->get_start_site_index();
+            int stop  = tedge->get_end_site_index();
+
+            int angle = 270;
+            string place = "edgelft";
+            if(start+1==stop)
+                place = "edgergt";
+            else if(start+2==stop)
+                angle = 225;
+            else if(start+3==stop)
+                angle = 235;
+            else if(start+4<=stop)
+                angle = 245;
+
+            stringstream label;
+            if(tedge->get_branch_count_since_last_used()>0)
+                label<<"["<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+
+            output<<place<<"(r"<<start<<",r"<<stop<<","<<angle<<",\""<<label.str()<<"\",0.5);\n";
+
+            while(tsite->has_next_bwd_edge())
+            {
+                tedge = tsite->get_next_bwd_edge();
+                start = tedge->get_start_site_index();
+                stop  = tedge->get_end_site_index();
+
+                angle = 270;
+                place = "edgelft";
+                if(start+1==stop)
+                    place = "edgergt";
+                else if(start+2==stop)
+                    angle = 225;
+                else if(start+3==stop)
+                    angle = 235;
+                else if(start+4<=stop)
+                    angle = 245;
+
+                label.str("");
+
+                if(tedge->get_branch_count_since_last_used()>0)
+                    label<<"["<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+
+                output<<place<<"(r"<<start<<",r"<<stop<<","<<angle<<",\""<<label.str()<<"\",0.5);\n";
+
+            }
+        }
+    }
+
+    vector<Site> *sites = ancestral_sequence->get_sites();
+
+    for(unsigned int i=0;i<sites->size();i++)
+    {
+        Site *tsite = &sites->at(i);
+
+        if(tsite->get_site_type()==Site::real_site)
+        {
+
+            Site_children *offspring = sites->at(i).get_children();
+            int lc = offspring->left_index;
+            int rc = offspring->right_index;
+
+            if(lc>=0 && rc>=0)
+            {
+                output<<"draw sqr shifted ("<<lc<<"*u,-"<<rc<<"*u) withcolor (0,0,1) withpen pencircle scaled 0.5;\n";
+            }
+        }
+    }
+
+    output<<"endfig;\n";
+    output.close();
+
+    output2<<"\\includegraphics[width=0.9\\columnwidth]{"<<file<<"."<<plot_number<<"}\n\n\\bigskip\n";
+    output2<<"~\n\n\\bigskip\n";
+
+    output2.close();
+
+    Simple_alignment::plot_number += 1;
+}
+
+void Simple_alignment::plot_posterior_probabilities_up(Matrix_pointer max_end)
 {
     string file = Settings_handle::st.get("mpost-posterior-plot-file").as<string>();
 

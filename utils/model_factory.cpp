@@ -4,6 +4,7 @@
 #include <vector>
 #include "model_factory.h"
 #include "settings.h"
+#include "settings_handle.h"
 #include "eigen.h"
 
 using namespace ppa;
@@ -462,13 +463,21 @@ Dna_model Model_factory::dna_alignment_model(double distance)
     Db_matrix *dna_ambiguity = new Db_matrix(4,dna_fas);
     dna_ambiguity->initialise(0);
 
+    float ambiguity_factor = 1.0;
+    if( Settings_handle::st.is("ambiguity-factor") )
+        ambiguity_factor = Settings_handle::st.get("ambiguity-factor").as<float>();
+    if( ambiguity_factor > 1.0 || ambiguity_factor < 0 )
+        ambiguity_factor = 1.0;
+
     for(unsigned int ai=0;ai<dna_letters.size();ai++)
     {
         Dna_symbol a = dna_letters.at(ai);
 
+        float probability = pow(ambiguity_factor, a.n_bases);
+
         for(int aj=0;aj<a.n_bases;aj++){
             int at = dna_alphabet.find(a.bases.at(aj));
-            dna_ambiguity->s(1.0, at, ai);
+            dna_ambiguity->s(probability, at, ai);
         }
     }
 

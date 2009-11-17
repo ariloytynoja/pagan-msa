@@ -311,7 +311,8 @@ class Simple_alignment
     }
 
     static int plot_number;
-    void plot_posterior_probabilities(Matrix_pointer max_end);
+    void plot_posterior_probabilities_up(Matrix_pointer max_end);
+    void plot_posterior_probabilities_down(Matrix_pointer max_end);
 
     void print_matrices();
     void print_sequences(vector<Site> *sites);

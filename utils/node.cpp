@@ -375,16 +375,26 @@ void Node::write_metapost_alignment_graph(ostream *output, ostream *output2, int
                 int start = tedge->get_start_site_index();
                 int stop  = tedge->get_end_site_index();
 
+//                int angle = 0;
+//                string place = "edgebot";
+//                if(start+1==stop)
+//                    place = "edgetop";
+//                else if(start+2==stop)
+//                    angle = 320;
+//                else if(start+3==stop)
+//                    angle = 330;
+//                else if(start+4<=stop)
+//                    angle = 340;
                 int angle = 0;
-                string place = "edgebot";
+                string place = "edgetop";
                 if(start+1==stop)
-                    place = "edgetop";
+                    place = "edgebot";
                 else if(start+2==stop)
-                    angle = 320;
+                    angle = 40;
                 else if(start+3==stop)
-                    angle = 330;
+                    angle = 30;
                 else if(start+4<=stop)
-                    angle = 340;
+                    angle = 20;
 
                 start = right_child_index.at( start );
                 stop  = right_child_index.at( stop );
@@ -401,16 +411,26 @@ void Node::write_metapost_alignment_graph(ostream *output, ostream *output2, int
                     start = tedge->get_start_site_index();
                     stop  = tedge->get_end_site_index();
 
+//                    angle = 0;
+//                    place = "edgebot";
+//                    if(start+1==stop)
+//                        place = "edgetop";
+//                    else if(start+2==stop)
+//                        angle = 320;
+//                    else if(start+3==stop)
+//                        angle = 330;
+//                    else if(start+4<=stop)
+//                        angle = 340;
                     angle = 0;
-                    place = "edgebot";
+                    place = "edgetop";
                     if(start+1==stop)
-                        place = "edgetop";
+                        place = "edgebot";
                     else if(start+2==stop)
-                        angle = 320;
+                        angle = 40;
                     else if(start+3==stop)
-                        angle = 330;
+                        angle = 30;
                     else if(start+4<=stop)
-                        angle = 340;
+                        angle = 20;
 
                     start = right_child_index.at( start );
                     stop  = right_child_index.at( stop );

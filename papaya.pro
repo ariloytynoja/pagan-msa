@@ -37,6 +37,6 @@ HEADERS += utils/text_utils.h \
     utils/fasta_entry.h \
     utils/settings_handle.h \
     utils/xml_writer.h
-LIBS += -lboost_program_options
-INCLUDEPATH += /usr/include/boost
+LIBS += -lboost_program_options-mt
+INCLUDEPATH += /usr/include
 OTHER_FILES += missing_things.txt

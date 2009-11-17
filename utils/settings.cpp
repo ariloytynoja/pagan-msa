@@ -32,6 +32,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("gap-extension", po::value<float>(), "gap extension probability")
         ("dna-kappa", po::value<float>(), "kappa")
         ("dna-rho", po::value<float>(), "rho")
+        ("ambiguity-factor", po::value<float>(), "multiplier for subst. score of ambiguity characters")
     ;
 
     boost::program_options::options_description tree_edit("Tree manipulation options");
@@ -57,6 +58,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("output-alignment-graphs", "include aligned graphs")
         ("output-leaf-graphs", "include terminal sequences")
         ("mpost-posterior-plot-file", po::value<string>(), "posterior plot file for metapost")
+        ("plot-slope-up", "plot viterbi path climbing up")
     ;
 
     boost::program_options::options_description debug("Debugging options");
