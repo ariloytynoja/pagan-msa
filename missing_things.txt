@@ -1,0 +1,12 @@
+%edges for cases where a new follows an existing gap are missing
+prank+F like behaviour; should be default?
+
+add a small penalty for ambiguous characters:
+ p(A,A) > p(A,R)
+ possibly also
+ p(A,R) > p(A,N)
+
+
+maybe it's not right to compute post probs and then weight the edges
+- remove post prob calculation and use fwd + wieghths vs bwd
+  - or there's rounding error; check more accurate log/exp functions (Tim)
