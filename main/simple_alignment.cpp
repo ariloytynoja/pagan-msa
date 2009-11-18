@@ -1501,6 +1501,8 @@ void Simple_alignment::iterate_bwd_edges_for_sampled_end_corner(Site * left_site
     if(left_site->has_bwd_edge() && right_site->has_bwd_edge())
     {
 
+        int i =0;
+
         Edge * left_edge = left_site->get_first_bwd_edge();
         Edge * right_edge = right_site->get_first_bwd_edge();
 
@@ -1513,12 +1515,15 @@ void Simple_alignment::iterate_bwd_edges_for_sampled_end_corner(Site * left_site
         double m_match = model->non_gap();
 
         this->add_sample_m_match(left_edge,right_edge,&bwd_pointers,&sum_score,m_match);
+        cout<<"s: "<<++i<<" "<<sum_score<<endl;
 
         align_slice x_slice = (*xgap)[ indices[ range( 0,xgap->shape()[0] ) ][xgap->shape()[1]-1] ];
         this->add_sample_gap_close(left_edge,&x_slice,&bwd_pointers,&sum_score,true);
+        cout<<"s: "<<++i<<" "<<sum_score<<endl;
 
         align_slice y_slice = (*ygap)[ indices[ygap->shape()[0]-1][ range( 0,ygap->shape()[1] ) ] ];
         this->add_sample_gap_close(right_edge,&y_slice,&bwd_pointers,&sum_score,false);
+        cout<<"s: "<<++i<<" "<<sum_score<<endl;
 
 
         // first right site extra edges
@@ -1529,9 +1534,11 @@ void Simple_alignment::iterate_bwd_edges_for_sampled_end_corner(Site * left_site
             left_edge = left_site->get_first_bwd_edge();
 
             this->add_sample_m_match(left_edge,right_edge,&bwd_pointers,&sum_score,m_match);
+            cout<<"s: "<<++i<<" "<<sum_score<<endl;
 
             align_slice y_slice = (*ygap)[ indices[ygap->shape()[0]-1][ range( 0,ygap->shape()[1] ) ] ];
             this->add_sample_gap_close(right_edge,&y_slice,&bwd_pointers,&sum_score,false);
+            cout<<"s: "<<++i<<" "<<sum_score<<endl;
 
         }
 
@@ -1543,9 +1550,11 @@ void Simple_alignment::iterate_bwd_edges_for_sampled_end_corner(Site * left_site
             right_edge = right_site->get_first_bwd_edge();
 
             this->add_sample_m_match(left_edge,right_edge,&bwd_pointers,&sum_score,m_match);
+            cout<<"s: "<<++i<<" "<<sum_score<<endl;
 
             align_slice x_slice = (*xgap)[ indices[ range( 0,xgap->shape()[0] ) ][xgap->shape()[1]-1] ];
             this->add_sample_gap_close(left_edge,&x_slice,&bwd_pointers,&sum_score,true);
+            cout<<"s: "<<++i<<" "<<sum_score<<endl;
 
 
             while(right_site->has_next_bwd_edge())
@@ -1554,9 +1563,11 @@ void Simple_alignment::iterate_bwd_edges_for_sampled_end_corner(Site * left_site
                 right_edge = right_site->get_next_bwd_edge();
 
                 this->add_sample_m_match(left_edge,right_edge,&bwd_pointers,&sum_score,m_match);
+                cout<<"s: "<<++i<<" "<<sum_score<<endl;
 
                 align_slice y_slice = (*ygap)[ indices[ygap->shape()[0]-1][ range( 0,ygap->shape()[1] ) ] ];
                 this->add_sample_gap_close(right_edge,&y_slice,&bwd_pointers,&sum_score,false);
+                cout<<"s: "<<++i<<" "<<sum_score<<endl;
 
             }
         }
@@ -1566,6 +1577,8 @@ void Simple_alignment::iterate_bwd_edges_for_sampled_end_corner(Site * left_site
         {
             cout<<i<<" "<<bwd_pointers.at(i).score<<endl;
         }
+
+        this->print_matrices();
     }
 
     ///
