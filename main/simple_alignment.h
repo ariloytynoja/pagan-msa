@@ -111,6 +111,7 @@ class Simple_alignment
     void compute_posterior_score(int i,int j,double full_score);
 
     void backtrack_new_path(vector<Path_pointer> *path,Path_pointer pp);
+    void sample_new_path(vector<Path_pointer> *path,Path_pointer pp);
     void build_ancestral_sequence(vector<Path_pointer> *path);
 
     void create_ancestral_sequence(vector<Path_pointer> *path);
@@ -138,16 +139,21 @@ class Simple_alignment
 
     /*********************************/
 
+//    void iterate_bwd_edges_for_sampled_gap(Site * site,Matrix_pointer *bwd_p,bool is_x_matrix);
+//    void iterate_bwd_edges_for_sampled_match(Site * left_site,Site * right_site,Matrix_pointer *bwd_p);
+    void iterate_bwd_edges_for_sampled_gap(int site_index1,int site_index2,Matrix_pointer *bwd_p,bool is_x_matrix);
+    void iterate_bwd_edges_for_sampled_match(int left_index,int right_index,Matrix_pointer *bwd_p);
+
     void iterate_bwd_edges_for_sampled_end_corner(Site * left_site,Site * right_site,Matrix_pointer *sample);
 
-    void add_sample_m_match(Edge * left_edge,Edge * right_edge,vector<Matrix_pointer> *bwd_pointers,double *sum_score,double m_match = 0);
-    void add_sample_x_match(Edge * left_edge,Edge * right_edge,vector<Matrix_pointer> *bwd_pointers,double *sum_score,double x_match = 0);
-    void add_sample_y_match(Edge * left_edge,Edge * right_edge,vector<Matrix_pointer> *bwd_pointers,double *sum_score,double y_match = 0);
+    void add_sample_m_match(Edge * left_edge,Edge * right_edge,Matrix_pointer *bwd_p,double m_match = 0);
+    void add_sample_x_match(Edge * left_edge,Edge * right_edge,Matrix_pointer *bwd_p,double x_match = 0);
+    void add_sample_y_match(Edge * left_edge,Edge * right_edge,Matrix_pointer *bwd_p,double y_match = 0);
 
-    void add_sample_gap_ext(Edge * edge,align_slice *z_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix);
-    void add_sample_gap_double(Edge * edge,align_slice *z_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix);
-    void add_sample_gap_open(Edge * edge,align_slice *m_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix);
-    void add_sample_gap_close(Edge * edge,align_slice *z_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix);
+    void add_sample_gap_ext(Edge * edge,align_slice *z_slice,Matrix_pointer *bwd_p,bool is_x_matrix);
+    void add_sample_gap_double(Edge * edge,align_slice *z_slice,Matrix_pointer *bwd_p,bool is_x_matrix);
+    void add_sample_gap_open(Edge * edge,align_slice *m_slice,Matrix_pointer *bwd_p,bool is_x_matrix);
+    void add_sample_gap_close(Edge * edge,align_slice *z_slice,Matrix_pointer *bwd_p,bool is_x_matrix);
 
     /*********************************/
 

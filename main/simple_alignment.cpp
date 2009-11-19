@@ -82,7 +82,7 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
 
 
 
-    // Find the incoming edge in the end corner
+    // Find the incoming edge in the end corner; also, get the full_fwd probability
     //
     Matrix_pointer max_end;
     this->iterate_bwd_edges_for_end_corner(left_site,right_site,&max_end);
@@ -121,19 +121,7 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
         {
             cout<<"Problem in computation? fwd: "<<max_end.full_score<<", bwd: "<<max_start.bwd_score<<endl;
         }
-
-        double full_score = max_end.full_score;
-
-        for(int j=j_max-1;j>=0;j--)
-        {
-            for(int i=i_max-1;i>=0;i--)
-            {
-                this->compute_posterior_score(i,j,full_score);
-            }
-        }
-
     }
-
 
 
 
@@ -165,6 +153,14 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
             Matrix_pointer sample_end;
             this->iterate_bwd_edges_for_sampled_end_corner(left_site,right_site,&sample_end);
 
+            Path_pointer sp(sample_end,true);
+            vector<Path_pointer> sample_path;
+
+            this->sample_new_path(&sample_path,sp);
+
+            for(int i=0;i<sample_path.size();i++)
+                cout<<sample_path.at(i).mp.matrix;
+            cout<<endl;
         }
     }
 
@@ -174,6 +170,16 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
     if(Settings_handle::st.is("mpost-posterior-plot-file") &&
        Settings_handle::st.is("full-probability") )
     {
+        double full_score = max_end.full_score;
+
+        for(int j=j_max-1;j>=0;j--)
+        {
+            for(int i=i_max-1;i>=0;i--)
+            {
+                this->compute_posterior_score(i,j,full_score);
+            }
+        }
+
         if(Settings_handle::st.is("plot-slope-up") )
             this->plot_posterior_probabilities_up();
         else
@@ -549,6 +555,130 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
             if(i<1 && j<1)
                 break;
 
+        }
+
+        if(i<1 && j<1)
+            break;
+
+    }
+
+    /*DEBUG*/
+    if(Settings::noise>4)
+    {
+        cout<<"\npath"<<endl;
+        for(unsigned int i=0;i<path->size();i++)
+            cout<<path->at(i).mp.matrix;
+        cout<<endl;
+    }
+    /*DEBUG*/
+
+}
+
+/********************************************/
+
+void Simple_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer fp)
+{
+    vector<Edge> *left_edges = left->get_edges();
+    vector<Edge> *right_edges = right->get_edges();
+
+//    vector<Site> *left_sites = left->get_sites();
+//    vector<Site> *right_sites = right->get_sites();
+
+    int vit_mat = fp.mp.matrix;
+    int x_ind = fp.mp.x_ind;
+    int y_ind = fp.mp.y_ind;
+
+    left_edges->at(fp.mp.x_edge_ind).is_used(true);
+    right_edges->at(fp.mp.y_edge_ind).is_used(true);
+
+    int j = match->shape()[1]-1;
+    int i = match->shape()[0]-1;
+
+    // Pre-existing gaps in the end skipped over
+    //
+    this->insert_preexisting_gap(path, &i, &j, x_ind, y_ind);
+
+    this->insert_new_path_pointer(path,&i,&j,fp);
+
+    Matrix_pointer bwd_p;
+
+    // Actual alignment path
+    //
+    while(j>=0)
+    {
+        while(i>=0)
+        {
+            if(vit_mat == Simple_alignment::m_mat)
+            {
+                this->iterate_bwd_edges_for_sampled_match(i,j,&bwd_p);
+
+                vit_mat = bwd_p.matrix;
+                x_ind = bwd_p.x_ind;
+                y_ind = bwd_p.y_ind;
+
+                left_edges->at(bwd_p.x_edge_ind).is_used(true);
+                right_edges->at(bwd_p.y_edge_ind).is_used(true);
+
+                Path_pointer pp( bwd_p, true );
+
+                i--; j--;
+
+                // Pre-existing gaps in the middle skipped over
+                //
+                this->insert_preexisting_gap(path, &i, &j, x_ind, y_ind);
+
+                this->insert_new_path_pointer(path,&i,&j,pp);
+            }
+            else if(vit_mat == Simple_alignment::x_mat)
+            {
+                this->iterate_bwd_edges_for_sampled_gap(i,j,&bwd_p,true);
+                bwd_p.y_ind = j;
+
+                vit_mat = bwd_p.matrix;
+                x_ind = bwd_p.x_ind;
+                y_ind = bwd_p.y_ind;
+
+                left_edges->at(bwd_p.x_edge_ind).is_used(true);
+
+                Path_pointer pp( bwd_p, true );
+
+                i--;
+
+                // Pre-existing gaps in the middle skipped over
+                //
+                this->insert_preexisting_gap(path, &i, &j, x_ind, y_ind);
+
+                this->insert_new_path_pointer(path,&i,&j,pp);
+            }
+            else if(vit_mat == Simple_alignment::y_mat)
+            {
+                this->iterate_bwd_edges_for_sampled_gap(j,i,&bwd_p,false);
+                bwd_p.x_ind = i;
+
+                vit_mat = bwd_p.matrix;
+                x_ind = bwd_p.x_ind;
+                y_ind = bwd_p.y_ind;
+
+                right_edges->at(bwd_p.y_edge_ind).is_used(true);
+
+                Path_pointer pp( bwd_p, true );
+
+                j--;
+
+                // Pre-existing gaps in the middle skipped over
+                //
+                this->insert_preexisting_gap(path, &i, &j, x_ind, y_ind);
+
+                this->insert_new_path_pointer(path,&i,&j,pp);
+            }
+            else
+            {
+                cout<<"incorrect backward pointer: "<<vit_mat<<endl;
+                exit(-1);
+            }
+
+            if(i<1 && j<1)
+                break;
 
         }
 
@@ -1311,283 +1441,6 @@ void Simple_alignment::iterate_bwd_edges_for_end_corner(Site * left_site,Site * 
     }
 }
 
-/********************************************/
-
-/* from here */
-
-
-/********************************************/
-void Simple_alignment::add_sample_m_match(Edge * left_edge,Edge * right_edge,vector<Matrix_pointer> *bwd_pointers,double *sum_score,double m_match)
-{
-    int left_prev_index = left_edge->get_start_site_index();
-    int right_prev_index = right_edge->get_start_site_index();
-
-    double this_score =   (*match)[left_prev_index][right_prev_index].full_score * m_match
-                               * this->get_edge_weight(left_edge) * this->get_edge_weight(right_edge);
-
-    Matrix_pointer bwd_p;
-    bwd_p.score = this_score;
-    bwd_p.x_ind = left_prev_index;
-    bwd_p.y_ind = right_prev_index;
-    bwd_p.x_edge_ind = left_edge->get_index();
-    bwd_p.y_edge_ind = right_edge->get_index();
-    bwd_p.matrix = Simple_alignment::m_mat;
-
-    (*sum_score)  += this_score;
-    bwd_pointers->push_back( bwd_p );
-
-}
-
-void Simple_alignment::add_sample_x_match(Edge * left_edge,Edge * right_edge,vector<Matrix_pointer> *bwd_pointers,double *sum_score,double x_match)
-{
-    int left_prev_index = left_edge->get_start_site_index();
-    int right_prev_index = right_edge->get_start_site_index();
-
-    double this_score =   (*xgap)[left_prev_index][right_prev_index].full_score * x_match
-                               * this->get_edge_weight(left_edge) * this->get_edge_weight(right_edge);
-
-    Matrix_pointer bwd_p;
-    bwd_p.score = this_score;
-    bwd_p.x_ind = left_prev_index;
-    bwd_p.y_ind = right_prev_index;
-    bwd_p.x_edge_ind = left_edge->get_index();
-    bwd_p.y_edge_ind = right_edge->get_index();
-    bwd_p.matrix = Simple_alignment::x_mat;
-
-    (*sum_score)  += this_score;
-    bwd_pointers->push_back( bwd_p );
-}
-
-void Simple_alignment::add_sample_y_match(Edge * left_edge,Edge * right_edge,vector<Matrix_pointer> *bwd_pointers,double *sum_score,double y_match)
-{
-    int left_prev_index = left_edge->get_start_site_index();
-    int right_prev_index = right_edge->get_start_site_index();
-
-    double this_score =   (*ygap)[left_prev_index][right_prev_index].full_score * y_match
-                               * this->get_edge_weight(left_edge) * this->get_edge_weight(right_edge);
-
-    Matrix_pointer bwd_p;
-    bwd_p.score = this_score;
-    bwd_p.x_ind = left_prev_index;
-    bwd_p.y_ind = right_prev_index;
-    bwd_p.x_edge_ind = left_edge->get_index();
-    bwd_p.y_edge_ind = right_edge->get_index();
-    bwd_p.matrix = Simple_alignment::y_mat;
-
-    (*sum_score)  += this_score;
-    bwd_pointers->push_back( bwd_p );
-}
-
-/************************************************/
-
-void Simple_alignment::add_sample_gap_ext(Edge * edge,align_slice *z_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix)
-{
-    int prev_index = edge->get_start_site_index();
-
-    double this_score =  (*z_slice)[prev_index].full_score * model->gap_ext() * this->get_edge_weight(edge);
-
-    Matrix_pointer bwd_p;
-    bwd_p.score = this_score;
-
-    if(is_x_matrix)
-    {
-        bwd_p.matrix = Simple_alignment::x_mat;
-        bwd_p.x_ind = prev_index;
-        bwd_p.x_edge_ind = edge->get_index();
-    }
-    else
-    {
-        bwd_p.matrix = Simple_alignment::y_mat;
-        bwd_p.y_ind = prev_index;
-        bwd_p.y_edge_ind = edge->get_index();
-    }
-
-    (*sum_score)  += this_score;
-    bwd_pointers->push_back( bwd_p );
-}
-
-void Simple_alignment::add_sample_gap_double(Edge * edge,align_slice *w_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix)
-{
-    int prev_index = edge->get_start_site_index();
-
-    double this_score =  (*w_slice)[prev_index].full_score * model->gap_close() * model->gap_open() * this->get_edge_weight(edge);
-
-    Matrix_pointer bwd_p;
-    bwd_p.score = this_score;
-
-    if(is_x_matrix)
-    {
-        bwd_p.matrix = Simple_alignment::x_mat;
-        bwd_p.x_ind = prev_index;
-        bwd_p.x_edge_ind = edge->get_index();
-    }
-    else
-    {
-        bwd_p.matrix = Simple_alignment::y_mat;
-        bwd_p.y_ind = prev_index;
-        bwd_p.y_edge_ind = edge->get_index();
-    }
-
-    (*sum_score)  += this_score;
-    bwd_pointers->push_back( bwd_p );
-
-}
-
-void Simple_alignment::add_sample_gap_open(Edge * edge,align_slice *m_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix)
-{
-    int prev_index = edge->get_start_site_index();
-
-    double this_score =  (*m_slice)[prev_index].full_score * model->non_gap() * model->gap_open() * this->get_edge_weight(edge);
-
-    Matrix_pointer bwd_p;
-    bwd_p.score = this_score;
-
-    if(is_x_matrix)
-    {
-        bwd_p.matrix = Simple_alignment::x_mat;
-        bwd_p.x_ind = prev_index;
-        bwd_p.x_edge_ind = edge->get_index();
-    }
-    else
-    {
-        bwd_p.matrix = Simple_alignment::y_mat;
-        bwd_p.y_ind = prev_index;
-        bwd_p.y_edge_ind = edge->get_index();
-    }
-
-    (*sum_score)  += this_score;
-    bwd_pointers->push_back( bwd_p );
-
-}
-
-void Simple_alignment::add_sample_gap_close(Edge * edge,align_slice *z_slice,vector<Matrix_pointer> *bwd_pointers,double *sum_score,bool is_x_matrix)
-{
-    int prev_index = edge->get_start_site_index();
-
-    double this_score =  (*z_slice)[prev_index].full_score * model->gap_close() * this->get_edge_weight(edge);
-
-    Matrix_pointer bwd_p;
-    bwd_p.score = this_score;
-
-    if(is_x_matrix)
-    {
-        bwd_p.matrix = Simple_alignment::x_mat;
-        bwd_p.x_ind = prev_index;
-        bwd_p.x_edge_ind = edge->get_index();
-    }
-    else
-    {
-        bwd_p.matrix = Simple_alignment::y_mat;
-        bwd_p.y_ind = prev_index;
-        bwd_p.y_edge_ind = edge->get_index();
-    }
-
-    (*sum_score)  += this_score;
-    bwd_pointers->push_back( bwd_p );
-
-}
-
-
-/********************************************/
-
-
-
-/* until here */
-
-void Simple_alignment::iterate_bwd_edges_for_sampled_end_corner(Site * left_site,Site * right_site,Matrix_pointer *end_p)
-{
-
-    ///
-    if(left_site->has_bwd_edge() && right_site->has_bwd_edge())
-    {
-
-        int i =0;
-
-        Edge * left_edge = left_site->get_first_bwd_edge();
-        Edge * right_edge = right_site->get_first_bwd_edge();
-
-        vector<Matrix_pointer> bwd_pointers;
-        double sum_score = 0;
-
-
-        // match score & gap close scores for this match
-        //
-        double m_match = model->non_gap();
-
-        this->add_sample_m_match(left_edge,right_edge,&bwd_pointers,&sum_score,m_match);
-        cout<<"s: "<<++i<<" "<<sum_score<<endl;
-
-        align_slice x_slice = (*xgap)[ indices[ range( 0,xgap->shape()[0] ) ][xgap->shape()[1]-1] ];
-        this->add_sample_gap_close(left_edge,&x_slice,&bwd_pointers,&sum_score,true);
-        cout<<"s: "<<++i<<" "<<sum_score<<endl;
-
-        align_slice y_slice = (*ygap)[ indices[ygap->shape()[0]-1][ range( 0,ygap->shape()[1] ) ] ];
-        this->add_sample_gap_close(right_edge,&y_slice,&bwd_pointers,&sum_score,false);
-        cout<<"s: "<<++i<<" "<<sum_score<<endl;
-
-
-        // first right site extra edges
-        //
-        while(right_site->has_next_bwd_edge())
-        {
-            right_edge = right_site->get_next_bwd_edge();
-            left_edge = left_site->get_first_bwd_edge();
-
-            this->add_sample_m_match(left_edge,right_edge,&bwd_pointers,&sum_score,m_match);
-            cout<<"s: "<<++i<<" "<<sum_score<<endl;
-
-            align_slice y_slice = (*ygap)[ indices[ygap->shape()[0]-1][ range( 0,ygap->shape()[1] ) ] ];
-            this->add_sample_gap_close(right_edge,&y_slice,&bwd_pointers,&sum_score,false);
-            cout<<"s: "<<++i<<" "<<sum_score<<endl;
-
-        }
-
-        // left site extra edges then
-        //
-        while(left_site->has_next_bwd_edge())
-        {
-            left_edge = left_site->get_next_bwd_edge();
-            right_edge = right_site->get_first_bwd_edge();
-
-            this->add_sample_m_match(left_edge,right_edge,&bwd_pointers,&sum_score,m_match);
-            cout<<"s: "<<++i<<" "<<sum_score<<endl;
-
-            align_slice x_slice = (*xgap)[ indices[ range( 0,xgap->shape()[0] ) ][xgap->shape()[1]-1] ];
-            this->add_sample_gap_close(left_edge,&x_slice,&bwd_pointers,&sum_score,true);
-            cout<<"s: "<<++i<<" "<<sum_score<<endl;
-
-
-            while(right_site->has_next_bwd_edge())
-            {
-
-                right_edge = right_site->get_next_bwd_edge();
-
-                this->add_sample_m_match(left_edge,right_edge,&bwd_pointers,&sum_score,m_match);
-                cout<<"s: "<<++i<<" "<<sum_score<<endl;
-
-                align_slice y_slice = (*ygap)[ indices[ygap->shape()[0]-1][ range( 0,ygap->shape()[1] ) ] ];
-                this->add_sample_gap_close(right_edge,&y_slice,&bwd_pointers,&sum_score,false);
-                cout<<"s: "<<++i<<" "<<sum_score<<endl;
-
-            }
-        }
-
-        cout<<"sum: "<<sum_score<<endl;
-        for(int i=0;i<bwd_pointers.size();i++)
-        {
-            cout<<i<<" "<<bwd_pointers.at(i).score<<endl;
-        }
-
-        this->print_matrices();
-    }
-
-    ///
-
-
-    if(Settings::noise>1)
-    {
-    }
-}
 
 
 /********************************************/
@@ -1684,8 +1537,343 @@ void Simple_alignment::iterate_fwd_edges_for_match(Site * left_site,Site * right
     }
 }
 
+/********************************************/
 
 /********************************************/
+
+void Simple_alignment::iterate_bwd_edges_for_sampled_gap(int site_index1,int site_index2,Matrix_pointer *sample_p,bool is_x_matrix)
+{
+
+    align_slice *z_slice;
+    align_slice *w_slice;
+    align_slice *m_slice;
+
+    Site * site;
+
+    if(is_x_matrix)
+    {
+        z_slice = &(*xgap)[ indices[ range( 0,xgap->shape()[0] ) ][site_index2] ];
+        w_slice = &(*ygap)[ indices[ range( 0,ygap->shape()[0] ) ][site_index2] ];
+        m_slice = &(*match)[ indices[ range( 0,match->shape()[0] ) ][site_index2] ];
+        site = left->get_site_at(site_index1);
+    }
+    else
+    {
+        z_slice = &(*ygap)[ indices[site_index2][ range( 0,ygap->shape()[1] ) ] ];
+        w_slice = &(*xgap)[ indices[site_index2][ range( 0,xgap->shape()[1] ) ] ];
+        m_slice = &(*match)[ indices[site_index2][ range( 0,match->shape()[1] ) ] ];
+        site = right->get_site_at(site_index1);
+    }
+
+    if(site->has_bwd_edge()) {
+
+        vector<Matrix_pointer> bwd_pointers;
+        double sum_score = 0;
+
+        Edge * edge = site->get_first_bwd_edge();        
+
+        Matrix_pointer bwd_p;
+
+        this->add_sample_gap_ext(edge,z_slice,&bwd_p,is_x_matrix);
+
+        sum_score  += bwd_p.score;
+        bwd_pointers.push_back( bwd_p );
+
+        this->add_sample_gap_double(edge,w_slice,&bwd_p,is_x_matrix);
+        sum_score  += bwd_p.score;
+        bwd_pointers.push_back( bwd_p );
+
+        this->add_sample_gap_open(edge,m_slice,&bwd_p,is_x_matrix);
+        sum_score  += bwd_p.score;
+        bwd_pointers.push_back( bwd_p );
+
+        while(site->has_next_bwd_edge())
+        {
+            edge = site->get_next_bwd_edge();
+
+            this->add_sample_gap_ext(edge,z_slice,&bwd_p,is_x_matrix);
+            sum_score  += bwd_p.score;
+            bwd_pointers.push_back( bwd_p );
+
+            this->add_sample_gap_double(edge,w_slice,&bwd_p,is_x_matrix);
+            sum_score  += bwd_p.score;
+            bwd_pointers.push_back( bwd_p );
+
+            this->add_sample_gap_open(edge,m_slice,&bwd_p,is_x_matrix);
+            sum_score  += bwd_p.score;
+            bwd_pointers.push_back( bwd_p );
+        }
+
+        double random_v = (  sum_score * (double)rand() / ((double)(RAND_MAX)+(double)(1)) );
+
+        int i = 0;
+        double sum = bwd_pointers.at(i).score;
+        while(sum < random_v)
+        {
+            ++i;
+            sum += bwd_pointers.at(i).score;
+        }
+
+        (*sample_p) = bwd_pointers.at(i);
+        if(is_x_matrix)
+        {
+            sample_p->y_ind = xgap->shape()[1]-1;
+        }
+        else
+        {
+            sample_p->x_ind = ygap->shape()[0]-1;
+        }
+
+    }
+}
+
+/********************************************/
+
+void Simple_alignment::iterate_bwd_edges_for_sampled_match(int left_index,int right_index,Matrix_pointer *sample_p)
+{
+    Site * left_site = left->get_site_at(left_index);
+    Site * right_site = right->get_site_at(right_index);
+
+    if(left_site->has_bwd_edge() && right_site->has_bwd_edge())
+    {
+
+        vector<Matrix_pointer> bwd_pointers;
+        double sum_score = 0;
+
+
+        Edge * left_edge = left_site->get_first_bwd_edge();
+        Edge * right_edge = right_site->get_first_bwd_edge();
+
+        double match_score = model->score(left_site->character_state,right_site->character_state);
+        double m_match = model->non_gap() * model->non_gap() * match_score;
+
+            // start corner
+//            if(left_edge->get_start_site_index() == 1 || right_edge->get_start_site_index() == 1)
+//            {
+////                m_match /= model->non_gap();
+//            }
+
+        double x_match = model->gap_close() * model->non_gap() * match_score;
+        double y_match = model->gap_close() * model->non_gap() * match_score;
+
+
+        Matrix_pointer bwd_p;
+
+        this->add_sample_m_match(left_edge,right_edge,&bwd_p,m_match);
+
+        sum_score  += bwd_p.score;
+        bwd_pointers.push_back( bwd_p );
+
+        this->add_sample_x_match(left_edge,right_edge,&bwd_p,x_match);
+        sum_score  += bwd_p.score;
+        bwd_pointers.push_back( bwd_p );
+
+        this->add_sample_y_match(left_edge,right_edge,&bwd_p,y_match);
+        sum_score  += bwd_p.score;
+        bwd_pointers.push_back( bwd_p );
+
+        // then right site extra edges
+        //
+        while(right_site->has_next_bwd_edge())
+        {
+            right_edge = right_site->get_next_bwd_edge();
+            left_edge = left_site->get_first_bwd_edge();
+
+            this->add_sample_m_match(left_edge,right_edge,&bwd_p,m_match);
+            sum_score  += bwd_p.score;
+            bwd_pointers.push_back( bwd_p );
+
+            this->add_sample_x_match(left_edge,right_edge,&bwd_p,x_match);
+            sum_score  += bwd_p.score;
+            bwd_pointers.push_back( bwd_p );
+
+            this->add_sample_y_match(left_edge,right_edge,&bwd_p,y_match);
+            sum_score  += bwd_p.score;
+            bwd_pointers.push_back( bwd_p );
+
+        }
+
+        // left site extra edges first
+        //
+        while(left_site->has_next_bwd_edge())
+        {
+            left_edge = left_site->get_next_bwd_edge();
+            right_edge = right_site->get_first_bwd_edge();
+
+            this->add_sample_m_match(left_edge,right_edge,&bwd_p,m_match);
+            sum_score  += bwd_p.score;
+            bwd_pointers.push_back( bwd_p );
+
+            this->add_sample_x_match(left_edge,right_edge,&bwd_p,x_match);
+            sum_score  += bwd_p.score;
+            bwd_pointers.push_back( bwd_p );
+
+            this->add_sample_y_match(left_edge,right_edge,&bwd_p,y_match);
+            sum_score  += bwd_p.score;
+            bwd_pointers.push_back( bwd_p );
+
+            while(right_site->has_next_bwd_edge())
+            {
+
+                right_edge = right_site->get_next_bwd_edge();
+
+                this->add_sample_m_match(left_edge,right_edge,&bwd_p,m_match);
+                sum_score  += bwd_p.score;
+                bwd_pointers.push_back( bwd_p );
+
+                this->add_sample_x_match(left_edge,right_edge,&bwd_p,x_match);
+                sum_score  += bwd_p.score;
+                bwd_pointers.push_back( bwd_p );
+
+                this->add_sample_y_match(left_edge,right_edge,&bwd_p,y_match);
+                sum_score  += bwd_p.score;
+                bwd_pointers.push_back( bwd_p );
+            }
+        }
+
+        double random_v = (  sum_score * (double)rand() / ((double)(RAND_MAX)+(double)(1)) );
+
+        int i = 0;
+        double sum = bwd_pointers.at(i).score;
+        while(sum < random_v)
+        {
+            ++i;
+            sum += bwd_pointers.at(i).score;
+        }
+
+        (*sample_p) = bwd_pointers.at(i);
+
+    }
+}
+
+/********************************************/
+
+
+void Simple_alignment::iterate_bwd_edges_for_sampled_end_corner(Site * left_site,Site * right_site,Matrix_pointer *end_p)
+{
+
+    if(left_site->has_bwd_edge() && right_site->has_bwd_edge())
+    {
+
+        Edge * left_edge = left_site->get_first_bwd_edge();
+        Edge * right_edge = right_site->get_first_bwd_edge();
+
+        vector<Matrix_pointer> bwd_pointers;
+        double sum_score = 0;
+
+        // match score & gap close scores for this match
+        //
+        double m_match = model->non_gap();
+
+        Matrix_pointer bwd_p;
+
+        this->add_sample_m_match(left_edge,right_edge,&bwd_p,m_match);
+
+        sum_score  += bwd_p.score;
+        bwd_pointers.push_back( bwd_p );
+
+
+        align_slice x_slice = (*xgap)[ indices[ range( 0,xgap->shape()[0] ) ][xgap->shape()[1]-1] ];
+        this->add_sample_gap_close(left_edge,&x_slice,&bwd_p,true);
+        bwd_p.y_ind = xgap->shape()[1]-1;
+
+        sum_score  += bwd_p.score;
+        bwd_pointers.push_back( bwd_p );
+
+
+        align_slice y_slice = (*ygap)[ indices[ygap->shape()[0]-1][ range( 0,ygap->shape()[1] ) ] ];
+        this->add_sample_gap_close(right_edge,&y_slice,&bwd_p,false);
+        bwd_p.x_ind = ygap->shape()[0]-1;
+
+        sum_score  += bwd_p.score;
+        bwd_pointers.push_back( bwd_p );
+
+
+        // first right site extra edges
+        //
+        while(right_site->has_next_bwd_edge())
+        {
+            right_edge = right_site->get_next_bwd_edge();
+            left_edge = left_site->get_first_bwd_edge();
+
+            this->add_sample_m_match(left_edge,right_edge,&bwd_p,m_match);
+
+            sum_score  += bwd_p.score;
+            bwd_pointers.push_back( bwd_p );
+
+
+            align_slice y_slice = (*ygap)[ indices[ygap->shape()[0]-1][ range( 0,ygap->shape()[1] ) ] ];
+            this->add_sample_gap_close(right_edge,&y_slice,&bwd_p,false);
+            bwd_p.x_ind = ygap->shape()[0]-1;
+
+            sum_score  += bwd_p.score;
+            bwd_pointers.push_back( bwd_p );
+
+        }
+
+        // left site extra edges then
+        //
+        while(left_site->has_next_bwd_edge())
+        {
+            left_edge = left_site->get_next_bwd_edge();
+            right_edge = right_site->get_first_bwd_edge();
+
+            this->add_sample_m_match(left_edge,right_edge,&bwd_p,m_match);
+
+            sum_score  += bwd_p.score;
+            bwd_pointers.push_back( bwd_p );
+
+
+            align_slice x_slice = (*xgap)[ indices[ range( 0,xgap->shape()[0] ) ][xgap->shape()[1]-1] ];
+            this->add_sample_gap_close(left_edge,&x_slice,&bwd_p,true);
+            bwd_p.y_ind = xgap->shape()[1]-1;
+
+            sum_score  += bwd_p.score;
+            bwd_pointers.push_back( bwd_p );
+
+
+            while(right_site->has_next_bwd_edge())
+            {
+
+                right_edge = right_site->get_next_bwd_edge();
+
+                this->add_sample_m_match(left_edge,right_edge,&bwd_p,m_match);
+
+                sum_score  += bwd_p.score;
+                bwd_pointers.push_back( bwd_p );
+
+
+                align_slice y_slice = (*ygap)[ indices[ygap->shape()[0]-1][ range( 0,ygap->shape()[1] ) ] ];
+                this->add_sample_gap_close(right_edge,&y_slice,&bwd_p,false);
+                bwd_p.x_ind = ygap->shape()[0]-1;
+
+                sum_score  += bwd_p.score;
+                bwd_pointers.push_back( bwd_p );
+
+            }
+        }
+
+        double random_v = (  sum_score * (double)rand() / ((double)(RAND_MAX)+(double)(1)) );
+
+        int i = 0;
+        double sum = bwd_pointers.at(i).score;
+        while(sum < random_v)
+        {
+            ++i;
+            sum += bwd_pointers.at(i).score;
+        }
+
+        (*end_p) = bwd_pointers.at(i);
+    }
+
+}
+
+
+/********************************************/
+
+
+/********************************************/
+
 void Simple_alignment::score_m_match(Edge * left_edge,Edge * right_edge,double m_log_match,Matrix_pointer *max,double m_match)
 {
     double left_edge_wght = this->get_log_edge_weight(left_edge);
@@ -1948,6 +2136,157 @@ void Simple_alignment::score_gap_open_bwd(Edge *edge,align_slice *m_slice,Matrix
     double this_full_score =  (*m_slice)[prev_index].bwd_score * model->non_gap() * model->gap_open() * this->get_edge_weight(edge);
     max->bwd_score += this_full_score;
 }
+
+/********************************************/
+
+
+
+/********************************************/
+
+void Simple_alignment::add_sample_m_match(Edge * left_edge,Edge * right_edge,Matrix_pointer *bwd_p,double m_match)
+{
+    int left_prev_index = left_edge->get_start_site_index();
+    int right_prev_index = right_edge->get_start_site_index();
+
+    double this_score =   (*match)[left_prev_index][right_prev_index].full_score * m_match
+                               * this->get_edge_weight(left_edge) * this->get_edge_weight(right_edge);
+
+    bwd_p->score = this_score;
+    bwd_p->x_ind = left_prev_index;
+    bwd_p->y_ind = right_prev_index;
+    bwd_p->x_edge_ind = left_edge->get_index();
+    bwd_p->y_edge_ind = right_edge->get_index();
+    bwd_p->matrix = Simple_alignment::m_mat;
+}
+
+void Simple_alignment::add_sample_x_match(Edge * left_edge,Edge * right_edge,Matrix_pointer *bwd_p,double x_match)
+{
+    int left_prev_index = left_edge->get_start_site_index();
+    int right_prev_index = right_edge->get_start_site_index();
+
+    double this_score =   (*xgap)[left_prev_index][right_prev_index].full_score * x_match
+                               * this->get_edge_weight(left_edge) * this->get_edge_weight(right_edge);
+
+    bwd_p->score = this_score;
+    bwd_p->x_ind = left_prev_index;
+    bwd_p->y_ind = right_prev_index;
+    bwd_p->x_edge_ind = left_edge->get_index();
+    bwd_p->y_edge_ind = right_edge->get_index();
+    bwd_p->matrix = Simple_alignment::x_mat;
+}
+
+void Simple_alignment::add_sample_y_match(Edge * left_edge,Edge * right_edge,Matrix_pointer *bwd_p,double y_match)
+{
+    int left_prev_index = left_edge->get_start_site_index();
+    int right_prev_index = right_edge->get_start_site_index();
+
+    double this_score =   (*ygap)[left_prev_index][right_prev_index].full_score * y_match
+                               * this->get_edge_weight(left_edge) * this->get_edge_weight(right_edge);
+
+    bwd_p->score = this_score;
+    bwd_p->x_ind = left_prev_index;
+    bwd_p->y_ind = right_prev_index;
+    bwd_p->x_edge_ind = left_edge->get_index();
+    bwd_p->y_edge_ind = right_edge->get_index();
+    bwd_p->matrix = Simple_alignment::y_mat;
+}
+
+/************************************************/
+
+void Simple_alignment::add_sample_gap_ext(Edge * edge,align_slice *z_slice,Matrix_pointer *bwd_p,bool is_x_matrix)
+{
+    int prev_index = edge->get_start_site_index();
+
+    double this_score =  (*z_slice)[prev_index].full_score * model->gap_ext() * this->get_edge_weight(edge);
+
+    bwd_p->score = this_score;
+
+    if(is_x_matrix)
+    {
+        bwd_p->matrix = Simple_alignment::x_mat;
+        bwd_p->x_ind = prev_index;
+        bwd_p->x_edge_ind = edge->get_index();
+    }
+    else
+    {
+        bwd_p->matrix = Simple_alignment::y_mat;
+        bwd_p->y_ind = prev_index;
+        bwd_p->y_edge_ind = edge->get_index();
+    }
+}
+
+void Simple_alignment::add_sample_gap_double(Edge * edge,align_slice *w_slice,Matrix_pointer *bwd_p,bool is_x_matrix)
+{
+    int prev_index = edge->get_start_site_index();
+
+    double this_score =  (*w_slice)[prev_index].full_score * model->gap_close() * model->gap_open() * this->get_edge_weight(edge);
+
+    bwd_p->score = this_score;
+
+    if(is_x_matrix)
+    {
+        bwd_p->matrix = Simple_alignment::y_mat;
+        bwd_p->x_ind = prev_index;
+        bwd_p->x_edge_ind = edge->get_index();
+    }
+    else
+    {
+        bwd_p->matrix = Simple_alignment::x_mat;
+        bwd_p->y_ind = prev_index;
+        bwd_p->y_edge_ind = edge->get_index();
+    }
+
+}
+
+void Simple_alignment::add_sample_gap_open(Edge * edge,align_slice *m_slice,Matrix_pointer *bwd_p,bool is_x_matrix)
+{
+    int prev_index = edge->get_start_site_index();
+
+    double this_score =  (*m_slice)[prev_index].full_score * model->non_gap() * model->gap_open() * this->get_edge_weight(edge);
+
+    bwd_p->score = this_score;
+    bwd_p->matrix = Simple_alignment::m_mat;
+
+    if(is_x_matrix)
+    {
+        bwd_p->x_ind = prev_index;
+        bwd_p->x_edge_ind = edge->get_index();
+    }
+    else
+    {
+        bwd_p->y_ind = prev_index;
+        bwd_p->y_edge_ind = edge->get_index();
+    }
+
+}
+
+void Simple_alignment::add_sample_gap_close(Edge * edge,align_slice *z_slice,Matrix_pointer *bwd_p,bool is_x_matrix)
+{
+    int prev_index = edge->get_start_site_index();
+
+    double this_score =  (*z_slice)[prev_index].full_score * model->gap_close() * this->get_edge_weight(edge);
+
+    bwd_p->score = this_score;
+
+    if(is_x_matrix)
+    {
+        bwd_p->matrix = Simple_alignment::x_mat;
+        bwd_p->x_ind = prev_index;
+        bwd_p->x_edge_ind = edge->get_index();
+    }
+    else
+    {
+        bwd_p->matrix = Simple_alignment::y_mat;
+        bwd_p->y_ind = prev_index;
+        bwd_p->y_edge_ind = edge->get_index();
+    }
+
+}
+
+
+/********************************************/
+
+
 
 
 /********************************************/

@@ -25,7 +25,10 @@ int main(int argc, char *argv[])
 //    Settings st;
 //    Settings_handle handle;
     int rv = Settings_handle::st.read_command_line_arguments(argc, argv);
-
+    
+    srand(time(0));
+    
+    
     // Read the guidetree
 
     Node *root;
