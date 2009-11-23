@@ -139,8 +139,6 @@ class Simple_alignment
 
     /*********************************/
 
-//    void iterate_bwd_edges_for_sampled_gap(Site * site,Matrix_pointer *bwd_p,bool is_x_matrix);
-//    void iterate_bwd_edges_for_sampled_match(Site * left_site,Site * right_site,Matrix_pointer *bwd_p);
     void iterate_bwd_edges_for_sampled_gap(int site_index1,int site_index2,Matrix_pointer *bwd_p,bool is_x_matrix);
     void iterate_bwd_edges_for_sampled_match(int left_index,int right_index,Matrix_pointer *bwd_p);
 
@@ -174,6 +172,28 @@ class Simple_alignment
 
     void score_match_bwd(Edge * left_edge,Edge * right_edge,
                                        Matrix_pointer *max_x,Matrix_pointer *max_y,Matrix_pointer *max_m);
+
+    /*********************************/
+
+    void debug_msg(std::string msg,int noise_level)
+    {
+        if(Settings::noise>noise_level)
+            cout<<msg<<endl;
+    }
+
+    std::string itos(int i) // convert int to string
+    {
+        std::stringstream s;
+        s << i;
+        return s.str();
+    }
+
+    std::string ftos(float f) // convert float to string
+    {
+        std::stringstream s;
+        s << f;
+        return s.str();
+    }
 
     /*********************************/
 
@@ -321,10 +341,10 @@ class Simple_alignment
         }
 
         compute_full_score = false;
-        if(Settings_handle::st.is("full-probability"))
-        {
+        if(Settings_handle::st.is("full-probability") ||
+           Settings_handle::st.is("sample-path") ||
+           Settings_handle::st.is("sample-additional-paths"))
             compute_full_score = true;
-        }
 
         cout << noshowpos;
     }
@@ -333,8 +353,20 @@ class Simple_alignment
     void plot_posterior_probabilities_up();
     void plot_posterior_probabilities_down();
 
+    void debug_print_matrices(int noise_level)
+    {
+        if(Settings::noise>noise_level)
+            print_matrices();
+    }
+
     void print_matrices();
     void print_sequences(vector<Site> *sites);
+
+    void debug_print_input_sequences(int noise_level)
+    {
+        if(Settings::noise>noise_level)
+            print_input_sequences();
+    }
 
     void print_input_sequences()
     {

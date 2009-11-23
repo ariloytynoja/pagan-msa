@@ -24,8 +24,7 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
     right_branch_length = r_branch_length;
 
 
-    if(Settings::noise>2)  /*DEBUG*/
-        this->print_input_sequences();
+    this->debug_print_input_sequences(2);
 
 
     // set the basic parameters (copy from Settings)
@@ -41,15 +40,13 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
     int left_length = left_sequence->sites_length();
     int right_length = right_sequence->sites_length();
 
-    if(Settings::noise>1)  /*DEBUG*/
-        cout<<"Simple_alignment: lengths: "<<left_length<<" "<<right_length<<endl;
+    this->debug_msg("Simple_alignment: lengths: "+this->itos(left_length)+" "+this->itos(right_length),1);
 
     align_array M(boost::extents[left_length-1][right_length-1]);
     align_array X(boost::extents[left_length-1][right_length-1]);
     align_array Y(boost::extents[left_length-1][right_length-1]);
 
-    if(Settings::noise>1)
-        cout<<"Simple_alignment: matrix created\n";
+    this->debug_msg("Simple_alignment: matrix created",1);
 
     match = &M;
     xgap = &X;
@@ -76,9 +73,7 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
             this->compute_fwd_viterbi_path(i,j);
         }
     }
-
-    if(Settings::noise>1)
-        cout<<"Simple_alignment: matrix filled\n";
+    this->debug_msg("Simple_alignment: matrix filled",1);
 
 
 
@@ -86,9 +81,7 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
     //
     Matrix_pointer max_end;
     this->iterate_bwd_edges_for_end_corner(left_site,right_site,&max_end);
-
-    if(Settings::noise>1)
-        cout<<"Simple_alignment: corner found\n";
+    this->debug_msg("Simple_alignment: corner found",1);
 
 
 
@@ -110,17 +103,14 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
         //
         Matrix_pointer max_start = (*match)[0][0];
 
-        if(Settings::noise>1)
-        {
-            cout<<" bwd full probability: "<<setprecision(8)<<log(max_start.bwd_score)<<" ["<<max_start.bwd_score<<"]"<<setprecision(4)<<endl; /*DEBUG*/
-        }
+        this->debug_msg(" bwd full probability: "+this->ftos(log(max_start.bwd_score))
+                        +" ["+this->ftos(max_start.bwd_score)+"]",1);
 
         double ratio = max_end.full_score/max_start.bwd_score;
 
-        if(Settings::noise>0 && (ratio<0.99 || ratio>1.01))
-        {
-            cout<<"Problem in computation? fwd: "<<max_end.full_score<<", bwd: "<<max_start.bwd_score<<endl;
-        }
+        if(ratio<0.99 || ratio>1.01)
+            this->debug_msg("Problem in computation? fwd: "+this->ftos(max_end.full_score)
+                            +", bwd: "+this->ftos(max_start.bwd_score),0);
     }
 
 
@@ -128,26 +118,42 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
     // It is more convenient to build the sequence forward;
     // thus, backtrace the path into a vector ('path') and use that in the next step
     //
-    Path_pointer pp(max_end,true);
-    this->backtrack_new_path(&path,pp);
+    if( ! Settings_handle::st.is("sample-path") )
+    {
+        Path_pointer pp(max_end,true);
+        this->backtrack_new_path(&path,pp);
 
-    if(Settings::noise>1)
-        cout<<"Simple_alignment: path found\n";
+        this->debug_msg("Simple_alignment: path found",1);
 
 
-    // Now build the sequence forward following the path saved in a vector;
-    //
-    this->build_ancestral_sequence(&path);
+        // Now build the sequence forward following the path saved in a vector;
+        //
+        this->build_ancestral_sequence(&path);
 
-    if(Settings::noise>1)
-        cout<<"Simple_alignment: sequence built\n";
+        this->debug_msg("Simple_alignment: sequence built",1);
+    }
+    else
+    {
+        Matrix_pointer sample_end;
+        this->iterate_bwd_edges_for_sampled_end_corner(left_site,right_site,&sample_end);
 
+        Path_pointer sp(sample_end,true);
+        vector<Path_pointer> sample_path;
+
+        this->sample_new_path(&sample_path,sp);
+
+        // Now build the sequence forward following the path saved in a vector;
+        //
+        this->build_ancestral_sequence(&sample_path);
+
+        this->debug_msg("Simple_alignment: sequence sampled and built",1);
+    }
 
     // Find the incoming edge in the end corner
     //
-    if( compute_full_score && Settings_handle::st.is("sample-paths") )
+    if( compute_full_score && Settings_handle::st.is("sample-additional-paths") )
     {
-        int iter = Settings_handle::st.get("sample-paths").as<int>();
+        int iter = Settings_handle::st.get("sample-additional-paths").as<int>();
         for(int i=0;i<iter;i++)
         {
             Matrix_pointer sample_end;
@@ -158,7 +164,7 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
 
             this->sample_new_path(&sample_path,sp);
 
-            for(int i=0;i<sample_path.size();i++)
+            for(int i=0;i<(int)sample_path.size();i++)
                 cout<<sample_path.at(i).mp.matrix;
             cout<<endl;
         }
@@ -1552,16 +1558,26 @@ void Simple_alignment::iterate_bwd_edges_for_sampled_gap(int site_index1,int sit
 
     if(is_x_matrix)
     {
-        z_slice = &(*xgap)[ indices[ range( 0,xgap->shape()[0] ) ][site_index2] ];
-        w_slice = &(*ygap)[ indices[ range( 0,ygap->shape()[0] ) ][site_index2] ];
-        m_slice = &(*match)[ indices[ range( 0,match->shape()[0] ) ][site_index2] ];
+        align_slice x_slice = (*xgap)[ indices[ range( 0,xgap->shape()[0] ) ][site_index2] ];
+        align_slice y_slice = (*ygap)[ indices[ range( 0,ygap->shape()[0] ) ][site_index2] ];
+        align_slice M_slice = (*match)[ indices[ range( 0,match->shape()[0] ) ][site_index2] ];
+
+        z_slice = &x_slice;
+        w_slice = &y_slice;
+        m_slice = &M_slice;
+
         site = left->get_site_at(site_index1);
     }
     else
     {
-        z_slice = &(*ygap)[ indices[site_index2][ range( 0,ygap->shape()[1] ) ] ];
-        w_slice = &(*xgap)[ indices[site_index2][ range( 0,xgap->shape()[1] ) ] ];
-        m_slice = &(*match)[ indices[site_index2][ range( 0,match->shape()[1] ) ] ];
+        align_slice x_slice = (*xgap)[ indices[site_index2][ range( 0,xgap->shape()[1] ) ] ];
+        align_slice y_slice = (*ygap)[ indices[site_index2][ range( 0,ygap->shape()[1] ) ] ];
+        align_slice M_slice = (*match)[ indices[site_index2][ range( 0,match->shape()[1] ) ] ];
+
+        z_slice = &y_slice;
+        w_slice = &x_slice;
+        m_slice = &M_slice;
+
         site = right->get_site_at(site_index1);
     }
 
@@ -2953,8 +2969,8 @@ void Simple_alignment::print_sequences(vector<Site> *sites)
         Site_children *offspring = sites->at(i).get_children();
         int lc = -1;
         int rc = -1;
-        Site *lsite;
-        Site *rsite;
+        Site *lsite = 0;
+        Site *rsite = 0;
 
 
         if(offspring->left_index>=0)
