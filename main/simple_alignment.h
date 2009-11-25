@@ -112,17 +112,17 @@ class Simple_alignment
 
     void backtrack_new_path(vector<Path_pointer> *path,Path_pointer pp);
     void sample_new_path(vector<Path_pointer> *path,Path_pointer pp);
-    void build_ancestral_sequence(vector<Path_pointer> *path);
+    void build_ancestral_sequence(Sequence *sequence,vector<Path_pointer> *path);
 
-    void create_ancestral_sequence(vector<Path_pointer> *path);
-    void create_ancestral_edges();
-    void check_skipped_boundaries();
+    void create_ancestral_sequence(Sequence *sequence,vector<Path_pointer> *path);
+    void create_ancestral_edges(Sequence *sequence);
+    void check_skipped_boundaries(Sequence *sequence);
 
-    void delete_edge_range(int edge_ind,int skip_start_site);
+    void delete_edge_range(Sequence *sequence,int edge_ind,int skip_start_site);
 
-    void transfer_child_edge(Edge *child, vector<int> *child_index, float branch_length,
+    void transfer_child_edge(Sequence *sequence, Edge *child, vector<int> *child_index, float branch_length,
                              bool adjust_posterior_weight = true, float branch_weight = 1.0);
-    void transfer_child_edge(Edge edge, Edge *child, float branch_length,
+    void transfer_child_edge(Sequence *sequence, Edge edge, Edge *child, float branch_length,
                              bool adjust_posterior_weight = true, float branch_weight = 1.0);
 
     /*********************************/

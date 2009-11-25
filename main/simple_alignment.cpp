@@ -111,6 +111,10 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
         if(ratio<0.99 || ratio>1.01)
             this->debug_msg("Problem in computation? fwd: "+this->ftos(max_end.full_score)
                             +", bwd: "+this->ftos(max_start.bwd_score),0);
+
+        if(Settings::noise>5)
+            this->print_matrices();
+
     }
 
 
@@ -118,6 +122,7 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
     // It is more convenient to build the sequence forward;
     // thus, backtrace the path into a vector ('path') and use that in the next step
     //
+    // Backtrack the Viterbi path
     if( ! Settings_handle::st.is("sample-path") )
     {
         Path_pointer pp(max_end,true);
@@ -128,10 +133,12 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
 
         // Now build the sequence forward following the path saved in a vector;
         //
-        this->build_ancestral_sequence(&path);
+        ancestral_sequence = new Sequence(path.size(),model->get_full_alphabet());
+        this->build_ancestral_sequence(ancestral_sequence,&path);
 
         this->debug_msg("Simple_alignment: sequence built",1);
     }
+    // Sample a path from the posterior probabilities
     else
     {
         Matrix_pointer sample_end;
@@ -142,9 +149,13 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
 
         this->sample_new_path(&sample_path,sp);
 
+        this->debug_msg("Simple_alignment: path sampled",1);
+
+
         // Now build the sequence forward following the path saved in a vector;
         //
-        this->build_ancestral_sequence(&sample_path);
+        ancestral_sequence = new Sequence(sample_path.size(),model->get_full_alphabet());
+        this->build_ancestral_sequence(ancestral_sequence,&sample_path);
 
         this->debug_msg("Simple_alignment: sequence sampled and built",1);
     }
@@ -587,9 +598,6 @@ void Simple_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer f
     vector<Edge> *left_edges = left->get_edges();
     vector<Edge> *right_edges = right->get_edges();
 
-//    vector<Site> *left_sites = left->get_sites();
-//    vector<Site> *right_sites = right->get_sites();
-
     int vit_mat = fp.mp.matrix;
     int x_ind = fp.mp.x_ind;
     int y_ind = fp.mp.y_ind;
@@ -614,6 +622,8 @@ void Simple_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer f
     {
         while(i>=0)
         {
+            cout<<i<<" "<<j<<": "<<x_ind<<" "<<y_ind<<" "<<vit_mat<<endl;
+
             if(vit_mat == Simple_alignment::m_mat)
             {
                 this->iterate_bwd_edges_for_sampled_match(i,j,&bwd_p);
@@ -707,26 +717,26 @@ void Simple_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer f
 
 /********************************************/
 
-void Simple_alignment::build_ancestral_sequence(vector<Path_pointer> *path)
+void Simple_alignment::build_ancestral_sequence(Sequence *sequence, vector<Path_pointer> *path)
 {
 
     // The path is given as input.
     // This will create sites with correct child sites.
-    this->create_ancestral_sequence(path);
+    this->create_ancestral_sequence(sequence,path);
 
     // This will add the edges connecting sites.
-    this->create_ancestral_edges();
+    this->create_ancestral_edges(sequence);
 
     // This will do a check-up and delete edges if needed:
     // " To mimic PRANK+F: one has to scan the sequence again to find boundaries 'Match/Skipped' and 'Skipped/Matched'
     //   and record them on the edges. If they are above a limit, the edges (and all between them) are deleted. "
-    this->check_skipped_boundaries();
+    this->check_skipped_boundaries(sequence);
 
 
     if(Settings::noise>4)
     {
         cout<<"ANCESTRAL SEQUENCE:\n";
-        ancestral_sequence->print_sequence();
+        sequence->print_sequence();
     }
 
     if(Settings::noise>6)
@@ -736,18 +746,16 @@ void Simple_alignment::build_ancestral_sequence(vector<Path_pointer> *path)
 
 }
 
-void Simple_alignment::create_ancestral_sequence(vector<Path_pointer> *path)
+void Simple_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path_pointer> *path)
 {
 
-    ancestral_sequence = new Sequence(path->size(),model->get_full_alphabet());
-
-    vector<Edge> *edges = ancestral_sequence->get_edges();
+    vector<Edge> *edges = sequence->get_edges();
 
     Site first_site( edges, Site::start_site, Site::ends_site );
     first_site.set_state( -1 );
     first_site.set_children(0,0);
 
-    ancestral_sequence->push_back_site(first_site);
+    sequence->push_back_site(first_site);
 
     int l_pos = 1;
     int r_pos = 1;
@@ -809,11 +817,11 @@ void Simple_alignment::create_ancestral_sequence(vector<Path_pointer> *path)
             l_pos++; r_pos++;
         }
 
-        ancestral_sequence->push_back_site(site);
+        sequence->push_back_site(site);
 
         /*DEBUG*/
         if(Settings::noise>6)
-            cout<<i<<": m "<<path->at(i).mp.matrix<<" si "<<ancestral_sequence->get_current_site_index()<<": l "<<l_pos<<", r "<<r_pos<<" (st "<<site.get_state()<<")"<<endl;
+            cout<<i<<": m "<<path->at(i).mp.matrix<<" si "<<sequence->get_current_site_index()<<": l "<<l_pos<<", r "<<r_pos<<" (st "<<site.get_state()<<")"<<endl;
         /*DEBUG*/
 
     }
@@ -821,14 +829,14 @@ void Simple_alignment::create_ancestral_sequence(vector<Path_pointer> *path)
     Site last_site( edges, Site::stop_site, Site::ends_site );
     last_site.set_state( -1 );
     last_site.set_children(left->sites_length()-1,right->sites_length()-1);
-    ancestral_sequence->push_back_site(last_site);
+    sequence->push_back_site(last_site);
 
 }
 
-void Simple_alignment::create_ancestral_edges()
+void Simple_alignment::create_ancestral_edges(Sequence *sequence)
 {
 
-    vector<Site> *sites = ancestral_sequence->get_sites();
+    vector<Site> *sites = sequence->get_sites();
 
     vector<int> left_child_index;
     vector<int> right_child_index;
@@ -887,12 +895,12 @@ void Simple_alignment::create_ancestral_edges()
             if( tsite->has_bwd_edge() )
             {
                 Edge *child = tsite->get_first_bwd_edge();
-                this->transfer_child_edge(child, &left_child_index, left_branch_length );
+                this->transfer_child_edge(sequence,child, &left_child_index, left_branch_length );
 
                 while( tsite->has_next_bwd_edge() )
                 {
                     child = tsite->get_next_bwd_edge();
-                    this->transfer_child_edge(child, &left_child_index, left_branch_length );
+                    this->transfer_child_edge(sequence,child, &left_child_index, left_branch_length );
                 }
             }
 
@@ -908,7 +916,7 @@ void Simple_alignment::create_ancestral_edges()
                 {
                     Edge *child = &left->get_edges()->at(ind);
                     Edge edge( left_child_index.at(prev.left_skip_site_index), i );
-                    this->transfer_child_edge(edge, child, left_branch_length );
+                    this->transfer_child_edge(sequence,edge, child, left_branch_length );
                 }
 
                 prev.left_skip_site_index = -1;
@@ -923,7 +931,7 @@ void Simple_alignment::create_ancestral_edges()
                 {
                     Edge *child = &left->get_edges()->at(ind);
                     Edge edge( prev.match_site_index, i );
-                    this->transfer_child_edge(edge, child, left_branch_length );
+                    this->transfer_child_edge(sequence,edge, child, left_branch_length );
                 }
 
             }
@@ -944,12 +952,12 @@ void Simple_alignment::create_ancestral_edges()
             if( tsite->has_bwd_edge() )
             {
                 Edge *child = tsite->get_first_bwd_edge();
-                this->transfer_child_edge(child, &right_child_index, right_branch_length );
+                this->transfer_child_edge(sequence,child, &right_child_index, right_branch_length );
 
                 while( tsite->has_next_bwd_edge() )
                 {
                     child = tsite->get_next_bwd_edge();
-                    this->transfer_child_edge(child, &right_child_index, right_branch_length );
+                    this->transfer_child_edge(sequence,child, &right_child_index, right_branch_length );
                 }
             }
 
@@ -962,7 +970,7 @@ void Simple_alignment::create_ancestral_edges()
                 {
                     Edge *child = &right->get_edges()->at(ind);
                     Edge edge( right_child_index.at(prev.right_skip_site_index), i );
-                    this->transfer_child_edge(edge, child, right_branch_length );
+                    this->transfer_child_edge(sequence,edge, child, right_branch_length );
                 }
 
                 prev.right_skip_site_index = -1;
@@ -976,7 +984,7 @@ void Simple_alignment::create_ancestral_edges()
                 {
                     Edge *child = &right->get_edges()->at(ind);
                     Edge edge( prev.match_site_index, i );
-                    this->transfer_child_edge(edge, child, right_branch_length );
+                    this->transfer_child_edge(sequence,edge, child, right_branch_length );
                 }
 
             }
@@ -991,10 +999,10 @@ void Simple_alignment::create_ancestral_edges()
     }
 }
 
-void Simple_alignment::check_skipped_boundaries()
+void Simple_alignment::check_skipped_boundaries(Sequence *sequence)
 {
 
-    vector<Site> *sites = ancestral_sequence->get_sites();
+    vector<Site> *sites = sequence->get_sites();
 
     // First, find 'Match/Skipped' and 'Skipped/Matched' boundaries and update the counts
     //
@@ -1091,21 +1099,13 @@ void Simple_alignment::check_skipped_boundaries()
                     if(edge->get_branch_count_as_skipped_edge()>max_allowed_match_skip_branches)
                         edge_ind = edge->get_index();
 
-//                    Edge *another = tsite->get_next_bwd_edge();
-
-//                    if( another->get_start_site_index() < edge->get_start_site_index() )
-//                        edge = another;
                 }
-
-//                if(edge->get_branch_count_as_skipped_edge()>max_allowed_match_skip_branches)
-//                    edge_ind = edge->get_index();
-
             }
 
             if(edge_ind>=0)
             {
                 if(Settings::noise>2) cout<<"delete: "<<edge_ind<<" "<<skip_start<<" "<<i<<endl;
-                this->delete_edge_range(edge_ind,skip_start);
+                this->delete_edge_range(sequence,edge_ind,skip_start);
             }
 
             non_skipped = true;
@@ -1120,9 +1120,9 @@ void Simple_alignment::check_skipped_boundaries()
     }
 }
 
-void Simple_alignment::delete_edge_range(int edge_ind,int skip_start_site)
+void Simple_alignment::delete_edge_range(Sequence *sequence,int edge_ind,int skip_start_site)
 {
-    vector<Edge> *edges = ancestral_sequence->get_edges();
+    vector<Edge> *edges = sequence->get_edges();
 
     Edge *edge = &edges->at(edge_ind);
 
@@ -1132,25 +1132,25 @@ void Simple_alignment::delete_edge_range(int edge_ind,int skip_start_site)
     while(this_site_index >= skip_start_site)
     {
 //        cout<<"delete this: "<<this_site_index<<" ("<<skip_start_site<<")\n";
-        ancestral_sequence->delete_all_bwd_edges_at_site(this_site_index);
-        ancestral_sequence->delete_all_fwd_edges_at_site(this_site_index);
+        sequence->delete_all_bwd_edges_at_site(this_site_index);
+        sequence->delete_all_fwd_edges_at_site(this_site_index);
         --this_site_index;
     }
 
 }
 
-void Simple_alignment::transfer_child_edge(Edge *child, vector<int> *child_index, float branch_length, bool adjust_posterior_weight, float branch_weight)
+void Simple_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vector<int> *child_index, float branch_length, bool adjust_posterior_weight, float branch_weight)
 {
     Edge edge( child_index->at( child->get_start_site_index() ), child_index->at( child->get_end_site_index() ) );
 
-    this->transfer_child_edge(edge, child, branch_length, adjust_posterior_weight, branch_weight);
+    this->transfer_child_edge(sequence, edge, child, branch_length, adjust_posterior_weight, branch_weight);
 }
 
-void Simple_alignment::transfer_child_edge(Edge edge, Edge *child, float branch_length, bool adjust_posterior_weight, float branch_weight)
+void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *child, float branch_length, bool adjust_posterior_weight, float branch_weight)
 {
 
     // No identical copies
-    if(ancestral_sequence->get_site_at( edge.get_end_site_index() )->contains_bwd_edge( &edge ) )
+    if(sequence->get_site_at( edge.get_end_site_index() )->contains_bwd_edge( &edge ) )
         return;
 
     // Limits for copying old edges:
@@ -1166,11 +1166,11 @@ void Simple_alignment::transfer_child_edge(Edge edge, Edge *child, float branch_
     // Comparison of distance and node count since last used to find boundaries of path branches.
     // Only start and end of an alternative path should be penalised; continuation on a path not.
     //
-    float dist_start = ancestral_sequence->get_site_at(edge.get_start_site_index())->get_branch_distance_since_last_used();
-    float dist_end   = ancestral_sequence->get_site_at(edge.get_end_site_index()  )->get_branch_distance_since_last_used();
+    float dist_start = sequence->get_site_at(edge.get_start_site_index())->get_branch_distance_since_last_used();
+    float dist_end   = sequence->get_site_at(edge.get_end_site_index()  )->get_branch_distance_since_last_used();
 
-    int count_start = ancestral_sequence->get_site_at(edge.get_start_site_index())->get_branch_count_since_last_used();
-    int count_end   = ancestral_sequence->get_site_at(edge.get_end_site_index()  )->get_branch_count_since_last_used();
+    int count_start = sequence->get_site_at(edge.get_start_site_index())->get_branch_count_since_last_used();
+    int count_end   = sequence->get_site_at(edge.get_end_site_index()  )->get_branch_count_since_last_used();
 
     // Sites on the two ends of an edge have different history: branch point that should be penalised
     if( dist_start != dist_end || count_start != count_end )
@@ -1202,14 +1202,14 @@ void Simple_alignment::transfer_child_edge(Edge edge, Edge *child, float branch_
 
     }
 
-    if(!ancestral_sequence->contains_this_bwd_edge_at_site(edge.get_end_site_index(),&edge))
+    if(!sequence->contains_this_bwd_edge_at_site(edge.get_end_site_index(),&edge))
     {
 
         edge.set_branch_count_as_skipped_edge( child->get_branch_count_as_skipped_edge() );
-        ancestral_sequence->push_back_edge(edge);
+        sequence->push_back_edge(edge);
 
-        ancestral_sequence->get_site_at( edge.get_start_site_index() )->add_new_fwd_edge_index( ancestral_sequence->get_current_edge_index() );
-        ancestral_sequence->get_site_at( edge.get_end_site_index()   )->add_new_bwd_edge_index( ancestral_sequence->get_current_edge_index() );
+        sequence->get_site_at( edge.get_start_site_index() )->add_new_fwd_edge_index( sequence->get_current_edge_index() );
+        sequence->get_site_at( edge.get_end_site_index()   )->add_new_bwd_edge_index( sequence->get_current_edge_index() );
     }
 }
 
@@ -1434,7 +1434,7 @@ void Simple_alignment::iterate_bwd_edges_for_end_corner(Site * left_site,Site * 
 
     }
 
-    if(Settings::noise>5)
+    if(!compute_full_score && Settings::noise>5)
         this->print_matrices();
 
 
@@ -2214,7 +2214,6 @@ void Simple_alignment::add_sample_gap_ext(Edge * edge,align_slice *z_slice,Matri
     int prev_index = edge->get_start_site_index();
 
     double this_score =  (*z_slice)[prev_index].full_score * model->gap_ext() * this->get_edge_weight(edge);
-
     bwd_p->score = this_score;
 
     if(is_x_matrix)
