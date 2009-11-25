@@ -205,21 +205,50 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
 
             sampled_sequence->initialise_unique_index();
 
+            vector<int> sample_index_for_added;
+            vector<int> sample_index_in_ancestral;
+
             vector<Unique_index> *index = sampled_sequence->get_unique_index();
             for(int i=0;i<(int) index->size();i++)
             {
                 int anc_index = ancestral_sequence->unique_index_of_term( &index->at(i) );
-                if( anc_index>=0 )
-                    cout<<"in  "<<*ancestral_sequence->get_site_at( anc_index )<<endl;
-                else
-                    cout<<"not "<<*sampled_sequence->get_site_at( index->at(i).site_index )<<endl;
 
+                if( anc_index>=0 )
+                {
+                    sample_index_in_ancestral.push_back(anc_index);
+                }
+                else
+                {
+                    Site *sample_site = sampled_sequence->get_site_at( index->at(i).site_index );
+
+                    Site site( ancestral_sequence->get_edges() );
+                    site.set_children( sample_site->get_children()->left_index, sample_site->get_children()->left_index );
+
+                    site.set_state( sample_site->get_state() );
+                    site.set_path_state( sample_site->get_path_state() );
+                    site.set_branch_count_since_last_used( sample_site->get_branch_count_since_last_used() );
+                    site.set_branch_distance_since_last_used( sample_site->get_branch_distance_since_last_used() );
+
+                    ancestral_sequence->push_back_site( site );
+
+                    sample_index_in_ancestral.push_back( ancestral_sequence->get_current_site_index() );
+
+                    sample_index_for_added.push_back(i);
+
+                    cout<<"add "<<*sampled_sequence->get_site_at( index->at(i).site_index )<<endl;
+                }
             }
 
-            if(ancestral_sequence->is_unique_index_ordered())
-                cout<<"ordered"<<endl;
-            else
-                cout<<"not ordered"<<endl;
+            for(int i=0;i<sample_index_in_ancestral.size();i++)
+                cout<<i<<" "<<sample_index_in_ancestral.at(i)<<endl;
+
+            if(sample_index_for_added.size()>0)
+            {
+                // do the same for copying edges
+                // then just needs to reorder them and sort out something for the end
+                ancestral_sequence->print_sequence();
+            }
+
             delete sampled_sequence;
         }
     }
