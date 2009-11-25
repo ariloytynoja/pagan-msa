@@ -90,8 +90,8 @@ class Simple_alignment
 
     // parameters that may be set by program arguments
     //
-    float ins_del_ratio;   // (not used by now)
-    float del_ins_ratio;   // (not used by now)
+    float ins_del_ratio;   // (not used so far)
+    float del_ins_ratio;   // (not used so far)
 
     float max_allowed_skip_distance;
     int   max_allowed_skip_branches;

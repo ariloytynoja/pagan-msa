@@ -184,6 +184,14 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
 
             this->debug_msg("Simple_alignment: additional sequence sampled and built",1);
 
+//            create a unique index of sites in sequences 'ancestral' and 'sampled'
+//             - gaps need to contain info of a site in other child sequence that they follow
+//            check if sites in 'sampled' are included in 'ancestral'
+//             - add if not, add also in unique index
+//            add edges that are missing
+//            finally, reorder sites for the next alignment
+//             - note that (some) pointers are *index-based*
+
             cout<<"\nancestral\n";
             ancestral_sequence->print_path();
             cout<<"\nsampled\n";
@@ -193,6 +201,25 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
             cout<<"\nsampled\n";
             sampled_sequence->print_sequence();
 
+            ancestral_sequence->initialise_unique_index();
+
+            sampled_sequence->initialise_unique_index();
+
+            vector<Unique_index> *index = sampled_sequence->get_unique_index();
+            for(int i=0;i<(int) index->size();i++)
+            {
+                int anc_index = ancestral_sequence->unique_index_of_term( &index->at(i) );
+                if( anc_index>=0 )
+                    cout<<"in  "<<*ancestral_sequence->get_site_at( anc_index )<<endl;
+                else
+                    cout<<"not "<<*sampled_sequence->get_site_at( index->at(i).site_index )<<endl;
+
+            }
+
+            if(ancestral_sequence->is_unique_index_ordered())
+                cout<<"ordered"<<endl;
+            else
+                cout<<"not ordered"<<endl;
             delete sampled_sequence;
         }
     }

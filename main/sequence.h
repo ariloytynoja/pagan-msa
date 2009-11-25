@@ -31,17 +31,16 @@ private:
 
 
 public:
-    Edge(int s, int e): index(-1), start_site_index(s), end_site_index(e),
-                               posterior_weight(1.0), log_posterior_weight(0), next_fwd_edge_index(-1), next_bwd_edge_index(-1)
-                               , used_in_alignment(false)
-                               ,branch_count_since_last_used(0),branch_distance_since_last_used(0)
-                               ,branch_count_as_skipped_edge(0){}
+    Edge(int s, int e): index(-1), start_site_index(s), end_site_index(e), posterior_weight(1.0), log_posterior_weight(0),
+                            next_fwd_edge_index(-1), next_bwd_edge_index(-1), used_in_alignment(false),
+                            branch_count_since_last_used(0), branch_distance_since_last_used(0),
+                            branch_count_as_skipped_edge(0){}
 
     Edge(int s, int e, float w): index(-1), start_site_index(s), end_site_index(e),
-                                        posterior_weight(w), log_posterior_weight(log(w)), next_fwd_edge_index(-1), next_bwd_edge_index(-1)
-                                        , used_in_alignment(false)
-                                        ,branch_count_since_last_used(0),branch_distance_since_last_used(0)
-                                        ,branch_count_as_skipped_edge(0){}
+                            posterior_weight(w), log_posterior_weight(log(w)),
+                            next_fwd_edge_index(-1), next_bwd_edge_index(-1), used_in_alignment(false),
+                            branch_count_since_last_used(0),branch_distance_since_last_used(0),
+                            branch_count_as_skipped_edge(0){}
 
     bool is_used() { return used_in_alignment; }
     void is_used(bool set) { used_in_alignment = set; }
@@ -94,6 +93,12 @@ public:
     bool operator>(const Edge& b)
     {
         return start_site_index>b.start_site_index && end_site_index>b.end_site_index;
+    }
+
+    friend ostream& operator<< (ostream &out, Edge& b)
+    {
+        out<<"index: "<<b.index<<"; start_site_index: "<<b.start_site_index<<"; end_site_index: "<<b.end_site_index;
+        return out;
     }
 
 };
@@ -438,6 +443,59 @@ public:
         }
     }
 
+    friend ostream& operator<< (ostream &out, Site& b)
+    {
+        out<<"index: "<<b.index<<"; character_state: "<<b.character_state<<"; site_type: "<<b.site_type<<"; path_state: "<<b.path_state;
+        return out;
+    }
+
+};
+
+/**************************************/
+
+struct Unique_index
+{
+    int left_index;
+    int right_index;
+    int match_state;
+    int site_index;
+    enum Match_state {match,xgap,ygap};
+
+public:
+    Unique_index(int l, int r, int s): left_index(l), right_index(r), match_state(s) {}
+    Unique_index(int l, int r, int s, int i): left_index(l), right_index(r), match_state(s), site_index(i) {}
+
+    bool operator==(const Unique_index& b)
+    {
+        return left_index==b.left_index && right_index==b.right_index && match_state == b.match_state;
+    }
+
+    bool operator!=(const Unique_index& b)
+    {
+        return !(left_index==b.left_index && right_index==b.right_index && match_state == b.match_state);
+    }
+
+    bool operator<(const Unique_index& b)
+    {
+        if(b.match_state == Unique_index::match)
+            return left_index<b.left_index && right_index<b.right_index;
+        else if(b.match_state == Unique_index::xgap)
+            return left_index<b.left_index && (right_index<b.right_index || right_index==b.right_index);
+        else if(b.match_state == Unique_index::xgap)
+            return (left_index==b.left_index && left_index<b.left_index) && right_index<b.right_index;
+        return false;
+    }
+
+    bool operator>(const Unique_index& b)
+    {
+        return left_index>b.left_index && right_index>b.right_index;
+    }
+
+    friend ostream& operator<< (ostream &out, Unique_index& b)
+    {
+        out<<"left_index: "<<b.left_index<<"; right_index: "<<b.right_index<<"; match_state: "<<b.match_state;
+        return out;
+    }
 };
 
 /**************************************/
@@ -452,6 +510,7 @@ class Sequence
     vector<Edge> edges;
     string full_dna_alphabet;
 
+    vector<Unique_index> unique_index;
 public:
 
     void initialise_indeces() {
@@ -612,7 +671,68 @@ public:
         site->set_first_fwd_edge_index(-1);
     }
 
+    void initialise_unique_index()
+    {
+        unique_index.clear();
+        int prev_left = -1;
+        int prev_right = -1;
+        for(int i=0;i<this->sites_length();i++)
+        {
+            Site *ts = this->get_site_at(i);
+            int this_left = ts->get_children()->left_index;
+            int this_right = ts->get_children()->right_index;
+            if(this_left>0 && this_right>0)
+            {
+                unique_index.push_back( Unique_index(this_left,this_right, Unique_index::match,i) );
+                prev_left = this_left;
+                prev_right = this_right;
+            }
+            else if(this_left>0)
+            {
+                unique_index.push_back( Unique_index(this_left,prev_right, Unique_index::xgap,i) );
+                prev_left = this_left;
+            }
+            else if(this_right>0)
+            {
+                unique_index.push_back( Unique_index(prev_left,this_right, Unique_index::match,i) );
+                prev_right = this_right;
+            }
+        }
+    }
 
+    vector<Unique_index> *get_unique_index() { return &unique_index; }
+
+    bool is_unique_index_ordered()
+    {
+        for(int i=0;i<(int) this->unique_index.size()-1;i++)
+        {
+            if( ! (this->unique_index.at(i) < this->unique_index.at(i+1) ) )
+                return false;
+        }
+        return true;
+    }
+
+    bool unique_index_contains_term(Unique_index *s)
+    {
+        for(int i=0;i<(int) this->unique_index.size();i++)
+        {
+            if(this->unique_index.at(i) == (*s))
+                return true;
+        }
+
+        return false;
+    }
+
+    int unique_index_of_term(Unique_index *s)
+    {
+        for(int i=0;i<(int) this->unique_index.size();i++)
+        {
+            if(this->unique_index.at(i) == (*s))
+                return unique_index.at(i).site_index;
+        }
+
+        return -1;
+    }
 };
 }
 
