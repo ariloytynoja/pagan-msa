@@ -175,9 +175,25 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
 
             this->sample_new_path(&sample_path,sp);
 
-            for(int i=0;i<(int)sample_path.size();i++)
-                cout<<sample_path.at(i).mp.matrix;
-            cout<<endl;
+            this->debug_msg("Simple_alignment: additional path sampled",1);
+
+            // Now build the sequence forward following the path saved in a vector;
+            //
+            Sequence *sampled_sequence = new Sequence(sample_path.size(),model->get_full_alphabet());
+            this->build_ancestral_sequence(sampled_sequence,&sample_path);
+
+            this->debug_msg("Simple_alignment: additional sequence sampled and built",1);
+
+            cout<<"\nancestral\n";
+            ancestral_sequence->print_path();
+            cout<<"\nsampled\n";
+            sampled_sequence->print_path();
+            cout<<"\nancestral\n";
+            ancestral_sequence->print_sequence();
+            cout<<"\nsampled\n";
+            sampled_sequence->print_sequence();
+
+            delete sampled_sequence;
         }
     }
 
@@ -622,8 +638,8 @@ void Simple_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer f
     {
         while(i>=0)
         {
-            cout<<i<<" "<<j<<": "<<x_ind<<" "<<y_ind<<" "<<vit_mat<<endl;
-
+//            cout<<i<<" "<<j<<": "<<x_ind<<" "<<y_ind<<" "<<vit_mat<<endl;
+//
             if(vit_mat == Simple_alignment::m_mat)
             {
                 this->iterate_bwd_edges_for_sampled_match(i,j,&bwd_p);
@@ -1589,7 +1605,6 @@ void Simple_alignment::iterate_bwd_edges_for_sampled_gap(int site_index1,int sit
         Edge * edge = site->get_first_bwd_edge();        
 
         Matrix_pointer bwd_p;
-
         this->add_sample_gap_ext(edge,z_slice,&bwd_p,is_x_matrix);
 
         sum_score  += bwd_p.score;
