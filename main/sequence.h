@@ -733,6 +733,23 @@ public:
 
         return -1;
     }
+
+    void copy_site_details(Site* original, Site *copy)
+    {
+        copy->set_children( original->get_children()->left_index, original->get_children()->left_index );
+        copy->set_state( original->get_state() );
+        copy->set_path_state( original->get_path_state() );
+        copy->set_branch_count_since_last_used( original->get_branch_count_since_last_used() );
+        copy->set_branch_distance_since_last_used( original->get_branch_distance_since_last_used() );
+    }
+
+    void copy_edge_details(Edge* original, Edge *copy)
+    {
+        copy->set_branch_count_as_skipped_edge( original->get_branch_count_as_skipped_edge() );
+        copy->set_branch_count_since_last_used( original->get_branch_count_since_last_used() );
+        copy->set_branch_distance_since_last_used( original->get_branch_distance_since_last_used() );
+        copy->set_weight( original->get_posterior_weight() );
+    }
 };
 }
 
