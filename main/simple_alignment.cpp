@@ -192,19 +192,19 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
 //            finally, reorder sites for the next alignment
 //             - note that (some) pointers are *index-based*
 
-            cout<<"\nancestral\n";
-            ancestral_sequence->print_path();
-            cout<<"\nsampled\n";
-            sampled_sequence->print_path();
-            cout<<"\nancestral\n";
-            ancestral_sequence->print_sequence();
-            cout<<"\nsampled\n";
-            sampled_sequence->print_sequence();
+//            cout<<"\nancestral\n";
+//            ancestral_sequence->print_path();
+//            cout<<"\nsampled\n";
+//            sampled_sequence->print_path();
+//            cout<<"\nancestral\n";
+//            ancestral_sequence->print_sequence();
+//            cout<<"\nsampled\n";
+//            sampled_sequence->print_sequence();
 
             this->merge_sampled_sequence(ancestral_sequence, sampled_sequence);
 
-            cout<<"\nmerged ancestral\n";
-            ancestral_sequence->print_sequence();
+//            cout<<"\nmerged ancestral\n";
+//            ancestral_sequence->print_sequence();
 
             delete sampled_sequence;
         }
@@ -242,6 +242,18 @@ void Simple_alignment::merge_sampled_sequence(Sequence *ancestral_sequence, Sequ
     ancestral_sequence->initialise_unique_index();
     sampled_sequence->initialise_unique_index();
 
+    if(Settings::noise>4)
+    {
+        cout<<"\nancestral\n";
+        ancestral_sequence->print_path();
+        cout<<"\nsampled\n";
+        sampled_sequence->print_path();
+        cout<<"\nancestral\n";
+        ancestral_sequence->print_sequence();
+        cout<<"\nsampled\n";
+        sampled_sequence->print_sequence();
+    }
+
     vector<int> sample_index_for_added;
     vector<int> sample_index_in_ancestral;
 
@@ -275,6 +287,7 @@ void Simple_alignment::merge_sampled_sequence(Sequence *ancestral_sequence, Sequ
         }
 
     }
+if( sample_index_for_added.size()>0 )
 
     // If sites were added, add also their edges
     //
@@ -334,7 +347,6 @@ void Simple_alignment::merge_sampled_sequence(Sequence *ancestral_sequence, Sequ
 
             if(!ancestral_sequence->contains_this_fwd_edge_at_site(edge.get_start_site_index(),&edge))
             {
-
                 ancestral_sequence->copy_edge_details( sample_edge, &edge );
                 ancestral_sequence->push_back_edge(edge);
 
@@ -353,7 +365,6 @@ void Simple_alignment::merge_sampled_sequence(Sequence *ancestral_sequence, Sequ
 
                 if(!ancestral_sequence->contains_this_fwd_edge_at_site(edge.get_start_site_index(),&edge))
                 {
-
                     ancestral_sequence->copy_edge_details( sample_edge, &edge );
                     ancestral_sequence->push_back_edge(edge);
 
@@ -372,6 +383,11 @@ void Simple_alignment::merge_sampled_sequence(Sequence *ancestral_sequence, Sequ
 
         ancestral_sequence->remap_edges_vector();
 
+        if(Settings::noise>4)
+        {
+            cout<<"\nmerged ancestral\n";
+            ancestral_sequence->print_sequence();
+        }
     }
 }
 

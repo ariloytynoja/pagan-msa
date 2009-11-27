@@ -39,11 +39,13 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
         aligned_sequences->push_back(entry);
     }
 
-    if(Settings_handle::st.get("sample-additional-paths").as<int>()==0)
+//    if(Settings_handle::st.get("sample-additional-paths").as<int>()==0)
+    if(true)
     {
         Sequence *root = this->get_sequence();
         int root_length = root->sites_length();
-
+cout<<"print root\n";
+root->print_sequence();
         for(int j=1;j<root_length-1;j++)
         {
             vector<char> column;
@@ -105,7 +107,7 @@ cout<<"next? "<<nsite->children.left_index<<" "<<nsite->children.right_index<<en
             }
 
             cout<<"choices: ";
-            for(int i=0;i<next_sites.size();i++)
+            for(int i=0;i<(int)next_sites.size();i++)
                 cout<<next_sites.at(i)<<" ";
             cout<<endl;
             site_index = (int) ( next_sites.size() * (double)rand() / ((double)(RAND_MAX)+(double)(1)) );
@@ -123,7 +125,7 @@ cout<<"site_index: "<<site_index<<endl;
         }
 
         cout<<"path sampled\n";
-        for(int k=1;k<sampled_sites.size()-1;k++)
+        for(int k=1;k<(int)sampled_sites.size()-1;k++)
         {
             int j = sampled_sites.at(k);
 cout<<"picking site "<<j<<endl;

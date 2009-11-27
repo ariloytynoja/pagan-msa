@@ -136,10 +136,66 @@ public:
 
 /**************************************/
 
+struct Unique_index
+{
+    int left_index;
+    int right_index;
+    int match_state;
+    int site_index;
+    enum Match_state {match,xgap,ygap};
+
+public:
+    Unique_index(): left_index(-1), right_index(-1), match_state(-1), site_index(-1) {}
+
+    Unique_index(int l, int r, int s): left_index(l), right_index(r), match_state(s) {}
+    Unique_index(int l, int r, int s, int i): left_index(l), right_index(r), match_state(s), site_index(i) {}
+
+    bool operator==(const Unique_index& b)
+    {
+        return left_index==b.left_index && right_index==b.right_index && match_state == b.match_state;
+    }
+
+    bool operator!=(const Unique_index& b)
+    {
+        return !(left_index==b.left_index && right_index==b.right_index && match_state == b.match_state);
+    }
+
+    bool operator<(const Unique_index& b)
+    {
+        if(b.match_state == Unique_index::match)
+            return (left_index<=b.left_index && right_index<b.right_index ) || (left_index<b.left_index && right_index<=b.right_index);
+        else if(b.match_state == Unique_index::xgap)
+            return left_index<b.left_index && right_index<=b.right_index;
+        else if(b.match_state == Unique_index::xgap)
+            return left_index<=b.left_index && right_index<b.right_index;
+        return false;
+    }
+
+    bool operator>(const Unique_index& b)
+    {
+        if(b.match_state == Unique_index::match)
+            return (left_index>=b.left_index && right_index>b.right_index ) || (left_index>b.left_index && right_index>=b.right_index);
+        else if(b.match_state == Unique_index::xgap)
+            return left_index>b.left_index && right_index>=b.right_index;
+        else if(b.match_state == Unique_index::xgap)
+            return left_index>=b.left_index && right_index>b.right_index;
+        return false;
+    }
+
+    friend ostream& operator<< (ostream &out, Unique_index& b)
+    {
+        out<<"left_index: "<<b.left_index<<"; right_index: "<<b.right_index<<"; match_state: "<<b.match_state;
+        return out;
+    }
+};
+
+/**************************************/
+
 struct Site
 {
     int index;
     Site_children children;
+    Unique_index unique_index;
 
     int character_state;
 
@@ -204,6 +260,20 @@ public:
 
     /**************************************/
 
+    void set_unique_index(int li, int ri, int st)
+    {
+        unique_index.left_index = li; unique_index.right_index = ri; unique_index.match_state = st;
+    }
+
+    void set_unique_index(int li, int ri, int st, int si)
+    {
+        unique_index.left_index = li; unique_index.right_index = ri;
+        unique_index.match_state = st; unique_index.site_index = si;
+    }
+
+    Unique_index * get_unique_index() { return &unique_index; }
+
+    /**************************************/
     void set_first_fwd_edge_index(int i)
     {
         first_fwd_edge_index = current_fwd_edge_index = i;
@@ -472,65 +542,67 @@ public:
 
     static bool comesBefore(const Site& a,const Site& b)
     {
-        return  (a.children.left_index<b.children.left_index && a.children.right_index<=b.children.right_index) ||
-                (a.children.left_index<=b.children.left_index && a.children.right_index<b.children.right_index);
+//        return  (a.children.left_index<b.children.left_index && a.children.right_index<=b.children.right_index) ||
+//                (a.children.left_index<=b.children.left_index && a.children.right_index<b.children.right_index);
+        return  (a.unique_index.left_index<b.unique_index.left_index && a.unique_index.right_index<=b.unique_index.right_index) ||
+                (a.unique_index.left_index<=b.unique_index.left_index && a.unique_index.right_index<b.unique_index.right_index);
     }
 };
 
 /**************************************/
 
-struct Unique_index
-{
-    int left_index;
-    int right_index;
-    int match_state;
-    int site_index;
-    enum Match_state {match,xgap,ygap};
-
-public:
-    Unique_index(int l, int r, int s): left_index(l), right_index(r), match_state(s) {}
-    Unique_index(int l, int r, int s, int i): left_index(l), right_index(r), match_state(s), site_index(i) {}
-
-    bool operator==(const Unique_index& b)
-    {
-        return left_index==b.left_index && right_index==b.right_index && match_state == b.match_state;
-    }
-
-    bool operator!=(const Unique_index& b)
-    {
-        return !(left_index==b.left_index && right_index==b.right_index && match_state == b.match_state);
-    }
-
-    bool operator<(const Unique_index& b)
-    {
-        if(b.match_state == Unique_index::match)
-            return (left_index<=b.left_index && right_index<b.right_index ) || (left_index<b.left_index && right_index<=b.right_index);
-        else if(b.match_state == Unique_index::xgap)
-            return left_index<b.left_index && right_index<=b.right_index;
-        else if(b.match_state == Unique_index::xgap)
-            return left_index<=b.left_index && right_index<b.right_index;
-        return false;
-    }
-
-    bool operator>(const Unique_index& b)
-    {
-        if(b.match_state == Unique_index::match)
-            return (left_index>=b.left_index && right_index>b.right_index ) || (left_index>b.left_index && right_index>=b.right_index);
-        else if(b.match_state == Unique_index::xgap)
-            return left_index>b.left_index && right_index>=b.right_index;
-        else if(b.match_state == Unique_index::xgap)
-            return left_index>=b.left_index && right_index>b.right_index;
-        return false;
-    }
-
-    friend ostream& operator<< (ostream &out, Unique_index& b)
-    {
-        out<<"left_index: "<<b.left_index<<"; right_index: "<<b.right_index<<"; match_state: "<<b.match_state;
-        return out;
-    }
-};
-
-/**************************************/
+//struct Unique_index
+//{
+//    int left_index;
+//    int right_index;
+//    int match_state;
+//    int site_index;
+//    enum Match_state {match,xgap,ygap};
+//
+//public:
+//    Unique_index(int l, int r, int s): left_index(l), right_index(r), match_state(s) {}
+//    Unique_index(int l, int r, int s, int i): left_index(l), right_index(r), match_state(s), site_index(i) {}
+//
+//    bool operator==(const Unique_index& b)
+//    {
+//        return left_index==b.left_index && right_index==b.right_index && match_state == b.match_state;
+//    }
+//
+//    bool operator!=(const Unique_index& b)
+//    {
+//        return !(left_index==b.left_index && right_index==b.right_index && match_state == b.match_state);
+//    }
+//
+//    bool operator<(const Unique_index& b)
+//    {
+//        if(b.match_state == Unique_index::match)
+//            return (left_index<=b.left_index && right_index<b.right_index ) || (left_index<b.left_index && right_index<=b.right_index);
+//        else if(b.match_state == Unique_index::xgap)
+//            return left_index<b.left_index && right_index<=b.right_index;
+//        else if(b.match_state == Unique_index::xgap)
+//            return left_index<=b.left_index && right_index<b.right_index;
+//        return false;
+//    }
+//
+//    bool operator>(const Unique_index& b)
+//    {
+//        if(b.match_state == Unique_index::match)
+//            return (left_index>=b.left_index && right_index>b.right_index ) || (left_index>b.left_index && right_index>=b.right_index);
+//        else if(b.match_state == Unique_index::xgap)
+//            return left_index>b.left_index && right_index>=b.right_index;
+//        else if(b.match_state == Unique_index::xgap)
+//            return left_index>=b.left_index && right_index>b.right_index;
+//        return false;
+//    }
+//
+//    friend ostream& operator<< (ostream &out, Unique_index& b)
+//    {
+//        out<<"left_index: "<<b.left_index<<"; right_index: "<<b.right_index<<"; match_state: "<<b.match_state;
+//        return out;
+//    }
+//};
+//
+///**************************************/
 
 class Sequence
 {
@@ -706,8 +778,8 @@ public:
     void initialise_unique_index()
     {
         unique_index.clear();
-        int prev_left = -1;
-        int prev_right = -1;
+        int prev_left = 0;
+        int prev_right = 0;
         for(int i=0;i<this->sites_length();i++)
         {
             Site *ts = this->get_site_at(i);
@@ -716,18 +788,34 @@ public:
             if(this_left>0 && this_right>0)
             {
                 unique_index.push_back( Unique_index(this_left,this_right, Unique_index::match,i) );
+                ts->set_unique_index(this_left,this_right, Unique_index::match,i);
+
                 prev_left = this_left;
                 prev_right = this_right;
             }
             else if(this_left>0)
             {
                 unique_index.push_back( Unique_index(this_left,prev_right, Unique_index::xgap,i) );
+                ts->set_unique_index(this_left,prev_right, Unique_index::xgap,i);
+
                 prev_left = this_left;
             }
             else if(this_right>0)
             {
                 unique_index.push_back( Unique_index(prev_left,this_right, Unique_index::match,i) );
+                ts->set_unique_index(prev_left,this_right, Unique_index::match,i);
+
                 prev_right = this_right;
+            }
+            else if(ts->get_site_type()==Site::start_site)
+            {
+                unique_index.push_back( Unique_index(0,0, Unique_index::match,i) );
+                ts->set_unique_index(0,0, Unique_index::match,i);
+            }
+            else if(ts->get_site_type()==Site::stop_site)
+            {
+                unique_index.push_back( Unique_index(prev_left+1,prev_right+1, Unique_index::match,i) );
+                ts->set_unique_index(prev_left+1,prev_right+1, Unique_index::match,i);
             }
         }
     }
@@ -776,6 +864,8 @@ public:
     void copy_site_details(Site* original, Site *copy)
     {
         copy->set_children( original->get_children()->left_index, original->get_children()->right_index );
+        copy->set_unique_index( original->get_unique_index()->left_index, original->get_unique_index()->right_index,
+                                original->get_unique_index()->match_state, original->get_unique_index()->site_index );
         copy->set_state( original->get_state() );
         copy->set_path_state( original->get_path_state() );
         copy->set_branch_count_since_last_used( original->get_branch_count_since_last_used() );

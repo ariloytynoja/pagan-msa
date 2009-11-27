@@ -105,7 +105,7 @@ void Sequence::print_sequence(vector<Site> *sites)
         else
             cout<<tsite->get_index()<<" +";
 
-        cout<<"("<<tsite->get_children()->left_index<<","<<tsite->get_children()->right_index<<") ";
+        cout<<"("<<tsite->get_unique_index()->left_index<<","<<tsite->get_unique_index()->right_index<<") ";
 //        if(tsite->has_fwd_edge())
 //        {
 //            Edge *tedge = tsite->get_first_fwd_edge();
