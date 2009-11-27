@@ -99,12 +99,13 @@ void Sequence::print_sequence(vector<Site> *sites)
     {
         Site *tsite =  &sites->at(i);
 //cout<<i<<" "<<tsite->get_state()<<endl;
-
+        cout<<i<<": ";
         if(tsite->get_site_type()==Site::real_site)
             cout<<tsite->get_index()<<" "<<full_dna_alphabet.at(tsite->get_state());
         else
             cout<<tsite->get_index()<<" +";
 
+        cout<<"("<<tsite->get_children()->left_index<<","<<tsite->get_children()->right_index<<") ";
 //        if(tsite->has_fwd_edge())
 //        {
 //            Edge *tedge = tsite->get_first_fwd_edge();

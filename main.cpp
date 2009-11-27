@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
     vector<Fasta_entry> aligned_sequences;
     root->get_alignment(&aligned_sequences,Settings_handle::st.is("output-ancestors"));
 
-
+cout<<"alignment done";
     if(1) {
         if(Settings_handle::st.is("outfile")){
             string outfile =  Settings_handle::st.get("outfile").as<string>();

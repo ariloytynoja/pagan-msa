@@ -39,18 +39,103 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
         aligned_sequences->push_back(entry);
     }
 
-    Sequence *root = this->get_sequence();
-    int root_length = root->sites_length();
-
-    for(int j=1;j<root_length-1;j++)
+    if(Settings_handle::st.get("sample-additional-paths").as<int>()==0)
     {
-        vector<char> column;
-        this->get_alignment_column_at(j,&column,include_internal_nodes);
+        Sequence *root = this->get_sequence();
+        int root_length = root->sites_length();
 
-        for(unsigned int i=0;i<aligned_sequences->size();i++)
+        for(int j=1;j<root_length-1;j++)
         {
-            aligned_sequences->at(i).sequence.push_back(column.at(i));
+            vector<char> column;
+            this->get_alignment_column_at(j,&column,include_internal_nodes);
+
+            for(unsigned int i=0;i<aligned_sequences->size();i++)
+            {
+                aligned_sequences->at(i).sequence.push_back(column.at(i));
+            }
         }
+    }
+    else
+    {
+        Sequence *root = this->get_sequence();
+        int root_length = root->sites_length();
+
+        cout<<"root length: "<<root_length<<endl;
+
+        vector<int> sampled_sites;
+
+        int site_index=0;
+        sampled_sites.push_back(site_index);
+
+        int l_index = 0;
+        int r_index = 0;
+
+        while(site_index < root_length-1)
+        {
+            cout<<"current: "<<site_index<<" ("<<l_index<<","<<r_index<<")"<<endl;
+
+            Site *tsite = root->get_site_at( site_index );
+
+            vector<int> next_sites;
+
+            Edge *fwd_edge = tsite->get_first_fwd_edge();
+
+            Site *nsite = root->get_site_at( fwd_edge->get_end_site_index() );
+cout<<"next? "<<nsite->children.left_index<<" "<<nsite->children.right_index<<endl;
+            if( ( l_index+1 == nsite->children.left_index && r_index+1 == nsite->children.right_index ) ||
+                ( l_index+1 == nsite->children.left_index && nsite->children.right_index == -1 ) ||
+                ( nsite->children.left_index == -1 && r_index+1 == nsite->children.right_index ) )
+            {
+                next_sites.push_back(fwd_edge->get_end_site_index());
+            }
+
+            while(tsite->has_next_fwd_edge())
+            {
+                fwd_edge = tsite->get_next_fwd_edge();
+
+                nsite = root->get_site_at( fwd_edge->get_end_site_index() );
+cout<<"next? "<<nsite->children.left_index<<" "<<nsite->children.right_index<<endl;
+
+                if( ( l_index+1 == nsite->children.left_index && r_index+1 == nsite->children.right_index ) ||
+                    ( l_index+1 == nsite->children.left_index && nsite->children.right_index == -1 ) ||
+                    ( nsite->children.left_index == -1 && r_index+1 == nsite->children.right_index ) )
+                {
+                    next_sites.push_back(fwd_edge->get_end_site_index());
+                }
+            }
+
+            cout<<"choices: ";
+            for(int i=0;i<next_sites.size();i++)
+                cout<<next_sites.at(i)<<" ";
+            cout<<endl;
+            site_index = (int) ( next_sites.size() * (double)rand() / ((double)(RAND_MAX)+(double)(1)) );
+            site_index = next_sites.at(site_index);
+            sampled_sites.push_back( site_index );
+cout<<"site_index: "<<site_index<<endl;
+
+            nsite = root->get_site_at( site_index );
+
+            if(nsite->children.left_index > 0)
+                l_index = nsite->children.left_index;
+            if(nsite->children.right_index > 0)
+                r_index = nsite->children.right_index;
+
+        }
+
+        cout<<"path sampled\n";
+        for(int k=1;k<sampled_sites.size()-1;k++)
+        {
+            int j = sampled_sites.at(k);
+cout<<"picking site "<<j<<endl;
+            vector<char> column;
+            this->get_alignment_column_at(j,&column,include_internal_nodes);
+
+            for(unsigned int i=0;i<aligned_sequences->size();i++)
+            {
+                aligned_sequences->at(i).sequence.push_back(column.at(i));
+            }
+        }
+
     }
 }
 

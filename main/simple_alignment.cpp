@@ -201,170 +201,10 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
             cout<<"\nsampled\n";
             sampled_sequence->print_sequence();
 
-            ancestral_sequence->initialise_unique_index();
+            this->merge_sampled_sequence(ancestral_sequence, sampled_sequence);
 
-            sampled_sequence->initialise_unique_index();
-
-            vector<int> sample_index_for_added;
-            vector<int> sample_index_in_ancestral;
-
-            vector<Unique_index> *index = sampled_sequence->get_unique_index();
-            for(int i=0;i<(int) index->size();i++)
-            {
-                int anc_index = ancestral_sequence->unique_index_of_term( &index->at(i) );
-
-                if( anc_index>=0 )
-                {
-                    sample_index_in_ancestral.push_back(anc_index);
-                }
-                else
-                {
-                    // Make a copy of the site in sampled sequence that is missing from
-                    // ancestral sequence and add it there; can't make a carbon copy as
-                    // indeces (neighbour sites, edges) aren't correct
-                    //
-                    Site *sample_site = sampled_sequence->get_site_at( index->at(i).site_index );
-
-                    Site site( ancestral_sequence->get_edges() );
-
-                    ancestral_sequence->copy_site_details(sample_site, &site);
-
-//                    site.set_children( sample_site->get_children()->left_index, sample_site->get_children()->left_index );
-//
-//                    site.set_state( sample_site->get_state() );
-//                    site.set_path_state( sample_site->get_path_state() );
-//                    site.set_branch_count_since_last_used( sample_site->get_branch_count_since_last_used() );
-//                    site.set_branch_distance_since_last_used( sample_site->get_branch_distance_since_last_used() );
-
-                    ancestral_sequence->push_back_site( site );
-
-                    // Keep track of sites added so that edges can be added below
-                    //
-                    sample_index_in_ancestral.push_back( ancestral_sequence->get_current_site_index() );
-                    sample_index_for_added.push_back( sample_index_in_ancestral.size()-1 );
-
-                    cout<<"add site "<<site<<endl;
-                }
-            }
-
-            for(int i=0;i<(int) sample_index_in_ancestral.size();i++)
-                cout<<i<<" "<<sample_index_in_ancestral.at(i)<<endl;
-
-            if(sample_index_for_added.size()>0)
-            {
-                for(int i=0;i<(int) sample_index_for_added.size();i++)
-                {
-                    Site *sample_site = sampled_sequence->get_site_at( sample_index_for_added.at( i ) );
-                    Site *added_site = ancestral_sequence->get_site_at( sample_index_in_ancestral.at ( sample_index_for_added.at( i ) ) );
-
-                    if( sample_site->has_bwd_edge() )
-                    {
-                        Edge *sample_edge = sample_site->get_first_bwd_edge();
-
-                        int edge_start_site = sample_index_in_ancestral.at ( sample_edge->get_start_site_index() );
-                        int edge_end_site = sample_index_in_ancestral.at ( sample_edge->get_end_site_index() );
-
-                        Edge edge( edge_start_site, edge_end_site );
-
-                        if(!ancestral_sequence->contains_this_bwd_edge_at_site(edge.get_end_site_index(),&edge))
-                        {
-
-                            ancestral_sequence->copy_edge_details( sample_edge, &edge );
-//                            edge.set_branch_count_as_skipped_edge( sample_edge->get_branch_count_as_skipped_edge() );
-//                            edge.set_branch_count_since_last_used( sample_edge->get_branch_count_since_last_used() );
-//                            edge.set_branch_distance_since_last_used( sample_edge->get_branch_distance_since_last_used() );
-//                            edge.set_weight( sample_edge->get_posterior_weight() );
-
-                            ancestral_sequence->push_back_edge(edge);
-
-                            ancestral_sequence->get_site_at( edge.get_start_site_index() )->add_new_fwd_edge_index( ancestral_sequence->get_current_edge_index() );
-                            ancestral_sequence->get_site_at( edge.get_end_site_index()   )->add_new_bwd_edge_index( ancestral_sequence->get_current_edge_index() );
-                        }
-
-                        while( sample_site->has_next_bwd_edge() )
-                        {
-                            sample_edge = sample_site->get_next_bwd_edge();
-
-                            edge_start_site = sample_index_in_ancestral.at ( sample_edge->get_start_site_index() );
-                            edge_end_site = sample_index_in_ancestral.at ( sample_edge->get_end_site_index() );
-
-                            Edge edge( edge_start_site, edge_end_site );
-
-                            if(!ancestral_sequence->contains_this_bwd_edge_at_site(edge.get_end_site_index(),&edge))
-                            {
-
-                                ancestral_sequence->copy_edge_details( sample_edge, &edge );
-//                                edge.set_branch_count_as_skipped_edge( sample_edge->get_branch_count_as_skipped_edge() );
-//                                edge.set_branch_count_since_last_used( sample_edge->get_branch_count_since_last_used() );
-//                                edge.set_branch_distance_since_last_used( sample_edge->get_branch_distance_since_last_used() );
-//                                edge.set_weight( sample_edge->get_posterior_weight() );
-
-                                ancestral_sequence->push_back_edge(edge);
-
-                                ancestral_sequence->get_site_at( edge.get_start_site_index() )->add_new_fwd_edge_index( ancestral_sequence->get_current_edge_index() );
-                                ancestral_sequence->get_site_at( edge.get_end_site_index()   )->add_new_bwd_edge_index( ancestral_sequence->get_current_edge_index() );
-                            }
-                        }
-                    }
-
-                    // The same for fwd edges ??
-                    if( sample_site->has_fwd_edge() )
-                    {
-                        Edge *sample_edge = sample_site->get_first_fwd_edge();
-
-                        int edge_start_site = sample_index_in_ancestral.at ( sample_edge->get_start_site_index() );
-                        int edge_end_site = sample_index_in_ancestral.at ( sample_edge->get_end_site_index() );
-
-                        Edge edge( edge_start_site, edge_end_site );
-
-                        if(!ancestral_sequence->contains_this_fwd_edge_at_site(edge.get_start_site_index(),&edge))
-                        {
-
-                            ancestral_sequence->copy_edge_details( sample_edge, &edge );
-//                            edge.set_branch_count_as_skipped_edge( sample_edge->get_branch_count_as_skipped_edge() );
-//                            edge.set_branch_count_since_last_used( sample_edge->get_branch_count_since_last_used() );
-//                            edge.set_branch_distance_since_last_used( sample_edge->get_branch_distance_since_last_used() );
-//                            edge.set_weight( sample_edge->get_posterior_weight() );
-//HERE
-                            ancestral_sequence->push_back_edge(edge);
-
-                            ancestral_sequence->get_site_at( edge.get_start_site_index() )->add_new_fwd_edge_index( ancestral_sequence->get_current_edge_index() );
-                            ancestral_sequence->get_site_at( edge.get_end_site_index()   )->add_new_bwd_edge_index( ancestral_sequence->get_current_edge_index() );
-                        }
-
-                        while( sample_site->has_next_fwd_edge() )
-                        {
-                            sample_edge = sample_site->get_next_fwd_edge();
-
-                            edge_start_site = sample_index_in_ancestral.at ( sample_edge->get_start_site_index() );
-                            edge_end_site = sample_index_in_ancestral.at ( sample_edge->get_end_site_index() );
-
-                            Edge edge( edge_start_site, edge_end_site );
-
-                            if(!ancestral_sequence->contains_this_fwd_edge_at_site(edge.get_start_site_index(),&edge))
-                            {
-
-                                ancestral_sequence->copy_edge_details( sample_edge, &edge );
-//                                edge.set_branch_count_as_skipped_edge( sample_edge->get_branch_count_as_skipped_edge() );
-//                                edge.set_branch_count_since_last_used( sample_edge->get_branch_count_since_last_used() );
-//                                edge.set_branch_distance_since_last_used( sample_edge->get_branch_distance_since_last_used() );
-//                                edge.set_weight( sample_edge->get_posterior_weight() );
-
-                                ancestral_sequence->push_back_edge(edge);
-
-                                ancestral_sequence->get_site_at( edge.get_start_site_index() )->add_new_fwd_edge_index( ancestral_sequence->get_current_edge_index() );
-                                ancestral_sequence->get_site_at( edge.get_end_site_index()   )->add_new_bwd_edge_index( ancestral_sequence->get_current_edge_index() );
-                            }
-                        }
-                    }
-
-                }
-
-
-                // do the same for copying edges
-                // then just needs to reorder them and sort out something for the end
-                ancestral_sequence->print_sequence();
-            }
+            cout<<"\nmerged ancestral\n";
+            ancestral_sequence->print_sequence();
 
             delete sampled_sequence;
         }
@@ -394,6 +234,146 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
 
 }
 
+
+/********************************************/
+
+void Simple_alignment::merge_sampled_sequence(Sequence *ancestral_sequence, Sequence *sampled_sequence)
+{
+    ancestral_sequence->initialise_unique_index();
+    sampled_sequence->initialise_unique_index();
+
+    vector<int> sample_index_for_added;
+    vector<int> sample_index_in_ancestral;
+
+    vector<Unique_index> *index = sampled_sequence->get_unique_index();
+    for(int i=0;i<(int) index->size();i++)
+    {
+        int anc_index = ancestral_sequence->unique_index_of_term( &index->at(i) );
+
+        if( anc_index>=0 )
+        {
+            sample_index_in_ancestral.push_back(anc_index);
+        }
+        else
+        {
+            // Make a copy of the site in sampled sequence that is missing from
+            // ancestral sequence and add it there; can't make a carbon copy as
+            // indeces (neighbour sites, edges) aren't correct
+            //
+            Site *sample_site = sampled_sequence->get_site_at( index->at(i).site_index );
+
+            Site site( ancestral_sequence->get_edges() );
+            ancestral_sequence->copy_site_details(sample_site, &site);
+            ancestral_sequence->push_back_site( site );
+
+            ancestral_sequence->add_term_in_unique_index( index->at(i) );
+
+            // Keep track of sites added so that edges can be added below
+            //
+            sample_index_in_ancestral.push_back( ancestral_sequence->get_current_site_index() );
+            sample_index_for_added.push_back( sample_index_in_ancestral.size()-1 );
+        }
+
+    }
+
+    // If sites were added, add also their edges
+    //
+    for(int i=0;i<(int) sample_index_for_added.size();i++)
+    {
+        Site *sample_site = sampled_sequence->get_site_at( sample_index_for_added.at( i ) );
+
+        if( sample_site->has_bwd_edge() )
+        {
+            Edge *sample_edge = sample_site->get_first_bwd_edge();
+
+            int edge_start_site = sample_index_in_ancestral.at ( sample_edge->get_start_site_index() );
+            int edge_end_site = sample_index_in_ancestral.at ( sample_edge->get_end_site_index() );
+
+            Edge edge( edge_start_site, edge_end_site );
+
+            if(!ancestral_sequence->contains_this_bwd_edge_at_site(edge.get_end_site_index(),&edge))
+            {
+
+                ancestral_sequence->copy_edge_details( sample_edge, &edge );
+                ancestral_sequence->push_back_edge(edge);
+
+                ancestral_sequence->get_site_at( edge.get_start_site_index() )->add_new_fwd_edge_index( ancestral_sequence->get_current_edge_index() );
+                ancestral_sequence->get_site_at( edge.get_end_site_index()   )->add_new_bwd_edge_index( ancestral_sequence->get_current_edge_index() );
+            }
+
+            while( sample_site->has_next_bwd_edge() )
+            {
+                sample_edge = sample_site->get_next_bwd_edge();
+
+                edge_start_site = sample_index_in_ancestral.at ( sample_edge->get_start_site_index() );
+                edge_end_site = sample_index_in_ancestral.at ( sample_edge->get_end_site_index() );
+
+                Edge edge( edge_start_site, edge_end_site );
+
+                if(!ancestral_sequence->contains_this_bwd_edge_at_site(edge.get_end_site_index(),&edge))
+                {
+
+                    ancestral_sequence->copy_edge_details( sample_edge, &edge );
+                    ancestral_sequence->push_back_edge(edge);
+
+                    ancestral_sequence->get_site_at( edge.get_start_site_index() )->add_new_fwd_edge_index( ancestral_sequence->get_current_edge_index() );
+                    ancestral_sequence->get_site_at( edge.get_end_site_index()   )->add_new_bwd_edge_index( ancestral_sequence->get_current_edge_index() );
+                }
+            }
+        }
+
+        // The same for fwd edges
+        if( sample_site->has_fwd_edge() )
+        {
+            Edge *sample_edge = sample_site->get_first_fwd_edge();
+
+            int edge_start_site = sample_index_in_ancestral.at ( sample_edge->get_start_site_index() );
+            int edge_end_site = sample_index_in_ancestral.at ( sample_edge->get_end_site_index() );
+
+            Edge edge( edge_start_site, edge_end_site );
+
+            if(!ancestral_sequence->contains_this_fwd_edge_at_site(edge.get_start_site_index(),&edge))
+            {
+
+                ancestral_sequence->copy_edge_details( sample_edge, &edge );
+                ancestral_sequence->push_back_edge(edge);
+
+                ancestral_sequence->get_site_at( edge.get_start_site_index() )->add_new_fwd_edge_index( ancestral_sequence->get_current_edge_index() );
+                ancestral_sequence->get_site_at( edge.get_end_site_index()   )->add_new_bwd_edge_index( ancestral_sequence->get_current_edge_index() );
+            }
+
+            while( sample_site->has_next_fwd_edge() )
+            {
+                sample_edge = sample_site->get_next_fwd_edge();
+
+                edge_start_site = sample_index_in_ancestral.at ( sample_edge->get_start_site_index() );
+                edge_end_site = sample_index_in_ancestral.at ( sample_edge->get_end_site_index() );
+
+                Edge edge( edge_start_site, edge_end_site );
+
+                if(!ancestral_sequence->contains_this_fwd_edge_at_site(edge.get_start_site_index(),&edge))
+                {
+
+                    ancestral_sequence->copy_edge_details( sample_edge, &edge );
+                    ancestral_sequence->push_back_edge(edge);
+
+                    ancestral_sequence->get_site_at( edge.get_start_site_index() )->add_new_fwd_edge_index( ancestral_sequence->get_current_edge_index() );
+                    ancestral_sequence->get_site_at( edge.get_end_site_index()   )->add_new_bwd_edge_index( ancestral_sequence->get_current_edge_index() );
+                }
+            }
+        }
+    }
+
+    if( sample_index_for_added.size()>0 )
+    {
+        // Now reorder the ancestral sequence
+
+        ancestral_sequence->sort_sites_vector();
+
+        ancestral_sequence->remap_edges_vector();
+
+    }
+}
 
 /********************************************/
 

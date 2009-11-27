@@ -294,6 +294,9 @@ class Simple_alignment
 
     /********************************************/
 
+    void merge_sampled_sequence(Sequence *ancestral_sequence, Sequence *sampled_sequence);
+
+    /********************************************/
 
     double get_log_edge_weight(Edge *edge) { return (*this.*log_edge_weight)(edge); }
     double (ppa::Simple_alignment::*log_edge_weight)(Edge *edge);

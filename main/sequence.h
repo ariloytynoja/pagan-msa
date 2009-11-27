@@ -1,6 +1,7 @@
 #ifndef SEQUENCE_H
 #define SEQUENCE_H
 
+#include <algorithm>
 #include <vector>
 #include <string>
 #include <cmath>
@@ -449,6 +450,31 @@ public:
         return out;
     }
 
+    bool operator==(const Site& b)
+    {
+        return children==b.children;
+    }
+
+    bool operator!=(const Site& b)
+    {
+        return !(children==b.children);
+    }
+
+    bool operator<(const Site& b)
+    {
+        return children<b.children;
+    }
+
+    bool operator>(const Site& b)
+    {
+        return children>b.children;
+    }
+
+    static bool comesBefore(const Site& a,const Site& b)
+    {
+        return  (a.children.left_index<b.children.left_index && a.children.right_index<=b.children.right_index) ||
+                (a.children.left_index<=b.children.left_index && a.children.right_index<b.children.right_index);
+    }
 };
 
 /**************************************/
@@ -478,17 +504,23 @@ public:
     bool operator<(const Unique_index& b)
     {
         if(b.match_state == Unique_index::match)
-            return left_index<b.left_index && right_index<b.right_index;
+            return (left_index<=b.left_index && right_index<b.right_index ) || (left_index<b.left_index && right_index<=b.right_index);
         else if(b.match_state == Unique_index::xgap)
-            return left_index<b.left_index && (right_index<b.right_index || right_index==b.right_index);
+            return left_index<b.left_index && right_index<=b.right_index;
         else if(b.match_state == Unique_index::xgap)
-            return (left_index==b.left_index && left_index<b.left_index) && right_index<b.right_index;
+            return left_index<=b.left_index && right_index<b.right_index;
         return false;
     }
 
     bool operator>(const Unique_index& b)
     {
-        return left_index>b.left_index && right_index>b.right_index;
+        if(b.match_state == Unique_index::match)
+            return (left_index>=b.left_index && right_index>b.right_index ) || (left_index>b.left_index && right_index>=b.right_index);
+        else if(b.match_state == Unique_index::xgap)
+            return left_index>b.left_index && right_index>=b.right_index;
+        else if(b.match_state == Unique_index::xgap)
+            return left_index>=b.left_index && right_index>b.right_index;
+        return false;
     }
 
     friend ostream& operator<< (ostream &out, Unique_index& b)
@@ -700,7 +732,14 @@ public:
         }
     }
 
+    void add_term_in_unique_index(Unique_index ind)
+    {
+        unique_index.push_back( ind );
+    }
+
     vector<Unique_index> *get_unique_index() { return &unique_index; }
+
+    Unique_index *get_unique_index_at(int i) { return &unique_index.at(i); }
 
     bool is_unique_index_ordered()
     {
@@ -736,7 +775,7 @@ public:
 
     void copy_site_details(Site* original, Site *copy)
     {
-        copy->set_children( original->get_children()->left_index, original->get_children()->left_index );
+        copy->set_children( original->get_children()->left_index, original->get_children()->right_index );
         copy->set_state( original->get_state() );
         copy->set_path_state( original->get_path_state() );
         copy->set_branch_count_since_last_used( original->get_branch_count_since_last_used() );
@@ -750,6 +789,35 @@ public:
         copy->set_branch_distance_since_last_used( original->get_branch_distance_since_last_used() );
         copy->set_weight( original->get_posterior_weight() );
     }
+    
+    void sort_sites_vector()
+    {
+        sort(sites.begin(),sites.end(),Site::comesBefore);
+    }
+    
+     void remap_edges_vector()
+     {
+
+        vector<int> new_site_index;
+        new_site_index.resize( this->sites_length() );
+
+        for(int i=0;i<this->sites_length();i++)
+            new_site_index.at( this->get_site_at(i)->get_index() ) = i;
+
+        for(int i=0;i<(int) edges.size();i++)
+        {
+             int s = edges.at(i).get_start_site_index();
+             int e = edges.at(i).get_end_site_index();
+
+             edges.at(i).set_start_site_index( new_site_index.at(s) );
+             edges.at(i).set_end_site_index( new_site_index.at(e) );
+        }
+
+        for(int i=0;i<this->sites_length();i++)
+            this->get_site_at(i)->set_index(i);
+
+     }
+
 };
 }
 
