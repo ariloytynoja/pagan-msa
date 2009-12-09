@@ -121,9 +121,9 @@ class Simple_alignment
     void delete_edge_range(Sequence *sequence,int edge_ind,int skip_start_site);
 
     void transfer_child_edge(Sequence *sequence, Edge *child, vector<int> *child_index, float branch_length,
-                             bool adjust_posterior_weight = true, float branch_weight = 1.0);
+                             bool connects_neighbour_site = false, bool adjust_posterior_weight = true, float branch_weight = 1.0);
     void transfer_child_edge(Sequence *sequence, Edge edge, Edge *child, float branch_length,
-                             bool adjust_posterior_weight = true, float branch_weight = 1.0);
+                             bool connects_neighbour_site = false, bool adjust_posterior_weight = true, float branch_weight = 1.0);
 
     /*********************************/
 

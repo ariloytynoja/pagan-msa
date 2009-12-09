@@ -16,3 +16,7 @@ maybe it's not right to compute post probs and then weight the edges
 instead of passing vector<matrix_pointer> to add_sample_gap_* functions, pass a plain matrix_pointer
 - this can be modified (add missing x_ind, y_ind, etc) before pushing to vector
 DONE
+
+
+what about marking edges that form a "backbone" of an alignment. If they can be simply defined by
+picking up the *first* edges of each site, that should be easy.

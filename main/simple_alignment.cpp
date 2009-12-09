@@ -1080,7 +1080,7 @@ void Simple_alignment::create_ancestral_edges(Sequence *sequence)
             if( tsite->has_bwd_edge() )
             {
                 Edge *child = tsite->get_first_bwd_edge();
-                this->transfer_child_edge(sequence,child, &left_child_index, left_branch_length );
+                this->transfer_child_edge(sequence,child, &left_child_index, left_branch_length, true );
 
                 while( tsite->has_next_bwd_edge() )
                 {
@@ -1137,7 +1137,7 @@ void Simple_alignment::create_ancestral_edges(Sequence *sequence)
             if( tsite->has_bwd_edge() )
             {
                 Edge *child = tsite->get_first_bwd_edge();
-                this->transfer_child_edge(sequence,child, &right_child_index, right_branch_length );
+                this->transfer_child_edge(sequence,child, &right_child_index, right_branch_length, true );
 
                 while( tsite->has_next_bwd_edge() )
                 {
@@ -1324,14 +1324,14 @@ void Simple_alignment::delete_edge_range(Sequence *sequence,int edge_ind,int ski
 
 }
 
-void Simple_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vector<int> *child_index, float branch_length, bool adjust_posterior_weight, float branch_weight)
+void Simple_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vector<int> *child_index, float branch_length, bool connects_neighbour_site, bool adjust_posterior_weight, float branch_weight)
 {
     Edge edge( child_index->at( child->get_start_site_index() ), child_index->at( child->get_end_site_index() ) );
 
-    this->transfer_child_edge(sequence, edge, child, branch_length, adjust_posterior_weight, branch_weight);
+    this->transfer_child_edge(sequence, edge, child, branch_length, connects_neighbour_site, adjust_posterior_weight, branch_weight);
 }
 
-void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *child, float branch_length, bool adjust_posterior_weight, float branch_weight)
+void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *child, float branch_length, bool connects_neighbour_site, bool adjust_posterior_weight, float branch_weight)
 {
 
     // No identical copies
