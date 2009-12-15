@@ -17,6 +17,7 @@ struct Matrix_pointer
 {
     double score;
     double full_score;
+    double fwd_score;
     double bwd_score;
     int x_ind;
     int y_ind;
@@ -24,9 +25,9 @@ struct Matrix_pointer
     int y_edge_ind;
     int matrix;
 
-    Matrix_pointer() : score(-HUGE_VAL), full_score(0), bwd_score(0), x_ind(-1), y_ind(-1),
+    Matrix_pointer() : score(-HUGE_VAL), full_score(0), fwd_score(0), bwd_score(0), x_ind(-1), y_ind(-1),
                         x_edge_ind(-1), y_edge_ind(-1), matrix(-1) {}
-    Matrix_pointer(double s,int x, int y, int m) : score(s), full_score(0), bwd_score(0),
+    Matrix_pointer(double s,int x, int y, int m) : score(s), full_score(0), fwd_score(0), bwd_score(0),
                         x_ind(x), y_ind(y), x_edge_ind(-1), y_edge_ind(-1), matrix(m) {}
 };
 
@@ -101,12 +102,13 @@ class Simple_alignment
     bool  weighted_branch_skip_penalty;
 
     bool compute_full_score;
+    bool weight_edges;
     double bwd_full_probability; // for control
 
     void initialise_array_corner();
     void initialise_array_corner_bwd();
 
-    void compute_fwd_viterbi_path(int i,int j);
+    void compute_fwd_scores(int i,int j);
     void compute_bwd_full_score(int i,int j);
     void compute_posterior_score(int i,int j,double full_score);
 
@@ -225,6 +227,18 @@ class Simple_alignment
     void insert_gap_path_pointer(vector<Path_pointer> *path, int i, int j, int matrix,float branch_length)
     {
         Matrix_pointer mp(-1,i,j,matrix);
+        if(matrix == Simple_alignment::x_mat)
+        {
+            mp.fwd_score = (*xgap)[i][j].fwd_score;
+            mp.bwd_score = (*xgap)[i][j].bwd_score;
+            mp.full_score = (*xgap)[i][j].full_score;
+        }
+        else
+        {
+            mp.fwd_score = (*ygap)[i][j].fwd_score;
+            mp.bwd_score = (*ygap)[i][j].bwd_score;
+            mp.full_score = (*ygap)[i][j].full_score;
+        }
         Path_pointer pp( mp, false, branch_length,1 );
         path->insert(path->begin(),pp);
     }
@@ -310,6 +324,15 @@ class Simple_alignment
     double edge_equal_weight(Edge *) const { return 1.0; }
     double edge_log_equal_weight(Edge *) const { return 0.0; }
 
+    /********************************************/
+
+    double get_transformed_edge_weight(double w) { return (*this.*transform_edge_weight)(w); }
+    double (ppa::Simple_alignment::*transform_edge_weight)(double w);
+
+    double square_root_edge_weight(double w) { return sqrt( w );}
+    double cube_root_edge_weight(double w) { return exp((1.0/3.0)*(log(w)));}
+    double plain_edge_weight(double w) { return w;}
+
     void set_basic_settings()
     {
         del_ins_ratio = 1;//model->del_prob/model->ins_prob;
@@ -343,14 +366,20 @@ class Simple_alignment
             weighted_branch_skip_penalty = false;
         }
 
+        weight_edges = false;
+        if( Settings_handle::st.is("weight-sampled-edges") && Settings_handle::st.get("sample-additional-paths").as<int>() > 0)
+            weight_edges = true;
+
         compute_full_score = false;
-        if(Settings_handle::st.is("full-probability") ||
-           Settings_handle::st.is("sample-path") ||
-           Settings_handle::st.is("sample-additional-paths"))
+        if( Settings_handle::st.is("full-probability") ||
+            Settings_handle::st.is("mpost-posterior-plot-file") ||
+            Settings_handle::st.is("sample-path") ||
+            Settings_handle::st.get("sample-additional-paths").as<int>() > 0 )
             compute_full_score = true;
 
         cout << noshowpos;
     }
+
 
     static int plot_number;
     void plot_posterior_probabilities_up();
@@ -364,6 +393,7 @@ class Simple_alignment
 
     void print_matrices();
     void print_sequences(vector<Site> *sites);
+    string print_pairwise_alignment(vector<Site> *sites);
 
     void debug_print_input_sequences(int noise_level)
     {

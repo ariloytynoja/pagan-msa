@@ -31,46 +31,43 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
     //
     this->set_basic_settings();
 
-    // Set the edge weighting scheme
+    // Set the edge weighting scheme, define the dynamic-programming matrices
     //
     log_edge_weight = &ppa::Simple_alignment::edge_log_posterior_weight;
     edge_weight = &ppa::Simple_alignment::edge_posterior_weight;
 
+    transform_edge_weight = &ppa::Simple_alignment::square_root_edge_weight;
+    if( Settings_handle::st.is("no-weight-transform") )
+        transform_edge_weight = &ppa::Simple_alignment::plain_edge_weight;
+    if( Settings_handle::st.is("cuberoot-weight-transform") )
+        transform_edge_weight = &ppa::Simple_alignment::cube_root_edge_weight;
 
-    int left_length = left_sequence->sites_length();
-    int right_length = right_sequence->sites_length();
+    int left_length = left->sites_length();    int right_length = right->sites_length();
 
     this->debug_msg("Simple_alignment: lengths: "+this->itos(left_length)+" "+this->itos(right_length),1);
 
     align_array M(boost::extents[left_length-1][right_length-1]);
     align_array X(boost::extents[left_length-1][right_length-1]);
     align_array Y(boost::extents[left_length-1][right_length-1]);
+    match = &M;    xgap = &X;    ygap = &Y;
 
     this->debug_msg("Simple_alignment: matrix created",1);
-
-    match = &M;
-    xgap = &X;
-    ygap = &Y;
-
-    this->initialise_array_corner();
-
-    int j_max = match->shape()[1];
-    int i_max = match->shape()[0];
-
-    Site * left_site = left->get_site_at(i_max);
-    Site * right_site = right->get_site_at(j_max);
-
-
 
     // Dynamic programming loop
     // Note that fwd full probability is integrated in
     // the main dp loop but bwd comutation is done separately
     //
+    this->initialise_array_corner();
+
+    int j_max = match->shape()[1];
+    int i_max = match->shape()[0];
+
+    cout<<"max: "<<i_max<<" "<<j_max<<endl;
     for(int j=0;j<j_max;j++)
     {
         for(int i=0;i<i_max;i++)
         {
-            this->compute_fwd_viterbi_path(i,j);
+            this->compute_fwd_scores(i,j);
         }
     }
     this->debug_msg("Simple_alignment: matrix filled",1);
@@ -79,16 +76,23 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
 
     // Find the incoming edge in the end corner; also, get the full_fwd probability
     //
+    Site * left_site = left->get_site_at(i_max);
+    Site * right_site = right->get_site_at(j_max);
+
     Matrix_pointer max_end;
     this->iterate_bwd_edges_for_end_corner(left_site,right_site,&max_end);
-    this->debug_msg("Simple_alignment: corner found",1);
+    max_end.bwd_score = 1.0;
+    max_end.full_score = 1.0;
 
+    this->debug_msg("Simple_alignment: corner found",1);
 
 
     // If needed, compute the bwd posterior probabilities
     //
     if(compute_full_score)
     {
+        // Backward dynamic-programming loop
+        //
         this->initialise_array_corner_bwd();
 
         for(int j=j_max-1;j>=0;j--)
@@ -99,6 +103,7 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
             }
         }
 
+
         // Check that full probability computation worked
         //
         Matrix_pointer max_start = (*match)[0][0];
@@ -106,11 +111,22 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
         this->debug_msg(" bwd full probability: "+this->ftos(log(max_start.bwd_score))
                         +" ["+this->ftos(max_start.bwd_score)+"]",1);
 
-        double ratio = max_end.full_score/max_start.bwd_score;
+        double ratio = max_end.fwd_score/max_start.bwd_score;
 
         if(ratio<0.99 || ratio>1.01)
-            this->debug_msg("Problem in computation? fwd: "+this->ftos(max_end.full_score)
+            this->debug_msg("Problem in computation? fwd: "+this->ftos(max_end.fwd_score)
                             +", bwd: "+this->ftos(max_start.bwd_score),0);
+
+
+        // Compute psoterior probbailities
+        //
+        for(int j=0;j<j_max;j++)
+        {
+            for(int i=0;i<i_max;i++)
+            {
+                this->compute_posterior_score(i,j,max_end.fwd_score);
+            }
+        }
 
         if(Settings::noise>5)
             this->print_matrices();
@@ -138,11 +154,14 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
 
         this->debug_msg("Simple_alignment: sequence built",1);
     }
-    // Sample a path from the posterior probabilities
+
+    // Instead of Viterbi path, sample a path from the posterior probabilities
     else
     {
         Matrix_pointer sample_end;
         this->iterate_bwd_edges_for_sampled_end_corner(left_site,right_site,&sample_end);
+        sample_end.bwd_score = 1.0;
+        sample_end.full_score = 1.0;
 
         Path_pointer sp(sample_end,true);
         vector<Path_pointer> sample_path;
@@ -160,15 +179,18 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
         this->debug_msg("Simple_alignment: sequence sampled and built",1);
     }
 
-    // Find the incoming edge in the end corner
+
+    // Sample additional paths [not finished!]
     //
-    if( compute_full_score && Settings_handle::st.is("sample-additional-paths") )
+    if( Settings_handle::st.get("sample-additional-paths").as<int>() > 0 )
     {
         int iter = Settings_handle::st.get("sample-additional-paths").as<int>();
         for(int i=0;i<iter;i++)
         {
             Matrix_pointer sample_end;
             this->iterate_bwd_edges_for_sampled_end_corner(left_site,right_site,&sample_end);
+            sample_end.bwd_score = 1.0;
+            sample_end.full_score = 1.0;
 
             Path_pointer sp(sample_end,true);
             vector<Path_pointer> sample_path;
@@ -183,28 +205,10 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
             this->build_ancestral_sequence(sampled_sequence,&sample_path);
 
             this->debug_msg("Simple_alignment: additional sequence sampled and built",1);
-
-//            create a unique index of sites in sequences 'ancestral' and 'sampled'
-//             - gaps need to contain info of a site in other child sequence that they follow
-//            check if sites in 'sampled' are included in 'ancestral'
-//             - add if not, add also in unique index
-//            add edges that are missing
-//            finally, reorder sites for the next alignment
-//             - note that (some) pointers are *index-based*
-
-//            cout<<"\nancestral\n";
-//            ancestral_sequence->print_path();
-//            cout<<"\nsampled\n";
-//            sampled_sequence->print_path();
-//            cout<<"\nancestral\n";
-//            ancestral_sequence->print_sequence();
-//            cout<<"\nsampled\n";
-//            sampled_sequence->print_sequence();
+            this->debug_msg("Simple_alignment: sampled alignment",1);
+            this->debug_msg(this->print_pairwise_alignment(sampled_sequence->get_sites()),1);
 
             this->merge_sampled_sequence(ancestral_sequence, sampled_sequence);
-
-//            cout<<"\nmerged ancestral\n";
-//            ancestral_sequence->print_sequence();
 
             delete sampled_sequence;
         }
@@ -213,18 +217,8 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
 
     // Make the posterior probability plots
     //
-    if(Settings_handle::st.is("mpost-posterior-plot-file") &&
-       Settings_handle::st.is("full-probability") )
+    if( Settings_handle::st.is("mpost-posterior-plot-file") )
     {
-        double full_score = max_end.full_score;
-
-        for(int j=j_max-1;j>=0;j--)
-        {
-            for(int i=i_max-1;i>=0;i--)
-            {
-                this->compute_posterior_score(i,j,full_score);
-            }
-        }
 
         if(Settings_handle::st.is("plot-slope-up") )
             this->plot_posterior_probabilities_up();
@@ -398,7 +392,7 @@ void Simple_alignment::initialise_array_corner()
     double small = -HUGE_VAL;
 
     ((*match)[0][0]).score = 0.0;
-    ((*match)[0][0]).full_score = 1.0;
+    ((*match)[0][0]).fwd_score = 1.0;
     ((*xgap)[0][0]).score = small;
     ((*ygap)[0][0]).score = small;
 
@@ -412,6 +406,8 @@ void Simple_alignment::initialise_array_corner_bwd()
 {
     int i_max = match->shape()[0];
     int j_max = match->shape()[1];
+
+    (*match)[i_max-1][j_max-1].bwd_score = model->non_gap();
 
     Site * left_site = left->get_site_at(i_max);
     Site * right_site = right->get_site_at(j_max);
@@ -520,10 +516,9 @@ void Simple_alignment::initialise_array_corner_bwd()
             (*ygap)[i_max-1][right_index].bwd_score = model->gap_close() * right_edge_wght;
         }
     }
-
 }
 
-void Simple_alignment::compute_fwd_viterbi_path(int i,int j)
+void Simple_alignment::compute_fwd_scores(int i,int j)
 {
     if(i==0 && j==0)
         return;
@@ -606,8 +601,10 @@ void Simple_alignment::compute_fwd_viterbi_path(int i,int j)
 
 void Simple_alignment::compute_bwd_full_score(int i,int j)
 {
-    int i_end = match->shape()[0]-1;
-    int j_end = match->shape()[1]-1;
+//    int i_end = match->shape()[0]-1;
+//    int j_end = match->shape()[1]-1;
+    int i_end = match->shape()[0];
+    int j_end = match->shape()[1];
 
     int left_index = i;
     int right_index = j;
@@ -658,9 +655,9 @@ void Simple_alignment::compute_bwd_full_score(int i,int j)
 
 void Simple_alignment::compute_posterior_score(int i,int j,double full_score)
 {
-    (*match)[i][j].full_score = (*match)[i][j].full_score * (*match)[i][j].bwd_score / full_score;
-    (*xgap)[i][j].full_score = (*xgap)[i][j].full_score * (*xgap)[i][j].bwd_score / full_score;
-    (*ygap)[i][j].full_score = (*ygap)[i][j].full_score * (*ygap)[i][j].bwd_score / full_score;
+    (*match)[i][j].full_score = (*match)[i][j].fwd_score * (*match)[i][j].bwd_score / full_score;
+    (*xgap)[i][j].full_score = (*xgap)[i][j].fwd_score * (*xgap)[i][j].bwd_score / full_score;
+    (*ygap)[i][j].full_score = (*ygap)[i][j].fwd_score * (*ygap)[i][j].bwd_score / full_score;
 }
 
 /********************************************/
@@ -773,6 +770,12 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
         cout<<endl;
     }
     /*DEBUG*/
+    cout<<"\npath v"<<endl;
+    for(unsigned int i=0;i<path->size();i++)
+//        cout<<path->at(i).mp.matrix<<" "<<log(path->at(i).mp.fwd_score)<<" "<<log(path->at(i).mp.bwd_score)<<" "<<log(path->at(i).mp.full_score)<<endl;
+        cout<<path->at(i).mp.matrix<<" "<<path->at(i).mp.fwd_score<<" "<<path->at(i).mp.bwd_score<<" "<<path->at(i).mp.full_score<<endl;
+    cout<<endl;
+
 
 }
 
@@ -807,7 +810,7 @@ void Simple_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer f
     {
         while(i>=0)
         {
-//            cout<<i<<" "<<j<<": "<<x_ind<<" "<<y_ind<<" "<<vit_mat<<endl;
+            cout<<i<<" "<<j<<": "<<x_ind<<" "<<y_ind<<" "<<vit_mat<<endl;
 //
             if(vit_mat == Simple_alignment::m_mat)
             {
@@ -816,6 +819,10 @@ void Simple_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer f
                 vit_mat = bwd_p.matrix;
                 x_ind = bwd_p.x_ind;
                 y_ind = bwd_p.y_ind;
+
+//                bwd_p.fwd_score = (*match)[i][j].fwd_score;
+//                bwd_p.bwd_score = (*match)[i][j].bwd_score;
+//                bwd_p.full_score = (*match)[i][j].full_score;
 
                 left_edges->at(bwd_p.x_edge_ind).is_used(true);
                 right_edges->at(bwd_p.y_edge_ind).is_used(true);
@@ -839,6 +846,10 @@ void Simple_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer f
                 x_ind = bwd_p.x_ind;
                 y_ind = bwd_p.y_ind;
 
+//                bwd_p.fwd_score = (*xgap)[i][j].fwd_score;
+//                bwd_p.bwd_score = (*xgap)[i][j].bwd_score;
+//                bwd_p.full_score = (*xgap)[i][j].full_score;
+
                 left_edges->at(bwd_p.x_edge_ind).is_used(true);
 
                 Path_pointer pp( bwd_p, true );
@@ -859,6 +870,10 @@ void Simple_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer f
                 vit_mat = bwd_p.matrix;
                 x_ind = bwd_p.x_ind;
                 y_ind = bwd_p.y_ind;
+
+//                bwd_p.fwd_score = (*ygap)[i][j].fwd_score;
+//                bwd_p.bwd_score = (*ygap)[i][j].bwd_score;
+//                bwd_p.full_score = (*ygap)[i][j].full_score;
 
                 right_edges->at(bwd_p.y_edge_ind).is_used(true);
 
@@ -897,6 +912,12 @@ void Simple_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer f
         cout<<endl;
     }
     /*DEBUG*/
+
+    cout<<"\npath s"<<endl;
+    for(unsigned int i=0;i<path->size();i++)
+//        cout<<path->at(i).mp.matrix<<" "<<log(path->at(i).mp.fwd_score)<<" "<<log(path->at(i).mp.bwd_score)<<" "<<log(path->at(i).mp.full_score)<<endl;
+          cout<<path->at(i).mp.matrix<<" "<<path->at(i).mp.fwd_score<<" "<<path->at(i).mp.bwd_score<<" "<<path->at(i).mp.full_score<<endl;
+  cout<<endl;
 
 }
 
@@ -939,6 +960,7 @@ void Simple_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path
     Site first_site( edges, Site::start_site, Site::ends_site );
     first_site.set_state( -1 );
     first_site.set_children(0,0);
+    first_site.set_posterior_support(1.0);
 
     sequence->push_back_site(first_site);
 
@@ -950,6 +972,7 @@ void Simple_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path
 
         Site site( edges );
         site.set_empty_children();
+        site.set_posterior_support(path->at(i).mp.full_score);
 
         if(path->at(i).mp.matrix == Simple_alignment::x_mat)
         {
@@ -966,7 +989,7 @@ void Simple_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path
                 site.set_branch_distance_since_last_used(
                         left->get_site_at(l_pos)->get_branch_distance_since_last_used()+left_branch_length );
             }
-            site.get_children()->left_index = l_pos;
+            site.set_children(l_pos,-1);
 
             l_pos++;
         }
@@ -985,7 +1008,7 @@ void Simple_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path
                 site.set_branch_distance_since_last_used(
                         right->get_site_at(r_pos)->get_branch_distance_since_last_used()+right_branch_length );
             }
-            site.get_children()->right_index = r_pos;
+            site.set_children(-1,r_pos);
 
             r_pos++;
         }
@@ -1014,6 +1037,7 @@ void Simple_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path
     Site last_site( edges, Site::stop_site, Site::ends_site );
     last_site.set_state( -1 );
     last_site.set_children(left->sites_length()-1,right->sites_length()-1);
+    last_site.set_posterior_support(1.0);
     sequence->push_back_site(last_site);
 
 }
@@ -1080,12 +1104,12 @@ void Simple_alignment::create_ancestral_edges(Sequence *sequence)
             if( tsite->has_bwd_edge() )
             {
                 Edge *child = tsite->get_first_bwd_edge();
-                this->transfer_child_edge(sequence,child, &left_child_index, left_branch_length, true );
+                this->transfer_child_edge(sequence, child, &left_child_index, left_branch_length );
 
                 while( tsite->has_next_bwd_edge() )
                 {
                     child = tsite->get_next_bwd_edge();
-                    this->transfer_child_edge(sequence,child, &left_child_index, left_branch_length );
+                    this->transfer_child_edge(sequence, child, &left_child_index, left_branch_length );
                 }
             }
 
@@ -1101,7 +1125,7 @@ void Simple_alignment::create_ancestral_edges(Sequence *sequence)
                 {
                     Edge *child = &left->get_edges()->at(ind);
                     Edge edge( left_child_index.at(prev.left_skip_site_index), i );
-                    this->transfer_child_edge(sequence,edge, child, left_branch_length );
+                    this->transfer_child_edge(sequence, edge, child, left_branch_length );
                 }
 
                 prev.left_skip_site_index = -1;
@@ -1116,7 +1140,7 @@ void Simple_alignment::create_ancestral_edges(Sequence *sequence)
                 {
                     Edge *child = &left->get_edges()->at(ind);
                     Edge edge( prev.match_site_index, i );
-                    this->transfer_child_edge(sequence,edge, child, left_branch_length );
+                    this->transfer_child_edge(sequence, edge, child, left_branch_length );
                 }
 
             }
@@ -1137,12 +1161,12 @@ void Simple_alignment::create_ancestral_edges(Sequence *sequence)
             if( tsite->has_bwd_edge() )
             {
                 Edge *child = tsite->get_first_bwd_edge();
-                this->transfer_child_edge(sequence,child, &right_child_index, right_branch_length, true );
+                this->transfer_child_edge(sequence, child, &right_child_index, right_branch_length );
 
                 while( tsite->has_next_bwd_edge() )
                 {
                     child = tsite->get_next_bwd_edge();
-                    this->transfer_child_edge(sequence,child, &right_child_index, right_branch_length );
+                    this->transfer_child_edge(sequence, child, &right_child_index, right_branch_length );
                 }
             }
 
@@ -1169,7 +1193,7 @@ void Simple_alignment::create_ancestral_edges(Sequence *sequence)
                 {
                     Edge *child = &right->get_edges()->at(ind);
                     Edge edge( prev.match_site_index, i );
-                    this->transfer_child_edge(sequence,edge, child, right_branch_length );
+                    this->transfer_child_edge(sequence, edge, child, right_branch_length );
                 }
 
             }
@@ -1324,14 +1348,31 @@ void Simple_alignment::delete_edge_range(Sequence *sequence,int edge_ind,int ski
 
 }
 
-void Simple_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vector<int> *child_index, float branch_length, bool connects_neighbour_site, bool adjust_posterior_weight, float branch_weight)
+void Simple_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vector<int> *child_index, float branch_length,
+                                           bool connects_neighbour_site, bool adjust_posterior_weight, float branch_weight)
 {
-    Edge edge( child_index->at( child->get_start_site_index() ), child_index->at( child->get_end_site_index() ) );
+    float edge_weight = 1.0;
+    if(weight_edges)
+    {
+        float weight1 = sequence->get_site_at( child_index->at( child->get_start_site_index() ) )->get_posterior_support();
+        float weight2 = sequence->get_site_at( child_index->at( child->get_end_site_index() ) )->get_posterior_support();
+        weight1 = this->get_transformed_edge_weight( weight1 );
+        weight2 = this->get_transformed_edge_weight( weight2 );
+
+        edge_weight =  weight1 * weight2;
+
+        cout<<child_index->at( child->get_start_site_index() )<<"["<<child->get_start_site_index()<<"] "<<weight1;
+        cout<<"; "<<child_index->at( child->get_end_site_index() )<<"["<<child->get_end_site_index()<<"] "<<weight2;
+        cout<<"; "<<edge_weight<<"\n";
+
+    }
+    Edge edge( child_index->at( child->get_start_site_index() ), child_index->at( child->get_end_site_index() ), edge_weight );
 
     this->transfer_child_edge(sequence, edge, child, branch_length, connects_neighbour_site, adjust_posterior_weight, branch_weight);
 }
 
-void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *child, float branch_length, bool connects_neighbour_site, bool adjust_posterior_weight, float branch_weight)
+void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *child, float branch_length,
+                                           bool connects_neighbour_site, bool adjust_posterior_weight, float branch_weight)
 {
 
     // No identical copies
@@ -1346,7 +1387,6 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *
     //  then, total branch distance since last used
     if(child->get_branch_distance_since_last_used()+branch_length > max_allowed_skip_distance)
         return;
-
 
     // Comparison of distance and node count since last used to find boundaries of path branches.
     // Only start and end of an alternative path should be penalised; continuation on a path not.
@@ -1365,11 +1405,11 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *
 
         if(adjust_posterior_weight)
             if(weighted_branch_skip_penalty)
-                edge.set_weight( branch_weight * child->get_posterior_weight() * ( exp( -1.0 * this->branch_skip_weight * branch_length ) ) );
+                edge.multiply_weight( branch_weight * child->get_posterior_weight() * ( exp( -1.0 * this->branch_skip_weight * branch_length ) ) );
             else
-                edge.set_weight( branch_weight * child->get_posterior_weight() * this->branch_skip_probability );
+                edge.multiply_weight( branch_weight * child->get_posterior_weight() * this->branch_skip_probability );
         else
-            edge.set_weight(child->get_posterior_weight());
+            edge.multiply_weight(child->get_posterior_weight());
     }
     // Edge is not used: just update the history
     else if(!child->is_used())
@@ -1379,11 +1419,11 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *
 
         if(adjust_posterior_weight)
             if(weighted_branch_skip_penalty)
-                edge.set_weight( branch_weight * child->get_posterior_weight() * ( exp( -1.0 * this->branch_skip_weight * branch_length ) ) );
+                edge.multiply_weight( branch_weight * child->get_posterior_weight() * ( exp( -1.0 * this->branch_skip_weight * branch_length ) ) );
             else
-                edge.set_weight( branch_weight * child->get_posterior_weight() * this->branch_skip_probability );
+                edge.multiply_weight( branch_weight * child->get_posterior_weight() * this->branch_skip_probability );
         else
-            edge.set_weight(child->get_posterior_weight());
+            edge.multiply_weight(child->get_posterior_weight());
 
     }
 
@@ -1627,7 +1667,7 @@ void Simple_alignment::iterate_bwd_edges_for_end_corner(Site * left_site,Site * 
     {
         cout<<"viterbi score: "<<setprecision(8)<<max->score<<" ["<<exp(max->score)<<"] ("<<max->matrix<<")";
         if(compute_full_score)
-            cout<<", full probability: "<<log(max->full_score)<<" ["<<max->full_score<<"]";
+            cout<<", full probability: "<<log(max->fwd_score)<<" ["<<max->fwd_score<<"]";
         cout<<setprecision(4)<<endl; /*DEBUG*/
     }
 }
@@ -1818,10 +1858,16 @@ void Simple_alignment::iterate_bwd_edges_for_sampled_gap(int site_index1,int sit
         if(is_x_matrix)
         {
             sample_p->y_ind = xgap->shape()[1]-1;
+            sample_p->fwd_score  = (*xgap)[site_index1][site_index2].fwd_score;
+            sample_p->bwd_score  = (*xgap)[site_index1][site_index2].bwd_score;
+            sample_p->full_score = (*xgap)[site_index1][site_index2].full_score;
         }
         else
         {
             sample_p->x_ind = ygap->shape()[0]-1;
+            sample_p->fwd_score  = (*ygap)[site_index2][site_index1].fwd_score;
+            sample_p->bwd_score  = (*ygap)[site_index2][site_index1].bwd_score;
+            sample_p->full_score = (*ygap)[site_index2][site_index1].full_score;
         }
 
     }
@@ -1943,6 +1989,9 @@ void Simple_alignment::iterate_bwd_edges_for_sampled_match(int left_index,int ri
 
         (*sample_p) = bwd_pointers.at(i);
 
+        sample_p->fwd_score = (*match)[left_index][right_index].fwd_score;
+        sample_p->bwd_score = (*match)[left_index][right_index].bwd_score;
+        sample_p->full_score = (*match)[left_index][right_index].full_score;
     }
 }
 
@@ -1966,7 +2015,6 @@ void Simple_alignment::iterate_bwd_edges_for_sampled_end_corner(Site * left_site
         double m_match = model->non_gap();
 
         Matrix_pointer bwd_p;
-
         this->add_sample_m_match(left_edge,right_edge,&bwd_p,m_match);
 
         sum_score  += bwd_p.score;
@@ -2096,9 +2144,9 @@ void Simple_alignment::score_m_match(Edge * left_edge,Edge * right_edge,double m
 
     if(compute_full_score)
     {
-        double this_full_score =   (*match)[left_prev_index][right_prev_index].full_score * m_match
+        double this_full_score =   (*match)[left_prev_index][right_prev_index].fwd_score * m_match
                                    * this->get_edge_weight(left_edge) * this->get_edge_weight(right_edge);
-        max->full_score += this_full_score;
+        max->fwd_score += this_full_score;
     }
 
 }
@@ -2125,9 +2173,9 @@ void Simple_alignment::score_x_match(Edge * left_edge,Edge * right_edge,double x
 
     if(compute_full_score)
     {
-        double this_full_score =   (*xgap)[left_prev_index][right_prev_index].full_score * x_match
+        double this_full_score =   (*xgap)[left_prev_index][right_prev_index].fwd_score * x_match
                                    * this->get_edge_weight(left_edge) * this->get_edge_weight(right_edge);
-        max->full_score += this_full_score;
+        max->fwd_score += this_full_score;
     }
 }
 
@@ -2153,9 +2201,9 @@ void Simple_alignment::score_y_match(Edge * left_edge,Edge * right_edge,double y
 
     if(compute_full_score)
     {
-        double this_full_score =   (*ygap)[left_prev_index][right_prev_index].full_score * y_match
+        double this_full_score =   (*ygap)[left_prev_index][right_prev_index].fwd_score * y_match
                                    * this->get_edge_weight(left_edge) * this->get_edge_weight(right_edge);
-        max->full_score += this_full_score;
+        max->fwd_score += this_full_score;
     }
 }
 
@@ -2187,8 +2235,8 @@ void Simple_alignment::score_gap_ext(Edge *edge,align_slice *z_slice,Matrix_poin
 
     if(compute_full_score)
     {
-        double this_full_score =  (*z_slice)[prev_index].full_score * model->gap_ext() * this->get_edge_weight(edge);
-        max->full_score += this_full_score;
+        double this_full_score =  (*z_slice)[prev_index].fwd_score * model->gap_ext() * this->get_edge_weight(edge);
+        max->fwd_score += this_full_score;
     }
 }
 
@@ -2218,8 +2266,8 @@ void Simple_alignment::score_gap_double(Edge *edge,align_slice *w_slice,Matrix_p
 
     if(compute_full_score)
     {
-        double this_full_score =  (*w_slice)[prev_index].full_score * model->gap_close() * model->gap_open() * this->get_edge_weight(edge);
-        max->full_score += this_full_score;
+        double this_full_score =  (*w_slice)[prev_index].fwd_score * model->gap_close() * model->gap_open() * this->get_edge_weight(edge);
+        max->fwd_score += this_full_score;
     }
 
 }
@@ -2249,8 +2297,8 @@ void Simple_alignment::score_gap_open(Edge *edge,align_slice *m_slice,Matrix_poi
 
     if(compute_full_score)
     {
-        double this_full_score =  (*m_slice)[prev_index].full_score * model->non_gap() * model->gap_open() * this->get_edge_weight(edge);
-        max->full_score += this_full_score;
+        double this_full_score =  (*m_slice)[prev_index].fwd_score * model->non_gap() * model->gap_open() * this->get_edge_weight(edge);
+        max->fwd_score += this_full_score;
     }
 
 }
@@ -2281,8 +2329,8 @@ void Simple_alignment::score_gap_close(Edge *edge,align_slice *z_slice,Matrix_po
 
     if(compute_full_score)
     {
-        double this_full_score =  (*z_slice)[prev_index].full_score * model->gap_close() * this->get_edge_weight(edge);
-        max->full_score += this_full_score;
+        double this_full_score =  (*z_slice)[prev_index].fwd_score * model->gap_close() * this->get_edge_weight(edge);
+        max->fwd_score += this_full_score;
     }
 
 }
@@ -2348,7 +2396,7 @@ void Simple_alignment::add_sample_m_match(Edge * left_edge,Edge * right_edge,Mat
     int left_prev_index = left_edge->get_start_site_index();
     int right_prev_index = right_edge->get_start_site_index();
 
-    double this_score =   (*match)[left_prev_index][right_prev_index].full_score * m_match
+    double this_score =   (*match)[left_prev_index][right_prev_index].fwd_score * m_match
                                * this->get_edge_weight(left_edge) * this->get_edge_weight(right_edge);
 
     bwd_p->score = this_score;
@@ -2364,7 +2412,7 @@ void Simple_alignment::add_sample_x_match(Edge * left_edge,Edge * right_edge,Mat
     int left_prev_index = left_edge->get_start_site_index();
     int right_prev_index = right_edge->get_start_site_index();
 
-    double this_score =   (*xgap)[left_prev_index][right_prev_index].full_score * x_match
+    double this_score =   (*xgap)[left_prev_index][right_prev_index].fwd_score * x_match
                                * this->get_edge_weight(left_edge) * this->get_edge_weight(right_edge);
 
     bwd_p->score = this_score;
@@ -2380,7 +2428,7 @@ void Simple_alignment::add_sample_y_match(Edge * left_edge,Edge * right_edge,Mat
     int left_prev_index = left_edge->get_start_site_index();
     int right_prev_index = right_edge->get_start_site_index();
 
-    double this_score =   (*ygap)[left_prev_index][right_prev_index].full_score * y_match
+    double this_score =   (*ygap)[left_prev_index][right_prev_index].fwd_score * y_match
                                * this->get_edge_weight(left_edge) * this->get_edge_weight(right_edge);
 
     bwd_p->score = this_score;
@@ -2397,7 +2445,7 @@ void Simple_alignment::add_sample_gap_ext(Edge * edge,align_slice *z_slice,Matri
 {
     int prev_index = edge->get_start_site_index();
 
-    double this_score =  (*z_slice)[prev_index].full_score * model->gap_ext() * this->get_edge_weight(edge);
+    double this_score =  (*z_slice)[prev_index].fwd_score * model->gap_ext() * this->get_edge_weight(edge);
     bwd_p->score = this_score;
 
     if(is_x_matrix)
@@ -2418,7 +2466,7 @@ void Simple_alignment::add_sample_gap_double(Edge * edge,align_slice *w_slice,Ma
 {
     int prev_index = edge->get_start_site_index();
 
-    double this_score =  (*w_slice)[prev_index].full_score * model->gap_close() * model->gap_open() * this->get_edge_weight(edge);
+    double this_score =  (*w_slice)[prev_index].fwd_score * model->gap_close() * model->gap_open() * this->get_edge_weight(edge);
 
     bwd_p->score = this_score;
 
@@ -2441,7 +2489,7 @@ void Simple_alignment::add_sample_gap_open(Edge * edge,align_slice *m_slice,Matr
 {
     int prev_index = edge->get_start_site_index();
 
-    double this_score =  (*m_slice)[prev_index].full_score * model->non_gap() * model->gap_open() * this->get_edge_weight(edge);
+    double this_score =  (*m_slice)[prev_index].fwd_score * model->non_gap() * model->gap_open() * this->get_edge_weight(edge);
 
     bwd_p->score = this_score;
     bwd_p->matrix = Simple_alignment::m_mat;
@@ -2463,7 +2511,7 @@ void Simple_alignment::add_sample_gap_close(Edge * edge,align_slice *z_slice,Mat
 {
     int prev_index = edge->get_start_site_index();
 
-    double this_score =  (*z_slice)[prev_index].full_score * model->gap_close() * this->get_edge_weight(edge);
+    double this_score =  (*z_slice)[prev_index].fwd_score * model->gap_close() * this->get_edge_weight(edge);
 
     bwd_p->score = this_score;
 
@@ -2980,8 +3028,8 @@ void Simple_alignment::print_matrices()
         {
             for(unsigned int i=0;i<match->shape()[0];i++)
             {
-//                cout<<setw(8)<<scientific<<(*match)[i][j].full_score<<" ";
-                cout<<setw(8)<<log((*match)[i][j].full_score)<<" ";
+//                cout<<setw(8)<<scientific<<(*match)[i][j].fwd_score<<" ";
+                cout<<setw(8)<<log((*match)[i][j].fwd_score)<<" ";
             }
             cout<<endl;
         }
@@ -2994,6 +3042,18 @@ void Simple_alignment::print_matrices()
             {
 //                cout<<setw(8)<<scientific<<(*match)[i][j].bwd_score<<" ";
                 cout<<setw(8)<<log((*match)[i][j].bwd_score)<<" ";
+            }
+            cout<<endl;
+        }
+        cout<<endl;
+
+        cout<<"m"<<endl;
+        for(unsigned int j=0;j<match->shape()[1];j++)
+        {
+            for(unsigned int i=0;i<match->shape()[0];i++)
+            {
+//                cout<<setw(8)<<scientific<<(*match)[i][j].full_score<<" ";
+                cout<<setw(8)<<log((*match)[i][j].full_score)<<" ";
             }
             cout<<endl;
         }
@@ -3041,8 +3101,8 @@ void Simple_alignment::print_matrices()
         {
             for(unsigned int i=0;i<match->shape()[0];i++)
             {
-//                cout<<setw(8)<<scientific<<(*xgap)[i][j].full_score<<" ";
-                cout<<setw(8)<<log((*xgap)[i][j].full_score)<<" ";
+//                cout<<setw(8)<<scientific<<(*xgap)[i][j].fwd_score<<" ";
+                cout<<setw(8)<<log((*xgap)[i][j].fwd_score)<<" ";
             }
             cout<<endl;
         }
@@ -3055,6 +3115,18 @@ void Simple_alignment::print_matrices()
             {
 //                cout<<setw(8)<<scientific<<(*xgap)[i][j].bwd_score<<" ";
                 cout<<setw(8)<<log((*xgap)[i][j].bwd_score)<<" ";
+            }
+            cout<<endl;
+        }
+        cout<<endl;
+
+        cout<<"x"<<endl;
+        for(unsigned int j=0;j<match->shape()[1];j++)
+        {
+            for(unsigned int i=0;i<match->shape()[0];i++)
+            {
+//                cout<<setw(8)<<scientific<<(*xgap)[i][j].fwd_score<<" ";
+                cout<<setw(8)<<log((*xgap)[i][j].full_score)<<" ";
             }
             cout<<endl;
         }
@@ -3103,8 +3175,8 @@ void Simple_alignment::print_matrices()
         {
             for(unsigned int i=0;i<match->shape()[0];i++)
             {
-//                cout<<setw(8)<<scientific<<(*ygap)[i][j].full_score<<" ";
-                cout<<setw(8)<<log((*ygap)[i][j].full_score)<<" ";
+//                cout<<setw(8)<<scientific<<(*ygap)[i][j].fwd_score<<" ";
+                cout<<setw(8)<<log((*ygap)[i][j].fwd_score)<<" ";
             }
             cout<<endl;
         }
@@ -3117,6 +3189,18 @@ void Simple_alignment::print_matrices()
             {
 //                cout<<setw(8)<<scientific<<(*ygap)[i][j].bwd_score<<" ";
                 cout<<setw(8)<<log((*ygap)[i][j].bwd_score)<<" ";
+            }
+            cout<<endl;
+        }
+        cout<<endl;
+
+        cout<<"y"<<endl;
+        for(unsigned int j=0;j<match->shape()[1];j++)
+        {
+            for(unsigned int i=0;i<match->shape()[0];i++)
+            {
+//                cout<<setw(8)<<scientific<<(*ygap)[i][j].bwd_score<<" ";
+                cout<<setw(8)<<log((*ygap)[i][j].full_score)<<" ";
             }
             cout<<endl;
         }
@@ -3252,4 +3336,50 @@ void Simple_alignment::print_sequences(vector<Site> *sites)
     }
     /*<-- DEBUG*/
 
+}
+
+string Simple_alignment::print_pairwise_alignment(vector<Site> *sites)
+{
+    /*DEBUG -->*/
+    stringstream output;
+    output<<endl;
+
+    stringstream left_seq;
+    stringstream right_seq;
+
+    for(unsigned int i=0;i<sites->size();i++)
+    {
+        Site *tsite = &sites->at(i);
+
+        if(tsite->get_site_type()==Site::real_site)
+            output<<full_dna_alphabet.at(tsite->get_state());
+
+        Site_children *offspring = sites->at(i).get_children();
+        int lc = -1;        int rc = -1;
+        Site *lsite = 0;    Site *rsite = 0;
+
+
+        if(offspring->left_index>=0)
+        {
+            lsite = left->get_site_at(offspring->left_index);
+            lc = lsite->get_state();
+            if(lc>=0)
+                left_seq << full_dna_alphabet.at(lc);
+        }
+        else
+            left_seq << "-";
+
+        if(offspring->right_index>=0)
+        {
+            rsite = right->get_site_at(offspring->right_index);
+            rc = rsite->get_state();
+            if(rc>=0)
+                right_seq << full_dna_alphabet.at(rc);
+        }
+        else
+            right_seq << "-";
+    }
+    output<<endl<<endl<<left_seq.str()<<endl<<right_seq.str()<<endl<<endl;
+
+    return output.str();
 }

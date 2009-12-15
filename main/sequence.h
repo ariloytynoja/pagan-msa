@@ -40,7 +40,7 @@ public:
     Edge(int s, int e, float w): index(-1), start_site_index(s), end_site_index(e),
                             posterior_weight(w), log_posterior_weight(log(w)),
                             next_fwd_edge_index(-1), next_bwd_edge_index(-1), used_in_alignment(false),
-                            branch_count_since_last_used(0),branch_distance_since_last_used(0),
+                            branch_count_since_last_used(0), branch_distance_since_last_used(0),
                             branch_count_as_skipped_edge(0){}
 
     bool is_used() { return used_in_alignment; }
@@ -75,6 +75,7 @@ public:
     double get_log_posterior_weight() { return log_posterior_weight; }
 
     void set_weight(float w) { posterior_weight = w; log_posterior_weight = log(w); }
+    void multiply_weight(float w) { posterior_weight *= w; log_posterior_weight = log(posterior_weight); }
 
     bool operator==(const Edge& b)
     {
@@ -243,6 +244,9 @@ public:
     int  get_index() { return index; }
 
     int get_site_type() { return site_type; }
+
+    void set_posterior_support(float s) { posterior_support = s; }
+    float get_posterior_support() { return posterior_support; }
 
     /**************************************/
 

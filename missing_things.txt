@@ -20,3 +20,17 @@ DONE
 
 what about marking edges that form a "backbone" of an alignment. If they can be simply defined by
 picking up the *first* edges of each site, that should be easy.
+
+path sampling creates a vector of path pointers; these should contain fwd, bwd and full scores.
+Was it a mistake to rename scores as bwd_score.
+
+DONE
+
+One should not remove edges from inferred insertions (can remove *outgoing* edeges but should keep
+edges conecting neighbours); instead, give weights of -inf. Edges are needed to backtrack a full path
+when not all sites are included (complex graphs).
+
+For backtracking a full path one could use dynamic programming to weight the edge paths. Then Viterbi or sampling.
+
+One could use "importance sampling" (check the term) to exclude samples with a low probability. E.g., p>=min(0.25,1/N)
+where N is the number of samples.

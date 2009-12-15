@@ -23,8 +23,15 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("output-ancestors", "include ancestors in outfile")
         ("full-probability", "compute full probability")
         ("sample-path", "sample the alignment path from posterior probabilities")
-        ("sample-additional-paths", po::value<int>()->default_value(0), "sample additional paths from posterior probabilities")
         ("noise", po::value<int>(), "output noise level")
+    ;
+
+    boost::program_options::options_description graph("Graph options");
+    graph.add_options()
+        ("sample-additional-paths", po::value<int>()->default_value(0), "sample additional paths from posterior probabilities")
+        ("weight-sampled-edges", "use posterior probabilities to weight sampled edges")
+        ("no-weight-transform", "no weight transform for sampled edges")
+        ("cuberoot-weight-transform", "cuberoot weight transform for sampled edges")
     ;
 
     boost::program_options::options_description model("DNA model options");
@@ -54,8 +61,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     ;
 //        ("unused-edges-not-transferred", "mimic PRANK-F behaviour")
 
-    boost::program_options::options_description graphs("Graph output options");
-    graphs.add_options()
+    boost::program_options::options_description output("Graph output options");
+    output.add_options()
         ("mpost-graph-file", po::value<string>(), "sequence graph file for metapost")
         ("output-alignment-graphs", "include aligned graphs")
         ("output-leaf-graphs", "include terminal sequences")
@@ -68,7 +75,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("check-valid-graphs", "check that fwd and bwd edges are identical")
     ;
 
-    desc.add(generic).add(model).add(tree_edit).add(alignment).add(graphs).add(debug);
+    desc.add(generic).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug);
 
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
