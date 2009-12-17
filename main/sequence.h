@@ -616,7 +616,7 @@ class Sequence
 
     vector<Site> sites;
     vector<Edge> edges;
-    string full_dna_alphabet;
+    string full_char_alphabet;
 
     vector<Unique_index> unique_index;
 public:
@@ -741,7 +741,7 @@ public:
     Site *get_site_at(int i) { return &sites.at(i); }
     Edge *get_first_bwd_edge_at(int i) { return sites.at(i).get_first_bwd_edge(); }
 
-    string get_full_alphabet() { return full_dna_alphabet; }
+    string get_full_alphabet() { return full_char_alphabet; }
 
     void delete_all_bwd_edges_at_site(int index)
     {

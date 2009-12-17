@@ -14,28 +14,20 @@ Sequence::Sequence(const string& seq_string,const string& alphabet)
     sites.reserve(seq_string.size()+2);
     edges.reserve(seq_string.size()+3);
 
-    full_dna_alphabet = alphabet;
+    full_char_alphabet = alphabet;
 
     Site first_site( &edges, Site::start_site, Site::ends_site );
     first_site.set_state( -1 );
     first_site.set_empty_children();
     this->push_back_site(first_site);
 
-//    Site site( &edges );
-//    site.set_state( full_dna_alphabet.find( seq_string.at(0) ) );
-//    site.set_empty_children();
-//    this->push_back_site(site);
-
     Edge first_edge( -1,this->get_current_site_index() );
     this->push_back_edge(first_edge);
 
-//    this->get_current_site()->set_first_bwd_edge_index( this->get_current_edge_index() );
-
     for(unsigned int i=0;i<seq_string.size();i++)
     {
-//cout<<i<<endl;
         Site site( &edges );
-        site.set_state( full_dna_alphabet.find( seq_string.at(i) ) );
+        site.set_state( full_char_alphabet.find( seq_string.at(i) ) );
         site.set_empty_children();
         this->push_back_site(site);
 
@@ -72,7 +64,7 @@ Sequence::Sequence(const int length,const string& alphabet)
     sites.reserve(length+2);
     edges.reserve(length+3);
 
-    full_dna_alphabet = alphabet;
+    full_char_alphabet = alphabet;
 }
 
 
@@ -80,7 +72,7 @@ Sequence::Sequence(const vector<Site>* s, const vector<Edge>* e, const string& a
 {
     sites = *s;
     edges = *e;
-    full_dna_alphabet = alphabet;
+    full_char_alphabet = alphabet;
     for(unsigned int i=0;i<sites.size();i++)
     {
         sites.at(i).set_edge_vector(&edges);
@@ -101,7 +93,7 @@ void Sequence::print_sequence(vector<Site> *sites)
 //cout<<i<<" "<<tsite->get_state()<<endl;
         cout<<i<<": ";
         if(tsite->get_site_type()==Site::real_site)
-            cout<<tsite->get_index()<<" "<<full_dna_alphabet.at(tsite->get_state());
+            cout<<tsite->get_index()<<" "<<full_char_alphabet.at(tsite->get_state());
         else
             cout<<tsite->get_index()<<" +";
 
@@ -200,7 +192,7 @@ void Sequence::print_path(vector<Site> *sites)
         cout<<": ";
 
         if(tsite->get_site_type()==Site::real_site)
-            cout<<tsite->get_index()<<" "<<full_dna_alphabet.at(tsite->get_state());
+            cout<<tsite->get_index()<<" "<<full_char_alphabet.at(tsite->get_state());
         else
             cout<<tsite->get_index()<<" +";
 

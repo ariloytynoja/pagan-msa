@@ -15,11 +15,11 @@ Node::~Node()
         delete sequence;
 }
 
-void Node::add_sequence( string seq_string, string full_dna_alphabet)
+void Node::add_sequence( string seq_string, string full_char_alphabet)
 {
     if(Settings::noise>4)
         cout<<"Node::add_sequence "<<name<<"\n";
-    sequence = new Sequence(seq_string, full_dna_alphabet);
+    sequence = new Sequence(seq_string, full_char_alphabet);
 }
 
 void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_internal_nodes)
@@ -44,8 +44,8 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
     {
         Sequence *root = this->get_sequence();
         int root_length = root->sites_length();
-cout<<"print root\n";
-root->print_sequence();
+//cout<<"print root\n";
+//root->print_sequence();
         for(int j=1;j<root_length-1;j++)
         {
             vector<char> column;

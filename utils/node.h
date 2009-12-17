@@ -234,10 +234,11 @@ public:
             cout<<"aligning node "<<this->get_name()<<": "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
 
         double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
-        Dna_model model = mf->dna_alignment_model(dist);
+        Evol_model model = mf->alignment_model(dist);
 
         Simple_alignment sa;
-        sa.align(left_child->get_sequence(),right_child->get_sequence(),&model,left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
+        sa.align(left_child->get_sequence(),right_child->get_sequence(),&model,
+                 left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
 
         this->add_ancestral_sequence( sa.get_simple_sequence() );
 
@@ -506,7 +507,7 @@ public:
         return color;
     }
 
-    void add_sequence( string seq_string, string full_dna_alphabet);
+    void add_sequence( string seq_string, string full_char_alphabet);
 
     void add_ancestral_sequence( Sequence* s ) { sequence = s; }
 

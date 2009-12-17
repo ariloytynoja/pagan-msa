@@ -106,6 +106,8 @@ void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_
     // Addition of the last sequence in file
     if((name != "") && (sequence != ""))
     {
+        transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
+
         Fasta_entry fe;
         fe.name = name;
         fe.comment = comment;
@@ -160,68 +162,129 @@ bool Fasta_reader::check_alphabet(string alphabet, string full_alphabet, vector<
 
     // Check that alphabet is correct but use (faster?) build-in alphabet.
     //
-    if(alphabet != "ACGT")
-        throw Exception ("Fasta_reader::base_frequencies. Incorrect alphabet");
+    if(alphabet == "ACGT") {
 
-    dna_pi[0] = dna_pi[1] = dna_pi[2] = dna_pi[3] = 0.0;
+        dna_pi[0] = dna_pi[1] = dna_pi[2] = dna_pi[3] = 0.0;
 
-    bool chars_ok = true;
-    vector<Fasta_entry>::iterator vi = seqs.begin();
+        bool chars_ok = true;
+        vector<Fasta_entry>::iterator vi = seqs.begin();
 
-    // Main loop : for all sequences in vector container
-    for (; vi != seqs.end(); vi++)
-    {
-        // Convert U -> T and all uppercase
-        this->rna_to_DNA(&vi->sequence);
-
-        string::iterator si = vi->sequence.begin();
-        for (;si != vi->sequence.end();si++)
+        // Main loop : for all sequences in vector container
+        for (; vi != seqs.end(); vi++)
         {
-            char c = *si;
-            switch (c)
+            // Convert U -> T and all uppercase
+            this->rna_to_DNA(&vi->sequence);
+
+            string::iterator si = vi->sequence.begin();
+            for (;si != vi->sequence.end();si++)
             {
-                case 'A':
-                    dna_pi[0]++;
-                    break;
-                case 'C':
-                    dna_pi[1]++;
-                    break;
-                case 'G':
-                    dna_pi[2]++;
-                    break;
-                case 'T':
-                    dna_pi[3]++;
-                    break;
-                default:
-                    // Remove characters not in full alphabet
-                    if(full_alphabet.find(c) == string::npos) {
-                        vi->sequence.erase(si);
-                        si--;
-                        if(c!=' ')
-                        {
-                            chars_ok = false;
-                        }
-                   }
+                char c = *si;
+                switch (c)
+                {
+                    case 'A':
+                        dna_pi[0]++;
+                        break;
+                    case 'C':
+                        dna_pi[1]++;
+                        break;
+                    case 'G':
+                        dna_pi[2]++;
+                        break;
+                    case 'T':
+                        dna_pi[3]++;
+                        break;
+                    default:
+                        // Remove characters not in full alphabet
+                        if(full_alphabet.find(c) == string::npos) {
+                            vi->sequence.erase(si);
+                            si--;
+                            if(c!=' ')
+                            {
+                                chars_ok = false;
+                            }
+                       }
+                }
             }
         }
+
+        float tot = dna_pi[0]+dna_pi[1]+dna_pi[2]+dna_pi[3];
+
+        dna_pi[0] /= tot;
+        dna_pi[1] /= tot;
+        dna_pi[2] /= tot;
+        dna_pi[3] /= tot;
+
+        return chars_ok;
     }
+    else if(alphabet == "HRKQNEDSTGPACVIMLFYW")
+    {
+        bool chars_ok = true;
+        vector<Fasta_entry>::iterator vi = seqs.begin();
 
-    float tot = dna_pi[0]+dna_pi[1]+dna_pi[2]+dna_pi[3];
+        // Main loop : for all sequences in vector container
+        for (; vi != seqs.end(); vi++)
+        {
+            string::iterator si = vi->sequence.begin();
+            for (;si != vi->sequence.end();si++)
+            {
+                char c = *si;
+                // Remove characters not in full alphabet
+                if(full_alphabet.find(c) == string::npos) {
+                    vi->sequence.erase(si);
+                    si--;
+                    if(c!=' ')
+                    {
+                        chars_ok = false;
+                    }
+                }
+            }
+        }
 
-    dna_pi[0] /= tot;
-    dna_pi[1] /= tot;
-    dna_pi[2] /= tot;
-    dna_pi[3] /= tot;
-
-    return chars_ok;
+        return chars_ok;
+    }
 }
 
 /****************************************************************************************/
 
+int Fasta_reader::check_sequence_data_type(const vector<Fasta_entry> &seqs)
+{
+
+    vector<Fasta_entry>::const_iterator vi = seqs.begin();
+
+    int dna = 0;
+    int protein = 0;
+    string dna_alphabet = "ACGTU";
+    string protein_alphabet = "HRKQNEDSTGPACVIMLFYW";
+
+    // Main loop : for all sequences in vector container
+    for (; vi != seqs.end(); vi++)
+    {
+        string::const_iterator si = vi->sequence.begin();
+        for (;si != vi->sequence.end();si++)
+        {
+            char c = *si;
+            if(dna_alphabet.find(c) != string::npos)
+            {
+                dna++;
+            }
+            if(protein_alphabet.find(c) != string::npos)
+            {
+                protein++;
+            }
+        }
+    }
+
+    if( ((float)dna )/ (float)protein > 0.9)
+        return Model_factory::dna;
+    else
+        return Model_factory::protein;
+}
+
+/****************************************************************************************/
 
 void Fasta_reader::rna_to_DNA(string *sequence) const
 {
-    transform( sequence->begin(), sequence->end(), sequence->begin(), (int(*)(int))toupper );
+//    transform( sequence->begin(), sequence->end(), sequence->begin(), (int(*)(int))toupper );
     size_t si = 0;
     si=sequence->find('U',si);
     while(si != string::npos) {
@@ -277,7 +340,7 @@ void Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
 
 /****************************************************************************************/
 
-void Fasta_reader::place_sequences_to_nodes(const vector<Fasta_entry> *sequences,vector<Node*> *leaf_nodes, string full_dna_alphabet)
+void Fasta_reader::place_sequences_to_nodes(const vector<Fasta_entry> *sequences,vector<Node*> *leaf_nodes, string full_char_alphabet)
 {
 
     vector<Fasta_entry>::const_iterator si = sequences->begin();
@@ -290,7 +353,7 @@ void Fasta_reader::place_sequences_to_nodes(const vector<Fasta_entry> *sequences
         {
             if((*ni)->get_name() == s_name) {
                 (*ni)->add_name_comment( si->comment );
-                (*ni)->add_sequence( si->sequence, full_dna_alphabet);
+                (*ni)->add_sequence( si->sequence, full_char_alphabet);
             }
         }
     }

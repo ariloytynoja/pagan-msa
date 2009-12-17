@@ -46,8 +46,9 @@ public:
     void check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes, const Settings *st) const;
 
     float* base_frequencies() { return dna_pi; }
+    int check_sequence_data_type(const vector<Fasta_entry> & seqs);
 
-    void place_sequences_to_nodes(const vector<Fasta_entry> *sequences,vector<Node*> *leaf_nodes, string full_dna_alphabet);
+    void place_sequences_to_nodes(const vector<Fasta_entry> *sequences,vector<Node*> *leaf_nodes, string full_char_alphabet);
 };
 }
 

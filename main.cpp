@@ -7,7 +7,7 @@
 #include "utils/fasta_reader.h"
 #include "utils/xml_writer.h"
 #include "utils/model_factory.h"
-#include "utils/dna_model.h"
+#include "utils/evol_model.h"
 
 using namespace std;
 
@@ -56,15 +56,12 @@ int main(int argc, char *argv[])
 
     Fasta_reader fr;
     vector<Fasta_entry> sequences;
-    bool seqs_ok = false;
     if(Settings_handle::st.is("seqfile")){
 
         string seqfile =  Settings_handle::st.get("seqfile").as<string>();
         cout<<"Data file: "<<seqfile<<endl;
 
         fr.read(seqfile, sequences, true);
-
-        seqs_ok = true;
     }
     else
     {
@@ -85,26 +82,36 @@ int main(int argc, char *argv[])
     root->get_leaf_nodes(&leaf_nodes);
     fr.check_sequence_names(&sequences,&leaf_nodes,&Settings_handle::st);
 
+    // Get the sequence data type
+    //
+    int data_type = fr.check_sequence_data_type(sequences);
+
 
     // Check that the sequences are fine; also computes the base frequencies.
 
-    Model_factory mf;
+    Model_factory mf(data_type);
 
-    if(!fr.check_alphabet(mf.get_dna_alphabet(),mf.get_full_dna_alphabet(),sequences))
+    if(!fr.check_alphabet(mf.get_char_alphabet(),mf.get_full_char_alphabet(),sequences))
         cout<<"\nWarning: Illegal characters in input sequences removed!"<<endl;
 
-    float *dna_pi = fr.base_frequencies();
+    if(data_type==Model_factory::dna)
+    {
+        // Create a DNA alignment model using empirical base frequencies.
 
-
-    // Create a DNA alignment model using empirical base frequencies.
-
-    mf.dna_model(dna_pi,&Settings_handle::st);
+        float *dna_pi = fr.base_frequencies();
+        mf.dna_model(dna_pi,&Settings_handle::st);
+    }
+    else if(data_type==Model_factory::protein)
+    {
+        // Create a protein alignment model using WAG.
+        mf.protein_model(&Settings_handle::st); // does it need the handle????
+    }
 
 
     // Place the sequences to nodes
     // and align them!
 
-    fr.place_sequences_to_nodes(&sequences,&leaf_nodes,mf.get_full_dna_alphabet());
+    fr.place_sequences_to_nodes(&sequences,&leaf_nodes,mf.get_full_char_alphabet());
 
     int count = 1;
     root->name_internal_nodes(&count);
@@ -117,7 +124,6 @@ int main(int argc, char *argv[])
     vector<Fasta_entry> aligned_sequences;
     root->get_alignment(&aligned_sequences,Settings_handle::st.is("output-ancestors"));
 
-cout<<"alignment done";
     if(1) {
         if(Settings_handle::st.is("outfile")){
             string outfile =  Settings_handle::st.get("outfile").as<string>();

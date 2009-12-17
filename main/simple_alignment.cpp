@@ -12,13 +12,13 @@ Simple_alignment::Simple_alignment()
 {
 }
 
-void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dna_model *dna_model,float l_branch_length,float r_branch_length)
+void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Evol_model *evol_model,float l_branch_length,float r_branch_length)
 {
 
     left = left_sequence;
     right = right_sequence;
-    model = dna_model;
-    full_dna_alphabet = model->get_full_alphabet();
+    model = evol_model;
+    full_char_alphabet = model->get_full_alphabet();
 
     left_branch_length = l_branch_length;
     right_branch_length = r_branch_length;
@@ -62,7 +62,7 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Dn
     int j_max = match->shape()[1];
     int i_max = match->shape()[0];
 
-    cout<<"max: "<<i_max<<" "<<j_max<<endl;
+//    cout<<"max: "<<i_max<<" "<<j_max<<endl;
     for(int j=0;j<j_max;j++)
     {
         for(int i=0;i<i_max;i++)
@@ -770,11 +770,11 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
         cout<<endl;
     }
     /*DEBUG*/
-    cout<<"\npath v"<<endl;
-    for(unsigned int i=0;i<path->size();i++)
-//        cout<<path->at(i).mp.matrix<<" "<<log(path->at(i).mp.fwd_score)<<" "<<log(path->at(i).mp.bwd_score)<<" "<<log(path->at(i).mp.full_score)<<endl;
-        cout<<path->at(i).mp.matrix<<" "<<path->at(i).mp.fwd_score<<" "<<path->at(i).mp.bwd_score<<" "<<path->at(i).mp.full_score<<endl;
-    cout<<endl;
+//    cout<<"\npath v"<<endl;
+//    for(unsigned int i=0;i<path->size();i++)
+////        cout<<path->at(i).mp.matrix<<" "<<log(path->at(i).mp.fwd_score)<<" "<<log(path->at(i).mp.bwd_score)<<" "<<log(path->at(i).mp.full_score)<<endl;
+//        cout<<path->at(i).mp.matrix<<" "<<path->at(i).mp.fwd_score<<" "<<path->at(i).mp.bwd_score<<" "<<path->at(i).mp.full_score<<endl;
+//    cout<<endl;
 
 
 }
@@ -913,11 +913,11 @@ void Simple_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer f
     }
     /*DEBUG*/
 
-    cout<<"\npath s"<<endl;
-    for(unsigned int i=0;i<path->size();i++)
-//        cout<<path->at(i).mp.matrix<<" "<<log(path->at(i).mp.fwd_score)<<" "<<log(path->at(i).mp.bwd_score)<<" "<<log(path->at(i).mp.full_score)<<endl;
-          cout<<path->at(i).mp.matrix<<" "<<path->at(i).mp.fwd_score<<" "<<path->at(i).mp.bwd_score<<" "<<path->at(i).mp.full_score<<endl;
-  cout<<endl;
+//    cout<<"\npath s"<<endl;
+//    for(unsigned int i=0;i<path->size();i++)
+////        cout<<path->at(i).mp.matrix<<" "<<log(path->at(i).mp.fwd_score)<<" "<<log(path->at(i).mp.bwd_score)<<" "<<log(path->at(i).mp.full_score)<<endl;
+//          cout<<path->at(i).mp.matrix<<" "<<path->at(i).mp.fwd_score<<" "<<path->at(i).mp.bwd_score<<" "<<path->at(i).mp.full_score<<endl;
+//  cout<<endl;
 
 }
 
@@ -1410,6 +1410,7 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *
                 edge.multiply_weight( branch_weight * child->get_posterior_weight() * this->branch_skip_probability );
         else
             edge.multiply_weight(child->get_posterior_weight());
+
     }
     // Edge is not used: just update the history
     else if(!child->is_used())
@@ -3229,7 +3230,7 @@ void Simple_alignment::print_sequences(vector<Site> *sites)
         cout<<i<<" "<<tsite->get_state()<<endl;
 
         if(tsite->get_site_type()==Site::real_site)
-            cout<<full_dna_alphabet.at(tsite->get_state())<<": ";
+            cout<<full_char_alphabet.at(tsite->get_state())<<": ";
         else
             cout<<"+: ";
 
@@ -3252,11 +3253,11 @@ void Simple_alignment::print_sequences(vector<Site> *sites)
         }
 
         if(lc>=0 && rc>=0)
-            cout<<full_dna_alphabet.at(lc)<<full_dna_alphabet.at(rc)<<" ";
+            cout<<full_char_alphabet.at(lc)<<full_char_alphabet.at(rc)<<" ";
         else if(lc>=0)
-            cout<<full_dna_alphabet.at(lc)<<"- ";
+            cout<<full_char_alphabet.at(lc)<<"- ";
         else if(rc>=0)
-            cout<<"-"<<full_dna_alphabet.at(rc)<<" ";
+            cout<<"-"<<full_char_alphabet.at(rc)<<" ";
 
 
         cout<<" (P) ";
@@ -3352,7 +3353,7 @@ string Simple_alignment::print_pairwise_alignment(vector<Site> *sites)
         Site *tsite = &sites->at(i);
 
         if(tsite->get_site_type()==Site::real_site)
-            output<<full_dna_alphabet.at(tsite->get_state());
+            output<<full_char_alphabet.at(tsite->get_state());
 
         Site_children *offspring = sites->at(i).get_children();
         int lc = -1;        int rc = -1;
@@ -3364,7 +3365,7 @@ string Simple_alignment::print_pairwise_alignment(vector<Site> *sites)
             lsite = left->get_site_at(offspring->left_index);
             lc = lsite->get_state();
             if(lc>=0)
-                left_seq << full_dna_alphabet.at(lc);
+                left_seq << full_char_alphabet.at(lc);
         }
         else
             left_seq << "-";
@@ -3374,7 +3375,7 @@ string Simple_alignment::print_pairwise_alignment(vector<Site> *sites)
             rsite = right->get_site_at(offspring->right_index);
             rc = rsite->get_state();
             if(rc>=0)
-                right_seq << full_dna_alphabet.at(rc);
+                right_seq << full_char_alphabet.at(rc);
         }
         else
             right_seq << "-";

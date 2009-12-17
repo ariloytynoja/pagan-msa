@@ -3,7 +3,8 @@
 # -------------------------------------------------
 QT -= gui
 TARGET = papaya
-#CONFIG = debug
+
+# CONFIG = debug
 CONFIG += console
 CONFIG -= app_bundle
 TEMPLATE = app
@@ -15,13 +16,13 @@ SOURCES += main.cpp \
     utils/model_factory.cpp \
     utils/fasta_reader.cpp \
     utils/eigen.cpp \
-    utils/dna_model.cpp \
     utils/db_matrix.cpp \
     main/sequence.cpp \
     main/simple_alignment.cpp \
     utils/int_matrix.cpp \
     utils/settings_handle.cpp \
-    utils/xml_writer.cpp
+    utils/xml_writer.cpp \
+    utils/evol_model.cpp
 HEADERS += utils/text_utils.h \
     utils/settings.h \
     utils/node.h \
@@ -30,14 +31,14 @@ HEADERS += utils/text_utils.h \
     utils/fasta_reader.h \
     utils/eigen.h \
     utils/exceptions.h \
-    utils/dna_model.h \
     utils/db_matrix.h \
     main/sequence.h \
     main/simple_alignment.h \
     utils/int_matrix.h \
     utils/fasta_entry.h \
     utils/settings_handle.h \
-    utils/xml_writer.h
+    utils/xml_writer.h \
+    utils/evol_model.h
 LIBS += -lboost_program_options-mt
 INCLUDEPATH += /usr/include
 OTHER_FILES += missing_things.txt

@@ -1,7 +1,7 @@
 #ifndef SIMPLE_ALIGNMENT_H
 #define SIMPLE_ALIGNMENT_H
 
-#include "utils/dna_model.h"
+#include "utils/evol_model.h"
 #include "utils/settings.h"
 #include "utils/settings_handle.h"
 #include "main/sequence.h"
@@ -84,8 +84,8 @@ class Simple_alignment
     float left_branch_length;
     float right_branch_length;
 
-    Dna_model *model;
-    string full_dna_alphabet;
+    Evol_model *model;
+    string full_char_alphabet;
 
     vector<Path_pointer> path;
 
@@ -359,10 +359,10 @@ class Simple_alignment
             weighted_branch_skip_penalty = true;
         }
 
-        branch_skip_probability = 0.2;
+        branch_skip_probability = 0.8;
         if(Settings_handle::st.is("branch-skip-penalty-per-branch"))
         {
-            branch_skip_weight = Settings_handle::st.get("branch-skip-penalty-per-branch").as<float>();
+            branch_skip_probability = Settings_handle::st.get("branch-skip-penalty-per-branch").as<float>();
             weighted_branch_skip_penalty = false;
         }
 
@@ -406,10 +406,10 @@ class Simple_alignment
 
         cout<<"sequences:"<<endl<<" ";
         for(int i=1;i<left->sites_length()-1;i++)
-            cout<<full_dna_alphabet.at(left->get_site_at(i)->get_state());
+            cout<<full_char_alphabet.at(left->get_site_at(i)->get_state());
         cout<<endl<<" ";
         for(int i=1;i<right->sites_length()-1;i++)
-            cout<<full_dna_alphabet.at(right->get_site_at(i)->get_state());
+            cout<<full_char_alphabet.at(right->get_site_at(i)->get_state());
         cout<<endl;
 
         if(Settings::noise>4)
@@ -441,7 +441,7 @@ class Simple_alignment
 public:
     Simple_alignment();
 
-    void align(Sequence *left_sequence,Sequence *right_sequence,Dna_model *model,float left_branch_length=0,float right_branch_length=0);
+    void align(Sequence *left_sequence,Sequence *right_sequence,Evol_model *model,float left_branch_length=0,float right_branch_length=0);
 
 
     Sequence* get_simple_sequence() { return ancestral_sequence; }
