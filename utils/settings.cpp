@@ -32,6 +32,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("weight-sampled-edges", "use posterior probabilities to weight sampled edges")
         ("no-weight-transform", "no weight transform for sampled edges")
         ("cuberoot-weight-transform", "cuberoot weight transform for sampled edges")
+        ("no-terminal-edges", "assume terminal missing data")
     ;
 
     boost::program_options::options_description model("DNA model options");
@@ -42,12 +43,14 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("dna-kappa", po::value<float>(), "kappa")
         ("dna-rho", po::value<float>(), "rho")
         ("ambiguity-factor", po::value<float>(), "multiplier for subst. score of ambiguity characters")
+        ("use-log-odds", "use log-odds substitutions scores")
     ;
 
     boost::program_options::options_description tree_edit("Tree manipulation options");
     tree_edit.add_options()
         ("scale-branches", po::value<float>(), "scale tree branches")
-        ("truncate-branches", po::value<float>(), "truncate tree branches")
+        ("truncate-branches", po::value<float>()->default_value(0.10), "truncate tree branches")
+        ("real-branches", "use real tree branch lengths")
         ("fixed-branches", po::value<float>(), "use fixed-length tree branches")
     ;
 
@@ -58,6 +61,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("branch-length-confirm-insertion", po::value<float>(), "total branch length skipped to confirm site as insertion")
         ("branch-skip-weight-per-distance", po::value<float>(), "weighted (by branch length unit) probability for site(s) being skipped over and later matched (>default<)")
         ("branch-skip-penalty-per-branch", po::value<float>(), "fixed probability for site(s) being skipped over and later matched")
+        ("terminal-gap-cost-divider", po::value<float>()->default_value(10), "divider for terminal gap cost")
     ;
 //        ("unused-edges-not-transferred", "mimic PRANK-F behaviour")
 

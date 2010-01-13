@@ -48,7 +48,9 @@ public:
                 dist_to_parent *= Settings_handle::st.get("scale-branches").as<float>();
             }
 
-            if( Settings_handle::st.is("truncate-branches") &&
+            if( Settings_handle::st.is("real-branches") )
+                ;
+            else if( Settings_handle::st.is("truncate-branches") &&
                   Settings_handle::st.get("truncate-branches").as<float>() > 0 &&
                     dist_to_parent > Settings_handle::st.get("truncate-branches").as<float>() )
             {

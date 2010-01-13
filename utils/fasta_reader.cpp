@@ -242,6 +242,8 @@ bool Fasta_reader::check_alphabet(string alphabet, string full_alphabet, vector<
 
         return chars_ok;
     }
+
+    return false;
 }
 
 /****************************************************************************************/

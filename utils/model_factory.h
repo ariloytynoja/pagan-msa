@@ -47,6 +47,8 @@ class Model_factory
 
     void define_dna_alphabet();
     void define_protein_alphabet();
+    void define_codon_alphabet();
+
     void print_char_alphabet();
 
     void build_model(int s,Db_matrix *pi,Db_matrix *q,Db_matrix *wU,Db_matrix *wV,Db_matrix *wRoot);
@@ -64,6 +66,9 @@ public:
 
     void protein_model(Settings *st);
     void protein_model(float ins_rate,float del_rate, float ext_prob);
+
+    void codon_model(Settings *st);
+    void codon_model(float ins_rate,float del_rate, float ext_prob);
 
     Evol_model alignment_model(double distance);
 //    Evol_model char_alignment_model(double distance);
