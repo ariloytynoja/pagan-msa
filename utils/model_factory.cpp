@@ -912,7 +912,7 @@ Evol_model Model_factory::alignment_model(double distance)
         FOR(j,char_as) {
 
             float sp = tmr[i*char_as+j];
-            if( Settings_handle::st.is("use-log-odds") )
+            if( ! Settings_handle::st.is("no-log-odds") )
             {
                 float lo = sp / ( charPi->g(i) * charPi->g(j) );
                 model.charPr->s(lo,i,j);

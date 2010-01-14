@@ -43,7 +43,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("dna-kappa", po::value<float>(), "kappa")
         ("dna-rho", po::value<float>(), "rho")
         ("ambiguity-factor", po::value<float>(), "multiplier for subst. score of ambiguity characters")
-        ("use-log-odds", "use log-odds substitutions scores")
+        ("no-log-odds", "do not use log-odds substitutions scores")
     ;
 
     boost::program_options::options_description tree_edit("Tree manipulation options");
