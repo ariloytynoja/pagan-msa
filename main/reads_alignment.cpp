@@ -23,7 +23,7 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
     global_root = root;
     for(int i=0;i<reads.size();i++)
     {
-        cout<<"Aligning read ">>i+1<<"/"<<reads.size()<<endl;
+        cout<<"Aligning read "<<i+1<<"/"<<reads.size()<<endl;
 
         Node * node = new Node();
 
