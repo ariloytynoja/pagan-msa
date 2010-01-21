@@ -6,8 +6,26 @@
 using namespace std;
 using namespace ppa;
 
-Sequence::Sequence(const string& seq_string,const string& alphabet)
+Sequence::Sequence(string& seq_string,const string& alphabet,bool gapped)
 {
+
+    if(gapped)
+    {
+        gapped_seq = seq_string;
+        string::iterator si = seq_string.begin();
+        for (;si != seq_string.end();si++)
+        {
+            if(*si == '-')
+            {
+                seq_string.erase(si);
+                si--;
+            }
+        }
+    }
+    else
+    {
+        gapped_seq = "";
+    }
 
     this->initialise_indeces();
 
@@ -56,8 +74,10 @@ Sequence::Sequence(const string& seq_string,const string& alphabet)
     }
 }
 
-Sequence::Sequence(const int length,const string& alphabet)
+Sequence::Sequence(const int length,const string& alphabet, string gapped_s)
 {
+
+    gapped_seq = gapped_s;
 
     this->initialise_indeces();
 

@@ -10,6 +10,7 @@ class Settings
 {
 //    boost::program_options::options_description desc;
     boost::program_options::variables_map vm;
+    float version;
 public:
     Settings();
     int read_command_line_arguments(int argc, char *argv[]);
@@ -17,8 +18,10 @@ public:
     bool is(std::string name) { return vm.count(name); }
     const boost::program_options::variable_value & get(const std::string & name) const { return vm[name]; }
 
+    void help();
     void info();
     boost::program_options::options_description desc;
+    boost::program_options::options_description min_desc;
 
     static int noise;
     static float resize_factor;

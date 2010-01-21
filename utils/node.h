@@ -88,6 +88,13 @@ public:
         }
     }
 
+    void set_name_id(int count)
+    {
+        stringstream ss;
+        ss << "seq" << (++count);
+        this->name_id = ss.str();
+    }
+
     string get_name() const { return name; }
 
     string get_name_id() const { return name_id; }
@@ -204,18 +211,25 @@ public:
      */
     void start_alignment(Model_factory *mf)
     {
-        if(Settings_handle::st.is("mpost-posterior-plot-file"))
+        if( Settings_handle::st.is("seqfile") )
         {
-            this->start_mpost_plot_file();
+            if(Settings_handle::st.is("mpost-posterior-plot-file"))
+            {
+                this->start_mpost_plot_file();
+            }
+
+            this->align_sequences(mf);
+
+            if(Settings_handle::st.is("mpost-posterior-plot-file"))
+            {
+                this->finish_mpost_plot_file();
+            }
         }
-
-        this->align_sequences(mf);
-
-        if(Settings_handle::st.is("mpost-posterior-plot-file"))
+        else if( Settings_handle::st.is("cds-seqfile") )
         {
-            this->finish_mpost_plot_file();
-        }
+            this->read_alignment(mf);
 
+        }
     }
 
     void align_sequences(Model_factory *mf)
@@ -229,7 +243,7 @@ public:
         this->align_sequences_this_node(mf);
     }
 
-    void align_sequences_this_node(Model_factory *mf)
+    void align_sequences_this_node(Model_factory *mf, bool is_reads_sequence=false)
     {
 
         if(Settings::noise>0)
@@ -240,7 +254,7 @@ public:
 
         Simple_alignment sa;
         sa.align(left_child->get_sequence(),right_child->get_sequence(),&model,
-                 left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
+                 left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence);
 
         this->add_ancestral_sequence( sa.get_simple_sequence() );
 
@@ -248,6 +262,35 @@ public:
             this->check_valid_graph();
 
     }
+
+    void read_alignment(Model_factory *mf)
+    {
+        if(leaf)
+            return;
+
+        left_child->read_alignment(mf);
+        right_child->read_alignment(mf);
+
+        this->read_alignment_this_node(mf);
+    }
+
+    void read_alignment_this_node(Model_factory *mf)
+    {
+
+        if(Settings::noise>0)
+            cout<<"reading alignment node "<<this->get_name()<<": "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
+
+        double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
+        Evol_model model = mf->alignment_model(dist);
+
+        Simple_alignment sa;
+        sa.read_alignment(left_child->get_sequence(),right_child->get_sequence(),&model,
+                 left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
+
+        this->add_ancestral_sequence( sa.get_simple_sequence() );
+
+    }
+
 
     void start_mpost_plot_file()
     {
@@ -509,7 +552,7 @@ public:
         return color;
     }
 
-    void add_sequence( string seq_string, string full_char_alphabet);
+    void add_sequence( string seq_string, string full_char_alphabet, bool gapped = false);
 
     void add_ancestral_sequence( Sequence* s ) { sequence = s; }
 

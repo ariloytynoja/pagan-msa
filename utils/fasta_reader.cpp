@@ -164,6 +164,8 @@ bool Fasta_reader::check_alphabet(string alphabet, string full_alphabet, vector<
     //
     if(alphabet == "ACGT") {
 
+        bool allow_gaps = Settings_handle::st.is("cds-seqfile");
+
         dna_pi[0] = dna_pi[1] = dna_pi[2] = dna_pi[3] = 0.0;
 
         bool chars_ok = true;
@@ -192,6 +194,14 @@ bool Fasta_reader::check_alphabet(string alphabet, string full_alphabet, vector<
                         break;
                     case 'T':
                         dna_pi[3]++;
+                        break;
+                    case '-':
+                        if(!allow_gaps)
+                        {
+                            vi->sequence.erase(si);
+                            si--;
+                            chars_ok = false;
+                        }
                         break;
                     default:
                         // Remove characters not in full alphabet
@@ -342,7 +352,7 @@ void Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
 
 /****************************************************************************************/
 
-void Fasta_reader::place_sequences_to_nodes(const vector<Fasta_entry> *sequences,vector<Node*> *leaf_nodes, string full_char_alphabet)
+void Fasta_reader::place_sequences_to_nodes(const vector<Fasta_entry> *sequences,vector<Node*> *leaf_nodes, string full_char_alphabet, bool gapped)
 {
 
     vector<Fasta_entry>::const_iterator si = sequences->begin();
@@ -355,7 +365,7 @@ void Fasta_reader::place_sequences_to_nodes(const vector<Fasta_entry> *sequences
         {
             if((*ni)->get_name() == s_name) {
                 (*ni)->add_name_comment( si->comment );
-                (*ni)->add_sequence( si->sequence, full_char_alphabet);
+                (*ni)->add_sequence( si->sequence, full_char_alphabet, gapped);
             }
         }
     }

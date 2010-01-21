@@ -8,6 +8,7 @@
 #include "utils/xml_writer.h"
 #include "utils/model_factory.h"
 #include "utils/evol_model.h"
+#include "main/reads_alignment.h"
 
 using namespace std;
 
@@ -21,14 +22,38 @@ int main(int argc, char *argv[])
    */
 
     // Read the arguments
-
-//    Settings st;
-//    Settings_handle handle;
     int rv = Settings_handle::st.read_command_line_arguments(argc, argv);
     
     srand(time(0));
     
-    
+    // Read the sequences
+    bool gapped_seqs = false;
+    Fasta_reader fr;
+    vector<Fasta_entry> sequences;
+    if(Settings_handle::st.is("seqfile")){
+
+        string seqfile =  Settings_handle::st.get("seqfile").as<string>();
+        cout<<"Data file: "<<seqfile<<endl;
+
+        fr.read(seqfile, sequences, true);
+    }
+    else if(Settings_handle::st.is("cds-seqfile")){
+
+        string seqfile =  Settings_handle::st.get("cds-seqfile").as<string>();
+        cout<<"CDS alignment file: "<<seqfile<<endl;
+
+        fr.read(seqfile, sequences, true);
+        gapped_seqs = true;
+    }
+    else
+    {
+        cout<<endl<<"Error: No sequence file defined."<<endl;
+        Settings_handle::st.info();
+
+        exit(0);
+    }
+
+
     // Read the guidetree
 
     Node *root;
@@ -43,6 +68,26 @@ int main(int argc, char *argv[])
 
         tree_ok = true;
     }
+    else if(Settings_handle::st.is("cds-treefile")){
+        string treefile =  Settings_handle::st.get("cds-treefile").as<string>();
+        cout<<"CDS tree file: "<<treefile<<endl;
+
+        Newick_reader nr;
+        string tree = nr.read_tree(treefile);
+        root = nr.parenthesis_to_tree(tree);
+
+        tree_ok = true;
+    }
+    else if(gapped_seqs && sequences.size()==1)
+    {
+        string tree =  sequences.at(1).name;
+        cout<<"CDS tree: "<<tree<<endl;
+
+        Newick_reader nr;
+        root = nr.parenthesis_to_tree(tree);
+
+        tree_ok = true;
+    }
     else
     {
         cout<<endl<<"Error: No tree file defined."<<endl;
@@ -51,25 +96,6 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-
-    // Read the sequences
-
-    Fasta_reader fr;
-    vector<Fasta_entry> sequences;
-    if(Settings_handle::st.is("seqfile")){
-
-        string seqfile =  Settings_handle::st.get("seqfile").as<string>();
-        cout<<"Data file: "<<seqfile<<endl;
-
-        fr.read(seqfile, sequences, true);
-    }
-    else
-    {
-        cout<<endl<<"Error: No sequence file defined."<<endl;
-        Settings_handle::st.info();
-
-        exit(0);
-    }
 
 
     /*
@@ -111,7 +137,7 @@ int main(int argc, char *argv[])
     // Place the sequences to nodes
     // and align them!
 
-    fr.place_sequences_to_nodes(&sequences,&leaf_nodes,mf.get_full_char_alphabet());
+    fr.place_sequences_to_nodes(&sequences,&leaf_nodes,mf.get_full_char_alphabet(),gapped_seqs);
 
     int count = 1;
     root->name_internal_nodes(&count);
@@ -119,29 +145,41 @@ int main(int argc, char *argv[])
     root->start_alignment(&mf);
 
 
-    // Collect results.
+    // If reads sequences, add them to the alignment
 
+    if( Settings_handle::st.is("readsfile") )
+    {
+        Reads_alignment ra;
+        ra.align(root,&mf,count);
+
+        root = ra.get_global_root();
+    }
+
+    // Collect results.
+    //
     vector<Fasta_entry> aligned_sequences;
     root->get_alignment(&aligned_sequences,Settings_handle::st.is("output-ancestors"));
 
-    if(1) {
-        if(Settings_handle::st.is("outfile")){
-            string outfile =  Settings_handle::st.get("outfile").as<string>();
-            cout<<"Alignment files: "<<outfile<<".fas, "<<outfile<<".xml"<<endl;
+    // Save results in output file
+    //
+    string outfile =  "outfile";
 
-            Fasta_reader fr;
-            fr.set_chars_by_line(70);
-            fr.write(outfile, aligned_sequences, true);
-
-
-            int count = 1;
-            root->set_name_ids(&count);
-
-            Xml_writer xw;
-            xw.write(outfile, root, aligned_sequences, true);
-
-        }
+    if(Settings_handle::st.is("outfile")){
+        outfile =  Settings_handle::st.get("outfile").as<string>();
     }
+
+    cout<<"Alignment files: "<<outfile<<".fas, "<<outfile<<".xml"<<endl;
+
+//    Fasta_reader fr;
+    fr.set_chars_by_line(70);
+    fr.write(outfile, aligned_sequences, true);
+
+
+    count = 1;
+    root->set_name_ids(&count);
+
+    Xml_writer xw;
+    xw.write(outfile, root, aligned_sequences, true);
 
     if(Settings::noise>1 )
     {
@@ -157,10 +195,5 @@ int main(int argc, char *argv[])
         root->write_sequence_graphs();
     }
 
+    delete root;
 }
-/*
-
-  Make a factory that gioves models.
-  Both DNA and codon.
-  Many?
-*/

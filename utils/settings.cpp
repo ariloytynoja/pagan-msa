@@ -14,21 +14,35 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    boost::program_options::options_description generic("Generic options");
-    generic.add_options()
-        ("help", "display help message")
+    version = 0.001;
+
+    boost::program_options::options_description minimal("Minimal options");
+    minimal.add_options()
         ("seqfile", po::value<string>(), "sequence infile")
         ("treefile", po::value<string>(), "tree file")
         ("outfile", po::value<string>(), "sequence outfile")
+    ;
+
+    boost::program_options::options_description generic("Generic options");
+    generic.add_options()
+        ("help", "display help message")
+        ("noise", po::value<int>(), "output noise level")
         ("output-ancestors", "include ancestors in outfile")
         ("full-probability", "compute full probability")
         ("sample-path", "sample the alignment path from posterior probabilities")
-        ("noise", po::value<int>(), "output noise level")
+        ("sample-additional-paths", po::value<int>()->default_value(0), "sample additional paths from posterior probabilities")
+    ;
+
+    boost::program_options::options_description reads_alignment("Reads alignment options");
+    reads_alignment.add_options()
+        ("cds-seqfile", po::value<string>(), "cds alignment infile")
+        ("cds-treefile", po::value<string>(), "cds tree file")
+        ("readsfile", po::value<string>(), "reads infile")
+        ("reads-distance", po::value<float>()->default_value(0.01), "reads sequence evolutionary distance from root")
     ;
 
     boost::program_options::options_description graph("Graph options");
     graph.add_options()
-        ("sample-additional-paths", po::value<int>()->default_value(0), "sample additional paths from posterior probabilities")
         ("weight-sampled-edges", "use posterior probabilities to weight sampled edges")
         ("no-weight-transform", "no weight transform for sampled edges")
         ("cuberoot-weight-transform", "cuberoot weight transform for sampled edges")
@@ -79,7 +93,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("check-valid-graphs", "check that fwd and bwd edges are identical")
     ;
 
-    desc.add(generic).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug);
+    desc.add(minimal).add(generic).add(reads_alignment).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug);
+    min_desc.add(minimal);
 
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
@@ -89,7 +104,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
 
     if (vm.count("help")) {
-        this->info();
+        this->help();
         return 1;
     }
 
@@ -97,12 +112,19 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     return 0;
 }
 
-void Settings::info()
+void Settings::help()
 {
-        float version = 0.001;
-
         cout<<"\nPapaya v. "<<version<<": input arguments:\n";
         cout << desc << "\n";
+        exit(0);
+}
+
+void Settings::info()
+{
+        cout<<"\nPapaya v. "<<version<<": minimal input arguments:\n";
+        cout << min_desc << "\n";
+        cout<<"use option --help for more information\n\n";
+        exit(0);
 }
 
 int     Settings::noise             = 0;

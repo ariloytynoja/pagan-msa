@@ -619,6 +619,8 @@ class Sequence
     string full_char_alphabet;
 
     vector<Unique_index> unique_index;
+
+    string gapped_seq;
 public:
 
     void initialise_indeces() {
@@ -727,10 +729,11 @@ public:
     void print_path(vector<Site> *sites);
     void print_path(){ this->print_path(this->get_sites()); }
 
+    string *get_gapped_sequence() { return &gapped_seq; }
 
-    Sequence(const string &seq_string,const string &alphabet);
+    Sequence(string &seq_string,const string &alphabet,bool gapped = false);
     Sequence(const vector<Site>* s, const vector<Edge>* e, const string& alphabet);
-    Sequence(const int length,const string& alphabet);
+    Sequence(const int length,const string& alphabet, string gapped_s="");
 
     vector<Site> *get_sites() { return &sites; }
     vector<Edge> *get_edges() { return &edges; }

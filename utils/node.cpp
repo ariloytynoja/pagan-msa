@@ -11,15 +11,21 @@ using namespace ppa;
 
 Node::~Node()
 {
+    if(!leaf)
+    {
+        delete left_child;
+        delete right_child;
+    }
+
     if(sequence!=0)
         delete sequence;
 }
 
-void Node::add_sequence( string seq_string, string full_char_alphabet)
+void Node::add_sequence( string seq_string, string full_char_alphabet, bool gapped)
 {
     if(Settings::noise>4)
         cout<<"Node::add_sequence "<<name<<"\n";
-    sequence = new Sequence(seq_string, full_char_alphabet);
+    sequence = new Sequence(seq_string, full_char_alphabet, gapped);
 }
 
 void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_internal_nodes)
@@ -602,3 +608,5 @@ void Node::check_valid_graph() const
 
     }
 }
+
+

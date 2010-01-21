@@ -12,7 +12,9 @@ Simple_alignment::Simple_alignment()
 {
 }
 
-void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Evol_model *evol_model,float l_branch_length,float r_branch_length)
+void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
+                             Evol_model *evol_model,float l_branch_length,float r_branch_length,
+                             bool is_reads_sequence)
 {
 
     left = left_sequence;
@@ -30,6 +32,9 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Ev
     // set the basic parameters (copy from Settings)
     //
     this->set_basic_settings();
+
+    if(is_reads_sequence)
+        this->set_reads_alignment_settings();
 
     // Set the edge weighting scheme, define the dynamic-programming matrices
     //
@@ -225,6 +230,119 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Ev
         else
             this->plot_posterior_probabilities_down();
     }
+
+}
+
+
+/********************************************/
+
+void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_sequence,Evol_model *evol_model,float l_branch_length,float r_branch_length)
+{
+
+    left = left_sequence;
+    right = right_sequence;
+    model = evol_model;
+    full_char_alphabet = model->get_full_alphabet();
+
+    left_branch_length = l_branch_length;
+    right_branch_length = r_branch_length;
+
+
+    this->debug_print_input_sequences(2);
+
+
+    // set the basic parameters (copy from Settings)
+    //
+    this->set_basic_settings();
+    this->set_reads_alignment_settings();
+
+
+    // Set the edge weighting scheme, define the dynamic-programming matrices
+    //
+    log_edge_weight = &ppa::Simple_alignment::edge_log_posterior_weight;
+    edge_weight = &ppa::Simple_alignment::edge_posterior_weight;
+
+    transform_edge_weight = &ppa::Simple_alignment::square_root_edge_weight;
+    if( Settings_handle::st.is("no-weight-transform") )
+        transform_edge_weight = &ppa::Simple_alignment::plain_edge_weight;
+    if( Settings_handle::st.is("cuberoot-weight-transform") )
+        transform_edge_weight = &ppa::Simple_alignment::cube_root_edge_weight;
+
+    int left_length = left->sites_length();    int right_length = right->sites_length();
+
+    this->debug_msg("Simple_alignment: lengths: "+this->itos(left_length)+" "+this->itos(right_length),1);
+
+    string gapped_anc = "";
+
+    string *gapped_left = left->get_gapped_sequence();
+    string *gapped_right = right->get_gapped_sequence();
+
+    if(gapped_left->length() != gapped_right->length())
+    {
+        cout<<"Error: gapped sequences of different length. Exiting.\n\n";
+        exit(-1);
+    }
+
+    string::iterator lgi = gapped_left->begin();
+    string::iterator rgi = gapped_right->begin();
+    int li = 0;
+    int ri = 0;
+
+    for(;lgi!=gapped_left->end();lgi++,rgi++)
+    {
+        bool lgap = (*lgi == '-');
+        bool rgap = (*rgi == '-');
+
+        if(!lgap && rgap)
+        {
+            gapped_anc.append("A");
+
+            Matrix_pointer bwd_p;
+            bwd_p.matrix = Simple_alignment::x_mat;
+            bwd_p.x_ind = -1;
+            bwd_p.y_ind = ri;
+            Path_pointer pp( bwd_p, true );
+
+            path.push_back(pp);
+            ri++;
+        }
+        else if(lgap && !rgap)
+        {
+            gapped_anc.append("A");
+
+            Matrix_pointer bwd_p;
+            bwd_p.matrix = Simple_alignment::y_mat;
+            bwd_p.x_ind = li;
+            bwd_p.y_ind = -1;
+            Path_pointer pp( bwd_p, true );
+
+            path.push_back(pp);
+        }
+        else if(!lgap && !rgap)
+        {
+            gapped_anc.append("A");
+
+            Matrix_pointer bwd_p;
+            bwd_p.matrix = Simple_alignment::m_mat;
+            bwd_p.x_ind = li;
+            bwd_p.y_ind = ri;
+            Path_pointer pp( bwd_p, true );
+
+            path.push_back(pp);
+        }
+        else if(lgap && rgap)
+        {
+            gapped_anc.append("-");
+        }
+    }
+
+    // Now build the sequence forward following the path saved in a vector;
+    //
+    ancestral_sequence = new Sequence(path.size(),model->get_full_alphabet(),gapped_anc);
+    this->build_ancestral_sequence(ancestral_sequence,&path);
+
+    this->debug_msg("Simple_alignment: sequence built",1);
+
 
 }
 
@@ -1374,16 +1492,35 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vecto
     }
     Edge edge( child_index->at( child->get_start_site_index() ), child_index->at( child->get_end_site_index() ), edge_weight );
 
-    if( Settings_handle::st.is("no-terminal-edges") )
-    {
-        if( sequence->get_site_at( edge.get_start_site_index() )->get_path_state() == Site::start_site &&
-            edge.get_end_site_index() - edge.get_start_site_index() > 1 )
-            return;
+//    cout<< edge.get_start_site_index()<<" "<<edge.get_end_site_index()<<"; ";
+//    cout<<child_index->at( edge.get_start_site_index() )<<" "<< child_index->at( edge.get_end_site_index() )<<"; ";
+//    cout<<sequence->get_site_at( edge.get_start_site_index() )->get_site_type()<<" "<<sequence->get_site_at( edge.get_start_site_index() )->get_path_state()<<endl;
 
-        if( sequence->get_site_at( edge.get_end_site_index() )->get_path_state() == Site::start_site &&
+    if( no_terminal_edges )
+    {
+        if( sequence->get_site_at( edge.get_start_site_index() )->get_site_type() == Site::start_site &&
             edge.get_end_site_index() - edge.get_start_site_index() > 1 )
-            return;
+        {
+//            cout<<"change1\n";
+            edge.set_start_site_index(edge.get_end_site_index()-1);
+//            cout<<"skip1\n";
+//            return;
+        }
+
+        if( sequence->get_site_at( edge.get_end_site_index() )->get_site_type() == Site::stop_site &&
+            edge.get_end_site_index() - edge.get_start_site_index() > 1 )
+        {
+//            cout<<"change2\n";
+            edge.set_end_site_index(edge.get_start_site_index()+1);
+//            cout<<"skip2\n";
+//            return;
+        }
     }
+
+//    cout<< edge.get_start_site_index()<<" "<<edge.get_end_site_index()<<"; ";
+//    cout<<child_index->at( edge.get_start_site_index() )<<" "<< child_index->at( edge.get_end_site_index() )<<"; ";
+//    cout<<sequence->get_site_at( edge.get_start_site_index() )->get_site_type()<<" "<<sequence->get_site_at( edge.get_start_site_index() )->get_path_state()<<endl;
+
     this->transfer_child_edge(sequence, edge, child, branch_length, connects_neighbour_site, adjust_posterior_weight, branch_weight);
 }
 
@@ -2306,7 +2443,7 @@ void Simple_alignment::score_gap_open(Edge *edge,align_slice *m_slice,Matrix_poi
     double this_score =  (*m_slice)[prev_index].score + model->log_non_gap() + model->log_gap_open() + edge_wght;
 
 //    // to reduce terminal gap cost for incomplete sequences
-//    if( Settings_handle::st.is("no-terminal-edges") && prev_index == 0 )
+//    if( no_terminal_edges && prev_index == 0 )
 //        this_score =  (*m_slice)[prev_index].score + model->log_non_gap() +
 //                      log( model->gap_open() / Settings_handle::st.get("terminal-gap-cost-divider").as<float>() ) + edge_wght;
 

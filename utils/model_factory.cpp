@@ -431,22 +431,30 @@ void Model_factory::print_char_alphabet()
 void Model_factory::dna_model(float *char_pi,Settings *st)
 {
     float char_kappa = 2.0;
+    float char_rho = 1.0;
+    float ins_rate = 0.05;
+    float del_rate = 0.05;
+    float gap_ext = 0.5;
+
+    if(st->is("cds-seqfile"))
+    {
+        ins_rate = 0.2;
+        del_rate = 0.2;
+        gap_ext = 0.95;
+    }
+
     if(st->is("char-kappa"))
         char_kappa =  st->get("char-kappa").as<float>();
 
-    float char_rho = 1.0;
     if(st->is("char-rho"))
         char_rho =  st->get("char-rho").as<float>();
 
-    float ins_rate = 0.05;
     if(st->is("ins-rate"))
         ins_rate =  st->get("ins-rate").as<float>();
 
-    float del_rate = 0.05;
     if(st->is("del-rate"))
         del_rate =  st->get("del-rate").as<float>();
 
-    float gap_ext = 0.5;
     if(st->is("gap-extension"))
         gap_ext =  st->get("gap-extension").as<float>();
 

@@ -101,6 +101,8 @@ class Simple_alignment
     float branch_skip_probability;
     bool  weighted_branch_skip_penalty;
 
+    bool no_terminal_edges;
+
     bool compute_full_score;
     bool weight_edges;
     double bwd_full_probability; // for control
@@ -377,9 +379,29 @@ class Simple_alignment
             Settings_handle::st.get("sample-additional-paths").as<int>() > 0 )
             compute_full_score = true;
 
+        no_terminal_edges = false;
+        if( Settings_handle::st.is("no-terminal-edges") )
+            no_terminal_edges = true;
+
         cout << noshowpos;
     }
 
+    void set_reads_alignment_settings()
+    {
+
+        no_terminal_edges = true;
+
+        max_allowed_skip_distance = 5;
+
+        max_allowed_skip_branches = 50;
+
+        max_allowed_match_skip_branches = 50;
+
+        branch_skip_weight = 1;
+
+        branch_skip_probability = 1;
+
+    }
 
     static int plot_number;
     void plot_posterior_probabilities_up();
@@ -441,7 +463,11 @@ class Simple_alignment
 public:
     Simple_alignment();
 
-    void align(Sequence *left_sequence,Sequence *right_sequence,Evol_model *model,float left_branch_length=0,float right_branch_length=0);
+    void align(Sequence *left_sequence,Sequence *right_sequence,Evol_model *model,
+               float left_branch_length=0,float right_branch_length=0,bool is_reads_sequence=false);
+
+    void read_alignment(Sequence *left_sequence,Sequence *right_sequence,Evol_model *model,
+                        float left_branch_length=0,float right_branch_length=0);
 
 
     Sequence* get_simple_sequence() { return ancestral_sequence; }
