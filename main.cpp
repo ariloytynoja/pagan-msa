@@ -80,11 +80,14 @@ int main(int argc, char *argv[])
     }
     else if(gapped_seqs && sequences.size()==1)
     {
-        string tree =  sequences.at(1).name;
-        cout<<"CDS tree: "<<tree<<endl;
+        root = new Node();
+        root->set_name(sequences.at(0).name);
+        root->add_name_comment( sequences.at(0).comment );
 
-        Newick_reader nr;
-        root = nr.parenthesis_to_tree(tree);
+        int data_type = fr.check_sequence_data_type(sequences);
+        Model_factory mf(data_type);
+
+        root->add_sequence( sequences.at(0).sequence, mf.get_full_char_alphabet());
 
         tree_ok = true;
     }
@@ -96,8 +99,6 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-
-
     /*
     / Check that input is fine.
    */
@@ -106,7 +107,12 @@ int main(int argc, char *argv[])
 
     vector<Node*> leaf_nodes;
     root->get_leaf_nodes(&leaf_nodes);
-    fr.check_sequence_names(&sequences,&leaf_nodes,&Settings_handle::st);
+
+    fr.check_sequence_names(&sequences,&leaf_nodes);
+    root->prune_tree();
+
+    leaf_nodes.clear();
+    root->get_leaf_nodes(&leaf_nodes);
 
     // Get the sequence data type
     //
@@ -133,7 +139,6 @@ int main(int argc, char *argv[])
         mf.protein_model(&Settings_handle::st); // does it need the handle????
     }
 
-
     // Place the sequences to nodes
     // and align them!
 
@@ -143,7 +148,6 @@ int main(int argc, char *argv[])
     root->name_internal_nodes(&count);
 
     root->start_alignment(&mf);
-
 
     // If reads sequences, add them to the alignment
 
@@ -170,7 +174,6 @@ int main(int argc, char *argv[])
 
     cout<<"Alignment files: "<<outfile<<".fas, "<<outfile<<".xml"<<endl;
 
-//    Fasta_reader fr;
     fr.set_chars_by_line(70);
     fr.write(outfile, aligned_sequences, true);
 

@@ -6,7 +6,7 @@
 #include <fstream>
 #include "exceptions.h"
 #include "node.h"
-#include "settings.h"
+//#include "settings.h"
 #include "utils/fasta_entry.h"
 
 using namespace std;
@@ -43,7 +43,8 @@ public:
     }
 
     bool check_alphabet(string alphabet, string full_alphabet, vector<Fasta_entry> & seqs)  throw (Exception);
-    void check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes, const Settings *st) const;
+//    void check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes, const Settings *st) const;
+    void check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes) const;
 
     float* base_frequencies() { return dna_pi; }
     int check_sequence_data_type(const vector<Fasta_entry> & seqs);

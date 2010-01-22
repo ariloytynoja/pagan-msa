@@ -21,9 +21,9 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
 
     double r_dist = Settings_handle::st.get("reads-distance").as<float>();
     global_root = root;
-    for(int i=0;i<reads.size();i++)
+    for(int i=0;i<(int)reads.size();i++)
     {
-        cout<<"Aligning read "<<i+1<<"/"<<reads.size()<<endl;
+        cout<<"read "<<i+1<<"/"<<reads.size()<<"; ";
 
         Node * node = new Node();
 

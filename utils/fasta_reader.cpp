@@ -47,8 +47,10 @@ knowledge of the CeCILL license and that you accept its terms.
 
 #include <algorithm>
 #include <iostream>
+#include <set>
 #include "fasta_reader.h"
 #include "text_utils.h"
+#include "settings_handle.h"
 
 using namespace ppa;
 
@@ -307,7 +309,52 @@ void Fasta_reader::rna_to_DNA(string *sequence) const
 
 /****************************************************************************************/
 
-void Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes,const Settings *st) const
+//void Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes,const Settings *st) const
+//{
+//
+//    unsigned int names_match = 0;
+//    vector<Fasta_entry>::const_iterator si = sequences->begin();
+//    for (; si != sequences->end(); si++)
+//    {
+//        string s_name = si->name;
+//        vector<Node*>::const_iterator ni = leaf_nodes->begin();
+//        for (; ni != leaf_nodes->end(); ni++)
+//        {
+//            if((*ni)->get_name() == s_name)
+//                names_match++;
+//        }
+//    }
+//
+//    // All the leafs in the guidetree need a sequence. Not all sequences need to be in the tree.
+//
+//    if(names_match != leaf_nodes->size())
+//    {
+//        cout<<"All leaf node names in the guidetree file '"<<st->get("treefile").as<string>()<<"'\ndo not match"<<
+//            " with a sequence name in the sequence file '"<<st->get("seqfile").as<string>()<<"'."<<endl;
+//
+//        cout<<endl<<"Sequence names:"<<endl;
+//        for (si = sequences->begin(); si != sequences->end(); si++)
+//            cout<<" "<<si->name<<endl;
+//
+//        cout<<endl<<"Leaf names:"<<endl;
+//        for (vector<Node*>::const_iterator ni = leaf_nodes->begin(); ni != leaf_nodes->end(); ni++)
+//            cout<<" "<<(*ni)->get_name()<<endl;
+//
+//        cout<<endl<<"Exiting."<<endl;
+//        exit(-1);
+//    }
+//
+//    // Not all sequences need to be in the tree but give a warning that names don't match.
+//
+//    if(sequences->size() != leaf_nodes->size())
+//    {
+//        cout<<"\nWarning: "<<leaf_nodes->size()<<" leaf nodes but "<<sequences->size()<<" sequences!\n";
+//    }
+//}
+
+/****************************************************************************************/
+
+void Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes) const
 {
 
     unsigned int names_match = 0;
@@ -327,26 +374,53 @@ void Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
 
     if(names_match != leaf_nodes->size())
     {
-        cout<<"All leaf node names in the guidetree file '"<<st->get("treefile").as<string>()<<"'\ndo not match"<<
-            " with a sequence name in the sequence file '"<<st->get("seqfile").as<string>()<<"'."<<endl;
+        if("cds-seqfile")
+        {
+            cout<<"\nAll leaf node names in the guidetree file '"<<Settings_handle::st.get("cds-treefile").as<string>()<<"' do not match\n"<<
+                " with a sequence name in the sequence file '"<<Settings_handle::st.get("cds-seqfile").as<string>()<<"'."<<endl;
+        }
+        else
+        {
+            cout<<"\nAll leaf node names in the guidetree file '"<<Settings_handle::st.get("treefile").as<string>()<<"' do not match\n"<<
+                " with a sequence name in the sequence file '"<<Settings_handle::st.get("seqfile").as<string>()<<"'."<<endl;
+        }
 
-        cout<<endl<<"Sequence names:"<<endl;
+        set<string> snames;
+        vector<string> vnames;
         for (si = sequences->begin(); si != sequences->end(); si++)
-            cout<<" "<<si->name<<endl;
+        {
+            snames.insert(si->name);
+            vnames.push_back(si->name);
+        }
 
-        cout<<endl<<"Leaf names:"<<endl;
+        set<string> tnames;
         for (vector<Node*>::const_iterator ni = leaf_nodes->begin(); ni != leaf_nodes->end(); ni++)
-            cout<<" "<<(*ni)->get_name()<<endl;
+        {
+            tnames.insert((*ni)->get_name());
+        }
 
-        cout<<endl<<"Exiting."<<endl;
-        exit(-1);
+
+        cout<<endl<<"Leaf names not in the sequences:"<<endl;
+        for (vector<Node*>::const_iterator ni = leaf_nodes->begin(); ni != leaf_nodes->end(); ni++)
+        {
+            (*ni)->has_sequence(true);
+            if(snames.find((*ni)->get_name()) == snames.end() )
+            {
+                cout<<" "<<(*ni)->get_name()<<endl;
+                (*ni)->has_sequence(false);
+            }
+        }
     }
 
     // Not all sequences need to be in the tree but give a warning that names don't match.
 
-    if(sequences->size() != leaf_nodes->size())
+    if(sequences->size() > leaf_nodes->size())
     {
-        cout<<"\nWarning: "<<leaf_nodes->size()<<" leaf nodes but "<<sequences->size()<<" sequences!\n";
+        cout<<"\nWarning: "<<leaf_nodes->size()<<" leaf nodes but "<<sequences->size()<<" sequences! Excess sequences removed.\n\n";
+    }
+    if(sequences->size() < leaf_nodes->size())
+    {
+        cout<<"\nWarning: "<<leaf_nodes->size()<<" leaf nodes but "<<sequences->size()<<" sequences! Excess branches removed.\n\n";
     }
 }
 

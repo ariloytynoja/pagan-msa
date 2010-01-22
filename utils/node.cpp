@@ -11,13 +11,13 @@ using namespace ppa;
 
 Node::~Node()
 {
-    if(!leaf)
-    {
+    if(this->has_left_child())
         delete left_child;
-        delete right_child;
-    }
 
-    if(sequence!=0)
+    if(this->has_right_child())
+        delete right_child;
+
+    if(this->node_has_sequence_object)
         delete sequence;
 }
 
@@ -26,6 +26,7 @@ void Node::add_sequence( string seq_string, string full_char_alphabet, bool gapp
     if(Settings::noise>4)
         cout<<"Node::add_sequence "<<name<<"\n";
     sequence = new Sequence(seq_string, full_char_alphabet, gapped);
+    this->node_has_sequence_object= true;
 }
 
 void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_internal_nodes)
@@ -610,3 +611,102 @@ void Node::check_valid_graph() const
 }
 
 
+void Node::prune_down()
+{
+    if(this->is_leaf())
+        return;
+
+    left_child->prune_down();
+    right_child->prune_down();
+
+    if(!left_child->has_sequence()){
+        delete this->left_child;
+        this->has_left_child(false);
+    }
+
+    if(!right_child->has_sequence()){
+        delete this->right_child;
+        this->has_right_child(false);
+    }
+
+    if(this->has_left_child() && !left_child->is_leaf())
+    {
+        if(!left_child->has_left_child() && left_child->has_right_child())
+        {
+            Node* new_child = new Node();
+            new_child->is_leaf(false);
+            new_child = left_child->right_child;
+            new_child->set_distance_to_parent (left_child->get_distance_to_parent()+
+                                        left_child->right_child->get_distance_to_parent());
+
+            left_child->has_right_child(false);
+            delete left_child;
+            this->add_left_child(new_child);
+        }
+        else if(left_child->has_left_child() && !left_child->has_right_child())
+        {
+            Node* new_child = new Node();
+            new_child->is_leaf(false);
+            new_child = left_child->left_child;
+            new_child->set_distance_to_parent (left_child->get_distance_to_parent()+
+                                left_child->left_child->get_distance_to_parent());
+
+            left_child->has_left_child(false);
+            delete left_child;
+            this->add_left_child(new_child);
+        }
+    }
+
+    if(this->has_right_child() && !right_child->is_leaf())
+    {
+        if(!right_child->has_left_child() && right_child->has_right_child())
+        {
+            Node* new_child = new Node();
+            new_child->is_leaf(false);
+            new_child = right_child->right_child;
+            new_child->set_distance_to_parent (right_child->get_distance_to_parent()+
+                                        right_child->right_child->get_distance_to_parent() );
+
+            right_child->has_right_child(false);
+            delete right_child;
+            this->add_right_child(new_child);
+        }
+        else if(right_child->has_left_child() && !right_child->has_right_child())
+        {
+            Node* new_child = new Node();
+            new_child->is_leaf(false);
+            new_child = right_child->left_child;
+
+            new_child->set_distance_to_parent (right_child->get_distance_to_parent()+
+                                            right_child->left_child->get_distance_to_parent());
+            right_child->has_left_child(false);
+            delete right_child;
+            this->add_right_child(new_child);
+        }
+    }
+
+    if(this->has_left_child() && left_child->has_sequence())
+        this->has_sequence(true);
+
+    if(this->has_right_child() && right_child->has_sequence())
+        this->has_sequence(true);
+}
+
+void Node::prune_up()
+{
+    if(!this->is_leaf() && !this->has_left_child() && this->has_right_child())
+    {
+        Node* tmp_child = right_child;
+        left_child = tmp_child->left_child;
+        right_child = tmp_child->right_child;
+        delete tmp_child;
+    }
+
+    if(!this->is_leaf() && this->has_left_child() && !this->has_right_child())
+    {
+        Node* tmp_child = left_child;
+        left_child = tmp_child->left_child;
+        right_child = tmp_child->right_child;
+        delete tmp_child;
+    }
+}

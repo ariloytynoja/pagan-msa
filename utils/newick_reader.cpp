@@ -106,8 +106,9 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
         //cout << "NODE: LEAF: " << elements[0] << endl;
         string name = Text_utils::remove_surrounding_whitespaces(elements[0]);
         node->set_name(name);
-    }
 
+        node->is_leaf(true);
+    }
     else if(elements.size()!=2)
     {
         // Alignment requires a binary guide tree!
@@ -128,6 +129,9 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
             Node * child_1 = parenthesis_to_node(elements[1]);
             node->add_right_child(child_1);
 
+            node->set_name(description);
+
+            node->is_leaf(false);
         }
         catch(exception e)
         {
@@ -185,6 +189,7 @@ Node * Newick_reader::parenthesis_to_tree(const string & description) throw (Exc
             Node * child_1 = parenthesis_to_node(elements[1]);
             node->add_right_child(child_1);
 
+            node->set_name("root");
         }
         catch(exception e)
         {

@@ -30,8 +30,14 @@ class Node
     string name_id;
 
     Sequence *sequence;
+    bool node_has_sequence;
+
+    bool node_has_sequence_object;
+    bool node_has_left_child;
+    bool node_has_right_child;
 public:
-    Node() : leaf(true), dist_to_parent(0), name(""){}
+    Node() : leaf(true), node_has_sequence(false),node_has_sequence_object(false),  node_has_left_child(false), node_has_right_child(false),
+                    dist_to_parent(0), name("undefined"){}
     ~Node();
 
     /**************************************/
@@ -129,22 +135,27 @@ public:
     string get_name_comment() { return name_comment; }
 
     bool is_leaf() { return leaf; }
+    void is_leaf(bool i) { leaf = i; }
+
+    bool has_left_child() { return node_has_left_child; }
+    bool has_left_child(bool h) { node_has_left_child = h; }
+
+    bool has_right_child() { return node_has_right_child; }
+    bool has_right_child(bool h) { node_has_right_child = h; }
 
     /**************************************/
 
     void add_left_child(Node *child)
     {
-        left_child = child;
-        leaf = false;
+        left_child = child; leaf = false; this->has_left_child(true);
         if(Settings::noise>5) cout<<"node.add_left_child(Node *)\n";
     }
 
     void add_right_child(Node *child)
     {
-        right_child = child; leaf = false;
+        right_child = child; leaf = false; this->has_right_child(true);
         if(Settings::noise>5) cout<<"node.add_right_child(Node *)\n";
     }
-
     Node * get_left_child() { return left_child; }
 
     Node * get_right_child() { return right_child; }
@@ -165,7 +176,7 @@ public:
 
     void get_leaf_nodes(vector<Node*> *nodes)
     {
-        if(!leaf)
+        if(!this->is_leaf())
         {
             left_child->get_leaf_nodes(nodes);
             right_child->get_leaf_nodes(nodes);
@@ -176,7 +187,7 @@ public:
 
     void get_internal_nodes(vector<Node*> *nodes)
     {
-        if(!leaf)
+        if(!this->is_leaf())
         {
             left_child->get_internal_nodes(nodes);
             nodes->push_back(this);
@@ -201,6 +212,15 @@ public:
         }
 
     }
+
+    /************************************/
+
+    void has_sequence(bool s) { node_has_sequence = s; }
+    bool has_sequence() { return node_has_sequence; }
+
+    void prune_tree() { this->prune_down(); this->prune_up(); }
+    void prune_up();
+    void prune_down();
 
     /************************************/
 
@@ -246,7 +266,7 @@ public:
     void align_sequences_this_node(Model_factory *mf, bool is_reads_sequence=false)
     {
 
-        if(Settings::noise>0)
+        if(Settings::noise>-1)
             cout<<"aligning node "<<this->get_name()<<": "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
 
         double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
@@ -260,7 +280,6 @@ public:
 
         if( Settings_handle::st.is("check-valid-graphs") )
             this->check_valid_graph();
-
     }
 
     void read_alignment(Model_factory *mf)
@@ -554,7 +573,7 @@ public:
 
     void add_sequence( string seq_string, string full_char_alphabet, bool gapped = false);
 
-    void add_ancestral_sequence( Sequence* s ) { sequence = s; }
+    void add_ancestral_sequence( Sequence* s ) { sequence = s;  node_has_sequence_object = true;}
 
     Sequence *get_sequence() { return sequence; }
 
