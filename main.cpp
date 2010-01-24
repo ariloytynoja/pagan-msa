@@ -115,6 +115,7 @@ int main(int argc, char *argv[])
         root->prune_tree();
         cout<<"Pruning done. New tree:"<<endl;
         cout<<root->print_tree()<<endl;
+
     }
 
 
