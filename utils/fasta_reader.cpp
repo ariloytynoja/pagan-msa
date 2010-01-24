@@ -208,6 +208,8 @@ bool Fasta_reader::check_alphabet(string alphabet, string full_alphabet, vector<
                     default:
                         // Remove characters not in full alphabet
                         if(full_alphabet.find(c) == string::npos) {
+                            if(Settings::noise>2)
+                                cout<<"deleting "<<*si<<"\n";
                             vi->sequence.erase(si);
                             si--;
                             if(c!=' ')
@@ -267,7 +269,7 @@ int Fasta_reader::check_sequence_data_type(const vector<Fasta_entry> &seqs)
 
     int dna = 0;
     int protein = 0;
-    string dna_alphabet = "ACGTU";
+    string dna_alphabet = "ACGTUN";
     string protein_alphabet = "HRKQNEDSTGPACVIMLFYW";
 
     // Main loop : for all sequences in vector container
@@ -354,7 +356,7 @@ void Fasta_reader::rna_to_DNA(string *sequence) const
 
 /****************************************************************************************/
 
-void Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes) const
+bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes) const
 {
 
     unsigned int names_match = 0;
@@ -416,12 +418,15 @@ void Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
 
     if(sequences->size() > leaf_nodes->size())
     {
-        cout<<"\nWarning: "<<leaf_nodes->size()<<" leaf nodes but "<<sequences->size()<<" sequences! Excess sequences removed.\n\n";
+        cout<<"\nWarning: "<<leaf_nodes->size()<<" leaf nodes but "<<sequences->size()<<" sequences! Excess sequences will be removed.\n\n";
+        return true;
     }
     if(sequences->size() < leaf_nodes->size())
     {
-        cout<<"\nWarning: "<<leaf_nodes->size()<<" leaf nodes but "<<sequences->size()<<" sequences! Excess branches removed.\n\n";
+        cout<<"\nWarning: "<<leaf_nodes->size()<<" leaf nodes but "<<sequences->size()<<" sequences! Excess branches will be removed.\n\n";
+        return false;
     }
+    return true;
 }
 
 /****************************************************************************************/

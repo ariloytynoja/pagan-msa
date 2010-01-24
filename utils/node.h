@@ -418,6 +418,7 @@ public:
     /************************************/
 
     string print_tree() {
+//        cout<<"print_tree\n";
         if(!leaf)
         {
             stringstream ss;
@@ -431,14 +432,17 @@ public:
     /************************************/
 
     string print_subtree() {
+//        cout<<"print_subtree "<<this->get_name()<<"\n";
         if(!leaf)
         {
             stringstream ss;
             ss<<"("<<left_child->print_subtree()<<","<<right_child->print_subtree()<<"):"<<dist_to_parent;
+//            cout<<ss.str()<<endl;
             return ss.str();
         } else {
             stringstream ss;
             ss<<name<<":"<<dist_to_parent;
+//            cout<<ss.str()<<endl;
             return ss.str();
         }
     }

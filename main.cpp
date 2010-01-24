@@ -108,8 +108,15 @@ int main(int argc, char *argv[])
     vector<Node*> leaf_nodes;
     root->get_leaf_nodes(&leaf_nodes);
 
-    fr.check_sequence_names(&sequences,&leaf_nodes);
-    root->prune_tree();
+    bool tree_branches_ok = fr.check_sequence_names(&sequences,&leaf_nodes);
+    if(!tree_branches_ok)
+    {
+        cout<<"Attempting to prune the tree.\n";
+        root->prune_tree();
+        cout<<"Pruning done. New tree:"<<endl;
+        cout<<root->print_tree()<<endl;
+    }
+
 
     leaf_nodes.clear();
     root->get_leaf_nodes(&leaf_nodes);
@@ -129,13 +136,16 @@ int main(int argc, char *argv[])
     if(data_type==Model_factory::dna)
     {
         // Create a DNA alignment model using empirical base frequencies.
-
+        if(Settings::noise>2)
+            cout<<"creating a DNA model\n";
         float *dna_pi = fr.base_frequencies();
         mf.dna_model(dna_pi,&Settings_handle::st);
     }
     else if(data_type==Model_factory::protein)
     {
         // Create a protein alignment model using WAG.
+        if(Settings::noise>2)
+            cout<<"creating a protein model\n";
         mf.protein_model(&Settings_handle::st); // does it need the handle????
     }
 

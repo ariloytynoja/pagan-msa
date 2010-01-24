@@ -11,6 +11,9 @@ using namespace ppa;
 
 Node::~Node()
 {
+    if(Settings::noise>4)
+        cout<<"deleting node "<<this->get_name()<<endl;
+
     if(this->has_left_child())
         delete left_child;
 
@@ -613,6 +616,8 @@ void Node::check_valid_graph() const
 
 void Node::prune_down()
 {
+//    cout<<"prune down in "<<this->get_name()<<endl;
+
     if(this->is_leaf())
         return;
 
@@ -690,10 +695,14 @@ void Node::prune_down()
 
     if(this->has_right_child() && right_child->has_sequence())
         this->has_sequence(true);
+
+//    cout<<"prune down out "<<this->get_name()<<endl;
 }
 
 void Node::prune_up()
 {
+//    cout<<"prune up in "<<this->get_name()<<endl;
+
     if(!this->is_leaf() && !this->has_left_child() && this->has_right_child())
     {
         Node* tmp_child = right_child;
@@ -709,4 +718,5 @@ void Node::prune_up()
         right_child = tmp_child->right_child;
         delete tmp_child;
     }
+//    cout<<"prune up out "<<this->get_name()<<endl;
 }
