@@ -346,11 +346,11 @@ class Simple_alignment
         if(Settings_handle::st.is("branch-length-confirm-insertion"))
             max_allowed_skip_distance = Settings_handle::st.get("branch-length-confirm-insertion").as<float>();
 
-        max_allowed_skip_branches = 5;
+        max_allowed_skip_branches = 10;
         if(Settings_handle::st.is("any-skips-confirm-insertion"))
             max_allowed_skip_branches = Settings_handle::st.get("any-skips-confirm-insertion").as<int>();
 
-        max_allowed_match_skip_branches = 2;
+        max_allowed_match_skip_branches = 5;
         if(Settings_handle::st.is("match-skips-confirm-insertion"))
             max_allowed_match_skip_branches = Settings_handle::st.get("match-skips-confirm-insertion").as<int>();
 
