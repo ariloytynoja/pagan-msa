@@ -1558,7 +1558,7 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *
 
         if(adjust_posterior_weight)
             if(weighted_branch_skip_penalty)
-                edge.multiply_weight( branch_weight * child->get_posterior_weight() * ( 1.0 - exp( -1.0 * this->branch_skip_weight * branch_length ) ) );
+                edge.multiply_weight( branch_weight * child->get_posterior_weight() * this->branch_skip_weight * ( 1.0 - exp( -1.0 * branch_length ) ) );
             else
                 edge.multiply_weight( branch_weight * child->get_posterior_weight() * this->branch_skip_probability );
         else
@@ -1573,7 +1573,7 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *
 
         if(adjust_posterior_weight)
             if(weighted_branch_skip_penalty)
-                edge.multiply_weight( branch_weight * child->get_posterior_weight() * ( 1.0 - exp( -1.0 * this->branch_skip_weight * branch_length ) ) );
+                edge.multiply_weight( branch_weight * child->get_posterior_weight() * this->branch_skip_weight * ( 1.0 - exp( -1.0 * branch_length ) ) );
             else
                 edge.multiply_weight( branch_weight * child->get_posterior_weight() * this->branch_skip_probability );
         else
