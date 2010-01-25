@@ -638,9 +638,7 @@ void Node::prune_down()
     {
         if(!left_child->has_left_child() && left_child->has_right_child())
         {
-            Node* new_child = new Node();
-            new_child->is_leaf(false);
-            new_child = left_child->right_child;
+            Node *new_child = left_child->right_child;
             new_child->set_distance_to_parent (left_child->get_distance_to_parent()+
                                         left_child->right_child->get_distance_to_parent());
 
@@ -650,9 +648,7 @@ void Node::prune_down()
         }
         else if(left_child->has_left_child() && !left_child->has_right_child())
         {
-            Node* new_child = new Node();
-            new_child->is_leaf(false);
-            new_child = left_child->left_child;
+            Node *new_child = left_child->left_child;
             new_child->set_distance_to_parent (left_child->get_distance_to_parent()+
                                 left_child->left_child->get_distance_to_parent());
 
@@ -666,9 +662,7 @@ void Node::prune_down()
     {
         if(!right_child->has_left_child() && right_child->has_right_child())
         {
-            Node* new_child = new Node();
-            new_child->is_leaf(false);
-            new_child = right_child->right_child;
+            Node *new_child = right_child->right_child;
             new_child->set_distance_to_parent (right_child->get_distance_to_parent()+
                                         right_child->right_child->get_distance_to_parent() );
 
@@ -678,10 +672,7 @@ void Node::prune_down()
         }
         else if(right_child->has_left_child() && !right_child->has_right_child())
         {
-            Node* new_child = new Node();
-            new_child->is_leaf(false);
-            new_child = right_child->left_child;
-
+            Node *new_child = right_child->left_child;
             new_child->set_distance_to_parent (right_child->get_distance_to_parent()+
                                             right_child->left_child->get_distance_to_parent());
             right_child->has_left_child(false);

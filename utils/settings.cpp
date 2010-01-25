@@ -38,6 +38,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("cds-seqfile", po::value<string>(), "cds alignment infile")
         ("cds-treefile", po::value<string>(), "cds tree file")
         ("readsfile", po::value<string>(), "reads infile")
+        ("min-reads-overlap", po::value<float>()->default_value(0.10), "minimum reads sequence overlap with refrence alignment sites")
         ("reads-distance", po::value<float>()->default_value(0.01), "reads sequence evolutionary distance from root")
     ;
 
@@ -75,7 +76,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("branch-length-confirm-insertion", po::value<float>(), "total branch length skipped to confirm site as insertion")
         ("branch-skip-weight-per-distance", po::value<float>(), "weighted (by branch length unit) probability for site(s) being skipped over and later matched (>default<)")
         ("branch-skip-penalty-per-branch", po::value<float>(), "fixed probability for site(s) being skipped over and later matched")
-        ("terminal-gap-cost-divider", po::value<float>()->default_value(10), "divider for terminal gap cost")
+//        ("terminal-gap-cost-divider", po::value<float>()->default_value(2), "divider for terminal gap cost")
     ;
 //        ("unused-edges-not-transferred", "mimic PRANK-F behaviour")
 

@@ -8,6 +8,11 @@ Reads_alignment::Reads_alignment(){}
 
 void Reads_alignment::align(Node *root, Model_factory *mf, int count)
 {
+
+    string ref_root_name = root->get_name();
+    int ref_root_length = root->get_sequence()->sites_length();
+    float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
+
     string file = Settings_handle::st.get("readsfile").as<string>();
 
     Fasta_reader fr;
@@ -43,7 +48,35 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
 
         node->align_sequences_this_node(mf,true);
 
-        count++;
-        global_root = node;
+        Sequence *node_sequence = node->get_sequence();
+
+        int aligned = 0;
+        int read_length = 0;
+
+        for( int j=0; j < node_sequence->sites_length(); j++ )
+        {
+            bool read_has_site = node->has_site_at_alignment_column(j,reads.at(i).name);
+            bool ref_root_has_site = node->has_site_at_alignment_column(j,ref_root_name);
+
+            if(read_has_site)
+                read_length++;
+
+            if(read_has_site && ref_root_has_site)
+                aligned++;
+        }
+
+        if((float)aligned/(float)read_length >= min_overlap)
+        {
+            count++;
+            global_root = node;
+        }
+        else
+        {
+            node->has_left_child(false);
+            delete node;
+
+            cout<<"Warning: read "<<reads.at(i).name<<" dropped using the minimum overlap cut-off of "<<min_overlap<<"."<<endl;
+        }
+
     }
 }

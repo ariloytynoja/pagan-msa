@@ -52,6 +52,7 @@
 #include <vector>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 
 using namespace std;
 
@@ -354,7 +355,7 @@ class Node_tokenizer
     public:
     Node_tokenizer(const string & description) throw (IOException): tokens(), current_position(0)
     {
-        //cout << "NODETOKENIZER: " << description << endl;
+//        cout << "NODETOKENIZER: " << description << endl;
         unsigned int tok_count = 0;
         int par_count = 0;
         unsigned int i;
@@ -366,13 +367,13 @@ class Node_tokenizer
             if(description[i] == ',' && par_count == 0)
             {
                 //New token found:
-                //cout << "NODETOENIZER: NEWTOKEN " << description.substr(tok_count, i - tok_count - 1) << endl;
+//                cout << "NODETOENIZER: NEWTOKEN " << description.substr(tok_count, i - tok_count - 1) << endl;
                 tokens.push_back(description.substr(tok_count, i - tok_count));
                 tok_count = i + 1;
             }
         }
         //Add last token:
-        //cout << "NODETOKENIZER: NEWTOKEN " << description.substr(tok_count) << endl;
+//        cout << "NODETOKENIZER: NEWTOKEN " << description.substr(tok_count) << endl;
         tokens.push_back(description.substr(tok_count));
 
         current_position = 0;

@@ -310,6 +310,39 @@ public:
 
     }
 
+    bool has_site_at_alignment_column(int j,string node_name)
+    {
+
+        if(this->get_name() == node_name)
+        {
+            return true;
+        }
+        else if(leaf)
+        {
+            return false;
+        }
+        else
+        {
+            Site_children *offspring = sequence->get_site_at(j)->get_children();
+            int lj = offspring->left_index;
+            if(lj>=0)
+            {
+                bool l = left_child->has_site_at_alignment_column(lj,node_name);
+                if(l)
+                    return true;
+            }
+
+            int rj = offspring->right_index;
+            if(rj>=0)
+            {
+                bool r = right_child->has_site_at_alignment_column(rj,node_name);
+                if(r)
+                    return true;
+            }
+        }
+        return false;
+    }
+
 
     void start_mpost_plot_file()
     {

@@ -159,7 +159,7 @@ Node * Newick_reader::parenthesis_to_tree(const string & description) throw (Exc
 
     string content = description.substr(firstP + 1, lastP - firstP - 1);
     string element = semi == string::npos ? description.substr(lastP + 1) : description.substr(lastP + 1, semi - lastP - 1);
-    //cout << "TREE: " << content << endl;
+//    cout << "TREE: " << content << endl;
     //New root node:
     Node * node = new Node();
 
@@ -242,8 +242,10 @@ Newick_reader::Element Newick_reader::get_element(const string & elt) throw (Exc
         else
         {
             //This is a node:
-            if(lastP < firstP) throw Exception("Newick_reader::get_element. Invalid format: bad closing parenthesis in " + elt2);
-                element.content = elt2.substr(firstP + 1, lastP - firstP - 1);
+            if(lastP < firstP)
+                throw Exception("Newick_reader::get_element. Invalid format: bad closing parenthesis in " + elt2);
+
+            element.content = elt2.substr(firstP + 1, lastP - firstP - 1);
         }
     }
     catch(exception e)
