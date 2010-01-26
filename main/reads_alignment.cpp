@@ -39,10 +39,11 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
         global_root->set_distance_to_parent(0.001);
         node->add_left_child(global_root);
 
+        cout<<"aligning read "<<reads.at(i).name<<": "<<reads.at(i).comment<<endl;
         Node * reads_node = new Node();
         reads_node->set_distance_to_parent(r_dist);
         reads_node->set_name(reads.at(i).name);
-        reads_node->add_name_comment( reads.at(i).comment );
+        reads_node->add_name_comment(reads.at(i).comment);
         reads_node->add_sequence( reads.at(i).sequence, mf->get_full_char_alphabet());
         node->add_right_child(reads_node);
 

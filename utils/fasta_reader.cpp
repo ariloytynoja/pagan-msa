@@ -94,6 +94,7 @@ void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_
             {
                 String_tokenizer * st = new String_tokenizer(temp, " ", true, false);
                 name = st->next_token();
+                comment = "";
                 while (st->has_more_token())
                 {
                   comment += st->next_token()+" ";

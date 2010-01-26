@@ -95,7 +95,7 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
 
     Node_tokenizer nt(elt.content);
     vector<string> elements;
-    while(nt.hasNext())
+    while(nt.has_next())
     {
         elements.push_back(nt.next());
     }
@@ -165,7 +165,7 @@ Node * Newick_reader::parenthesis_to_tree(const string & description) throw (Exc
 
     Node_tokenizer nt(content);
     vector<string> elements;
-    while(nt.hasNext())
+    while(nt.has_next())
     {
         elements.push_back(nt.next());
     }

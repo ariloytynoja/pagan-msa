@@ -36,8 +36,9 @@ class Node
     bool node_has_left_child;
     bool node_has_right_child;
 public:
-    Node() : leaf(true), node_has_sequence(false),node_has_sequence_object(false),  node_has_left_child(false), node_has_right_child(false),
-                    dist_to_parent(0), name("undefined"){}
+    Node() : leaf(true), dist_to_parent(0), name("undefined"),
+                    node_has_sequence(false), node_has_sequence_object(false),
+                    node_has_left_child(false), node_has_right_child(false){}
     ~Node();
 
     /**************************************/
@@ -138,10 +139,10 @@ public:
     void is_leaf(bool i) { leaf = i; }
 
     bool has_left_child() { return node_has_left_child; }
-    bool has_left_child(bool h) { node_has_left_child = h; }
+    void has_left_child(bool h) { node_has_left_child = h; }
 
     bool has_right_child() { return node_has_right_child; }
-    bool has_right_child(bool h) { node_has_right_child = h; }
+    void has_right_child(bool h) { node_has_right_child = h; }
 
     /**************************************/
 

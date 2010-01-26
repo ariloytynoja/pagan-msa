@@ -386,7 +386,7 @@ class Node_tokenizer
         current_position++;
         return s;
     }
-    bool hasNext() const
+    bool has_next() const
     {
         return current_position < tokens.size();
     }
