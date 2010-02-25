@@ -21,6 +21,7 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
 
     fr.read(file, reads, true);
 
+
     if(!fr.check_alphabet(mf->get_char_alphabet(),mf->get_full_char_alphabet(),reads))
         cout<<"\nWarning: Illegal characters in input reads sequences removed!"<<endl;
 
@@ -44,7 +45,7 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
         reads_node->set_distance_to_parent(r_dist);
         reads_node->set_name(reads.at(i).name);
         reads_node->add_name_comment(reads.at(i).comment);
-        reads_node->add_sequence( reads.at(i).sequence, mf->get_full_char_alphabet());
+        reads_node->add_sequence( reads.at(i), mf->get_full_char_alphabet());
         node->add_right_child(reads_node);
 
         node->align_sequences_this_node(mf,true);

@@ -53,7 +53,6 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-
     // Read the guidetree
 
     Node *root;
@@ -84,10 +83,9 @@ int main(int argc, char *argv[])
         root->set_name(sequences.at(0).name);
         root->add_name_comment( sequences.at(0).comment );
 
-        int data_type = fr.check_sequence_data_type(sequences);
-        Model_factory mf(data_type);
+        string full_char_alphabet = "ACGTRYMKWSBDHVN";
 
-        root->add_sequence( sequences.at(0).sequence, mf.get_full_char_alphabet());
+        root->add_sequence( sequences.at(0), full_char_alphabet);
 
         tree_ok = true;
     }

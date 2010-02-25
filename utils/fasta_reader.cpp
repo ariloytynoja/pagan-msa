@@ -60,9 +60,35 @@ void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_
 {
     if (!input) { throw IOException ("Fasta_reader::read. Failed to open file"); }
 
-    string temp, name, comment, sequence = "";  // Initialization
 
-    // Main loop : for all file lines
+    char c = input.get();
+    while(c==' ' || c=='\n')
+    {
+        c = input.get();
+    }
+
+    if(c=='>')
+    {
+        input.unget();
+        this->read_fasta(input,seqs,short_names);
+    }
+    else if(c=='@')
+    {
+        input.unget();
+        this->read_fastq(input,seqs);
+    }
+    else
+    {
+        cout<<"Input file format unrecognized. Only FASTA and FASTQ formats supported. Exiting.\n\n";
+        exit(-1);
+    }
+}
+
+void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool short_names = false) const throw (Exception)
+{
+
+    string temp, name, comment, sequence, quality = "";  // Initialization
+
     while(!input.eof())
     {
         getline(input, temp, '\n');  // Copy current line in temporary string
@@ -116,6 +142,59 @@ void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_
         fe.comment = comment;
         fe.sequence = sequence;
         seqs.push_back(fe);
+    }
+
+}
+
+void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const throw (Exception)
+{
+    string temp, name, comment, sequence, quality = "";  // Initialization
+
+    while(!input.eof())
+    {
+        getline(input, temp, '\n');  // Copy current line in temporary string
+        // If first character is @
+        if(temp[0] == '@')
+        {
+            temp = Text_utils::remove_last_whitespaces(temp);
+            Fasta_entry fe;
+//            name = temp;
+            String_tokenizer * st = new String_tokenizer(temp, " ", true, false);
+            name = st->next_token();
+
+            name.erase(name.begin());  // Character @ deletion
+            fe.name = name;
+//            cout<<"1: "<<fe.name<<"\n";
+
+            getline(input, temp, '\n');  // Copy current line in temporary string
+            temp = Text_utils::remove_last_whitespaces(temp);
+            sequence = temp;
+            fe.sequence = sequence;
+//            cout<<"2: "<<fe.sequence<<"\n";
+
+            getline(input, temp, '\n');  // Copy current line in temporary string
+            temp = Text_utils::remove_last_whitespaces(temp);
+            if(temp[0] != '+')
+            {
+                cout<<"Error in FASTQ comment:"<<temp<<"\nExiting.\n\n";
+                exit(-1);
+            }
+            comment = temp;
+            comment.erase(comment.begin());  // Character @ deletion
+            fe.comment = comment;
+
+            getline(input, temp, '\n');  // Copy current line in temporary string
+            temp = Text_utils::remove_last_whitespaces(temp);
+            quality = temp;
+            fe.quality = quality;
+
+            seqs.push_back(fe);
+        }
+        else if(temp != "")
+        {
+            cout<<"FASTQ file parse error. Expecting a line starting with '@':  \n"<<temp<<endl<<endl<<"Exiting\n\n.";
+            exit(-1);
+        }
     }
 }
 
@@ -312,51 +391,6 @@ void Fasta_reader::rna_to_DNA(string *sequence) const
 
 /****************************************************************************************/
 
-//void Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes,const Settings *st) const
-//{
-//
-//    unsigned int names_match = 0;
-//    vector<Fasta_entry>::const_iterator si = sequences->begin();
-//    for (; si != sequences->end(); si++)
-//    {
-//        string s_name = si->name;
-//        vector<Node*>::const_iterator ni = leaf_nodes->begin();
-//        for (; ni != leaf_nodes->end(); ni++)
-//        {
-//            if((*ni)->get_name() == s_name)
-//                names_match++;
-//        }
-//    }
-//
-//    // All the leafs in the guidetree need a sequence. Not all sequences need to be in the tree.
-//
-//    if(names_match != leaf_nodes->size())
-//    {
-//        cout<<"All leaf node names in the guidetree file '"<<st->get("treefile").as<string>()<<"'\ndo not match"<<
-//            " with a sequence name in the sequence file '"<<st->get("seqfile").as<string>()<<"'."<<endl;
-//
-//        cout<<endl<<"Sequence names:"<<endl;
-//        for (si = sequences->begin(); si != sequences->end(); si++)
-//            cout<<" "<<si->name<<endl;
-//
-//        cout<<endl<<"Leaf names:"<<endl;
-//        for (vector<Node*>::const_iterator ni = leaf_nodes->begin(); ni != leaf_nodes->end(); ni++)
-//            cout<<" "<<(*ni)->get_name()<<endl;
-//
-//        cout<<endl<<"Exiting."<<endl;
-//        exit(-1);
-//    }
-//
-//    // Not all sequences need to be in the tree but give a warning that names don't match.
-//
-//    if(sequences->size() != leaf_nodes->size())
-//    {
-//        cout<<"\nWarning: "<<leaf_nodes->size()<<" leaf nodes but "<<sequences->size()<<" sequences!\n";
-//    }
-//}
-
-/****************************************************************************************/
-
 bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes) const
 {
 
@@ -445,7 +479,7 @@ void Fasta_reader::place_sequences_to_nodes(const vector<Fasta_entry> *sequences
         {
             if((*ni)->get_name() == s_name) {
                 (*ni)->add_name_comment( si->comment );
-                (*ni)->add_sequence( si->sequence, full_char_alphabet, gapped);
+                (*ni)->add_sequence( *si, full_char_alphabet, gapped);
             }
         }
     }

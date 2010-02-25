@@ -40,6 +40,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("readsfile", po::value<string>(), "reads infile")
         ("min-reads-overlap", po::value<float>()->default_value(0.10), "minimum reads sequence overlap with refrence alignment sites")
         ("reads-distance", po::value<float>()->default_value(0.01), "reads sequence evolutionary distance from root")
+        ("454", "correct homopolymer error")
+        ("no-fastq", "do not use Q-scores")
+        ("qscore-minimum", po::value<int>()->default_value(10), "reads sequence minimum Q-score include sites")
     ;
 
     boost::program_options::options_description graph("Graph options");

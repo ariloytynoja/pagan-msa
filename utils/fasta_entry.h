@@ -13,6 +13,7 @@ struct Fasta_entry
     string name;
     string comment;
     string sequence;
+    string quality;
 };
 }
 

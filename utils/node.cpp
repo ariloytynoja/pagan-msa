@@ -24,11 +24,11 @@ Node::~Node()
         delete sequence;
 }
 
-void Node::add_sequence( string seq_string, string full_char_alphabet, bool gapped)
+void Node::add_sequence( Fasta_entry seq_entry, string full_char_alphabet, bool gapped)
 {
     if(Settings::noise>4)
         cout<<"Node::add_sequence "<<name<<"\n";
-    sequence = new Sequence(seq_string, full_char_alphabet, gapped);
+    sequence = new Sequence(seq_entry, full_char_alphabet, gapped);
     this->node_has_sequence_object= true;
 }
 

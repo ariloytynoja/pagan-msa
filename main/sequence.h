@@ -1,6 +1,7 @@
 #ifndef SEQUENCE_H
 #define SEQUENCE_H
 
+#include "utils/fasta_entry.h"
 #include <algorithm>
 #include <vector>
 #include <string>
@@ -546,8 +547,6 @@ public:
 
     static bool comesBefore(const Site& a,const Site& b)
     {
-//        return  (a.children.left_index<b.children.left_index && a.children.right_index<=b.children.right_index) ||
-//                (a.children.left_index<=b.children.left_index && a.children.right_index<b.children.right_index);
         return  (a.unique_index.left_index<b.unique_index.left_index && a.unique_index.right_index<=b.unique_index.right_index) ||
                 (a.unique_index.left_index<=b.unique_index.left_index && a.unique_index.right_index<b.unique_index.right_index);
     }
@@ -555,58 +554,6 @@ public:
 
 /**************************************/
 
-//struct Unique_index
-//{
-//    int left_index;
-//    int right_index;
-//    int match_state;
-//    int site_index;
-//    enum Match_state {match,xgap,ygap};
-//
-//public:
-//    Unique_index(int l, int r, int s): left_index(l), right_index(r), match_state(s) {}
-//    Unique_index(int l, int r, int s, int i): left_index(l), right_index(r), match_state(s), site_index(i) {}
-//
-//    bool operator==(const Unique_index& b)
-//    {
-//        return left_index==b.left_index && right_index==b.right_index && match_state == b.match_state;
-//    }
-//
-//    bool operator!=(const Unique_index& b)
-//    {
-//        return !(left_index==b.left_index && right_index==b.right_index && match_state == b.match_state);
-//    }
-//
-//    bool operator<(const Unique_index& b)
-//    {
-//        if(b.match_state == Unique_index::match)
-//            return (left_index<=b.left_index && right_index<b.right_index ) || (left_index<b.left_index && right_index<=b.right_index);
-//        else if(b.match_state == Unique_index::xgap)
-//            return left_index<b.left_index && right_index<=b.right_index;
-//        else if(b.match_state == Unique_index::xgap)
-//            return left_index<=b.left_index && right_index<b.right_index;
-//        return false;
-//    }
-//
-//    bool operator>(const Unique_index& b)
-//    {
-//        if(b.match_state == Unique_index::match)
-//            return (left_index>=b.left_index && right_index>b.right_index ) || (left_index>b.left_index && right_index>=b.right_index);
-//        else if(b.match_state == Unique_index::xgap)
-//            return left_index>b.left_index && right_index>=b.right_index;
-//        else if(b.match_state == Unique_index::xgap)
-//            return left_index>=b.left_index && right_index>b.right_index;
-//        return false;
-//    }
-//
-//    friend ostream& operator<< (ostream &out, Unique_index& b)
-//    {
-//        out<<"left_index: "<<b.left_index<<"; right_index: "<<b.right_index<<"; match_state: "<<b.match_state;
-//        return out;
-//    }
-//};
-//
-///**************************************/
 
 class Sequence
 {
@@ -731,7 +678,7 @@ public:
 
     string *get_gapped_sequence() { return &gapped_seq; }
 
-    Sequence(string &seq_string,const string &alphabet,bool gapped = false);
+    Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped = false);
     Sequence(const vector<Site>* s, const vector<Edge>* e, const string& alphabet);
     Sequence(const int length,const string& alphabet, string gapped_s="");
 
