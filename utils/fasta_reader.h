@@ -45,6 +45,15 @@ public:
         output.close();
     }
 
+    void write_graph(ostream & output, Node * root) const throw (Exception);
+    void write_graph(const string & path, Node * root, bool overwrite=true) const throw (Exception)
+    {
+        ofstream output( (path+".grp").c_str(), overwrite ? (ios::out) : (ios::out|ios::app));
+        write_graph(output, root);
+        output.close();
+    }
+
+
     bool check_alphabet(string alphabet, string full_alphabet, vector<Fasta_entry> & seqs)  throw (Exception);
 //    void check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes, const Settings *st) const;
     bool check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes) const;

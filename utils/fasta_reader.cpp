@@ -225,8 +225,6 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
     {
         getline(input, temp, '\n');  // Copy current line in temporary string
 
-        vector<Seq_edge> edges;
-
         // If first character is >
         if(temp[0] == '#')
         {
@@ -272,7 +270,7 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
             if(temp.size()==0)
                 continue;
 
-            cout<<temp<<endl;
+//            cout<<temp<<endl;
             String_tokenizer * st = new String_tokenizer(temp, ";", true, false);
             block = st->next_token();
 
@@ -318,11 +316,14 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
             // Next block
             double sum_weight = 0;
 
-            while(st->has_more_token())
+            block = st->next_token();
+            block = Text_utils::remove_surrounding_whitespaces(block);
+
+            while(block != "")
             {
-                block = st->next_token();
 
                 String_tokenizer * bt = new String_tokenizer(block, " ", true, false);
+
                 int start_site = Text_utils::to_int( bt->next_token() );
                 int end_site = Text_utils::to_int( bt->next_token() );
                 double weight = Text_utils::to_double( bt->next_token() );
@@ -353,6 +354,9 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
                 edges.push_back(edge);
 
                 delete bt;
+
+                block = st->next_token();
+                block = Text_utils::remove_surrounding_whitespaces(block);
             }
         }
     }
@@ -409,6 +413,49 @@ void Fasta_reader::write(ostream & output, const vector<Fasta_entry> & seqs) con
             }
         }
     }
+}
+
+/****************************************************************************************/
+
+void Fasta_reader::write_graph(ostream & output, Node * root) const throw (Exception)
+{
+
+    Sequence *sequence = root->get_sequence();
+    output<<"# root node\n";
+
+    string alpha = sequence->get_full_alphabet();
+
+    output<<"0 start;\n";
+    for(int i=1; i<sequence->sites_length()-1; i++)
+    {
+        Site *site = sequence->get_site_at(i);
+        output<<i<<" "<<alpha.at(site->get_state())<<"; ";
+
+        Edge *edge = site->get_first_bwd_edge();
+        output<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<" "<<edge->get_posterior_weight()<<";";
+
+        while(site->has_next_bwd_edge())
+        {
+            edge = site->get_next_bwd_edge();
+            output<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<" "<<edge->get_posterior_weight()<<";";
+        }
+        output<<endl;
+
+    }
+    output<<sequence->sites_length()-1<<" end; ";
+
+    Site *site = sequence->get_site_at(sequence->sites_length()-1);
+
+    Edge *edge = site->get_first_bwd_edge();
+    output<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<" "<<edge->get_posterior_weight()<<";";
+
+    while(site->has_next_bwd_edge())
+    {
+        edge = site->get_next_bwd_edge();
+        output<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<" "<<edge->get_posterior_weight()<<";";
+    }
+    output<<endl;
+
 }
 
 /****************************************************************************************/
@@ -567,7 +614,6 @@ void Fasta_reader::rna_to_DNA(string *sequence) const
 
 bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes) const
 {
-
     unsigned int names_match = 0;
     vector<Fasta_entry>::const_iterator si = sequences->begin();
     for (; si != sequences->end(); si++)
@@ -585,7 +631,7 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
 
     if(names_match != leaf_nodes->size())
     {
-        if("cds-seqfile")
+        if(Settings_handle::st.is("cds-seqfile"))
         {
             cout<<"\nAll leaf node names in the guidetree file '"<<Settings_handle::st.get("cds-treefile").as<string>()<<"' do not match\n"<<
                 " with a sequence name in the sequence file '"<<Settings_handle::st.get("cds-seqfile").as<string>()<<"'."<<endl;
@@ -624,6 +670,11 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
     }
 
     // Not all sequences need to be in the tree but give a warning that names don't match.
+    if(names_match < 2)
+    {
+        cout<<"\nNo sequences to align! Exiting.\n\n";
+        exit(0);
+    }
 
     if(sequences->size() > leaf_nodes->size())
     {

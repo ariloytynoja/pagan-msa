@@ -90,7 +90,27 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
     if(!Text_utils::is_empty(elt.length))
     {
         node->set_distance_to_parent(Text_utils::to_double(elt.length));
-        //cout << "NODE: LENGTH: " << elt.length << endl;
+//        cout << "NODE: LENGTH: " << elt.length << endl;
+    }
+
+    if(!Text_utils::is_empty(elt.nhx))
+    {
+        String_tokenizer * st = new String_tokenizer(elt.nhx, ":", true, false);
+
+        while (st->has_more_token())
+        {
+            string block = st->next_token();
+            block = Text_utils::remove_surrounding_whitespaces(block);
+            if(block.substr(0,4)=="TID=")
+            {
+                block = block.substr(4);
+                node->set_nhx_tid(block);
+//                cout<<block<<endl;
+            }
+        }
+
+        delete st;
+//        node->set_distance_to_parent(Text_utils::to_double(elt.length));
     }
 
     Node_tokenizer nt(elt.content);
@@ -103,7 +123,7 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
     if(elements.size() == 1)
     {
         //This is a leaf:
-        //cout << "NODE: LEAF: " << elements[0] << endl;
+//        cout << "NODE: LEAF: " << elements[0] << endl;
         string name = Text_utils::remove_surrounding_whitespaces(elements[0]);
         node->set_name(name);
 
@@ -119,8 +139,8 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
     {
 
         //This is a node: 
-        //cout << "NODE: SUBNODE: 0, " << elements[0] << endl;
-        //cout << "NODE: SUBNODE: 1, " << elements[1] << endl;
+//        cout << "NODE: SUBNODE: 0, " << elements[0] << endl;
+//        cout << "NODE: SUBNODE: 1, " << elements[1] << endl;
         try
         {
             Node * child_0 = parenthesis_to_node(elements[0]);
@@ -206,30 +226,50 @@ Newick_reader::Element Newick_reader::get_element(const string & elt) throw (Exc
 {
     Element element;
     element.length    = ""; //default
+    element.nhx = "";
 
-    string::size_type colon = elt.rfind(':');
+//    string::size_type colon = elt.rfind(':');
+//    string::size_type colon = elt.find(':');
     try
     {
-        string::size_type endP = elt.rfind(')');
+        string::size_type openNHX = elt.rfind("[&&NHX");
+        string::size_type closeNHX = elt.rfind(']');
+
+        string eltt = elt;
+
+        if(openNHX != string::npos)
+        {
+            if(closeNHX != string::npos)
+            {
+                element.nhx = elt.substr(openNHX+1,closeNHX-openNHX-1);
+                eltt = elt.substr(0,openNHX);
+//                cout<<"nhx: "<<element.nhx<<endl;
+//                cout<<"elt: "<<eltt<<endl;
+            }
+        }
+
+        string::size_type colon = eltt.rfind(':');
+        string::size_type endP = eltt.rfind(')');
 
         string elt2;
         if(colon != string::npos)
         {
             if(endP == string::npos || colon>endP){
                 //this is an element with length:
-                elt2 = elt.substr(0, colon);
-                element.length = elt.substr(colon + 1);
+                elt2 = eltt.substr(0, colon);
+                element.length = eltt.substr(colon + 1);
+//                cout<<"len: "<<element.length<<endl;
             }
             else
             {
                 //this is an element without length;
-                elt2 = elt;
+                elt2 = eltt;
             }
         }
         else
         {
             //this is an element without length;
-            elt2 = elt;
+            elt2 = eltt;
         }
 
         string::size_type lastP = elt2.rfind(')');

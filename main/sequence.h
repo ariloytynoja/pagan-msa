@@ -682,6 +682,10 @@ public:
     Sequence(const vector<Site>* s, const vector<Edge>* e, const string& alphabet);
     Sequence(const int length,const string& alphabet, string gapped_s="");
 
+    void create_default_sequence(Fasta_entry &seq_entry);
+    void create_fastq_sequence(Fasta_entry &seq_entry);
+    void create_graph_sequence(Fasta_entry &seq_entry);
+
     vector<Site> *get_sites() { return &sites; }
     vector<Edge> *get_edges() { return &edges; }
 

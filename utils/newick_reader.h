@@ -70,6 +70,7 @@ public:
     {
       string content;
       string length;
+      string nhx;
     };
 
     static Element get_element(const string & elt) throw (Exception);

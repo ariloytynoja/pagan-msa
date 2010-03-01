@@ -107,6 +107,7 @@ int main(int argc, char *argv[])
     root->get_leaf_nodes(&leaf_nodes);
 
     bool tree_branches_ok = fr.check_sequence_names(&sequences,&leaf_nodes);
+
     if(!tree_branches_ok)
     {
         cout<<"Attempting to prune the tree.\n";
@@ -186,6 +187,8 @@ int main(int argc, char *argv[])
     fr.set_chars_by_line(70);
     fr.write(outfile, aligned_sequences, true);
 
+    if(Settings_handle::st.is("output-graph"))
+        fr.write_graph(outfile, root, true);
 
     count = 1;
     root->set_name_ids(&count);

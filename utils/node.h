@@ -28,6 +28,7 @@ class Node
     string name;
     string name_comment;
     string name_id;
+    string nhx_tid;
 
     Sequence *sequence;
     bool node_has_sequence;
@@ -102,9 +103,16 @@ public:
         this->name_id = ss.str();
     }
 
+    void set_nhx_tid(string nm)
+    {
+        nhx_tid = nm;
+    }
+
     string get_name() const { return name; }
 
     string get_name_id() const { return name_id; }
+
+    string get_nhx_tid() const { return nhx_tid; }
 
     string get_id_for_name(string query) const
     {

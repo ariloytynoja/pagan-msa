@@ -29,6 +29,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("noise", po::value<int>(), "output noise level")
         ("output-ancestors", "include ancestors in outfile")
         ("full-probability", "compute full probability")
+        ("output-graph","output ancestral graph")
         ("sample-path", "sample the alignment path from posterior probabilities")
         ("sample-additional-paths", po::value<int>()->default_value(0), "sample additional paths from posterior probabilities")
     ;
