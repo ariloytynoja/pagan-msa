@@ -77,6 +77,11 @@ void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_
         input.unget();
         this->read_fastq(input,seqs);
     }
+    else if(c=='#')
+    {
+        input.unget();
+        this->read_graph(input,seqs,short_names);
+    }
     else
     {
         cout<<"Input file format unrecognized. Only FASTA and FASTQ formats supported. Exiting.\n\n";
@@ -87,7 +92,7 @@ void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_
 void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool short_names = false) const throw (Exception)
 {
 
-    string temp, name, comment, sequence, quality = "";  // Initialization
+    string temp, name, comment, sequence = "";  // Initialization
 
     while(!input.eof())
     {
@@ -135,7 +140,7 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
     // Addition of the last sequence in file
     if((name != "") && (sequence != ""))
     {
-        transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
+//        transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
 
         Fasta_entry fe;
         fe.name = name;
@@ -158,19 +163,24 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
         {
             temp = Text_utils::remove_last_whitespaces(temp);
             Fasta_entry fe;
-//            name = temp;
             String_tokenizer * st = new String_tokenizer(temp, " ", true, false);
             name = st->next_token();
 
             name.erase(name.begin());  // Character @ deletion
             fe.name = name;
-//            cout<<"1: "<<fe.name<<"\n";
+
+            comment = "";
+            while (st->has_more_token())
+            {
+              comment += st->next_token()+" ";
+            }
+            delete st;
+
 
             getline(input, temp, '\n');  // Copy current line in temporary string
             temp = Text_utils::remove_last_whitespaces(temp);
             sequence = temp;
             fe.sequence = sequence;
-//            cout<<"2: "<<fe.sequence<<"\n";
 
             getline(input, temp, '\n');  // Copy current line in temporary string
             temp = Text_utils::remove_last_whitespaces(temp);
@@ -179,8 +189,14 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
                 cout<<"Error in FASTQ comment:"<<temp<<"\nExiting.\n\n";
                 exit(-1);
             }
-            comment = temp;
-            comment.erase(comment.begin());  // Character @ deletion
+
+            temp.erase(temp.begin());  // Character + deletion
+
+            if(temp.length()>0)
+            {
+                comment += " ; ";
+                comment += temp;
+            }
             fe.comment = comment;
 
             getline(input, temp, '\n');  // Copy current line in temporary string
@@ -196,6 +212,164 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
             exit(-1);
         }
     }
+}
+
+void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool short_names = false) const throw (Exception)
+{
+
+    string temp, name, comment, sequence, block = "";  // Initialization
+    int prev_site = -1;
+    vector<Seq_edge> edges;
+
+    while(!input.eof())
+    {
+        getline(input, temp, '\n');  // Copy current line in temporary string
+
+        vector<Seq_edge> edges;
+
+        // If first character is >
+        if(temp[0] == '#')
+        {
+            temp = Text_utils::remove_last_whitespaces(temp);
+
+            // If a name and a sequence were found
+            if((name != "") && (sequence != ""))
+            {
+                Fasta_entry fe;
+                fe.name = name;
+                fe.comment = comment;
+                fe.sequence = sequence;
+                fe.edges = edges;
+                seqs.push_back(fe);
+                name = "";
+                sequence = "";
+            }       
+            edges.clear();
+            prev_site = -1;
+
+            // Sequence name isolation
+            if (! short_names)
+            {
+                name = temp;
+                comment = "";
+            }
+            else
+            {
+                String_tokenizer * st = new String_tokenizer(temp, " ", true, false);
+                name = st->next_token();
+                comment = "";
+                while (st->has_more_token())
+                {
+                  comment += st->next_token()+" ";
+                }
+                delete st;
+            }
+            name.erase(name.begin());  // Character > deletion
+        }
+        else
+        {
+            temp = Text_utils::remove_surrounding_whitespaces(temp);
+            if(temp.size()==0)
+                continue;
+
+            cout<<temp<<endl;
+            String_tokenizer * st = new String_tokenizer(temp, ";", true, false);
+            block = st->next_token();
+
+            String_tokenizer * bt = new String_tokenizer(block, " ", true, false);
+
+            temp = bt->next_token();
+            int site = Text_utils::to_int( temp );
+            if(site != prev_site+1)
+            {
+                if(prev_site == -2)
+                {
+                    cout<<"Error reading the graph input: 'end' site is not the last site.\nExiting.\n\n";
+                }
+                else
+                {
+                    cout<<"Error reading the graph input: previous site "<<prev_site<<" and this site "<<site<<".\nExiting.\n\n";
+                }
+                exit(-1);
+            }
+            prev_site++;
+
+            temp = bt->next_token();
+            temp = Text_utils::remove_surrounding_whitespaces(temp);
+            if(temp == "start")
+            {
+                if(site != 0)
+                {
+                    cout<<"Error reading the graph input: 'start' is not the site 0.\nExiting.\n\n";
+                    exit(-1);
+                }
+            }
+            else if(temp == "end")
+            {
+                prev_site = -2;
+            }
+            else
+            {
+                sequence += temp[0];
+            }
+
+            delete bt;
+
+            // Next block
+            double sum_weight = 0;
+
+            while(st->has_more_token())
+            {
+                block = st->next_token();
+
+                String_tokenizer * bt = new String_tokenizer(block, " ", true, false);
+                int start_site = Text_utils::to_int( bt->next_token() );
+                int end_site = Text_utils::to_int( bt->next_token() );
+                double weight = Text_utils::to_double( bt->next_token() );
+
+                if(start_site < 0 || end_site < start_site || end_site > site)
+                {
+                    cout<<"Error reading the graph input: edge coordinates at site "<<site<<" appear incorrect.\nExiting.\n\n";
+                    exit(-1);
+                }
+
+                if(weight < 0 || weight > 1 || weight + sum_weight > 1)
+                {
+                    cout<<"Warning reading the graph input: edge weight at site "<<site<<" appear incorrect.\n\n";
+                }
+
+                if(weight + sum_weight > 1)
+                {
+                    cout<<"Warning reading the graph input: edge weight at site "<<site<<" appear incorrect.\n\n";
+                    weight = 1.0-sum_weight;
+                    sum_weight = 1.0;
+                }
+
+                Seq_edge edge;
+                edge.start_site = start_site;
+                edge.end_site = end_site;
+                edge.weight = weight;
+
+                edges.push_back(edge);
+
+                delete bt;
+            }
+        }
+    }
+
+    // Addition of the last sequence in file
+    if((name != "") && (sequence != ""))
+    {
+//        transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
+
+        Fasta_entry fe;
+        fe.name = name;
+        fe.comment = comment;
+        fe.sequence = sequence;
+        fe.edges = edges;
+        seqs.push_back(fe);
+    }
+
 }
 
 /****************************************************************************************/

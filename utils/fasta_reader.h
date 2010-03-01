@@ -35,6 +35,7 @@ public:
     }
     void read_fasta(istream & input, vector<Fasta_entry> & seqs, bool short_names) const throw (Exception);
     void read_fastq(istream & input, vector<Fasta_entry> & seqs) const throw (Exception);
+    void read_graph(istream & input, vector<Fasta_entry> & seqs, bool short_names) const throw (Exception);
 
     void write(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception);
     void write(const string & path, const vector<Fasta_entry> & seqs, bool overwrite=true) const throw (Exception)
