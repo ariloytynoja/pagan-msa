@@ -172,7 +172,15 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
             comment = "";
             while (st->has_more_token())
             {
-              comment += st->next_token()+" ";
+                string block = st->next_token();
+                block = Text_utils::remove_surrounding_whitespaces(block);
+                if(block.substr(0,4)=="TID=")
+                {
+                    block = block.substr(4);
+                    fe.tid = block;
+                    cout<<block<<endl;
+                }
+              comment += block+" ";
             }
             delete st;
 

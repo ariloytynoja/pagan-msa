@@ -23,6 +23,7 @@ struct Fasta_entry
     string sequence;
     string quality;
     vector<Seq_edge> edges;
+    string tid;
 };
 
 }

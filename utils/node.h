@@ -37,7 +37,7 @@ class Node
     bool node_has_left_child;
     bool node_has_right_child;
 public:
-    Node() : leaf(true), dist_to_parent(0), name("undefined"),
+    Node() : leaf(true), dist_to_parent(0), name("undefined"), nhx_tid(""),
                     node_has_sequence(false), node_has_sequence_object(false),
                     node_has_left_child(false), node_has_right_child(false){}
     ~Node();

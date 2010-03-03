@@ -418,7 +418,7 @@ void Sequence::create_graph_sequence(Fasta_entry &seq_entry)
     last_site.set_empty_children();
     this->push_back_site(last_site);
 
-    for(int i=0; i<seq_entry.edges.size(); i++)
+    for(int i=0; i<(int)seq_entry.edges.size(); i++)
     {
         int s = seq_entry.edges.at(i).start_site;
         int e = seq_entry.edges.at(i).end_site;
