@@ -46,8 +46,6 @@ class Node
     bool adjust_left_node_site_index;
     bool adjust_right_node_site_index;
 
-//    vector<int> left_site_index_delta;
-//    vector<int> right_site_index_delta;
 public:
     Node() : leaf(true), dist_to_parent(0), name("undefined"), nhx_tid(""),
                     node_has_sequence(false), node_has_sequence_object(false),
@@ -171,12 +169,6 @@ public:
 
     bool right_needs_correcting_sequence_site_index() { return adjust_right_node_site_index; }
     void right_needs_correcting_sequence_site_index(bool h) { adjust_right_node_site_index = h; }
-
-//    void set_left_site_index_delta(vector<int> i) { left_site_index_delta = i; adjust_left_node_site_index = true; }
-//    vector<int>* get_left_site_index_delta() { return &left_site_index_delta; }
-//
-//    void set_right_site_index_delta(vector<int> i) { right_site_index_delta = i; }
-//    vector<int>* get_right_site_index_delta() { return &right_site_index_delta; adjust_right_node_site_index = true; }
 
     /**************************************/
 
@@ -453,10 +445,8 @@ public:
                 prev_rj = prev_offspring->right_index;
             }
 
-//            if(this->adjust_left_node_site_index && this->left_site_index_delta.at(j)>0)
             if(this->adjust_left_node_site_index && lj-prev_lj!=1)
                 return true;
-//            else if(this->adjust_right_node_site_index && this->right_site_index_delta.at(j)>0)
             else if(this->adjust_right_node_site_index && rj-prev_rj!=1)
                 return true;
             else
@@ -509,33 +499,6 @@ public:
 
     }
 
-
-//    int number_of_additional_sites_before_alignment_column(int j)
-//    {
-//
-//        if(this->is_leaf())
-//            return 0;
-//
-//        int sum = 0;
-//
-//        Site_children *offspring = sequence->get_site_at(j)->get_children();
-//
-//        int lj = offspring->left_index;
-//        if(lj>=0)
-//            sum += left_child->number_of_additional_sites_before_alignment_column(lj);
-//
-//        int rj = offspring->right_index;
-//        if(rj>=0)
-//            sum += right_child->number_of_additional_sites_before_alignment_column(rj);
-//
-//        if(this->adjust_left_node_site_index)
-//            sum +=  this->left_site_index_delta.at(j);
-//
-//        if(this->adjust_right_node_site_index)
-//            sum +=  this->right_site_index_delta.at(j);
-//
-//        return sum;
-//    }
 
     void start_mpost_plot_file()
     {
@@ -614,8 +577,6 @@ public:
 
     void get_alignment_column_at(int j,vector<char> *column,bool include_internal_nodes);
 
-    void get_multiple_alignment_columns_at(int j,vector< vector<char> > *columns, int *soffset, int total_columns,bool include_internal_nodes);
-
     void get_multiple_alignment_columns_before(int j,vector< vector<char> > *columns, string node_name_wanted, bool left_child_wanted,bool include_internal_nodes);
 
     int get_number_of_leaves()
@@ -648,7 +609,6 @@ public:
     /************************************/
 
     string print_tree() {
-//        cout<<"print_tree\n";
         if(!leaf)
         {
             stringstream ss;
@@ -662,17 +622,14 @@ public:
     /************************************/
 
     string print_subtree() {
-//        cout<<"print_subtree "<<this->get_name()<<"\n";
         if(!leaf)
         {
             stringstream ss;
             ss<<"("<<left_child->print_subtree()<<","<<right_child->print_subtree()<<"):"<<dist_to_parent;
-//            cout<<ss.str()<<endl;
             return ss.str();
         } else {
             stringstream ss;
             ss<<name<<":"<<dist_to_parent;
-//            cout<<ss.str()<<endl;
             return ss.str();
         }
     }

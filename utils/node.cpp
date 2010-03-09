@@ -97,7 +97,7 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
                         this->get_multiple_alignment_columns_before(j,&columns,addition.at(l).node_name_wanted,
                                                                     addition.at(l).left_child_wanted,include_internal_nodes);
 
-                        for(int i=0; i<(int)addition.size(); i++)
+                        for(int i=0; i<(int)addition.at(l).length; i++)
                         {
                             for(unsigned int k=0;k<aligned_sequences->size();k++)
                             {
@@ -301,7 +301,6 @@ void Node::get_multiple_alignment_columns_before(int j,vector< vector<char> > *c
             int k = 0;
             for(int i = lj-columns->size(); i < lj; i++,k++)
             {
-//                cout<<"left "<<i<<" "<<k<<endl;
                 this->get_left_child()->get_alignment_column_at(i,&columns->at(k),include_internal_nodes);
             }
             this->get_right_child()->get_multiple_alignment_columns_before(rj,columns,node_name_wanted,left_child_wanted,include_internal_nodes);
@@ -317,7 +316,6 @@ void Node::get_multiple_alignment_columns_before(int j,vector< vector<char> > *c
             for(int i = rj-columns->size(); i < rj; i++,k++)
             {
                 this->get_right_child()->get_alignment_column_at(i,&columns->at(k),include_internal_nodes);
-//                cout<<"right "<<i<<" "<<k<<endl;
             }
         }
     }
@@ -328,264 +326,6 @@ void Node::get_multiple_alignment_columns_before(int j,vector< vector<char> > *c
     }
 }
 
-/*
-void Node::get_multiple_alignment_columns_at(int j,vector< vector<char> > *columns, int *offset, int total_columns,bool include_internal_nodes)
-{
-cout<<"get_multiple_alignment_columns_at "<<j<<" "<<*offset<<" "<<total_columns<<endl;
-    Site_children *offspring = sequence->get_site_at(j)->get_children();
-    int lj = offspring->left_index;
-    int rj = offspring->right_index;
-
-    int left_add_columns = 0;
-    if(lj>=0)
-       left_add_columns = this->get_left_child()->number_of_additional_sites_before_alignment_column(lj);
-
-    int right_add_columns = 0;
-    if(rj>=0)
-       right_add_columns = this->get_right_child()->number_of_additional_sites_before_alignment_column(rj);
-
-cout<<"1 "<<*offset<<" "<<right_add_columns<<" "<<left_add_columns<<" "<<left_needs_correcting_sequence_site_index()<<" "<<right_needs_correcting_sequence_site_index()<<"\n";
-
-    if(left_add_columns!=0)
-    {
-        this->get_left_child()->get_multiple_alignment_columns_at(lj,columns,offset,total_columns,include_internal_nodes);
-
-        int j = *offset;
-
-        for(int i=0; i<left_add_columns; i++,j++)
-        {
-            for(int k=0;k<right_child->get_number_of_leaves();k++)
-                columns->at(j).push_back('-');
-        }
-
-        *offset += left_add_columns;
-    }
-
-    if(this->adjust_left_node_site_index)
-    {
-        int add_columns_here = this->left_site_index_delta.at(j);
-        cout<<"2 "<<*offset<<" "<<add_columns_here<<" "<<lj<<" "<<sequence->get_site_at(j-1)->get_children()->left_index<<"\n";
-
-        int j = *offset;
-        for(int i = lj-add_columns_here; i<lj; i++,j++)
-        {
-            this->get_left_child()->get_alignment_column_at(i,&columns->at(j),include_internal_nodes);
-
-            for(int k=0;k<right_child->get_number_of_leaves();k++)
-                columns->at(j).push_back('-');
-        }
-
-        *offset += add_columns_here;
-    }
-
-cout<<"3 "<<*offset<<"\n";
-    if(right_add_columns!=0)
-    {
-        int j = *offset;
-
-        for(int i=0; i<right_add_columns; i++,j++)
-        {
-            for(int j=0;j<left_child->get_number_of_leaves();j++)
-                columns->at(j).push_back('-');
-        }
-
-        this->get_right_child()->get_multiple_alignment_columns_at(rj,columns,offset,total_columns,include_internal_nodes);
-
-        *offset += right_add_columns;
-    }
-
-
-cout<<"4 "<<*offset<<"\n";
-    if(this->adjust_right_node_site_index)
-    {
-        int add_columns_here = this->right_site_index_delta.at(j);
-
-        int j = *offset;
-        cout<<"add_columns_here "<<add_columns_here<<", offset "<<j<<" max "<<total_columns<<endl;
-
-        for(int i = rj-add_columns_here; i<rj; i++,j++)
-        {
-            cout<<"column "<<i<<endl;
-
-            for(int k=0;k<left_child->get_number_of_leaves();k++)
-                columns->at(j).push_back('-');
-
-            this->get_right_child()->get_alignment_column_at(i,&columns->at(j),include_internal_nodes);
-        }
-
-        *offset += add_columns_here;
-    }
-
-    cout<<"coulmn 0: ";
-    for(int i=0;i<(int)columns->at(0).size();i++)
-        cout<<columns->at(0).at(i);
-cout<<endl;
-    //    else
-    //    {
-    //        int add_columns_here = 0;
-    //
-    //        if(this->sequence_site_index_needs_correcting())
-    //        {
-    //            if(this->left_node_needs_correcting_sequence_site_index)
-    //                add_columns_here = this->site_index_delta.at(j);
-    //
-    //            if(this->right_node_needs_correcting_sequence_site_index)
-    //                add_columns_here = this->site_index_delta.at(j);
-    //        }
-    //
-    //        for(int i = *offset;i<total_columns - add_columns_here; i++)
-    //        {
-    //            for(int j=0;j<left_child->get_number_of_leaves();j++)
-    //                columns->at(i).push_back('-');
-    //        }
-    //    }
-
-    /*
-
-
-
-
-    if(left_add_columns!=0)
-    {
-        this->get_left_child()->get_multiple_alignment_columns_at(lj,columns,offset,total_columns,include_internal_nodes);
-        *offset += left_add_columns;
-
-    }
-    else
-    {
-        int add_columns_here = 0;
-
-        if(this->sequence_site_index_needs_correcting())
-        {
-            if(this->left_node_needs_correcting_sequence_site_index)
-                add_columns_here = this->site_index_delta.at(j);
-
-            if(this->right_node_needs_correcting_sequence_site_index)
-                add_columns_here = this->site_index_delta.at(j);
-        }
-
-        for(int i = *offset;i<total_columns - add_columns_here; i++)
-        {
-            for(int j=0;j<left_child->get_number_of_leaves();j++)
-                columns->at(i).push_back('-');
-        }
-    }
-
-
-    if(this->sequence_site_index_needs_correcting())
-        {
-        int add_columns_here = this->site_index_delta.at(j);
-
-        if(this->right_node_needs_correcting_sequence_site_index)
-        {
-            int j = *offset;
-            for(int i = lj-add_columns_here; i<lj; i++,j++)
-            {
-                for(int j=0;j<left_child->get_number_of_leaves();j++)
-                    columns->at(j).push_back('-');
-
-                this->get_right_child()->get_alignment_column_at(i,&columns->at(j),include_internal_nodes);
-            }
-        }
-    }
-
-    if(right_add_columns==0)
-    {
-        for(int i = *offset;i<total_columns; i++)
-        {
-            for(int j=0;j<right_child->get_number_of_leaves();j++)
-                columns->at(i).push_back('-');
-        }
-    }
-    else
-    {
-        this->get_right_child()->get_multiple_alignment_columns_at(rj,columns,offset,total_columns,include_internal_nodes);
-        *offset += right_add_columns;
-    }
-
-
-
-    if(leaf)
-    {
-        int state = sequence->get_site_at(j)->get_state();
-        column->push_back(sequence->get_full_alphabet().at(state));
-    }
-    else
-    {
-
-        Site_children *offspring = sequence->get_site_at(j)->get_children();
-        int lj = offspring->left_index;
-        int rj = offspring->right_index;
-
-        if(!this->needs_correcting_sequence_site_index() || this->site_index_delta.at(j) == 0)
-        {
-
-            if(lj>=0)
-                left_child->get_multiple_alignment_columns_at(lj,columns,offset,total_columns,include_internal_nodes);
-
-//            else
-//            {
-//                int nl = left_child->get_number_of_leaves();
-//                if(include_internal_nodes)
-//                    nl = left_child->get_number_of_nodes();
-//
-//                for(int i=0;i<nl;i++)
-//                    column->push_back('-');
-//            }
-        }
-        else
-        {
-            int add_columns = this->site_index_delta.at(j);
-
-
-        }
-
-
-        int rj = offspring->right_index;
-        if(rj>=0)
-        {
-            right_child->get_alignment_column_at(rj,column,include_internal_nodes);
-        }
-        else
-        {
-            int nl = right_child->get_number_of_leaves();
-            if(include_internal_nodes)
-                nl = right_child->get_number_of_nodes();
-
-            for(int i=0;i<nl;i++)
-                column->push_back('-');
-        }
-
-//
-
-        Site_children *offspring = sequence->get_site_at(j)->get_children();
-        int lj = offspring->left_index;
-        int rj = offspring->right_index;
-
-        if(!this->needs_correcting_sequence_site_index() || this->site_index_delta.at(j) == 0)
-        {
-
-            int left_add_columns = 0;
-            if(lj>=0)
-               left_add_columns = this->get_left_child()->number_of_additional_sites_before_alignment_column(lj);
-
-            int right_add_columns = 0;
-            if(rj>=0)
-               right_add_columns = this->get_left_child()->number_of_additional_sites_before_alignment_column(rj);
-
-
-        }
-        else
-        {
-            int add_columns = this->site_index_delta.at(j);
-
-
-        }
-
-    }
-
-}
-*/
 
 void Node::write_metapost_sequence_graph(ostream *output, ostream *output2, int *count, int root_length) const throw (Exception)
 {
