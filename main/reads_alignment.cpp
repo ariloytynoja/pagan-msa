@@ -181,6 +181,7 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
                     }
                 }
 
+
                 if(parent_found)
                 {
                     cout<<" Parent of "<<ref_node_name<<" is "<<current_parent->get_name();

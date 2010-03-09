@@ -105,28 +105,17 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
                             }
                         }
 
-//                        vector<char> column;
-//
-//                        this->get_alignment_column_at(j,&column,include_internal_nodes);
-//
-//                        for(unsigned int i=0;i<aligned_sequences->size();i++)
-//                        {
-//                            aligned_sequences->at(i).sequence.push_back(column.at(i));
-//                        }
                     }
                 }
 
-//                else
-//                {
-                    vector<char> column;
+                vector<char> column;
 
-                    this->get_alignment_column_at(j,&column,include_internal_nodes);
+                this->get_alignment_column_at(j,&column,include_internal_nodes);
 
-                    for(unsigned int i=0;i<aligned_sequences->size();i++)
-                    {
-                        aligned_sequences->at(i).sequence.push_back(column.at(i));
-                    }
-//                }
+                for(unsigned int i=0;i<aligned_sequences->size();i++)
+                {
+                    aligned_sequences->at(i).sequence.push_back(column.at(i));
+                }
             }
 
         }
@@ -326,6 +315,70 @@ void Node::get_multiple_alignment_columns_before(int j,vector< vector<char> > *c
     }
 }
 
+void Node::additional_sites_before_alignment_column(int j,vector<Insertion_at_node> *addition)
+{
+    if(this->is_leaf())
+        return;
+
+    Site_children *offspring = sequence->get_site_at(j)->get_children();
+
+    int lj = offspring->left_index;
+    int rj = offspring->right_index;
+
+    if(lj>=0)
+        left_child->additional_sites_before_alignment_column(lj,addition);
+
+    if(j>0)
+    {
+        int prev_lj=-1;
+        int prev_rj=-1;
+        int sj = j;
+
+        while(j>0)
+        {
+            prev_lj = sequence->get_site_at(j-1)->get_children()->left_index;
+
+            if(prev_lj>=0)
+                break;
+
+            j--;
+        }
+
+        j = sj;
+        while(j>0)
+        {
+            prev_rj = sequence->get_site_at(j-1)->get_children()->right_index;
+
+            if(prev_rj>=0)
+                break;
+
+            j--;
+        }
+
+        if(lj>0 && prev_lj>=0 && lj-prev_lj != 1)
+        {
+            Insertion_at_node ins;
+            ins.node_name_wanted = this->get_name();
+            ins.length = lj-prev_lj-1;
+            ins.left_child_wanted = true;
+            addition->push_back(ins);
+        }
+
+        if(rj>0 && prev_rj>=0 && rj-prev_rj != 1)
+        {
+            Insertion_at_node ins;
+            ins.node_name_wanted = this->get_name();
+            ins.length = rj-prev_rj-1;
+            ins.left_child_wanted = false;
+            addition->push_back(ins);
+        }
+    }
+
+
+    if(rj>=0)
+        right_child->additional_sites_before_alignment_column(rj,addition);
+
+}
 
 void Node::write_metapost_sequence_graph(ostream *output, ostream *output2, int *count, int root_length) const throw (Exception)
 {
