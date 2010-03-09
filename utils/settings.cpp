@@ -44,6 +44,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("454", "correct homopolymer error")
         ("no-fastq", "do not use Q-scores")
         ("qscore-minimum", po::value<int>()->default_value(10), "reads sequence minimum Q-score include sites")
+        ("discard-overlapping-reads", "discard fully overlapping reads")
+        ("align-reads-at-root", "ignore tags and align reads at root")
     ;
 
     boost::program_options::options_description graph("Graph options");

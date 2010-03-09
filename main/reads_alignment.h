@@ -19,6 +19,9 @@ namespace ppa
 class Reads_alignment
 {
     Node *global_root;
+    void find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, vector<string> *node_to_align);
+    void remove_overlapping_reads(vector<Fasta_entry> *reads, Model_factory *mf);
+    double read_match_score(Node *node, Fasta_entry *read, Model_factory *mf);
 public:
     Reads_alignment();
     void align(Node *root, Model_factory *mf,int count);

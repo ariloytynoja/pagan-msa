@@ -19,6 +19,13 @@ using namespace std;
 namespace ppa
 {
 
+struct Insertion_at_node
+{
+    string node_name_wanted;
+    int length;
+    bool left_child_wanted;
+};
+
 class Node
 {
     Node *left_child;
@@ -36,10 +43,17 @@ class Node
     bool node_has_sequence_object;
     bool node_has_left_child;
     bool node_has_right_child;
+    bool adjust_left_node_site_index;
+    bool adjust_right_node_site_index;
+
+//    vector<int> left_site_index_delta;
+//    vector<int> right_site_index_delta;
 public:
     Node() : leaf(true), dist_to_parent(0), name("undefined"), nhx_tid(""),
                     node_has_sequence(false), node_has_sequence_object(false),
-                    node_has_left_child(false), node_has_right_child(false){}
+                    node_has_left_child(false), node_has_right_child(false),
+                    adjust_left_node_site_index(false),
+                    adjust_right_node_site_index(false){}
     ~Node();
 
     /**************************************/
@@ -152,6 +166,18 @@ public:
     bool has_right_child() { return node_has_right_child; }
     void has_right_child(bool h) { node_has_right_child = h; }
 
+    bool left_needs_correcting_sequence_site_index() { return adjust_left_node_site_index; }
+    void left_needs_correcting_sequence_site_index(bool h) { adjust_left_node_site_index = h; }
+
+    bool right_needs_correcting_sequence_site_index() { return adjust_right_node_site_index; }
+    void right_needs_correcting_sequence_site_index(bool h) { adjust_right_node_site_index = h; }
+
+//    void set_left_site_index_delta(vector<int> i) { left_site_index_delta = i; adjust_left_node_site_index = true; }
+//    vector<int>* get_left_site_index_delta() { return &left_site_index_delta; }
+//
+//    void set_right_site_index_delta(vector<int> i) { right_site_index_delta = i; }
+//    vector<int>* get_right_site_index_delta() { return &right_site_index_delta; adjust_right_node_site_index = true; }
+
     /**************************************/
 
     void add_left_child(Node *child)
@@ -204,6 +230,30 @@ public:
         }
     }
 
+    void get_internal_nodes(map<string,Node*> *nodes)
+    {
+        if(!this->is_leaf())
+        {
+            left_child->get_internal_nodes(nodes);
+            nodes->insert(pair<string,Node*>(this->get_name(),this));
+            right_child->get_internal_nodes(nodes);
+        }
+    }
+
+    void get_internal_node_names_with_tid_tag(multimap<string,string> *list)
+    {
+        if(!this->is_leaf())
+        {
+            left_child->get_internal_node_names_with_tid_tag(list);
+            right_child->get_internal_node_names_with_tid_tag(list);
+
+            if(this->get_nhx_tid()!="")
+            {
+                list->insert(pair<string,string>(this->get_nhx_tid(),this->get_name()));
+            }
+        }
+    }
+
     void name_internal_nodes(int *count)
     {
         if(leaf)
@@ -220,6 +270,20 @@ public:
             (*count)++;
         }
 
+    }
+
+    bool sequence_site_index_needs_correcting()
+    {
+        if(this->is_leaf())
+            return false;
+        else if(adjust_left_node_site_index || adjust_right_node_site_index)
+            return true;
+        else if(left_child->sequence_site_index_needs_correcting())
+            return true;
+        else if(right_child->sequence_site_index_needs_correcting())
+            return true;
+        else
+            return false;
     }
 
     /************************************/
@@ -275,7 +339,7 @@ public:
     void align_sequences_this_node(Model_factory *mf, bool is_reads_sequence=false)
     {
 
-        if(Settings::noise>-1)
+        if(Settings::noise>0)
             cout<<"aligning node "<<this->get_name()<<": "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
 
         double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
@@ -352,6 +416,126 @@ public:
         return false;
     }
 
+    bool has_additional_sites_before_alignment_column(int j)
+    {
+
+        Site_children *offspring = sequence->get_site_at(j)->get_children();
+
+        int lj = offspring->left_index;
+        if(lj>=0)
+        {
+            bool l = left_child->has_additional_sites_before_alignment_column(lj);
+            if(l)
+                return true;
+        }
+
+        int rj = offspring->right_index;
+        if(rj>=0)
+        {
+            bool r = right_child->has_additional_sites_before_alignment_column(rj);
+            if(r)
+                return true;
+        }
+
+        if(!(this->adjust_left_node_site_index && this->adjust_right_node_site_index))
+        {
+            return false;
+        }
+        else
+        {
+            int prev_lj = -1;
+            int prev_rj = -1;
+
+            if(j>0)
+            {
+                Site_children *prev_offspring = sequence->get_site_at(j-1)->get_children();
+                prev_lj = prev_offspring->left_index;
+                prev_rj = prev_offspring->right_index;
+            }
+
+//            if(this->adjust_left_node_site_index && this->left_site_index_delta.at(j)>0)
+            if(this->adjust_left_node_site_index && lj-prev_lj!=1)
+                return true;
+//            else if(this->adjust_right_node_site_index && this->right_site_index_delta.at(j)>0)
+            else if(this->adjust_right_node_site_index && rj-prev_rj!=1)
+                return true;
+            else
+                return false;
+        }
+    }
+
+    void additional_sites_before_alignment_column(int j,vector<Insertion_at_node> *addition)
+    {
+        if(this->is_leaf())
+            return;
+
+        Site_children *offspring = sequence->get_site_at(j)->get_children();
+
+        int lj = offspring->left_index;
+        int rj = offspring->right_index;
+
+        if(lj>=0)
+            left_child->additional_sites_before_alignment_column(lj,addition);
+
+        if(j>0)
+        {
+            Site_children *prev_offspring = sequence->get_site_at(j-1)->get_children();
+
+            int prev_lj = prev_offspring->left_index;
+            int prev_rj = prev_offspring->right_index;
+
+            if(lj>0 && prev_lj>=0 && lj-prev_lj != 1)
+            {
+                Insertion_at_node ins;
+                ins.node_name_wanted = this->get_name();
+                ins.length = lj-prev_lj-1;
+                ins.left_child_wanted = true;
+                addition->push_back(ins);
+            }
+
+            if(rj>0 && prev_rj>=0 && rj-prev_rj != 1)
+            {
+                Insertion_at_node ins;
+                ins.node_name_wanted = this->get_name();
+                ins.length = rj-prev_rj-1;
+                ins.left_child_wanted = false;
+                addition->push_back(ins);
+            }
+        }
+
+
+        if(rj>=0)
+            right_child->additional_sites_before_alignment_column(rj,addition);
+
+    }
+
+
+//    int number_of_additional_sites_before_alignment_column(int j)
+//    {
+//
+//        if(this->is_leaf())
+//            return 0;
+//
+//        int sum = 0;
+//
+//        Site_children *offspring = sequence->get_site_at(j)->get_children();
+//
+//        int lj = offspring->left_index;
+//        if(lj>=0)
+//            sum += left_child->number_of_additional_sites_before_alignment_column(lj);
+//
+//        int rj = offspring->right_index;
+//        if(rj>=0)
+//            sum += right_child->number_of_additional_sites_before_alignment_column(rj);
+//
+//        if(this->adjust_left_node_site_index)
+//            sum +=  this->left_site_index_delta.at(j);
+//
+//        if(this->adjust_right_node_site_index)
+//            sum +=  this->right_site_index_delta.at(j);
+//
+//        return sum;
+//    }
 
     void start_mpost_plot_file()
     {
@@ -429,6 +613,10 @@ public:
     void get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_internal_nodes=false);
 
     void get_alignment_column_at(int j,vector<char> *column,bool include_internal_nodes);
+
+    void get_multiple_alignment_columns_at(int j,vector< vector<char> > *columns, int *soffset, int total_columns,bool include_internal_nodes);
+
+    void get_multiple_alignment_columns_before(int j,vector< vector<char> > *columns, string node_name_wanted, bool left_child_wanted,bool include_internal_nodes);
 
     int get_number_of_leaves()
     {

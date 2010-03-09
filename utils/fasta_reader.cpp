@@ -87,6 +87,20 @@ void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_
         cout<<"Input file format unrecognized. Only FASTA and FASTQ formats supported. Exiting.\n\n";
         exit(-1);
     }
+
+    set<string> names;
+    for(int i=0;i<(int)seqs.size();i++)
+    {
+        string name = seqs.at(i).name;
+        while(names.find(name) != names.end())
+        {
+            cout<<"Sequence name "<<name<<" is defined more than once! Adding suffix '.1'.\n";
+            seqs.at(i).name += ".1";
+            name += ".1";
+        }
+        names.insert(name);
+    }
+
 }
 
 void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool short_names = false) const throw (Exception)
@@ -174,13 +188,13 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
             {
                 string block = st->next_token();
                 block = Text_utils::remove_surrounding_whitespaces(block);
+                comment += block+" ";
+
                 if(block.substr(0,4)=="TID=")
                 {
                     block = block.substr(4);
                     fe.tid = block;
-                    cout<<block<<endl;
                 }
-              comment += block+" ";
             }
             delete st;
 
@@ -637,6 +651,8 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
 
     // All the leafs in the guidetree need a sequence. Not all sequences need to be in the tree.
 
+    int overlap = 0;
+
     if(names_match != leaf_nodes->size())
     {
         if(Settings_handle::st.is("cds-seqfile"))
@@ -651,11 +667,9 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
         }
 
         set<string> snames;
-        vector<string> vnames;
         for (si = sequences->begin(); si != sequences->end(); si++)
         {
             snames.insert(si->name);
-            vnames.push_back(si->name);
         }
 
         set<string> tnames;
@@ -668,13 +682,21 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
         cout<<endl<<"Leaf names not in the sequences:"<<endl;
         for (vector<Node*>::const_iterator ni = leaf_nodes->begin(); ni != leaf_nodes->end(); ni++)
         {
-            (*ni)->has_sequence(true);
             if(snames.find((*ni)->get_name()) == snames.end() )
             {
                 cout<<" "<<(*ni)->get_name()<<endl;
                 (*ni)->has_sequence(false);
             }
+            else
+            {
+                (*ni)->has_sequence(true);
+                overlap++;
+            }
         }
+    }
+    else
+    {
+        overlap = names_match;
     }
 
     // Not all sequences need to be in the tree but give a warning that names don't match.
@@ -684,14 +706,14 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
         exit(0);
     }
 
-    if(sequences->size() > leaf_nodes->size())
+    if((int)sequences->size() > overlap && overlap == (int)leaf_nodes->size())
     {
         cout<<"\nWarning: "<<leaf_nodes->size()<<" leaf nodes but "<<sequences->size()<<" sequences! Excess sequences will be removed.\n\n";
         return true;
     }
-    if(sequences->size() < leaf_nodes->size())
+    if(overlap < (int)leaf_nodes->size())
     {
-        cout<<"\nWarning: "<<leaf_nodes->size()<<" leaf nodes but "<<sequences->size()<<" sequences! Excess branches will be removed.\n\n";
+        cout<<"\nWarning: "<<leaf_nodes->size()<<" leaf nodes but "<<overlap<<" matching sequences! Excess branches will be removed.\n\n";
         return false;
     }
     return true;
