@@ -105,19 +105,19 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
                             }
                         }
 
-                        vector<char> column;
-
-                        this->get_alignment_column_at(j,&column,include_internal_nodes);
-
-                        for(unsigned int i=0;i<aligned_sequences->size();i++)
-                        {
-                            aligned_sequences->at(i).sequence.push_back(column.at(i));
-                        }
+//                        vector<char> column;
+//
+//                        this->get_alignment_column_at(j,&column,include_internal_nodes);
+//
+//                        for(unsigned int i=0;i<aligned_sequences->size();i++)
+//                        {
+//                            aligned_sequences->at(i).sequence.push_back(column.at(i));
+//                        }
                     }
                 }
 
-                else
-                {
+//                else
+//                {
                     vector<char> column;
 
                     this->get_alignment_column_at(j,&column,include_internal_nodes);
@@ -126,7 +126,7 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
                     {
                         aligned_sequences->at(i).sequence.push_back(column.at(i));
                     }
-                }
+//                }
             }
 
         }
