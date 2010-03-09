@@ -93,7 +93,7 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
                             columns.push_back( column );
                         }
 
-                        cout<<"add "<<addition.at(l).node_name_wanted<<" "<<addition.at(l).length<<endl;
+//                        cout<<"add "<<addition.at(l).node_name_wanted<<" "<<addition.at(l).length<<endl;
                         this->get_multiple_alignment_columns_before(j,&columns,addition.at(l).node_name_wanted,
                                                                     addition.at(l).left_child_wanted,include_internal_nodes);
 
