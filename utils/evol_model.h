@@ -24,10 +24,14 @@ public:
 
     float id_prob;
     float ext_prob;
+    float end_ext_prob;
+    float break_ext_prob;
     float match_prob;
 
     float log_id_prob;
     float log_ext_prob;
+    float log_end_ext_prob;
+    float log_break_ext_prob;
     float log_match_prob;
 
     float ins_rate;
@@ -38,11 +42,15 @@ public:
     float gap_open() { return id_prob; }
     float gap_close() { return id_prob; }
     float gap_ext() { return ext_prob; }
+    float gap_end_ext() { return ext_prob; }
+    float gap_break_ext() { return ext_prob; }
     float non_gap() { return match_prob; }
 
     float log_gap_open() { return log_id_prob; }
     float log_gap_close() { return log_id_prob; }
     float log_gap_ext() { return log_ext_prob; }
+    float log_gap_end_ext() { return log_end_ext_prob; }
+    float log_gap_break_ext() { return log_break_ext_prob; }
     float log_non_gap() { return log_match_prob; }
 
 

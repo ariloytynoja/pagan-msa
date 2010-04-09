@@ -31,6 +31,8 @@ class Model_factory
     float char_ins_rate;
     float char_del_rate;
     float char_ext_prob;
+    float char_end_ext_prob;
+    float char_break_ext_prob;
 
     Int_matrix *parsimony_table;
 
@@ -62,10 +64,10 @@ public:
     enum Data_type {dna,protein,codon};
 
     void dna_model(float *char_pi,Settings *st);
-    void dna_model(float* pi,float kappa, float rho,float ins_rate,float del_rate, float ext_prob);
+    void dna_model(float* pi,float kappa, float rho,float ins_rate,float del_rate, float ext_prob, float end_ext_prob, float break_ext_prob);
 
     void protein_model(Settings *st);
-    void protein_model(float ins_rate,float del_rate, float ext_prob);
+    void protein_model(float ins_rate,float del_rate, float ext_prob, float end_ext_prob);
 
     void codon_model(Settings *st);
     void codon_model(float ins_rate,float del_rate, float ext_prob);

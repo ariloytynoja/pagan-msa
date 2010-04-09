@@ -22,6 +22,11 @@ class Reads_alignment
     void find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, vector<string> *node_to_align);
     void remove_overlapping_reads(vector<Fasta_entry> *reads, Model_factory *mf);
     double read_match_score(Node *node, Fasta_entry *read, Model_factory *mf);
+    bool read_alignment_overlaps(Node * node, string read_name, string ref_node_name);
+    void find_paired_reads(vector<Fasta_entry> *reads);
+    void copy_node_details(Node *reads_node,Fasta_entry *read, string full_alpha);
+    bool correct_sites_index(Node *current_root, string ref_node_name, int alignments_done, map<string,Node*> *nodes_map);
+
 public:
     Reads_alignment();
     void align(Node *root, Model_factory *mf,int count);

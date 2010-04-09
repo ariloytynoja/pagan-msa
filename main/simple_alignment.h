@@ -65,6 +65,7 @@ struct Edge_history
 class Simple_alignment
 {
     enum Matrix_pt {x_mat,y_mat,m_mat};
+    enum Gap_type {normal_gap,end_gap,pair_break_gap};
 
     typedef boost::multi_array<Matrix_pointer, 2> align_array;
     typedef align_array::index index;
@@ -102,6 +103,12 @@ class Simple_alignment
     bool  weighted_branch_skip_penalty;
 
     bool no_terminal_edges;
+    bool pair_end_reads;
+
+    int x_length;
+    int y_length;
+    int x_read1_length;
+    int y_read1_length;
 
     bool compute_full_score;
     bool weight_edges;
@@ -131,8 +138,10 @@ class Simple_alignment
 
     /*********************************/
 
+//    void iterate_bwd_edges_for_gap(Site * site,align_slice *x_slice,align_slice *y_slice,align_slice *m_slice,
+//                                   Matrix_pointer *max,bool is_x_matrix, bool is_edge_cell = false);
     void iterate_bwd_edges_for_gap(Site * site,align_slice *x_slice,align_slice *y_slice,align_slice *m_slice,
-                                   Matrix_pointer *max,bool is_x_matrix, bool is_edge_cell = false);
+                                   Matrix_pointer *max,bool is_x_matrix, int gap_type = Simple_alignment::normal_gap);
     void iterate_bwd_edges_for_match(Site * left_site,Site * right_site,Matrix_pointer *max);
     void iterate_bwd_edges_for_end_corner(Site * left_site,Site * right_site,Matrix_pointer *max);
 
@@ -163,7 +172,8 @@ class Simple_alignment
     void score_x_match(Edge * left_edge,Edge * right_edge,double log_match,Matrix_pointer *max, double match = 0);
     void score_y_match(Edge * left_edge,Edge * right_edge,double log_match,Matrix_pointer *max, double match = 0);
 
-    void score_gap_ext(Edge *edge,align_slice *z_slice,Matrix_pointer *max,bool is_x_matrix, bool is_edge_cell = false);
+//    void score_gap_ext(Edge *edge,align_slice *z_slice,Matrix_pointer *max,bool is_x_matrix, bool is_edge_cell = false);
+    void score_gap_ext(Edge *edge,align_slice *z_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type = Simple_alignment::normal_gap);
     void score_gap_double(Edge *edge,align_slice *w_slice,Matrix_pointer *max,bool is_x_matrix);
     void score_gap_open(Edge *edge,align_slice *m_slice,Matrix_pointer *max,bool is_x_matrix);
     void score_gap_close(Edge *edge,align_slice *z_slice,Matrix_pointer *max,bool is_x_matrix);
@@ -383,7 +393,63 @@ class Simple_alignment
         if( Settings_handle::st.is("no-terminal-edges") )
             no_terminal_edges = true;
 
+        pair_end_reads = false;
+
         cout << noshowpos;
+    }
+
+    float get_log_gap_open_penalty(int prev_site, bool is_x_matrix)
+    {
+        if(no_terminal_edges)
+        {
+            if(prev_site==0)
+            {
+                return 0;
+            }
+
+            if(pair_end_reads)
+            {
+                if(is_x_matrix && prev_site == x_read1_length)
+                {
+                    return 0;
+                }
+                else if(!is_x_matrix && prev_site == y_read1_length)
+                {
+                    return 0;
+                }
+            }
+        }
+
+        return model->log_gap_open();
+    }
+
+    float get_log_gap_close_penalty(int this_site, bool is_x_matrix)
+    {
+        if(no_terminal_edges)
+        {
+            if(is_x_matrix && this_site==x_length)
+            {
+                return 0;
+            }
+            else if(!is_x_matrix && this_site==y_length)
+            {
+                return 0;
+            }
+
+            if(pair_end_reads)
+            {
+                if(is_x_matrix && this_site == x_read1_length+1)
+                {
+                    return 0;
+                }
+                else if(!is_x_matrix && this_site == y_read1_length+1)
+                {
+                    return 0;
+                }
+            }
+        }
+
+        return model->log_gap_close();
     }
 
     void set_reads_alignment_settings()
@@ -392,15 +458,61 @@ class Simple_alignment
         no_terminal_edges = true;
 
         max_allowed_skip_distance = 5;
-
         max_allowed_skip_branches = 50;
-
         max_allowed_match_skip_branches = 50;
 
         branch_skip_weight = 1;
-
         branch_skip_probability = 1;
 
+        if(Settings_handle::st.is("pair-end"))
+            pair_end_reads = true;
+
+    }
+
+    void mark_no_gap_penalty_sites(Sequence *left, Sequence *right)
+    {
+
+        x_length = left->sites_length();
+        y_length = right->sites_length();
+        x_read1_length = -1;
+        y_read1_length = -1;
+
+        if(pair_end_reads)
+        {
+            // this is a clumsy way to transfer the information of the break point
+            // in a combined pair-end read but has to for now
+            for(int i=0;i<left->sites_length();i++)
+            {
+                if( left->get_site_at(i)->get_site_type() == Site::break_start_site )
+                {
+                    x_read1_length = i;
+                    left->get_site_at(i)->set_site_type( Site::real_site );
+                }
+
+                if( left->get_site_at(i)->get_site_type() == Site::break_stop_site )
+                {
+                    left->get_site_at(i)->set_site_type( Site::real_site );
+                    break;
+                }
+            }
+
+            for(int i=0;i<right->sites_length();i++)
+            {
+                if( right->get_site_at(i)->get_site_type() == Site::break_start_site )
+                {
+                    y_read1_length = i;
+                    right->get_site_at(i)->set_site_type( Site::real_site );
+                }
+
+                if( right->get_site_at(i)->get_site_type() == Site::break_stop_site )
+                {
+                    right->get_site_at(i)->set_site_type( Site::real_site );
+                    break;
+                }
+            }
+        }
+
+//        cout<<"x_length "<<x_length<<"; y_length "<<y_length<<"; x_read1_length "<<x_read1_length<<"; y_read1_length "<<y_read1_length<<endl;
     }
 
     static int plot_number;

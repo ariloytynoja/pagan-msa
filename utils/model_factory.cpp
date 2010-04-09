@@ -435,12 +435,15 @@ void Model_factory::dna_model(float *char_pi,Settings *st)
     float ins_rate = 0.05;
     float del_rate = 0.05;
     float gap_ext = 0.5;
+    float end_gap_ext = 0.95;
+    float break_gap_ext = 0.99;
 
     if(st->is("cds-seqfile"))
     {
         ins_rate = 2;
         del_rate = 2;
-        gap_ext = 0.95;
+        gap_ext = 0.5;
+        end_gap_ext = 0.99;
     }
 
     if(st->is("char-kappa"))
@@ -458,10 +461,17 @@ void Model_factory::dna_model(float *char_pi,Settings *st)
     if(st->is("gap-extension"))
         gap_ext =  st->get("gap-extension").as<float>();
 
-    this->dna_model(char_pi,char_kappa,char_rho,ins_rate,del_rate,gap_ext);
+    if(st->is("end-gap-extension"))
+        end_gap_ext =  st->get("end-gap-extension").as<float>();
+
+    if(st->is("pair-read-gap-extension"))
+        break_gap_ext =  st->get("pair-read-gap-extension").as<float>();
+
+
+    this->dna_model(char_pi,char_kappa,char_rho,ins_rate,del_rate,gap_ext,end_gap_ext,break_gap_ext);
 }
 
-void Model_factory::dna_model(float* pi,float kappa, float rho,float ins_rate,float del_rate, float ext_prob)
+void Model_factory::dna_model(float* pi,float kappa, float rho,float ins_rate,float del_rate, float ext_prob, float end_ext_prob, float break_ext_prob)
 {
 
     if (Settings::noise>4){
@@ -473,6 +483,8 @@ void Model_factory::dna_model(float* pi,float kappa, float rho,float ins_rate,fl
     char_ins_rate = ins_rate;
     char_del_rate = del_rate;
     char_ext_prob = ext_prob;
+    char_end_ext_prob = end_ext_prob;
+    char_break_ext_prob = break_ext_prob;
 
 
     if(Settings::noise > 4)
@@ -594,10 +606,14 @@ void Model_factory::protein_model(Settings *st)
     if(st->is("gap-extension"))
         gap_ext =  st->get("gap-extension").as<float>();
 
-    this->protein_model(ins_rate,del_rate,gap_ext);
+    float end_gap_ext = 0.9;
+    if(st->is("end-gap-extension"))
+        end_gap_ext =  st->get("end-gap-extension").as<float>();
+
+    this->protein_model(ins_rate,del_rate,gap_ext,end_gap_ext);
 }
 
-void Model_factory::protein_model(float ins_rate,float del_rate, float ext_prob)
+void Model_factory::protein_model(float ins_rate,float del_rate, float ext_prob, float end_ext_prob)
 {
 
     if (Settings::noise>4){
@@ -607,6 +623,8 @@ void Model_factory::protein_model(float ins_rate,float del_rate, float ext_prob)
     char_ins_rate = ins_rate;
     char_del_rate = del_rate;
     char_ext_prob = ext_prob;
+    char_end_ext_prob = end_ext_prob;
+    char_break_ext_prob = 0.0;
 
 
     if(Settings::noise > 4)
@@ -901,10 +919,14 @@ Evol_model Model_factory::alignment_model(double distance)
     model.log_id_prob = log(t);
     model.log_match_prob = log(1.0-2*t);
     model.log_ext_prob = log(char_ext_prob);
+    model.log_end_ext_prob = log(char_end_ext_prob);
+    model.log_break_ext_prob = log(char_break_ext_prob);
 
     model.id_prob = t;
     model.match_prob = 1.0-2*t;
     model.ext_prob = char_ext_prob;
+    model.end_ext_prob = char_end_ext_prob;
+    model.break_ext_prob = char_break_ext_prob;
 
 //cout<<"model.ins_prob "<<model.ins_prob<<"\n";
 //cout<<"model.del_prob "<<model.del_prob<<"\n";

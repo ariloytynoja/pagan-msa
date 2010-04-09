@@ -202,7 +202,7 @@ struct Site
     int character_state;
 
     int site_type;
-    enum Site_type {start_site,real_site,stop_site};
+    enum Site_type {start_site,real_site,stop_site,break_start_site,break_stop_site};
 
     int path_state;
     enum Path_state {ends_site,terminal,matched,xgapped,ygapped,xskipped,yskipped};
@@ -244,6 +244,7 @@ public:
     void set_index(int i) { index = i; }
     int  get_index() { return index; }
 
+    void set_site_type(int i) { site_type = i; }
     int get_site_type() { return site_type; }
 
     void set_posterior_support(float s) { posterior_support = s; }

@@ -14,7 +14,7 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.002;
+    version = 0.003;
 
     boost::program_options::options_description minimal("Minimal options");
     minimal.add_options()
@@ -39,13 +39,15 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("cds-seqfile", po::value<string>(), "cds alignment infile")
         ("cds-treefile", po::value<string>(), "cds tree file")
         ("readsfile", po::value<string>(), "reads infile")
-        ("min-reads-overlap", po::value<float>()->default_value(0.10), "minimum reads sequence overlap with refrence alignment sites")
-        ("reads-distance", po::value<float>()->default_value(0.01), "reads sequence evolutionary distance from root")
+        ("min-reads-overlap", po::value<float>()->default_value(0.10), "read sequences' minimum overlap with reference alignment sites")
+        ("reads-distance", po::value<float>()->default_value(0.01), "read sequences' evolutionary distance from root")
         ("454", "correct homopolymer error")
+        ("pair-end","connect paired reads")
         ("no-fastq", "do not use Q-scores")
-        ("qscore-minimum", po::value<int>()->default_value(10), "reads sequence minimum Q-score include sites")
+        ("qscore-minimum", po::value<int>()->default_value(10), "read sequences' minimum Q-score to be included")
         ("discard-overlapping-reads", "discard fully overlapping reads")
         ("align-reads-at-root", "ignore tags and align reads at root")
+        ("pair-read-gap-extension", po::value<float>(), "pair read middle gap extension probability")
     ;
 
     boost::program_options::options_description graph("Graph options");
@@ -61,6 +63,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("ins-rate", po::value<float>(), "insertion rate (per substitution)")
         ("del-rate", po::value<float>(), "deletion rate (per substitution)")
         ("gap-extension", po::value<float>(), "gap extension probability")
+        ("end-gap-extension", po::value<float>(), "terminal gap extension probability")
         ("dna-kappa", po::value<float>(), "kappa")
         ("dna-rho", po::value<float>(), "rho")
         ("ambiguity-factor", po::value<float>(), "multiplier for subst. score of ambiguity characters")

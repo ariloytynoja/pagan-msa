@@ -43,157 +43,7 @@ Sequence::Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped)
 
     else
         this->create_default_sequence(seq_entry);
-/*
-    Site first_site( &edges, Site::start_site, Site::ends_site );
-    first_site.set_state( -1 );
-    first_site.set_empty_children();
-    this->push_back_site(first_site);
 
-    Edge first_edge( -1,this->get_current_site_index() );
-    this->push_back_edge(first_edge);
-
-    cout<<"#edges "<<seq_entry.edges.size()<<endl;
-
-    int quality_threshold = Settings_handle::st.get("qscore-minimum").as<int>();
-
-    bool is_fastq = (seq_entry.quality != "") && !Settings_handle::st.is("no-fastq");
-    int in_row = 1;
-    int prev_row = 1;
-    int prev_state = -1;
-
-    string::iterator si = seq_entry.sequence.begin();
-    string::iterator qi = seq_entry.quality.begin();
-
-    int site_qscore = quality_threshold;
-
-    for(;si!=seq_entry.sequence.end();si++,qi++)
-    {
-        int prev_site_qscore = quality_threshold;
-
-        Site site( &edges );
-        if(is_fastq)
-        {
-            prev_site_qscore = site_qscore;
-
-            site_qscore = static_cast<int>(*qi)-33;
-
-            if(site_qscore < quality_threshold)
-            {
-                site.set_state( full_char_alphabet.find( 'N' ) );
-                *si = 'n';
-            }
-            else
-            {
-                site.set_state( full_char_alphabet.find( *si ) );
-            }
-        }
-        else
-        {
-            site.set_state( full_char_alphabet.find( *si ) );
-        }
-        site.set_empty_children();
-        this->push_back_site(site);
-
-        // Check for homopolymers
-        if( site.get_state() == prev_state)
-        {
-            in_row++;
-            prev_row = 1;
-        }
-        else
-        {
-            prev_row = in_row;
-            in_row = 1;
-            prev_state = site.get_state();
-        }
-
-        // If 454 data, correct for homopolymer error
-        //
-        if(Settings_handle::st.is("454") && !gapped && ( prev_row > 2 ||  prev_site_qscore < quality_threshold ) )
-        {
-            // first edge
-            float weight = 0.9;
-            if(prev_site_qscore < quality_threshold)
-                weight = 0.6;
-
-            Edge edge( this->get_previous_site_index(),this->get_current_site_index(), weight );
-            this->push_back_edge(edge);
-
-            this->get_previous_site()->set_first_fwd_edge_index( this->get_current_edge_index() );
-            this->get_current_site()->set_first_bwd_edge_index( this->get_current_edge_index() );
-
-            if( prev_row < 5 )
-            {
-                // second edge
-                int prev_ind = this->get_previous_site()->get_first_bwd_edge()->get_start_site_index();
-                Edge edge_2( prev_ind ,this->get_current_site_index(), 1.0-weight );
-                this->push_back_edge(edge_2);
-
-                this->get_site_at(prev_ind)->add_new_fwd_edge_index( this->get_current_edge_index() );
-                this->get_current_site()->add_new_bwd_edge_index( this->get_current_edge_index() );
-
-            }
-            else
-            {
-                // second edge
-                int prev_ind = this->get_previous_site()->get_first_bwd_edge()->get_start_site_index();
-                Edge edge_2( prev_ind ,this->get_current_site_index(), 1.0-weight-0.02 );
-                this->push_back_edge(edge_2);
-
-                this->get_site_at(prev_ind)->add_new_fwd_edge_index( this->get_current_edge_index() );
-                this->get_current_site()->add_new_bwd_edge_index( this->get_current_edge_index() );
-
-                // third edge
-                int prev_prev_ind = get_site_at(prev_ind)->get_first_bwd_edge()->get_start_site_index();
-                Edge edge_3( prev_prev_ind ,this->get_current_site_index(), 0.02 );
-                this->push_back_edge(edge_3);
-
-                this->get_site_at(prev_prev_ind)->add_new_fwd_edge_index( this->get_current_edge_index() );
-                this->get_current_site()->add_new_bwd_edge_index( this->get_current_edge_index() );
-
-            }
-
-        }
-
-        else if( prev_site_qscore < quality_threshold )
-        {
-            Edge edge( this->get_previous_site_index(),this->get_current_site_index(), 0.6 );
-            this->push_back_edge(edge);
-
-            this->get_previous_site()->set_first_fwd_edge_index( this->get_current_edge_index() );
-            this->get_current_site()->set_first_bwd_edge_index( this->get_current_edge_index() );
-
-            // second edge
-            int prev_ind = this->get_previous_site()->get_first_bwd_edge()->get_start_site_index();
-            Edge edge_2( prev_ind ,this->get_current_site_index(), 0.4 );
-            this->push_back_edge(edge_2);
-
-            this->get_site_at(prev_ind)->add_new_fwd_edge_index( this->get_current_edge_index() );
-            this->get_current_site()->add_new_bwd_edge_index( this->get_current_edge_index() );
-        }
-
-        // All other data
-        else
-        {
-            Edge edge( this->get_previous_site_index(),this->get_current_site_index() );
-            this->push_back_edge(edge);
-
-            this->get_previous_site()->set_first_fwd_edge_index( this->get_current_edge_index() );
-            this->get_current_site()->set_first_bwd_edge_index( this->get_current_edge_index() );
-        }
-    }
-
-    Site last_site( &edges, Site::stop_site, Site::ends_site );
-    last_site.set_state( -1 );
-    last_site.set_empty_children();
-    this->push_back_site(last_site);
-
-    Edge last_edge( this->get_previous_site_index(),this->get_current_site_index() );
-    this->push_back_edge(last_edge);
-
-    this->get_previous_site()->set_first_fwd_edge_index( this->get_current_edge_index() );
-    this->get_current_site()->set_first_bwd_edge_index( this->get_current_edge_index() );
-*/
 
     if(Settings::noise>5)
     {
@@ -261,18 +111,51 @@ void Sequence::create_fastq_sequence(Fasta_entry &seq_entry)
     int prev_state = -1;
 
     string::iterator si = seq_entry.sequence.begin();
+    string::iterator tsi;
     string::iterator qi = seq_entry.quality.begin();
 
     int site_qscore = quality_threshold;
 
     for(;si!=seq_entry.sequence.end();si++,qi++)
     {
-        int prev_site_qscore = quality_threshold;
+        // this site is a paired-read break point
+        //
+        if(*si=='0')
+        {
+            continue;
+        }
+
+
+        int prev_site_qscore = site_qscore;
 
         Site site( &edges );
         site.set_empty_children();
 
-        prev_site_qscore = site_qscore;
+
+        // check if the previous site was a paired-read break point
+        //
+        tsi = si;
+        if(tsi!=seq_entry.sequence.begin())
+        {
+            tsi--;
+            if(*tsi=='0')
+            {
+                site.set_site_type(Site::break_stop_site);
+            }
+        }
+
+        // check if the next site will be a paired-read break point
+        //
+        tsi = si;
+        tsi++;
+        if(tsi!=seq_entry.sequence.end())
+        {
+            if(*tsi=='0')
+            {
+                site.set_site_type(Site::break_start_site);
+            }
+        }
+
         site_qscore = static_cast<int>(*qi)-33;
 
         if(site_qscore < quality_threshold)

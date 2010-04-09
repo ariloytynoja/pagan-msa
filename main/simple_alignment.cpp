@@ -36,6 +36,13 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     if(is_reads_sequence)
         this->set_reads_alignment_settings();
 
+    // mark sites where no gap open/close penalty. Important for paired reads
+    if(no_terminal_edges)
+    {
+        this->mark_no_gap_penalty_sites(left, right);
+    }
+
+
     // Set the edge weighting scheme, define the dynamic-programming matrices
     //
     log_edge_weight = &ppa::Simple_alignment::edge_log_posterior_weight;
@@ -641,11 +648,29 @@ void Simple_alignment::compute_fwd_scores(int i,int j)
     if(i==0 && j==0)
         return;
 
-    bool is_edge = false;
-    if( j==0 || i==0 || j == (int) match->shape()[1]-1 || i == (int) match->shape()[0]-1 )
+    int j_gap_type = Simple_alignment::normal_gap;
+    int i_gap_type = Simple_alignment::normal_gap;
+
+    if( j==0 || j == (int) match->shape()[1]-1 )
     {
-        is_edge = true;
+        j_gap_type = Simple_alignment::end_gap;
     }
+
+    if(pair_end_reads && j==y_read1_length)
+    {
+        j_gap_type = Simple_alignment::pair_break_gap;
+    }
+
+    if( i==0 || i == (int) match->shape()[0]-1 )
+    {
+        i_gap_type = Simple_alignment::end_gap;
+    }
+
+    if(pair_end_reads && i==x_read1_length)
+    {
+        i_gap_type = Simple_alignment::pair_break_gap;
+    }
+
 
     int left_index = i;
     int right_index = j;
@@ -666,7 +691,7 @@ void Simple_alignment::compute_fwd_scores(int i,int j)
         align_slice y_slice = (*ygap)[ indices[ range( 0,ygap->shape()[0] ) ][j] ];
         align_slice m_slice = (*match)[ indices[ range( 0,match->shape()[0] ) ][j] ];
 
-        this->iterate_bwd_edges_for_gap(left_site,&x_slice,&y_slice,&m_slice,max_x,true,is_edge);
+        this->iterate_bwd_edges_for_gap(left_site,&x_slice,&y_slice,&m_slice,max_x,true,j_gap_type);
         max_x->y_ind = j;
 
     }
@@ -689,7 +714,7 @@ void Simple_alignment::compute_fwd_scores(int i,int j)
         align_slice y_slice = (*ygap)[ indices[i][ range( 0,ygap->shape()[1] ) ] ];
         align_slice m_slice = (*match)[ indices[i][ range( 0,match->shape()[1] ) ] ];
 
-        this->iterate_bwd_edges_for_gap(right_site,&y_slice,&x_slice,&m_slice,max_y,false,is_edge);
+        this->iterate_bwd_edges_for_gap(right_site,&y_slice,&x_slice,&m_slice,max_y,false,i_gap_type);
         max_y->x_ind = i;
 
     }
@@ -813,6 +838,7 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
     {
         while(i>=0)
         {
+//            cout<<"bwd "<<i<<" "<<j<<" "<<vit_mat<<endl;
             if(vit_mat == Simple_alignment::m_mat)
             {
 
@@ -1501,19 +1527,28 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vecto
         if( sequence->get_site_at( edge.get_start_site_index() )->get_site_type() == Site::start_site &&
             edge.get_end_site_index() - edge.get_start_site_index() > 1 )
         {
-//            cout<<"change1\n";
             edge.set_start_site_index(edge.get_end_site_index()-1);
-//            cout<<"skip1\n";
-//            return;
         }
 
         if( sequence->get_site_at( edge.get_end_site_index() )->get_site_type() == Site::stop_site &&
             edge.get_end_site_index() - edge.get_start_site_index() > 1 )
         {
-//            cout<<"change2\n";
             edge.set_end_site_index(edge.get_start_site_index()+1);
-//            cout<<"skip2\n";
-//            return;
+        }
+    }
+
+    if( pair_end_reads )
+    {
+        if( sequence->get_site_at( edge.get_start_site_index() )->get_site_type() == Site::break_start_site &&
+            edge.get_end_site_index() - edge.get_start_site_index() > 1 )
+        {
+            edge.set_end_site_index(edge.get_start_site_index()+1);
+        }
+
+        if( sequence->get_site_at( edge.get_end_site_index() )->get_site_type() == Site::break_stop_site &&
+            edge.get_end_site_index() - edge.get_start_site_index() > 1 )
+        {
+            edge.set_start_site_index(edge.get_end_site_index()-1);
         }
     }
 
@@ -1595,13 +1630,13 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *
 /********************************************/
 
 void Simple_alignment::iterate_bwd_edges_for_gap(Site * site,align_slice *z_slice,align_slice *w_slice,
-                                                 align_slice *m_slice,Matrix_pointer *max,bool is_x_matrix, bool is_edge_cell)
+                                                 align_slice *m_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type)
 {
     if(site->has_bwd_edge()) {
 
         Edge * edge = site->get_first_bwd_edge();
 
-        this->score_gap_ext(edge,z_slice,max,is_x_matrix,is_edge_cell);
+        this->score_gap_ext(edge,z_slice,max,is_x_matrix,gap_type);
         this->score_gap_double(edge,w_slice,max,is_x_matrix);
         this->score_gap_open(edge,m_slice,max,is_x_matrix);
 
@@ -1609,7 +1644,7 @@ void Simple_alignment::iterate_bwd_edges_for_gap(Site * site,align_slice *z_slic
         {
             edge = site->get_next_bwd_edge();
 
-            this->score_gap_ext(edge,z_slice,max,is_x_matrix,is_edge_cell);
+            this->score_gap_ext(edge,z_slice,max,is_x_matrix,gap_type);
             this->score_gap_double(edge,w_slice,max,is_x_matrix);
             this->score_gap_open(edge,m_slice,max,is_x_matrix);
         }
@@ -1630,8 +1665,11 @@ void Simple_alignment::iterate_bwd_edges_for_match(Site * left_site,Site * right
         //
         double log_match_score = model->log_score(left_site->character_state,right_site->character_state);
         double m_log_match = 2*model->log_non_gap() + log_match_score;
-        double x_log_match = model->log_gap_close() + model->log_non_gap() + log_match_score;
-        double y_log_match = model->log_gap_close() + model->log_non_gap() + log_match_score;
+//        double x_log_match = model->log_gap_close() + model->log_non_gap() + log_match_score;
+//        double y_log_match = model->log_gap_close() + model->log_non_gap() + log_match_score;
+
+        double x_log_match = this->get_log_gap_close_penalty(left_edge->get_end_site_index(), true) + model->log_non_gap() + log_match_score;
+        double y_log_match = this->get_log_gap_close_penalty(right_edge->get_end_site_index(), false) + model->log_non_gap() + log_match_score;
 
         // start corner
 //        if(left_edge->get_start_site_index() == 1 || right_edge->get_start_site_index() == 1)
@@ -2363,22 +2401,24 @@ void Simple_alignment::score_y_match(Edge * left_edge,Edge * right_edge,double y
 
 /************************************************/
 
-void Simple_alignment::score_gap_ext(Edge *edge,align_slice *z_slice,Matrix_pointer *max,bool is_x_matrix,bool is_edge_cell)
+void Simple_alignment::score_gap_ext(Edge *edge,align_slice *z_slice,Matrix_pointer *max,bool is_x_matrix,int gap_type)
 {
     double edge_wght = this->get_log_edge_weight(edge);
     int prev_index = edge->get_start_site_index();
 
     double this_score =  (*z_slice)[prev_index].score + model->log_gap_ext() + edge_wght;
-    if( is_edge_cell )
-    {
-//        cout<< this_score<<" ";
-//        this_score =  (*z_slice)[prev_index].score +
-//            log( model->gap_ext()*Settings_handle::st.get("terminal-gap-cost-divider").as<float>() ) + edge_wght;
-        this_score =  (*z_slice)[prev_index].score +
-            log( model->gap_ext()*2 ) + edge_wght;
-//        cout<< this_score<<"\n";
 
+    // this reduces the terminal and pair-end read gap extension cost.
+    //
+    if(gap_type != Simple_alignment::normal_gap)
+    {
+        if(gap_type == Simple_alignment::end_gap)
+            this_score =  (*z_slice)[prev_index].score + model->log_gap_end_ext() + edge_wght;
+
+        else if(gap_type == Simple_alignment::pair_break_gap)
+            this_score =  (*z_slice)[prev_index].score + model->log_gap_break_ext() + edge_wght;
     }
+
     if(this->first_is_bigger(this_score,max->score) )
     {
         max->score = this_score;
@@ -2440,12 +2480,10 @@ void Simple_alignment::score_gap_open(Edge *edge,align_slice *m_slice,Matrix_poi
     double edge_wght = this->get_log_edge_weight(edge);
     int prev_index = edge->get_start_site_index();
 
-    double this_score =  (*m_slice)[prev_index].score + model->log_non_gap() + model->log_gap_open() + edge_wght;
+//    double this_score =  (*m_slice)[prev_index].score + model->log_non_gap() + model->log_gap_open() + edge_wght;
 
-//    // to reduce terminal gap cost for incomplete sequences
-//    if( no_terminal_edges && prev_index == 0 )
-//        this_score =  (*m_slice)[prev_index].score + model->log_non_gap() +
-//                      log( model->gap_open() / Settings_handle::st.get("terminal-gap-cost-divider").as<float>() ) + edge_wght;
+    double this_score =  (*m_slice)[prev_index].score + model->log_non_gap() + this->get_log_gap_open_penalty(prev_index,is_x_matrix) + edge_wght;
+
 
     if(this->first_is_bigger(this_score,max->score) )
     {
@@ -2475,9 +2513,13 @@ void Simple_alignment::score_gap_close(Edge *edge,align_slice *z_slice,Matrix_po
 {
     double edge_wght = this->get_log_edge_weight(edge);
     int prev_index = edge->get_start_site_index();
+    int this_index = edge->get_end_site_index();
 
-    double this_score =  (*z_slice)[prev_index].score + model->log_gap_close() + edge_wght;
-    
+//    double this_score =  (*z_slice)[prev_index].score + model->log_gap_close() + edge_wght;
+
+    double this_score =  (*z_slice)[prev_index].score + this->get_log_gap_close_penalty(this_index,is_x_matrix) + edge_wght;
+
+
     if(this->first_is_bigger(this_score,max->score) )
     {
         max->score = this_score;

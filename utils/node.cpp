@@ -28,6 +28,7 @@ void Node::add_sequence( Fasta_entry seq_entry, string full_char_alphabet, bool 
 {
     if(Settings::noise>4)
         cout<<"Node::add_sequence "<<name<<"\n";
+
     sequence = new Sequence(seq_entry, full_char_alphabet, gapped);
     this->node_has_sequence_object= true;
 }

@@ -9,10 +9,6 @@ Reads_alignment::Reads_alignment(){}
 void Reads_alignment::align(Node *root, Model_factory *mf, int count)
 {
 
-
-    float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
-    double r_dist = Settings_handle::st.get("reads-distance").as<float>();
-
     string file = Settings_handle::st.get("readsfile").as<string>();
 
     Fasta_reader fr;
@@ -24,6 +20,11 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
     if(!fr.check_alphabet(mf->get_char_alphabet(),mf->get_full_char_alphabet(),reads))
         cout<<"\nWarning: Illegal characters in input reads sequences removed!"<<endl;
 
+
+    if( Settings_handle::st.is("pair-end") )
+    {
+        this->find_paired_reads( &reads );
+    }
 
     if(!Settings_handle::st.is("align-reads-at-root"))
     {
@@ -87,37 +88,20 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
                 current_root->set_distance_to_parent(0.001);
                 node->add_left_child(current_root);
 
-                cout<<"aligning read "<<reads_for_this.at(i).name<<": "<<reads_for_this.at(i).comment<<endl;
                 Node * reads_node = new Node();
-                reads_node->set_distance_to_parent(r_dist);
-                reads_node->set_name(reads_for_this.at(i).name);
-                reads_node->add_name_comment(reads_for_this.at(i).comment);
-                reads_node->add_sequence( reads_for_this.at(i), mf->get_full_char_alphabet());
+                this->copy_node_details(reads_node,&reads_for_this.at(i), mf->get_full_char_alphabet());
+
                 node->add_right_child(reads_node);
 
                 node->align_sequences_this_node(mf,true);
 
+//                node->get_sequence()->print_sequence();
+
                 // check if the alignment significantly overlaps with the reference alignment
                 //
-                Sequence *node_sequence = node->get_sequence();
+                bool read_overlaps = this->read_alignment_overlaps(node, reads_for_this.at(i).name, ref_node_name);
 
-                int aligned = 0;
-                int read_length = 0;
-
-                for( int j=0; j < node_sequence->sites_length(); j++ )
-                {
-                    bool read_has_site = node->has_site_at_alignment_column(j,reads_for_this.at(i).name);
-                    bool ref_root_has_site = node->has_site_at_alignment_column(j,ref_node_name);
-
-                    if(read_has_site)
-                        read_length++;
-
-                    if(read_has_site && ref_root_has_site)
-                        aligned++;
-                }
-
-                cout<<"  alignment score "<<(float)aligned/(float)read_length<<" (simple identity score; needs improving!)"<<endl;
-                if((float)aligned/(float)read_length >= min_overlap)
+                if(read_overlaps)
                 {
                     count++;
                     current_root = node;
@@ -128,108 +112,26 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
                     alignment_done = true;
                     alignments_done++;
                 }
+                // else delete the node; do not use the read
                 else
                 {
                     node->has_left_child(false);
                     delete node;
-
-                    cout<<"Warning: read "<<reads_for_this.at(i).name<<" dropped using the minimum overlap cut-off of "<<min_overlap<<"."<<endl;
                 }
+
             }
 
             current_root->set_distance_to_parent(orig_dist);
 
+
             if(alignment_done)
             {
+                bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
 
-                // correct the sites index at the parent node; insertions corrected later
-                //
-                vector<int> sites_index;
-                int index_delta = 0;
-
-                for(int j=0; j<current_root->get_sequence()->sites_length(); j++)
+                if(!parent_found)
                 {
-                    if(current_root->has_site_at_alignment_column(j,ref_node_name))
-                    {
-                        sites_index.push_back(index_delta);
-                        index_delta = 0;
-                    }
-                    else
-                        index_delta++;
-                }
-
-                Node *current_parent;
-                map<string,Node*>::iterator mit = nodes_map.begin();
-                bool parent_found = false;
-
-                int is_left_child = true;
-                for(;mit != nodes_map.end();mit++)
-                {
-                    if(mit->second->get_left_child()->get_name() == ref_node_name)
-                    {
-                        current_parent = mit->second;
-                        current_parent->add_left_child(current_root);
-                        parent_found = true;
-                    }
-
-                    if(mit->second->get_right_child()->get_name() == ref_node_name)
-                    {
-                        current_parent = mit->second;
-                        current_parent->add_right_child(current_root);
-                        is_left_child = false;
-                        parent_found = true;
-                    }
-                }
-
-
-                if(parent_found)
-                {
-                    cout<<" Parent of "<<ref_node_name<<" is "<<current_parent->get_name();
-                    cout<<"; "<<alignments_done<<" alignments done.";//<<endl;
-
-                    Sequence *parent_sequence = current_parent->get_sequence();
-
-                    index_delta = 0;
-
-                    for(int j=0; j<parent_sequence->sites_length(); j++)
-                    {
-                        Site *parent_site = parent_sequence->get_site_at(j);
-
-                        if(is_left_child && parent_site->get_children()->left_index >= 0)
-                        {
-                            index_delta += sites_index.at(parent_site->get_children()->left_index);
-                            parent_site->get_children()->left_index += index_delta;
-                        }
-                        else if(!is_left_child && parent_site->get_children()->right_index >= 0)
-                        {
-                            index_delta += sites_index.at(parent_site->get_children()->right_index);
-                            parent_site->get_children()->right_index += index_delta;
-                        }
-                    }
-
-                    if(index_delta>0)
-                        cout<<" Site index needs correcting.\n";
-                    else
-                        cout<<" Site index not changed.\n";
-
-                    if(index_delta>0)
-                    {
-                        if(is_left_child)
-                            current_parent->left_needs_correcting_sequence_site_index(true);
-                        else
-                            current_parent->right_needs_correcting_sequence_site_index(true);
-                    }
-
-                } // if(parent_found)
-                else
-                {
-                    cout<<" No parent for "<<ref_node_name<<"found. Assuming that this is root.\n";
-                    cout<<" "<<alignments_done<<" alignments done.\n";//<<endl;
-
                     global_root = current_root;
-
                 }
-
             }
         }
 
@@ -258,47 +160,216 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
             global_root->set_distance_to_parent(0.001);
             node->add_left_child(global_root);
 
-            cout<<"aligning read "<<reads.at(i).name<<": "<<reads.at(i).comment<<endl;
             Node * reads_node = new Node();
-            reads_node->set_distance_to_parent(r_dist);
-            reads_node->set_name(reads.at(i).name);
-            reads_node->add_name_comment(reads.at(i).comment);
-            reads_node->add_sequence( reads.at(i), mf->get_full_char_alphabet());
+            this->copy_node_details(reads_node,&reads.at(i), mf->get_full_char_alphabet());
+
             node->add_right_child(reads_node);
 
             node->align_sequences_this_node(mf,true);
 
-            Sequence *node_sequence = node->get_sequence();
+            // check if the alignment significantly overlaps with the reference alignment
+            //
+            bool read_overlaps = this->read_alignment_overlaps(node, reads.at(i).name, ref_root_name);
 
-            int aligned = 0;
-            int read_length = 0;
-
-            for( int j=0; j < node_sequence->sites_length(); j++ )
-            {
-                bool read_has_site = node->has_site_at_alignment_column(j,reads.at(i).name);
-                bool ref_root_has_site = node->has_site_at_alignment_column(j,ref_root_name);
-
-                if(read_has_site)
-                    read_length++;
-
-                if(read_has_site && ref_root_has_site)
-                    aligned++;
-            }
-
-            if((float)aligned/(float)read_length >= min_overlap)
+            if(read_overlaps)
             {
                 count++;
                 global_root = node;
             }
+            // else delete the node; do not use the read
             else
             {
                 node->has_left_child(false);
                 delete node;
-
-                cout<<"Warning: read "<<reads.at(i).name<<" dropped using the minimum overlap cut-off of "<<min_overlap<<"."<<endl;
             }
+
         }
     }
+}
+
+void Reads_alignment::find_paired_reads(vector<Fasta_entry> *reads)
+{
+
+    vector<Fasta_entry>::iterator fit1 = reads->begin();
+
+    for(;fit1 != reads->end();fit1++)
+    {
+        string name1 = fit1->name;
+        if(name1.substr(name1.length()-2) != "/1")
+        {
+            continue;
+        }
+
+        vector<Fasta_entry>::iterator fit2 = fit1;
+        fit2++;
+
+        for(;fit2 != reads->end();)
+        {
+            string name2 = fit2->name;
+            if(name2.substr(name2.length()-2) != "/2")
+            {
+                fit2++;
+                continue;
+            }
+
+            if(name1.substr(0,name1.length()-2)==name2.substr(0,name2.length()-2))
+            {
+                fit1->name = name1.substr(0,name1.length()-1)+"p12";
+                fit1->comment = fit2->comment;
+                fit1->sequence += "0"+fit2->sequence;
+                fit1->quality += "0"+fit2->quality;
+
+                reads->erase(fit2);
+
+                continue;
+            }
+
+            fit2++;
+        }
+    }
+}
+
+void Reads_alignment::copy_node_details(Node *reads_node,Fasta_entry *read, string full_alpha)
+{
+    double r_dist = Settings_handle::st.get("reads-distance").as<float>();
+
+    reads_node->set_distance_to_parent(r_dist);
+    reads_node->set_name(read->name);
+    reads_node->add_name_comment(read->comment);
+    reads_node->add_sequence( *read, full_alpha);
+
+    cout<<"aligning read "<<read->name<<": "<<read->comment<<endl;
+}
+
+bool Reads_alignment::read_alignment_overlaps(Node * node, string read_name, string ref_node_name)
+{
+    float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
+
+    Sequence *node_sequence = node->get_sequence();
+
+    int aligned = 0;
+    int read_length = 0;
+
+    for( int j=0; j < node_sequence->sites_length(); j++ )
+    {
+        bool read_has_site = node->has_site_at_alignment_column(j,read_name);
+        bool ref_root_has_site = node->has_site_at_alignment_column(j,ref_node_name);
+
+        if(read_has_site)
+            read_length++;
+
+        if(read_has_site && ref_root_has_site)
+            aligned++;
+    }
+
+    cout<<"  alignment score "<<(float)aligned/(float)read_length<<" (simple identity score; needs improving!)"<<endl;
+
+    if((float)aligned/(float)read_length >= min_overlap)
+    {
+        return true;
+    }
+    else
+    {
+
+        cout<<"Warning: read "<<read_name<<" dropped using the minimum overlap cut-off of "<<min_overlap<<"."<<endl;
+
+        return false;
+    }
+}
+
+
+bool Reads_alignment::correct_sites_index(Node *current_root, string ref_node_name, int alignments_done, map<string,Node*> *nodes_map)
+{
+
+    // correct the sites index at the parent node; insertions corrected later
+    //
+    vector<int> sites_index;
+    int index_delta = 0;
+
+    for(int j=0; j<current_root->get_sequence()->sites_length(); j++)
+    {
+        if(current_root->has_site_at_alignment_column(j,ref_node_name))
+        {
+            sites_index.push_back(index_delta);
+            index_delta = 0;
+        }
+        else
+            index_delta++;
+    }
+
+    Node *current_parent = 0;
+    map<string,Node*>::iterator mit = nodes_map->begin();
+    bool parent_found = false;
+
+    int is_left_child = true;
+    for(;mit != nodes_map->end();mit++)
+    {
+        if(mit->second->get_left_child()->get_name() == ref_node_name)
+        {
+            current_parent = mit->second;
+            current_parent->add_left_child(current_root);
+            parent_found = true;
+        }
+
+        if(mit->second->get_right_child()->get_name() == ref_node_name)
+        {
+            current_parent = mit->second;
+            current_parent->add_right_child(current_root);
+            is_left_child = false;
+            parent_found = true;
+        }
+    }
+
+
+    if(parent_found)
+    {
+        cout<<" Parent of "<<ref_node_name<<" is "<<current_parent->get_name();
+        cout<<"; "<<alignments_done<<" alignments done.";//<<endl;
+
+        Sequence *parent_sequence = current_parent->get_sequence();
+
+        index_delta = 0;
+
+        for(int j=0; j<parent_sequence->sites_length(); j++)
+        {
+            Site *parent_site = parent_sequence->get_site_at(j);
+
+            if(is_left_child && parent_site->get_children()->left_index >= 0)
+            {
+                index_delta += sites_index.at(parent_site->get_children()->left_index);
+                parent_site->get_children()->left_index += index_delta;
+            }
+            else if(!is_left_child && parent_site->get_children()->right_index >= 0)
+            {
+                index_delta += sites_index.at(parent_site->get_children()->right_index);
+                parent_site->get_children()->right_index += index_delta;
+            }
+        }
+
+        if(index_delta>0)
+            cout<<" Site index needs correcting.\n";
+        else
+            cout<<" Site index not changed.\n";
+
+        if(index_delta>0)
+        {
+            if(is_left_child)
+                current_parent->left_needs_correcting_sequence_site_index(true);
+            else
+                current_parent->right_needs_correcting_sequence_site_index(true);
+        }
+
+        return true;
+
+    } // if(parent_found)
+    else
+    {
+        cout<<" No parent for "<<ref_node_name<<" found. Assuming that this is root.\n";
+        cout<<" "<<alignments_done<<" alignments done.\n";//<<endl;
+
+        return false;
+    }
+
 }
 
 void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, vector<string> *node_to_align)
@@ -428,6 +499,8 @@ double Reads_alignment::read_match_score(Node *node, Fasta_entry *read, Model_fa
 
 void Reads_alignment::remove_overlapping_reads(vector<Fasta_entry> *reads, Model_factory *mf)
 {
+
+    cout<<"Removing overlapping reads.\n";
 
     double r_dist = Settings_handle::st.get("reads-distance").as<float>();
 
