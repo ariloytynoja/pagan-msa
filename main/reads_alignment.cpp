@@ -37,12 +37,12 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
         node_to_align.reserve(reads.size());
         this->find_nodes_for_reads(root, &reads, mf, &node_to_align);
 
-
         set<string> unique_nodes;
         for(int i=0;i<(int)node_to_align.size();i++)
             unique_nodes.insert(node_to_align.at(i));
 
-        unique_nodes.erase(unique_nodes.find("discarded_read"));
+        if(unique_nodes.find("discarded_read") != unique_nodes.end())
+            unique_nodes.erase(unique_nodes.find("discarded_read"));
 
         map<string,Node*> nodes_map;
         root->get_internal_nodes(&nodes_map);
