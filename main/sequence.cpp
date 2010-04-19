@@ -231,7 +231,7 @@ void Sequence::create_fastq_sequence(Fasta_entry &seq_entry)
 
         }
 
-        else if( prev_site_qscore < quality_threshold )
+        else if( Settings_handle::st.is("allow-skip-low-qscore") && prev_site_qscore < quality_threshold )
         {
             Edge edge( this->get_previous_site_index(),this->get_current_site_index(), 0.6 );
             this->push_back_edge(edge);

@@ -47,6 +47,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("qscore-minimum", po::value<int>()->default_value(10), "read sequences' minimum Q-score to be included")
         ("discard-overlapping-reads", "discard fully overlapping reads")
         ("align-reads-at-root", "ignore tags and align reads at root")
+        ("align-bad-reads-at-root", "align non-matching reads at root")
+        ("allow-skip-low-qscore", "allow skipping low scoring bases")
         ("pair-read-gap-extension", po::value<float>(), "pair read middle gap extension probability")
     ;
 

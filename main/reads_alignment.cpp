@@ -42,6 +42,8 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
         for(int i=0;i<(int)node_to_align.size();i++)
             unique_nodes.insert(node_to_align.at(i));
 
+        unique_nodes.erase(unique_nodes.find("discarded_read"));
+
         map<string,Node*> nodes_map;
         root->get_internal_nodes(&nodes_map);
 
@@ -427,8 +429,16 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
                 }
                 if(best_score<0.05)
                 {
-                    cout<<"Best node aligns with less than 5% of identical sites. Aligning to root instead.\n";
-                    node_to_align->push_back(root->get_name());
+                    if(Settings_handle::st.is("align-bad-reads-at-root"))
+                    {
+                        cout<<"Best node aligns with less than 5% of identical sites. Aligning to root instead.\n";
+                        node_to_align->push_back(root->get_name());
+                    }
+                    else
+                    {
+                        cout<<"Best node aligns with less than 5% of identical sites. Read is discarded.\n";
+                        node_to_align->push_back("discarded_read");
+                    }
                 }
                 else
                 {
