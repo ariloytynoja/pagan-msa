@@ -14,7 +14,7 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.003;
+    version = 0.005;
 
     boost::program_options::options_description minimal("Minimal options");
     minimal.add_options()
@@ -44,7 +44,12 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("454", "correct homopolymer error")
         ("pair-end","connect paired reads")
         ("no-fastq", "do not use Q-scores")
+        ("no-read-ranking","disable read ranking within nodes")
         ("qscore-minimum", po::value<int>()->default_value(10), "read sequences' minimum Q-score to be included")
+        ("trim-read-ends", "trim read ends with low Q-scores")
+        ("trim-mean-qscore", po::value<int>()->default_value(15), "sliding window average Q-score to be clipped")
+        ("trim-window-width", po::value<int>()->default_value(5), "sliding window width for trimming")
+        ("minimum-trimmed-length", po::value<int>()->default_value(20), "minimum trimmed read length")
         ("discard-overlapping-reads", "discard fully overlapping reads")
         ("align-reads-at-root", "ignore tags and align reads at root")
         ("align-bad-reads-at-root", "align non-matching reads at root")

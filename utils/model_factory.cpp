@@ -440,9 +440,8 @@ void Model_factory::dna_model(float *char_pi,Settings *st)
 
     if(st->is("cds-seqfile"))
     {
-        ins_rate = 2;
-        del_rate = 2;
-        gap_ext = 0.5;
+        ins_rate = 1;
+        del_rate = 1;
         end_gap_ext = 0.99;
     }
 

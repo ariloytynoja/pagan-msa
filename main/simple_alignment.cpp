@@ -261,7 +261,7 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
     // set the basic parameters (copy from Settings)
     //
     this->set_basic_settings();
-    this->set_reads_alignment_settings();
+//    this->set_reads_alignment_settings();
 
 
     // Set the edge weighting scheme, define the dynamic-programming matrices
@@ -1124,6 +1124,12 @@ void Simple_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path
         site.set_empty_children();
         site.set_posterior_support(path->at(i).mp.full_score);
 
+        // mark the pair-end read1 end so that the edge connecting the pair can be split
+        if( pair_end_reads && ( r_pos == y_read1_length || l_pos == x_read1_length ) )
+        {
+            site.set_site_type(Site::break_start_site);
+        }
+
         if(path->at(i).mp.matrix == Simple_alignment::x_mat)
         {
             int lc = left->get_site_at(l_pos)->get_state();
@@ -1539,16 +1545,30 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vecto
 
     if( pair_end_reads )
     {
+
         if( sequence->get_site_at( edge.get_start_site_index() )->get_site_type() == Site::break_start_site &&
             edge.get_end_site_index() - edge.get_start_site_index() > 1 )
         {
-            edge.set_end_site_index(edge.get_start_site_index()+1);
-        }
+            // remove the mark
+            //
+            sequence->get_site_at( edge.get_start_site_index() )->set_site_type(Site::real_site);
 
-        if( sequence->get_site_at( edge.get_end_site_index() )->get_site_type() == Site::break_stop_site &&
-            edge.get_end_site_index() - edge.get_start_site_index() > 1 )
-        {
-            edge.set_start_site_index(edge.get_end_site_index()-1);
+            // split the edge to two
+            //
+            edge.set_end_site_index(edge.get_start_site_index()+1);
+
+            this->transfer_child_edge(sequence, edge, child, branch_length, connects_neighbour_site, adjust_posterior_weight, branch_weight);
+
+//            cout<<"edge1 "<<edge.get_start_site_index()<<" "<<edge.get_end_site_index()<<endl;
+
+            edge.set_start_site_index( child_index->at( child->get_end_site_index() )-1 );
+            edge.set_end_site_index( child_index->at( child->get_end_site_index() ) );
+
+            this->transfer_child_edge(sequence, edge, child, branch_length, connects_neighbour_site, adjust_posterior_weight, branch_weight);
+
+//            cout<<"edge2 "<<edge.get_start_site_index()<<" "<<edge.get_end_site_index()<<endl;
+
+            return;
         }
     }
 

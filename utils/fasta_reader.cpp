@@ -167,7 +167,7 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
 
 void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const throw (Exception)
 {
-    string temp, name, comment, sequence, quality = "";  // Initialization
+    string temp, name, comment = "";  // Initialization
 
     while(!input.eof())
     {
@@ -200,9 +200,7 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
 
 
             getline(input, temp, '\n');  // Copy current line in temporary string
-            temp = Text_utils::remove_last_whitespaces(temp);
-            sequence = temp;
-            fe.sequence = sequence;
+            fe.sequence = Text_utils::remove_last_whitespaces(temp);
 
             getline(input, temp, '\n');  // Copy current line in temporary string
             temp = Text_utils::remove_last_whitespaces(temp);
@@ -222,9 +220,8 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
             fe.comment = comment;
 
             getline(input, temp, '\n');  // Copy current line in temporary string
-            temp = Text_utils::remove_last_whitespaces(temp);
-            quality = temp;
-            fe.quality = quality;
+
+            fe.quality = Text_utils::remove_last_whitespaces(temp);
 
             seqs.push_back(fe);
         }
@@ -233,6 +230,114 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
             cout<<"FASTQ file parse error. Expecting a line starting with '@':  \n"<<temp<<endl<<endl<<"Exiting\n\n.";
             exit(-1);
         }
+    }
+
+    if(Settings_handle::st.is("trim-read-ends"))
+    {
+        this->trim_fastq_reads(&seqs);
+    }
+}
+
+void Fasta_reader::trim_fastq_reads(vector<Fasta_entry> * seqs) const throw (Exception)
+{
+    int mean_score = Settings_handle::st.get("trim-mean-qscore").as<int>();
+    int window_width = Settings_handle::st.get("trim-window-width").as<int>();
+    int minimum_length = Settings_handle::st.get("minimum-trimmed-length").as<int>();
+
+    if(window_width<1)
+        return;
+
+    vector<Fasta_entry>::iterator fit = seqs->begin();
+    for( ;fit != seqs->end();)
+    {
+        // fwd trim
+        string sequence = fit->sequence;
+        string quality = fit->quality;
+
+//        cout<<"B: "<<sequence<<endl;
+
+        int trim_site = -1;
+        int i = 0;
+        for(;i < (int)quality.length();i++)
+        {
+            int j=i;
+            int score = 0;
+            int sites = 0;
+            for(;j<i+window_width && j< (int) quality.length();j++)
+            {
+                score += static_cast<int>(quality.at(j))-33;
+                sites++;
+            }
+
+            if( (float)score/(float)sites < mean_score )
+                trim_site = j;
+            else
+                break;
+        }
+
+//        if(trim_site>=0)
+//        {
+//            cout<<"\nfwd trim "<<trim_site<<"\n";
+//            for(int k=0;k<trim_site+2 && k<(int)quality.length();k++)
+//                cout<<sequence.at(k)<<" "<<static_cast<int>(quality.at(k))-33<<endl;
+//        }
+
+        if(trim_site>=0)
+        {
+            fit->sequence = sequence.substr(trim_site);
+            fit->quality = quality.substr(trim_site);
+        }
+
+
+
+        // bwd trim
+
+        sequence = fit->sequence;
+        quality = fit->quality;
+
+        trim_site = -1;
+
+        i = quality.length()-1;
+        for(;i>=0 ;i--)
+        {
+            int j=i;
+            int score = 0;
+            int sites = 0;
+            for(;j>i-window_width && j>=0;j--)
+            {
+                score += static_cast<int>(quality.at(j))-33;
+                sites++;
+            }
+            if( (float)score/(float)sites < mean_score )
+                trim_site = j;
+            else
+                break;
+        }
+
+//        if(trim_site>=0)
+//        {
+//            cout<<"\nbwd trim "<<trim_site<<"\n";
+//            for(int k=quality.length()-1;k>trim_site-2 && k>=0;k--)
+//                cout<<sequence.at(k)<<" "<<static_cast<int>(quality.at(k))-33<<endl;
+//        }
+
+        if(trim_site>=0)
+        {
+            fit->sequence = sequence.substr(0,trim_site+1);
+            fit->quality = quality.substr(0,trim_site+1);
+        }
+
+//        cout<<"A: "<<fit->sequence<<endl;
+
+        if(fit->sequence.length()<minimum_length)
+        {
+            cout<<"After trimming, sequence "<<fit->name<<" is below the minimum length of "<<minimum_length;
+            cout<<"; the read is discarded.\n";
+            seqs->erase(fit);
+        }
+        else
+            fit++;
+
     }
 }
 
