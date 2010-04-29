@@ -588,13 +588,20 @@ void Reads_alignment::remove_target_overlapping_identical_reads(vector<Fasta_ent
         {
             bool embedded = false;
             if( Settings_handle::st.is("pair-end")
-                && ri2->node_start_pos1 >= ri1->node_start_pos1 && ri2->node_end_pos1 <= ri1->node_end_pos1
-                && ri2->node_start_pos2 >= ri1->node_start_pos2 && ri2->node_end_pos2 <= ri1->node_end_pos2 )
+                && (  (ri2->node_start_pos1 >= ri1->node_start_pos1 && ri2->node_end_pos1 <= ri1->node_end_pos1
+                    && ri2->node_start_pos2 >= ri1->node_start_pos2 && ri2->node_end_pos2 <= ri1->node_end_pos2 )
+                   || (ri2->node_start_pos1 <= ri1->node_start_pos1 && ri2->node_end_pos1 >= ri1->node_end_pos1
+                    && ri2->node_start_pos2 <= ri1->node_start_pos2 && ri2->node_end_pos2 >= ri1->node_end_pos2 )
+                   )
+              )
             {
                 embedded = true;
             }
             else if(!Settings_handle::st.is("pair-end")
-                && ri2->node_start_pos1 >= ri1->node_start_pos1 && ri2->node_end_pos2 <= ri1->node_end_pos2 )
+                    && (  (ri2->node_start_pos1 >= ri1->node_start_pos1 && ri2->node_end_pos2 <= ri1->node_end_pos2 )
+                       || (ri2->node_start_pos1 <= ri1->node_start_pos1 && ri2->node_end_pos2 >= ri1->node_end_pos2 )
+                       )
+                   )
             {
                 embedded = true;
             }
@@ -625,6 +632,13 @@ void Reads_alignment::remove_target_overlapping_identical_reads(vector<Fasta_ent
                 {
                     cout<<"Read "<<ri2->name<<" is fully embedded in read "<<ri1->name<<" and overlapping sites are identical.  Read "<<ri2->name<<" is deleted.\n";
                     reads->erase(ri2);
+                }
+                else if( matching == r1_length )
+                {
+                    cout<<"Read "<<ri1->name<<" is fully embedded in read "<<ri2->name<<" and overlapping sites are identical.  Read "<<ri1->name<<" is deleted.\n";
+                    reads->erase(ri1);
+                    ri1--;
+                    ri2 = reads->end();
                 }
                 else
                 {
