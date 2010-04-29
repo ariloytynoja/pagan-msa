@@ -222,6 +222,7 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
             getline(input, temp, '\n');  // Copy current line in temporary string
 
             fe.quality = Text_utils::remove_last_whitespaces(temp);
+            fe.first_read_length = -1;
 
             seqs.push_back(fe);
         }
@@ -240,6 +241,8 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
 
 void Fasta_reader::trim_fastq_reads(vector<Fasta_entry> * seqs) const throw (Exception)
 {
+    cout<<"Trimming read ends.\n";
+
     int mean_score = Settings_handle::st.get("trim-mean-qscore").as<int>();
     int window_width = Settings_handle::st.get("trim-window-width").as<int>();
     int minimum_length = Settings_handle::st.get("minimum-trimmed-length").as<int>();
@@ -327,9 +330,10 @@ void Fasta_reader::trim_fastq_reads(vector<Fasta_entry> * seqs) const throw (Exc
             fit->quality = quality.substr(0,trim_site+1);
         }
 
+
 //        cout<<"A: "<<fit->sequence<<endl;
 
-        if(fit->sequence.length()<minimum_length)
+        if((int)fit->sequence.length()<minimum_length)
         {
             cout<<"After trimming, sequence "<<fit->name<<" is below the minimum length of "<<minimum_length;
             cout<<"; the read is discarded.\n";

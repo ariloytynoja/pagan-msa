@@ -87,7 +87,7 @@ OBJECTS = main.o \
 		xml_writer.o \
 		evol_model.o \
 		reads_alignment.o
-TARGET   = papaya
+TARGET   = pagan
 
 first: all
 ####### Implicit rules

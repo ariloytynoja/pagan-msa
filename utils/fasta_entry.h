@@ -24,6 +24,13 @@ struct Fasta_entry
     string quality;
     vector<Seq_edge> edges;
     string tid;
+    float node_score;
+    string node_to_align;
+    int first_read_length; // for pair-end reads
+    int node_start_pos1;   // to check overlapping reads
+    int node_end_pos1;
+    int node_start_pos2;   // for pair-end reads
+    int node_end_pos2;
 };
 
 }

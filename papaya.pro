@@ -2,7 +2,7 @@
 # Project created by QtCreator 2009-05-05T14:26:31
 # -------------------------------------------------
 QT -= gui
-TARGET = papaya
+TARGET = pagan
 
 #CONFIG = debug
 CONFIG += console

@@ -14,7 +14,7 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.005;
+    version = 0.006;
 
     boost::program_options::options_description minimal("Minimal options");
     minimal.add_options()
@@ -43,18 +43,20 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("reads-distance", po::value<float>()->default_value(0.01), "read sequences' evolutionary distance from root")
         ("454", "correct homopolymer error")
         ("pair-end","connect paired reads")
-        ("no-fastq", "do not use Q-scores")
-        ("no-read-ranking","disable read ranking within nodes")
         ("qscore-minimum", po::value<int>()->default_value(10), "read sequences' minimum Q-score to be included")
         ("trim-read-ends", "trim read ends with low Q-scores")
         ("trim-mean-qscore", po::value<int>()->default_value(15), "sliding window average Q-score to be clipped")
         ("trim-window-width", po::value<int>()->default_value(5), "sliding window width for trimming")
         ("minimum-trimmed-length", po::value<int>()->default_value(20), "minimum trimmed read length")
-        ("discard-overlapping-reads", "discard fully overlapping reads")
+        ("rank-reads-for-nodes","find best ranking for reads within nodes")
+        ("discard-overlapping-identical-reads", "discard (in target) fully overlapping identical reads")
+        ("discard-overlapping-reads", "discard (in target) fully overlapping reads")
+        ("discard-pairwise-overlapping-reads", "discard (pairwise) fully overlapping reads")
         ("align-reads-at-root", "ignore tags and align reads at root")
         ("align-bad-reads-at-root", "align non-matching reads at root")
         ("allow-skip-low-qscore", "allow skipping low scoring bases")
         ("pair-read-gap-extension", po::value<float>(), "pair read middle gap extension probability")
+        ("no-fastq", "do not use Q-scores")
     ;
 
     boost::program_options::options_description graph("Graph options");
@@ -131,14 +133,14 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
 void Settings::help()
 {
-        cout<<"\nPapaya v. "<<version<<": input arguments:\n";
+        cout<<"\nPagan v. "<<version<<": input arguments:\n";
         cout << desc << "\n";
         exit(0);
 }
 
 void Settings::info()
 {
-        cout<<"\nPapaya v. "<<version<<": minimal input arguments:\n";
+        cout<<"\nPagan v. "<<version<<": minimal input arguments:\n";
         cout << min_desc << "\n";
         cout<<"use option --help for more information\n\n";
         exit(0);
