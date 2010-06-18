@@ -31,6 +31,8 @@ struct Fasta_entry
     int node_end_pos1;
     int node_start_pos2;   // for pair-end reads
     int node_end_pos2;
+    int trim_start;
+    int trim_end;
 };
 
 }

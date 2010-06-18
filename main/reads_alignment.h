@@ -28,6 +28,7 @@ class Reads_alignment
 
     double read_match_score(Node *node, Fasta_entry *read, Model_factory *mf, float best_score);
     bool read_alignment_overlaps(Node * node, string read_name, string ref_node_name);
+    void add_trimming_comment(vector<Fasta_entry> *reads);
     void find_paired_reads(vector<Fasta_entry> *reads);
     void copy_node_details(Node *reads_node,Fasta_entry *read, string full_alpha);
     bool correct_sites_index(Node *current_root, string ref_node_name, int alignments_done, map<string,Node*> *nodes_map);

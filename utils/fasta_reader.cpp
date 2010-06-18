@@ -223,6 +223,8 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
 
             fe.quality = Text_utils::remove_last_whitespaces(temp);
             fe.first_read_length = -1;
+            fe.trim_start = 0;
+            fe.trim_end = 0;
 
             seqs.push_back(fe);
         }
@@ -287,10 +289,13 @@ void Fasta_reader::trim_fastq_reads(vector<Fasta_entry> * seqs) const throw (Exc
 
         if(trim_site>=0)
         {
+//            cout<<fit->sequence<<endl;
             fit->sequence = sequence.substr(trim_site);
             fit->quality = quality.substr(trim_site);
+            fit->trim_start = trim_site;
+//            cout<<fit->sequence<<endl;
+//            cout<<fit->name<<" start trimming "<<fit->trim_start<<endl;
         }
-
 
 
         // bwd trim
@@ -326,12 +331,16 @@ void Fasta_reader::trim_fastq_reads(vector<Fasta_entry> * seqs) const throw (Exc
 
         if(trim_site>=0)
         {
+//            cout<<fit->sequence<<endl;
             fit->sequence = sequence.substr(0,trim_site+1);
             fit->quality = quality.substr(0,trim_site+1);
+            fit->trim_end = quality.length()-(trim_site+1);
+//            cout<<fit->sequence<<endl;
+//            cout<<fit->name<<" end trimming "<<fit->trim_end<<endl;
         }
 
 
-//        cout<<"A: "<<fit->sequence<<endl;
+        //        cout<<"A: "<<fit->sequence<<endl;
 
         if((int)fit->sequence.length()<minimum_length)
         {

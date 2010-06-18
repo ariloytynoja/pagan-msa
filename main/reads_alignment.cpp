@@ -25,6 +25,11 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
     {
         this->find_paired_reads( &reads );
     }
+    else
+    {
+        this->add_trimming_comment( &reads );
+    }
+
 
     if(Settings_handle::st.is("align-reads-at-root"))
     {
@@ -220,6 +225,20 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
     }
 }
 
+void Reads_alignment::add_trimming_comment(vector<Fasta_entry> *reads)
+{
+    vector<Fasta_entry>::iterator fit1 = reads->begin();
+
+    for(;fit1 != reads->end();fit1++)
+    {
+        stringstream trimming;
+        trimming << "P1ST"<<fit1->trim_start<<":P1ET"<<fit1->trim_end;
+        fit1->comment += trimming.str();
+//        cout<<"s: "<<trimming.str()<<endl;
+    }
+}
+
+
 void Reads_alignment::find_paired_reads(vector<Fasta_entry> *reads)
 {
 
@@ -253,12 +272,27 @@ void Reads_alignment::find_paired_reads(vector<Fasta_entry> *reads)
                 fit1->sequence += "0"+fit2->sequence;
                 fit1->quality += "0"+fit2->quality;
 
+                stringstream trimming;
+                trimming << "P1ST"<<fit1->trim_start<<":P1ET"<<fit1->trim_end<<":P2ST"<<fit2->trim_start<<":P2ET"<<fit2->trim_end;
+                fit1->comment += trimming.str();
+
                 reads->erase(fit2);
 
                 continue;
             }
 
             fit2++;
+        }
+    }
+
+
+    for(fit1 = reads->begin();fit1 != reads->end();fit1++)
+    {
+        if(fit1->comment.find("P1ST")==string::npos)
+        {
+            stringstream trimming;
+            trimming << "P1ST"<<fit1->trim_start<<":P1ET"<<fit1->trim_end;
+            fit1->comment += trimming.str();
         }
     }
 }
