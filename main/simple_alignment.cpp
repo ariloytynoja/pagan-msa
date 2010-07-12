@@ -96,6 +96,16 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     max_end.bwd_score = 1.0;
     max_end.full_score = 1.0;
 
+//    cout<<max_end.matrix<<";  "<<max_end.x_ind<<"  "<<max_end.y_ind<<"  "<<max_end.score<<";  "<<max_end.x_edge_ind<<"  "<<max_end.y_edge_ind<<endl;
+
+    if(max_end.score==-HUGE_VAL) {
+        cout<<"left\n";
+        this->left->print_sequence();
+        cout<<"right\n";
+        this->right->print_sequence();
+        cout<<"matrix\n";
+        this->print_matrices();
+    }
     this->debug_msg("Simple_alignment: corner found",1);
 
 
@@ -261,7 +271,7 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
     // set the basic parameters (copy from Settings)
     //
     this->set_basic_settings();
-//    this->set_reads_alignment_settings();
+    this->set_reads_alignment_settings();
 
 
     // Set the edge weighting scheme, define the dynamic-programming matrices
@@ -819,6 +829,8 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
     int vit_mat = fp.mp.matrix;
     int x_ind = fp.mp.x_ind;
     int y_ind = fp.mp.y_ind;
+
+//    cout<<fp.mp.matrix<<"; "<<fp.mp.x_ind<<" "<<fp.mp.y_ind<<"; "<<fp.mp.score<<"; "<<fp.mp.x_edge_ind<<" "<<fp.mp.y_edge_ind<<endl;
 
     left_edges->at(fp.mp.x_edge_ind).is_used(true);
     right_edges->at(fp.mp.y_edge_ind).is_used(true);

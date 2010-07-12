@@ -458,8 +458,8 @@ class Simple_alignment
         no_terminal_edges = true;
 
         max_allowed_skip_distance = 5;
-        max_allowed_skip_branches = 50;
-        max_allowed_match_skip_branches = 50;
+        max_allowed_skip_branches = 50000;
+        max_allowed_match_skip_branches = 50000;
 
         branch_skip_weight = 1;
         branch_skip_probability = 1;

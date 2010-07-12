@@ -59,6 +59,9 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
 
             node->add_right_child(reads_node);
 
+            node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+            node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+
             node->align_sequences_this_node(mf,true);
 
             // check if the alignment significantly overlaps with the reference alignment
@@ -178,6 +181,9 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
                 this->copy_node_details(reads_node,&reads_for_this.at(i), mf->get_full_char_alphabet());
 
                 node->add_right_child(reads_node);
+
+                node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+                node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
 
                 node->align_sequences_this_node(mf,true);
 

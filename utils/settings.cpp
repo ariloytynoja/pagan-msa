@@ -14,7 +14,7 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.006;
+    version = 0.007;
 
     boost::program_options::options_description minimal("Minimal options");
     minimal.add_options()
@@ -54,6 +54,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("discard-pairwise-overlapping-reads", "discard (pairwise) fully overlapping reads")
         ("align-reads-at-root", "ignore tags and align reads at root")
         ("align-bad-reads-at-root", "align non-matching reads at root")
+        ("output-nhx-tree", "output tree with NHX TID tags")
         ("allow-skip-low-qscore", "allow skipping low scoring bases")
         ("pair-read-gap-extension", po::value<float>(), "pair read middle gap extension probability")
         ("no-fastq", "do not use Q-scores")

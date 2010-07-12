@@ -634,6 +634,53 @@ public:
         }
     }
 
+    void write_nhx_tree(string path, bool overwrite=true) const throw (Exception)
+    {
+        ofstream output( (path+".nhx_tree").c_str(), overwrite ? (ios::out) : (ios::out|ios::app));
+
+        if (! output) { throw IOException ("Node::write_nhx_tree. Failed to open file"); }
+
+        output<<this->print_nhx_tree();
+        output.close();
+    }
+
+    string print_nhx_tree() const {
+        if(!leaf)
+        {
+            string tid = "";
+            if(this->get_nhx_tid()!="")
+                tid = "TID="+this->get_nhx_tid();
+
+            stringstream ss;
+            ss<<"("<<left_child->print_nhx_subtree()<<","<<right_child->print_nhx_subtree()<<"[&&NHX:"<<tid<<"]);";
+            return ss.str();
+        } else {
+            return "";
+        }
+    }
+
+    /************************************/
+
+    string print_nhx_subtree() const {
+
+        string tid = "";
+        if(this->get_nhx_tid()!="")
+            tid = "TID="+this->get_nhx_tid();
+
+        if(!leaf)
+        {
+
+            stringstream ss;
+            ss<<"("<<left_child->print_nhx_subtree()<<","<<right_child->print_nhx_subtree()<<"):"<<dist_to_parent<<"[&&NHX:"<<tid<<"]";
+            return ss.str();
+
+        } else {
+            stringstream ss;
+            ss<<name<<":"<<dist_to_parent<<"[&&NHX:"<<tid<<"]";
+            return ss.str();
+        }
+    }
+
     string print_xml_tree() const {
         if(!leaf)
         {

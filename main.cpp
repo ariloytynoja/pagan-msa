@@ -177,9 +177,9 @@ int main(int argc, char *argv[])
     //
     string outfile =  "outfile";
 
-    if(Settings_handle::st.is("outfile")){
+    if(Settings_handle::st.is("outfile"))
         outfile =  Settings_handle::st.get("outfile").as<string>();
-    }
+
 
     cout<<"Alignment files: "<<outfile<<".fas, "<<outfile<<".xml"<<endl;
 
@@ -194,6 +194,9 @@ int main(int argc, char *argv[])
 
     Xml_writer xw;
     xw.write(outfile, root, aligned_sequences, true);
+
+    if(Settings_handle::st.is("output-nhx-tree"))
+        root->write_nhx_tree(outfile);
 
     if(Settings::noise>1 )
     {
