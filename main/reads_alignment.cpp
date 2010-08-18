@@ -1,5 +1,6 @@
 #include "reads_alignment.h"
 #include <sstream>
+#include <fstream>
 
 using namespace std;
 using namespace ppa;
@@ -90,6 +91,9 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
         // vector of node names giving the best node for each read
         //
         this->find_nodes_for_reads(root, &reads, mf);
+
+        if(Settings_handle::st.is("placement-only"))
+            exit(0);
 
         set<string> unique_nodes;
         for(int i=0;i<(int)reads.size();i++)
@@ -453,6 +457,13 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
     multimap<string,string> tid_nodes;
     root->get_internal_node_names_with_tid_tag(&tid_nodes);
 
+    ofstream pl_output;
+
+    if(Settings_handle::st.is("placement-file"))
+    {
+        string fname = Settings_handle::st.get("placement-file").as<string>();
+       pl_output.open(fname.append(".tsv").c_str());
+    }
     for(int i=0;i<(int)reads->size();i++)
     {
         reads->at(i).node_score = -1.0;
@@ -520,6 +531,12 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
                     cout<<"Best node "<<best_node<<" (score "<<best_score<<").\n";
                     reads->at(i).node_score = best_score;
                     reads->at(i).node_to_align = best_node;
+
+                    if(Settings_handle::st.is("placement-file"))
+                    {
+                        pl_output<<reads->at(i).name<<" "<<best_node<<endl;
+                    }
+
                 }
             }
         }
@@ -530,6 +547,10 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
         }
     }
 
+    if(Settings_handle::st.is("placement-file"))
+    {
+        pl_output.close();
+    }
 }
 
 double Reads_alignment::read_match_score(Node *node, Fasta_entry *read, Model_factory *mf, float best_score)
