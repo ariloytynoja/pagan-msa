@@ -200,7 +200,7 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
 
 
             getline(input, temp, '\n');  // Copy current line in temporary string
-            fe.sequence = Text_utils::remove_last_whitespaces(temp);
+            fe.sequence = Text_utils::to_upper( Text_utils::remove_last_whitespaces(temp) );
 
             getline(input, temp, '\n');  // Copy current line in temporary string
             temp = Text_utils::remove_last_whitespaces(temp);
