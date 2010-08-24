@@ -309,10 +309,17 @@ public:
             {
                 this->finish_mpost_plot_file();
             }
+
+            if(Settings_handle::st.is("output-ancestors"))
+            {
+                this->reconstruct_parsimony_ancestor(mf);
+            }
         }
         else if( Settings_handle::st.is("cds-seqfile") )
         {
             this->read_alignment(mf);
+
+            this->reconstruct_parsimony_ancestor(mf);
 
         }
     }
@@ -326,6 +333,7 @@ public:
         right_child->align_sequences(mf);
 
         this->align_sequences_this_node(mf);
+
     }
 
     void align_sequences_this_node(Model_factory *mf, bool is_reads_sequence=false)
@@ -372,6 +380,53 @@ public:
                  left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
 
         this->add_ancestral_sequence( sa.get_simple_sequence() );
+
+    }
+
+    void reconstruct_parsimony_ancestor(Model_factory *mf)
+    {
+        for(int i=1;i<this->get_sequence()->sites_length()-1;i++)
+        {
+            int state = this->get_sequence()->get_site_at(i)->get_state();
+            this->reconstruct_parsimony_ancestor_at_site(mf,i,state,false);
+        }
+    }
+
+    void reconstruct_parsimony_ancestor_at_site(Model_factory *mf,int pos,int parent_state,bool is_matched)
+    {
+
+        if(leaf)
+            return;
+
+        Site *site = this->get_sequence()->get_site_at(pos);
+
+        int pstate = site->get_path_state();
+//        cout<<pos<<": "<<this->get_name()<<" "<<parent_state<<" "<<site->get_state()<<" - ("<<pstate<<") "<<is_matched<<endl;
+
+        if( pstate == Site::matched )
+        {
+            int new_state = mf->get_child_parsimony_state(parent_state,site->get_state());
+
+            site->set_state(new_state);
+
+            is_matched = true;
+
+//            cout<<pos<<": "<<this->get_name()<<" "<<parent_state<<" "<<site->get_state()<<" "<<new_state<<" ("<<pstate<<") "<<is_matched<<endl;
+        }
+
+        if( !is_matched )
+        {
+            site->set_site_type(Site::non_real);
+        }
+
+        if(site->children.left_index >= 0)
+        {
+            this->left_child->reconstruct_parsimony_ancestor_at_site(mf,site->children.left_index,site->get_state(),is_matched);
+        }
+        if(site->children.right_index >= 0)
+        {
+            this->right_child->reconstruct_parsimony_ancestor_at_site(mf,site->children.right_index,site->get_state(),is_matched);
+        }
 
     }
 

@@ -455,7 +455,7 @@ class Simple_alignment
     void set_reads_alignment_settings()
     {
 
-        no_terminal_edges = true;
+        //no_terminal_edges = true;
 
         max_allowed_skip_distance = 5;
         max_allowed_skip_branches = 50000;

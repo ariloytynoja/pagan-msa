@@ -44,6 +44,7 @@ Sequence::Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped)
     else
         this->create_default_sequence(seq_entry);
 
+    terminal_sequence = true;
 
     if(Settings::noise>5)
     {
@@ -332,6 +333,8 @@ Sequence::Sequence(const int length,const string& alphabet, string gapped_s)
     edges.reserve(length+3);
 
     full_char_alphabet = alphabet;
+
+    terminal_sequence = false;
 }
 
 
@@ -344,6 +347,8 @@ Sequence::Sequence(const vector<Site>* s, const vector<Edge>* e, const string& a
     {
         sites.at(i).set_edge_vector(&edges);
     }
+
+    terminal_sequence = false;
 
     if(Settings::noise>5)
     {
@@ -365,6 +370,7 @@ void Sequence::print_sequence(vector<Site> *sites)
             cout<<tsite->get_index()<<" +";
 
         cout<<"("<<tsite->get_unique_index()->left_index<<","<<tsite->get_unique_index()->right_index<<") ";
+        cout<<"["<<tsite->get_path_state()<<"] ";
 //        if(tsite->has_fwd_edge())
 //        {
 //            Edge *tedge = tsite->get_first_fwd_edge();

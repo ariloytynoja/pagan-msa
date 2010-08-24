@@ -272,6 +272,7 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
     //
     this->set_basic_settings();
     this->set_reads_alignment_settings();
+    no_terminal_edges = false;
 
 
     // Set the edge weighting scheme, define the dynamic-programming matrices
@@ -305,6 +306,7 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
     int li = 0;
     int ri = 0;
 
+
     for(;lgi!=gapped_left->end();lgi++,rgi++)
     {
         bool lgap = (*lgi == '-');
@@ -317,11 +319,18 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
             Matrix_pointer bwd_p;
             bwd_p.matrix = Simple_alignment::x_mat;
             bwd_p.x_ind = -1;
-            bwd_p.y_ind = ri;
-            Path_pointer pp( bwd_p, true );
+            bwd_p.y_ind = li;
 
+            bool real_site = true;
+            int child_path_state = left->get_site_at(li+1)->get_path_state();
+
+            if(!left->is_terminal_sequence() && child_path_state != Site::matched)
+                real_site = false;
+
+            Path_pointer pp( bwd_p, real_site );
             path.push_back(pp);
-            ri++;
+
+            li++;
         }
         else if(lgap && !rgap)
         {
@@ -329,11 +338,19 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
 
             Matrix_pointer bwd_p;
             bwd_p.matrix = Simple_alignment::y_mat;
-            bwd_p.x_ind = li;
+            bwd_p.x_ind = ri;
             bwd_p.y_ind = -1;
-            Path_pointer pp( bwd_p, true );
 
+            bool real_site = true;
+            int child_path_state = right->get_site_at(ri+1)->get_path_state();
+
+            if(!right->is_terminal_sequence() && child_path_state != Site::matched)
+                real_site = false;
+
+            Path_pointer pp( bwd_p, real_site );
             path.push_back(pp);
+
+            ri++;
         }
         else if(!lgap && !rgap)
         {
@@ -341,11 +358,14 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
 
             Matrix_pointer bwd_p;
             bwd_p.matrix = Simple_alignment::m_mat;
-            bwd_p.x_ind = li;
-            bwd_p.y_ind = ri;
+            bwd_p.x_ind = ri;
+            bwd_p.y_ind = li;
             Path_pointer pp( bwd_p, true );
 
             path.push_back(pp);
+
+            li++;
+            ri++;
         }
         else if(lgap && rgap)
         {
@@ -357,6 +377,9 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
     //
     ancestral_sequence = new Sequence(path.size(),model->get_full_alphabet(),gapped_anc);
     this->build_ancestral_sequence(ancestral_sequence,&path);
+
+    // moved here as the cds alignment can have terminal edges
+    no_terminal_edges = true;
 
     this->debug_msg("Simple_alignment: sequence built",1);
 

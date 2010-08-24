@@ -44,6 +44,9 @@ Model_factory::~Model_factory()
 
     if(parsimony_table!=0)
         delete parsimony_table;
+
+    if(child_parsimony_table!=0)
+        delete child_parsimony_table;
 }
 
 /*******************************************/
@@ -153,6 +156,27 @@ void Model_factory::define_dna_alphabet()
         }
     }
 
+
+    child_parsimony_table = new Int_matrix(char_fas,char_fas,"child_parsimony_char");
+
+
+    for(int i=0;i<char_fas;i++)
+    {
+        for(int j=0;j<char_fas;j++)
+        {
+            if( (pos2bin->g(i)&pos2bin->g(j)) >0)
+            {
+                int v = parsimony_table->g(i,j);
+                child_parsimony_table->s(v,i,j);
+            }
+            else
+            {
+                child_parsimony_table->s(j,i,j);
+            }
+        }
+    }
+
+
     delete bin2pos;
     delete pos2bin;
 
@@ -173,7 +197,26 @@ void Model_factory::define_dna_alphabet()
             cout<<endl;
         }
         cout<<endl;
+
+        cout<<"\nModel_factory::define_dna_alphabet(). DNA child parsimony table.\n\n  ";
+        for(int i=0;i<15;i++)
+            cout<<full_char_alphabet.at(i)<<" ";
+        cout<<endl;
+
+        for(int i=0;i<15;i++)
+        {
+            cout<<full_char_alphabet.at(i)<<" ";
+            for(int j=0;j<15;j++)
+            {
+                cout<<full_char_alphabet.at(child_parsimony_table->g(i,j))<<" ";
+            }
+            cout<<endl;
+        }
+        cout<<endl;
     }
+
+
+
 }
 
 /*******************************************/
@@ -401,6 +444,7 @@ void Model_factory::define_codon_alphabet()
 }
 
 /*******************************************/
+
 
 /*
  * For debugging.

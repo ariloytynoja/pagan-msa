@@ -239,7 +239,9 @@ void Node::get_alignment_column_at(int j,vector<char> *column,bool include_inter
             char c = sequence->get_full_alphabet().at(cstate);
 
             int pstate = sequence->get_site_at(j)->get_path_state();
-            if( pstate == Site::xskipped || pstate == Site::yskipped )
+            int ptype  = sequence->get_site_at(j)->get_site_type();
+
+            if( pstate == Site::xskipped || pstate == Site::yskipped || ptype == Site::non_real)
                 c = '-';
             column->push_back(c);
         }

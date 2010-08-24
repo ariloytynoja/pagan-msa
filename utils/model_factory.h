@@ -35,6 +35,7 @@ class Model_factory
     float char_break_ext_prob;
 
     Int_matrix *parsimony_table;
+    Int_matrix *child_parsimony_table;
 
     Db_matrix * charU;
     Db_matrix * charV;
@@ -80,6 +81,7 @@ public:
     std::string get_char_alphabet() { return char_alphabet; }
     std::string get_full_char_alphabet() { return full_char_alphabet; }
 
+    int get_child_parsimony_state(int parent_state,int child_state) { return child_parsimony_table->g(parent_state,child_state);}
 };
 
 }

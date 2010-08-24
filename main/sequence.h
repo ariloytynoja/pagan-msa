@@ -202,7 +202,7 @@ struct Site
     int character_state;
 
     int site_type;
-    enum Site_type {start_site,real_site,stop_site,break_start_site,break_stop_site};
+    enum Site_type {start_site,real_site,stop_site,break_start_site,break_stop_site,non_real};
 
     int path_state;
     enum Path_state {ends_site,terminal,matched,xgapped,ygapped,xskipped,yskipped};
@@ -568,8 +568,12 @@ class Sequence
 
     vector<Unique_index> unique_index;
 
+    bool terminal_sequence;
     string gapped_seq;
 public:
+
+    bool is_terminal_sequence() { return terminal_sequence; }
+    void is_terminal_sequence(bool t) { terminal_sequence = t; }
 
     void initialise_indeces() {
         curr_site_index = prev_site_index = curr_edge_index = 0;

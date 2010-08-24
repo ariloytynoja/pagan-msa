@@ -14,7 +14,7 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.0081;
+    version = 0.009;
 
     boost::program_options::options_description minimal("Minimal options");
     minimal.add_options()
