@@ -94,10 +94,11 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
                             columns.push_back( column );
                         }
 
-//                        cout<<"add "<<addition.at(l).node_name_wanted<<" "<<addition.at(l).length<<endl;
+//                        cout<<j<<" add "<<addition.at(l).node_name_wanted<<" "<<addition.at(l).length<<endl;
                         this->get_multiple_alignment_columns_before(j,&columns,addition.at(l).node_name_wanted,
                                                                     addition.at(l).left_child_wanted,include_internal_nodes);
 
+//                        cout<<"as "<<aligned_sequences->size()<<"; co "<<columns.at(0).size()<<endl;
                         for(int i=0; i<(int)addition.at(l).length; i++)
                         {
                             for(unsigned int k=0;k<aligned_sequences->size();k++)
@@ -210,6 +211,7 @@ cout<<"picking site "<<j<<endl;
 
 void Node::get_alignment_column_at(int j,vector<char> *column,bool include_internal_nodes)
 {
+
     if(leaf)
     {
         int state = sequence->get_site_at(j)->get_state();
@@ -298,6 +300,15 @@ void Node::get_multiple_alignment_columns_before(int j,vector< vector<char> > *c
             {
                 this->get_left_child()->get_alignment_column_at(i,&columns->at(k),include_internal_nodes);
             }
+
+            if(include_internal_nodes)
+            {
+                for(int i=0;i<(int)columns->size();i++)
+                {
+                    columns->at(i).push_back('-');
+                }
+            }
+
             this->get_right_child()->get_multiple_alignment_columns_before(rj,columns,node_name_wanted,left_child_wanted,include_internal_nodes);
         }
         else
@@ -306,6 +317,14 @@ void Node::get_multiple_alignment_columns_before(int j,vector< vector<char> > *c
                 cout<<"Error: wanted right node at "<<node_name_wanted<<" but index is "<<rj<<endl;
 
             this->get_left_child()->get_multiple_alignment_columns_before(lj,columns,node_name_wanted,left_child_wanted,include_internal_nodes);
+
+            if(include_internal_nodes)
+            {
+                for(int i=0;i<(int)columns->size();i++)
+                {
+                    columns->at(i).push_back('-');
+                }
+            }
 
             int k = 0;
             for(int i = rj-columns->size(); i < rj; i++,k++)
@@ -317,6 +336,15 @@ void Node::get_multiple_alignment_columns_before(int j,vector< vector<char> > *c
     else
     {
         this->get_left_child()->get_multiple_alignment_columns_before(lj,columns,node_name_wanted,left_child_wanted,include_internal_nodes);
+
+        if(include_internal_nodes)
+        {
+            for(int i=0;i<(int)columns->size();i++)
+            {
+                columns->at(i).push_back('-');
+            }
+        }
+
         this->get_right_child()->get_multiple_alignment_columns_before(rj,columns,node_name_wanted,left_child_wanted,include_internal_nodes);
     }
 }

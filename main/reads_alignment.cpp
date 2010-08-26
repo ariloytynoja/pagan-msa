@@ -1,6 +1,7 @@
 #include "reads_alignment.h"
 #include <sstream>
 #include <fstream>
+#include <algorithm>
 
 using namespace std;
 using namespace ppa;
@@ -95,20 +96,36 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
         if(Settings_handle::st.is("placement-only"))
             exit(0);
 
-        set<string> unique_nodes;
-        for(int i=0;i<(int)reads.size();i++)
-            unique_nodes.insert(reads.at(i).node_to_align);
+//        set<string> unique_nodes;
+//        for(int i=0;i<(int)reads.size();i++)
+//            unique_nodes.insert(reads.at(i).node_to_align);
 
-        if(unique_nodes.find("discarded_read") != unique_nodes.end())
-            unique_nodes.erase(unique_nodes.find("discarded_read"));
+//        if(unique_nodes.find("discarded_read") != unique_nodes.end())
+//            unique_nodes.erase(unique_nodes.find("discarded_read"));
+
+        set<string> unique_nodeset;
+        for(int i=0;i<(int)reads.size();i++)
+            unique_nodeset.insert(reads.at(i).node_to_align);
+
+        if(unique_nodeset.find("discarded_read") != unique_nodeset.end())
+            unique_nodeset.erase(unique_nodeset.find("discarded_read"));
+
+        vector<string> unique_nodes;
+        for(set<string>::iterator sit = unique_nodeset.begin(); sit != unique_nodeset.end(); sit++)
+        {
+            unique_nodes.push_back(*sit);
+        }
+        sort(unique_nodes.begin(),unique_nodes.end(),Reads_alignment::nodeIsSmaller);
 
         map<string,Node*> nodes_map;
         root->get_internal_nodes(&nodes_map);
 
         // do one tagged node at time
         //
-        for(set<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
+//        for(set<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
+        for(vector<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
         {
+//            cout<<"node "<<*sit<<endl;
             vector<Fasta_entry> reads_for_this;
 
             for(int i=0;i<(int)reads.size();i++)
@@ -322,11 +339,13 @@ void Reads_alignment::copy_node_details(Node *reads_node,Fasta_entry *read, stri
 bool Reads_alignment::read_alignment_overlaps(Node * node, string read_name, string ref_node_name)
 {
     float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
+    float min_identity = Settings_handle::st.get("min-reads-identity").as<float>();
 
     Sequence *node_sequence = node->get_sequence();
 
     int aligned = 0;
     int read_length = 0;
+    int matched = 0;
 
     for( int j=0; j < node_sequence->sites_length(); j++ )
     {
@@ -337,22 +356,49 @@ bool Reads_alignment::read_alignment_overlaps(Node * node, string read_name, str
             read_length++;
 
         if(read_has_site && ref_root_has_site)
+        {
             aligned++;
+
+            int state_read = node->get_state_at_alignment_column(j,read_name);
+            int state_ref  = node->get_state_at_alignment_column(j,ref_node_name);
+
+            if(state_read == state_ref)
+                matched++;
+        }
     }
 
-    cout<<"  alignment score "<<(float)aligned/(float)read_length<<" (simple identity score; needs improving!)"<<endl;
 
-    if((float)aligned/(float)read_length >= min_overlap)
+    cout<<"  aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"];"<<
+            " identical positions "<<(float)matched/(float)aligned<<" ["<<matched<<"/"<<aligned<<"]"<<endl;
+
+    if( (float)aligned/(float)read_length >= min_overlap && (float)matched/(float)aligned >= min_identity)
     {
         return true;
     }
-    else
+    else if( (float)aligned/(float)read_length < min_overlap && (float)matched/(float)aligned < min_identity )
+    {
+
+        cout<<"Warning: read "<<read_name<<" dropped using the minimum overlap cut-off of "<<min_overlap<<
+                " and the minimum identity cut-off of "<<min_identity<<"."<<endl;
+
+        return false;
+    }
+    else if( (float)aligned/(float)read_length < min_overlap)
     {
 
         cout<<"Warning: read "<<read_name<<" dropped using the minimum overlap cut-off of "<<min_overlap<<"."<<endl;
 
         return false;
     }
+    else if( (float)matched/(float)aligned < min_identity)
+    {
+
+        cout<<"Warning: read "<<read_name<<" dropped using the minimum identity cut-off of "<<min_identity<<"."<<endl;
+
+        return false;
+    }
+
+    return false;
 }
 
 
@@ -443,7 +489,7 @@ bool Reads_alignment::correct_sites_index(Node *current_root, string ref_node_na
     else
     {
         cout<<" No parent for "<<ref_node_name<<" found. Assuming that this is root.\n";
-        cout<<" "<<alignments_done<<" alignments done.\n";//<<endl;
+//        cout<<" "<<alignments_done<<" alignments done.\n";//<<endl;
 
         return false;
     }
@@ -476,6 +522,12 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
             {
                 cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" has no matching node. Aligned to root.\n";
                 reads->at(i).node_to_align = root->get_name();
+
+                if(Settings_handle::st.is("placement-file"))
+                {
+                    pl_output<<reads->at(i).name<<" "<<root->get_name()<<" TID="<<tid<<" (no match)"<<endl;
+                }
+
             }
             else if(matches == 1 && !Settings_handle::st.is("rank-reads-for-nodes") )
             {
@@ -484,6 +536,12 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
                 {
                     cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" only matches the node "<<tit->second<<"."<<endl;
                     reads->at(i).node_to_align = tit->second;
+
+                    if(Settings_handle::st.is("placement-file"))
+                    {
+                        pl_output<<reads->at(i).name<<" "<<tit->second<<" TID="<<tid<<endl;
+                    }
+
                 }
             }
             else
@@ -519,6 +577,11 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
                     {
                         cout<<"Best node aligns with less than 5% of identical sites. Aligning to root instead.\n";
                         reads->at(i).node_to_align = root->get_name();
+
+                        if(Settings_handle::st.is("placement-file"))
+                        {
+                            pl_output<<reads->at(i).name<<" "<<root->get_name()<<" TID="<<tid<<" (bad) "<<endl;
+                        }
                     }
                     else
                     {
@@ -534,7 +597,7 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
 
                     if(Settings_handle::st.is("placement-file"))
                     {
-                        pl_output<<reads->at(i).name<<" "<<best_node<<endl;
+                        pl_output<<reads->at(i).name<<" "<<best_node<<" TID="<<tid<<endl;
                     }
 
                 }
@@ -544,6 +607,11 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
         {
             cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") has no tid. Aligned to root.\n";
             reads->at(i).node_to_align = root->get_name();
+
+            if(Settings_handle::st.is("placement-file"))
+            {
+                pl_output<<reads->at(i).name<<" "<<root->get_name()<<" TID=NULL"<<endl;
+            }
         }
     }
 

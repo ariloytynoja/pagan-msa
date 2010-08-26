@@ -463,6 +463,35 @@ public:
         return false;
     }
 
+    int get_state_at_alignment_column(int j,string node_name)
+    {
+
+        if(leaf || this->get_name() == node_name)
+        {
+            return this->get_sequence()->get_site_at(j)->get_state();
+        }
+        else
+        {
+            Site_children *offspring = sequence->get_site_at(j)->get_children();
+            int lj = offspring->left_index;
+            if(lj>=0)
+            {
+                int l = left_child->get_state_at_alignment_column(lj,node_name);
+                if(l>=0)
+                    return l;
+            }
+
+            int rj = offspring->right_index;
+            if(rj>=0)
+            {
+                int r = right_child->get_state_at_alignment_column(rj,node_name);
+                if(r>=0)
+                    return r;
+            }
+        }
+        return -1;
+    }
+
     bool has_additional_sites_before_alignment_column(int j)
     {
 

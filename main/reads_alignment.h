@@ -43,6 +43,16 @@ class Reads_alignment
         stable_sort(reads->begin(),reads->end(),Reads_alignment::better_score);
     }
     
+    static bool nodeIsSmaller(const string& l,const string& r)
+    {   char a,b;
+        int vl,vr;
+        stringstream ls(l);
+        stringstream rs(r);
+        ls>>a>>vl>>b;
+        rs>>a>>vr>>b;
+
+        return (vl<vr);
+    }
 public:
     Reads_alignment();
     void align(Node *root, Model_factory *mf,int count);
