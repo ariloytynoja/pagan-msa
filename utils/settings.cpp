@@ -14,7 +14,7 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.009;
+    version = 0.010;
 
     boost::program_options::options_description minimal("Minimal options");
     minimal.add_options()
@@ -50,6 +50,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("trim-window-width", po::value<int>()->default_value(5), "sliding window width for trimming")
         ("minimum-trimmed-length", po::value<int>()->default_value(20), "minimum trimmed read length")
         ("rank-reads-for-nodes","find best ranking for reads within nodes")
+        ("test-every-node","test every node for each read")
         ("discard-overlapping-identical-reads", "discard (in target) fully overlapping identical reads")
         ("discard-overlapping-reads", "discard (in target) fully overlapping reads")
         ("discard-pairwise-overlapping-reads", "discard (pairwise) fully overlapping reads")
@@ -137,17 +138,19 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
 void Settings::help()
 {
-        cout<<"\nPagan v. "<<version<<": input arguments:\n";
-        cout << desc << "\n";
-        exit(0);
+    cout<<"\nPAGAN v. "<<version<<". (C) 2010 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
+    cout<<" This is a development version and may contain bugs. Contact the author\n before using the program for any serious analysis.\n";
+    cout << desc << "\n";
+    exit(0);
 }
 
 void Settings::info()
 {
-        cout<<"\nPagan v. "<<version<<": minimal input arguments:\n";
-        cout << min_desc << "\n";
-        cout<<"use option --help for more information\n\n";
-        exit(0);
+    cout<<"\nPAGAN v. "<<version<<". (C) 2010 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
+    cout<<" This is a development version and may contain bugs. Contact the author\n before using the program for any serious analysis.\n";
+    cout << min_desc << "\n";
+    cout<<"Use option --help for more information.\n\n";
+    exit(0);
 }
 
 int     Settings::noise             = 0;

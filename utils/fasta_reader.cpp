@@ -603,11 +603,12 @@ void Fasta_reader::write_graph(ostream & output, Node * root) const throw (Excep
 bool Fasta_reader::check_alphabet(string alphabet, string full_alphabet, vector<Fasta_entry> & seqs) throw (Exception)
 {
 
+    bool allow_gaps = Settings_handle::st.is("cds-seqfile");
+
     // Check that alphabet is correct but use (faster?) build-in alphabet.
     //
     if(alphabet == "ACGT") {
 
-        bool allow_gaps = Settings_handle::st.is("cds-seqfile");
 
         dna_pi[0] = dna_pi[1] = dna_pi[2] = dna_pi[3] = 0.0;
 
@@ -673,6 +674,7 @@ bool Fasta_reader::check_alphabet(string alphabet, string full_alphabet, vector<
     }
     else if(alphabet == "HRKQNEDSTGPACVIMLFYW")
     {
+        cout<<"protein\n";
         bool chars_ok = true;
         vector<Fasta_entry>::iterator vi = seqs.begin();
 
@@ -683,13 +685,19 @@ bool Fasta_reader::check_alphabet(string alphabet, string full_alphabet, vector<
             for (;si != vi->sequence.end();si++)
             {
                 char c = *si;
+
                 // Remove characters not in full alphabet
+                //
                 if(full_alphabet.find(c) == string::npos) {
-                    vi->sequence.erase(si);
-                    si--;
-                    if(c!=' ')
+
+                    if(c!='-' || !allow_gaps)
                     {
-                        chars_ok = false;
+                        vi->sequence.erase(si);
+                        si--;
+                        if(c!=' ')
+                        {
+                            chars_ok = false;
+                        }
                     }
                 }
             }

@@ -157,8 +157,11 @@ void Model_factory::define_dna_alphabet()
     }
 
 
-    child_parsimony_table = new Int_matrix(char_fas,char_fas,"child_parsimony_char");
+    // for situation where the parent's state has been updated and child's state may need to be changed.
+    // if child's state is included in parent's state, use parsimony_table to get the minimum overlap;
+    // if child's state is not included, change has happened between child and parent and child is not updated.
 
+    child_parsimony_table = new Int_matrix(char_fas,char_fas,"child_parsimony_char");
 
     for(int i=0;i<char_fas;i++)
     {
@@ -316,6 +319,41 @@ void Model_factory::define_protein_alphabet()
         for(int j=0;j<char_fas;j++)
         {
             parsimony_table->s(table[i*char_fas+j],i,j);
+        }
+    }
+
+    // for situation where the parent's state has been updated and child's state may need to be changed.
+    // if child's state is included in parent's state, use parsimony_table to get the minimum overlap;
+    // if child's state is not included, change has happened between child and parent and child is not updated.
+
+    child_parsimony_table = new Int_matrix(char_fas,char_fas,"child_parsimony_char");
+
+    for(int i=0;i<char_fas;i++)
+    {
+        for(int j=0;j<char_fas;j++)
+        {
+            string parent_amb = ambiguity[i];
+            string child_amb = ambiguity[j];
+
+            bool all_included = true;
+
+            for(int k=0;k<child_amb.size();k++)
+            {
+                if(parent_amb.find(child_amb.at(k))==string::npos)
+                {
+                    all_included = false;
+                    break;
+                }
+            }
+            if( all_included )
+            {
+                int v = parsimony_table->g(i,j);
+                child_parsimony_table->s(v,i,j);
+            }
+            else
+            {
+                child_parsimony_table->s(j,i,j);
+            }
         }
     }
 

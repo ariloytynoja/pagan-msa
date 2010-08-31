@@ -232,6 +232,17 @@ public:
         }
     }
 
+    void get_internal_node_names(multimap<string,string> *list)
+    {
+        if(!this->is_leaf())
+        {
+            left_child->get_internal_node_names(list);
+            right_child->get_internal_node_names(list);
+
+            list->insert(pair<string,string>(this->get_nhx_tid(),this->get_name()));
+        }
+    }
+
     void get_internal_node_names_with_tid_tag(multimap<string,string> *list)
     {
         if(!this->is_leaf())
@@ -466,7 +477,8 @@ public:
     int get_state_at_alignment_column(int j,string node_name)
     {
 
-        if(leaf || this->get_name() == node_name)
+//        if(leaf || this->get_name() == node_name)
+        if(this->get_name() == node_name)
         {
             return this->get_sequence()->get_site_at(j)->get_state();
         }

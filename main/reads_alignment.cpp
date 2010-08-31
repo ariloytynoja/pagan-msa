@@ -96,13 +96,6 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
         if(Settings_handle::st.is("placement-only"))
             exit(0);
 
-//        set<string> unique_nodes;
-//        for(int i=0;i<(int)reads.size();i++)
-//            unique_nodes.insert(reads.at(i).node_to_align);
-
-//        if(unique_nodes.find("discarded_read") != unique_nodes.end())
-//            unique_nodes.erase(unique_nodes.find("discarded_read"));
-
         set<string> unique_nodeset;
         for(int i=0;i<(int)reads.size();i++)
             unique_nodeset.insert(reads.at(i).node_to_align);
@@ -361,7 +354,6 @@ bool Reads_alignment::read_alignment_overlaps(Node * node, string read_name, str
 
             int state_read = node->get_state_at_alignment_column(j,read_name);
             int state_ref  = node->get_state_at_alignment_column(j,ref_node_name);
-
             if(state_read == state_ref)
                 matched++;
         }
@@ -501,7 +493,15 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
 
     cout<<"Find nodes for reads.\n";
     multimap<string,string> tid_nodes;
-    root->get_internal_node_names_with_tid_tag(&tid_nodes);
+
+    if(Settings_handle::st.is("test-every-node"))
+    {
+        root->get_internal_node_names(&tid_nodes);
+    }
+    else
+    {
+        root->get_internal_node_names_with_tid_tag(&tid_nodes);
+    }
 
     ofstream pl_output;
 
@@ -515,9 +515,16 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
         reads->at(i).node_score = -1.0;
 
         string tid = reads->at(i).tid;
+        if(Settings_handle::st.is("test-every-node"))
+            tid = "<empty>";
+
         if(tid != "")
         {
             int matches = tid_nodes.count(tid);
+
+            if(Settings_handle::st.is("test-every-node"))
+                matches = tid_nodes.size();
+
             if(matches == 0)
             {
                 cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" has no matching node. Aligned to root.\n";
@@ -552,10 +559,22 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
                 map<string,Node*> nodes;
                 root->get_internal_nodes(&nodes);
 
-                multimap<string,string>::iterator tit = tid_nodes.find(tid);
+
+                multimap<string,string>::iterator tit;
+
+                if(Settings_handle::st.is("test-every-node"))
+                {
+                    tit = tid_nodes.begin();
+                }
+                else
+                {
+                    tit = tid_nodes.find(tid);
+                }
+
                 if(tit != tid_nodes.end())
                 {
                     cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" matches the nodes:\n";
+
                     while(tit != tid_nodes.end())
                     {
                         map<string,Node*>::iterator nit = nodes.find(tit->second);
