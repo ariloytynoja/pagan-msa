@@ -674,7 +674,6 @@ bool Fasta_reader::check_alphabet(string alphabet, string full_alphabet, vector<
     }
     else if(alphabet == "HRKQNEDSTGPACVIMLFYW")
     {
-        cout<<"protein\n";
         bool chars_ok = true;
         vector<Fasta_entry>::iterator vi = seqs.begin();
 

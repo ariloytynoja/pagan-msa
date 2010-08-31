@@ -337,14 +337,17 @@ void Model_factory::define_protein_alphabet()
 
             bool all_included = true;
 
-            for(int k=0;k<child_amb.size();k++)
+
+            for(int k=0;k<(int)parent_amb.size();k++)
             {
-                if(parent_amb.find(child_amb.at(k))==string::npos)
+                if(child_amb.find(parent_amb.at(k))==string::npos)
                 {
                     all_included = false;
                     break;
                 }
             }
+
+
             if( all_included )
             {
                 int v = parsimony_table->g(i,j);

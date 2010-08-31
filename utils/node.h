@@ -477,7 +477,6 @@ public:
     int get_state_at_alignment_column(int j,string node_name)
     {
 
-//        if(leaf || this->get_name() == node_name)
         if(this->get_name() == node_name)
         {
             return this->get_sequence()->get_site_at(j)->get_state();
