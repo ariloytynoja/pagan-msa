@@ -98,8 +98,9 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
 
         set<string> unique_nodeset;
         for(int i=0;i<(int)reads.size();i++)
+        {
             unique_nodeset.insert(reads.at(i).node_to_align);
-
+        }
         if(unique_nodeset.find("discarded_read") != unique_nodeset.end())
             unique_nodeset.erase(unique_nodeset.find("discarded_read"));
 
@@ -118,7 +119,6 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
 //        for(set<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
         for(vector<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
         {
-//            cout<<"node "<<*sit<<endl;
             vector<Fasta_entry> reads_for_this;
 
             for(int i=0;i<(int)reads.size();i++)
@@ -181,7 +181,7 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
             for(int i=0;i<(int)reads_for_this.size();i++)
             {
                 cout<<"read "<<i+1<<"/"<<reads_for_this.size()<<"; ";
-
+                cout<<"read "<<i+1<<"/"<<reads_for_this.size()<<"\n";
                 Node * node = new Node();
 
                 stringstream ss;
@@ -539,6 +539,10 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
             else if(matches == 1 && !Settings_handle::st.is("rank-reads-for-nodes") )
             {
                 multimap<string,string>::iterator tit = tid_nodes.find(tid);
+
+                if(Settings_handle::st.is("test-every-node"))
+                    tit = tid_nodes.begin();
+
                 if(tit != tid_nodes.end())
                 {
                     cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" only matches the node "<<tit->second<<"."<<endl;

@@ -239,7 +239,8 @@ public:
             left_child->get_internal_node_names(list);
             right_child->get_internal_node_names(list);
 
-            list->insert(pair<string,string>(this->get_nhx_tid(),this->get_name()));
+            list->insert(pair<string,string>(this->get_name(),this->get_name()));
+//            list->insert(pair<string,string>(this->get_nhx_tid(),this->get_name()));
         }
     }
 
