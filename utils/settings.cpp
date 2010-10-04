@@ -14,11 +14,11 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.010;
+    version = 0.10;
 
     boost::program_options::options_description minimal("Minimal options");
     minimal.add_options()
-        ("seqfile", po::value<string>(), "sequence infile")
+        ("seqfile", po::value<string>(), "sequence infile (FASTA)")
         ("treefile", po::value<string>(), "tree file")
         ("outfile", po::value<string>(), "sequence outfile")
     ;
@@ -31,19 +31,17 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("full-probability", "compute full probability")
         ("output-graph","output ancestral graph")
         ("sample-path", "sample the alignment path from posterior probabilities")
-        ("sample-additional-paths", po::value<int>()->default_value(0), "sample additional paths from posterior probabilities")
+//        ("sample-additional-paths", po::value<int>()->default_value(0), "sample additional paths from posterior probabilities")
     ;
 
     boost::program_options::options_description reads_alignment("Reads alignment options");
     reads_alignment.add_options()
-        ("cds-seqfile", po::value<string>(), "cds alignment infile")
-        ("cds-treefile", po::value<string>(), "cds tree file")
-        ("readsfile", po::value<string>(), "reads infile")
-        ("min-reads-overlap", po::value<float>()->default_value(0.10), "read sequences' minimum overlap with reference alignment sites")
-        ("min-reads-identity", po::value<float>()->default_value(0.30), "read sequences' minimum identity with reference alignment sites")
-        ("reads-distance", po::value<float>()->default_value(0.01), "read sequences' evolutionary distance from root")
-        ("454", "correct homopolymer error")
+        ("cds-seqfile", po::value<string>(), "reference alignment file (FASTA)")
+        ("cds-treefile", po::value<string>(), "reference tree file (NH/NHX)")
+        ("readsfile", po::value<string>(), "reads file (FASTA/FASTQ)")
         ("pair-end","connect paired reads")
+        ("454", "correct homopolymer error")
+        ("no-fastq", "do not use Q-scores")
         ("qscore-minimum", po::value<int>()->default_value(10), "read sequences' minimum Q-score to be included")
         ("trim-read-ends", "trim read ends with low Q-scores")
         ("trim-mean-qscore", po::value<int>()->default_value(15), "sliding window average Q-score to be clipped")
@@ -61,7 +59,10 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("output-nhx-tree", "output tree with NHX TID tags")
         ("allow-skip-low-qscore", "allow skipping low scoring bases")
         ("pair-read-gap-extension", po::value<float>(), "pair read middle gap extension probability")
-        ("no-fastq", "do not use Q-scores")
+        ("min-reads-overlap", po::value<float>()->default_value(0.1), "read sequences' minimum overlap with reference alignment sites")
+        ("min-reads-identity", po::value<float>()->default_value(0.3), "read sequences' minimum identity with reference alignment sites")
+        ("reads-distance", po::value<float>()->default_value(0.01), "read sequences' evolutionary distance from root")
+        ("silent","minimal output")
     ;
 
     boost::program_options::options_description graph("Graph options");
@@ -118,7 +119,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     ;
 
     desc.add(minimal).add(generic).add(reads_alignment).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug);
-    min_desc.add(minimal);
+//    min_desc.add(minimal);
+    min_desc.add(minimal).add(reads_alignment);
 
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);

@@ -45,7 +45,6 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
         global_root = root;
         for(int i=0;i<(int)reads.size();i++)
         {
-            cout<<"read "<<i+1<<"/"<<reads.size()<<"; ";
 
             Node * node = new Node();
 
@@ -56,8 +55,12 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
             global_root->set_distance_to_parent(0.001);
             node->add_left_child(global_root);
 
+            if(!Settings_handle::st.is("silent"))
+                cout<<"("<<i+1<<"/"<<reads.size()<<") ";
+
             Node * reads_node = new Node();
             this->copy_node_details(reads_node,&reads.at(i), mf->get_full_char_alphabet());
+
 
             node->add_right_child(reads_node);
 
@@ -116,7 +119,6 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
 
         // do one tagged node at time
         //
-//        for(set<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
         for(vector<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
         {
             vector<Fasta_entry> reads_for_this;
@@ -135,28 +137,37 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
                 {
                     this->remove_target_overlapping_identical_reads(&reads_for_this,mf);
 
-                    cout<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
-                    for(int i=0;i<(int)reads_for_this.size();i++)
-                        cout<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
-                    cout<<endl;
+                    if(!Settings_handle::st.is("silent"))
+                    {
+                        cout<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
+                        for(int i=0;i<(int)reads_for_this.size();i++)
+                            cout<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
+                        cout<<endl;
+                    }
                 }
                 else if(Settings_handle::st.is("discard-overlapping-reads"))
                 {
                     this->remove_target_overlapping_reads(&reads_for_this);
 
-                    cout<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
-                    for(int i=0;i<(int)reads_for_this.size();i++)
-                        cout<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
-                    cout<<endl;
+                    if(!Settings_handle::st.is("silent"))
+                    {
+                        cout<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
+                        for(int i=0;i<(int)reads_for_this.size();i++)
+                            cout<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
+                        cout<<endl;
+                    }
                 }
                 else if(Settings_handle::st.is("discard-pairwise-overlapping-reads"))
                 {
                     this->remove_overlapping_reads(&reads_for_this,mf);
 
-                    cout<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
-                    for(int i=0;i<(int)reads_for_this.size();i++)
-                        cout<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
-                    cout<<endl;
+                    if(!Settings_handle::st.is("silent"))
+                    {
+                        cout<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
+                        for(int i=0;i<(int)reads_for_this.size();i++)
+                            cout<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
+                        cout<<endl;
+                    }
                 }
             }
             else
@@ -180,8 +191,6 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
             //
             for(int i=0;i<(int)reads_for_this.size();i++)
             {
-                cout<<"read "<<i+1<<"/"<<reads_for_this.size()<<"; ";
-                cout<<"read "<<i+1<<"/"<<reads_for_this.size()<<"\n";
                 Node * node = new Node();
 
                 stringstream ss;
@@ -191,8 +200,12 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
                 current_root->set_distance_to_parent(0.001);
                 node->add_left_child(current_root);
 
+                if(!Settings_handle::st.is("silent"))
+                    cout<<"("<<i+1<<"/"<<reads.size()<<") ";
+
                 Node * reads_node = new Node();
                 this->copy_node_details(reads_node,&reads_for_this.at(i), mf->get_full_char_alphabet());
+
 
                 node->add_right_child(reads_node);
 
@@ -326,7 +339,8 @@ void Reads_alignment::copy_node_details(Node *reads_node,Fasta_entry *read, stri
     reads_node->add_name_comment(read->comment);
     reads_node->add_sequence( *read, full_alpha);
 
-    cout<<"aligning read "<<read->name<<": "<<read->comment<<endl;
+    if(!Settings_handle::st.is("silent"))
+        cout<<"aligning read: "<<read->name<<": "<<read->comment<<endl;
 }
 
 bool Reads_alignment::read_alignment_overlaps(Node * node, string read_name, string ref_node_name)
@@ -360,7 +374,8 @@ bool Reads_alignment::read_alignment_overlaps(Node * node, string read_name, str
     }
 
 
-    cout<<"  aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"];"<<
+    if(!Settings_handle::st.is("silent"))
+        cout<<"  aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"];"<<
             " identical positions "<<(float)matched/(float)aligned<<" ["<<matched<<"/"<<aligned<<"]"<<endl;
 
     if( (float)aligned/(float)read_length >= min_overlap && (float)matched/(float)aligned >= min_identity)
@@ -439,8 +454,9 @@ bool Reads_alignment::correct_sites_index(Node *current_root, string ref_node_na
 
     if(parent_found)
     {
-        cout<<" Parent of "<<ref_node_name<<" is "<<current_parent->get_name();
-        cout<<"; "<<alignments_done<<" alignments done.";//<<endl;
+        if(Settings::noise>1)
+            cout<<" Parent of "<<ref_node_name<<" is "<<current_parent->get_name()<<"; "
+            <<alignments_done<<" alignments done.";//<<endl;
 
         Sequence *parent_sequence = current_parent->get_sequence();
 
@@ -462,10 +478,13 @@ bool Reads_alignment::correct_sites_index(Node *current_root, string ref_node_na
             }
         }
 
-        if(index_delta>0)
-            cout<<" Site index needs correcting.\n";
-        else
-            cout<<" Site index not changed.\n";
+        if(Settings::noise>2)
+        {
+            if(index_delta>0)
+                cout<<" Site index needs correcting.\n";
+            else
+                cout<<" Site index not changed.\n";
+        }
 
         if(index_delta>0)
         {
@@ -480,8 +499,8 @@ bool Reads_alignment::correct_sites_index(Node *current_root, string ref_node_na
     } // if(parent_found)
     else
     {
-        cout<<" No parent for "<<ref_node_name<<" found. Assuming that this is root.\n";
-//        cout<<" "<<alignments_done<<" alignments done.\n";//<<endl;
+        if(Settings::noise>1)
+            cout<<" No parent for "<<ref_node_name<<" found. Assuming that this is root.\n";
 
         return false;
     }
@@ -491,7 +510,6 @@ bool Reads_alignment::correct_sites_index(Node *current_root, string ref_node_na
 void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
 {
 
-    cout<<"Find nodes for reads.\n";
     multimap<string,string> tid_nodes;
 
     if(Settings_handle::st.is("test-every-node"))
@@ -527,7 +545,8 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
 
             if(matches == 0)
             {
-                cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" has no matching node. Aligned to root.\n";
+                if(!Settings_handle::st.is("silent"))
+                    cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" has no matching node. Aligned to root.\n";
                 reads->at(i).node_to_align = root->get_name();
 
                 if(Settings_handle::st.is("placement-file"))
@@ -545,7 +564,8 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
 
                 if(tit != tid_nodes.end())
                 {
-                    cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" only matches the node "<<tit->second<<"."<<endl;
+                    if(!Settings_handle::st.is("silent"))
+                        cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" only matches the node "<<tit->second<<"."<<endl;
                     reads->at(i).node_to_align = tit->second;
 
                     if(Settings_handle::st.is("placement-file"))
@@ -577,7 +597,8 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
 
                 if(tit != tid_nodes.end())
                 {
-                    cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" matches the nodes:\n";
+                    if(!Settings_handle::st.is("silent"))
+                        cout<<"Read "<<reads->at(i).name<<" with TID "<<tid<<" matches "<<tid_nodes.size()<<" nodes.\n";
 
                     while(tit != tid_nodes.end())
                     {
@@ -585,7 +606,8 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
 
                         double score = this->read_match_score( nit->second, &reads->at(i), mf, best_score);
 
-                        cout<<"   "<<tit->second<<" with score "<<score<<" (simple p-distance; needs improving!)\n";
+                        if(Settings::noise>0)
+                            cout<<"   "<<tit->second<<" with score "<<score<<" (simple p-distance)\n";
                         if(score>best_score)
                         {
                             best_score = score;
@@ -598,7 +620,8 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
                 {
                     if(Settings_handle::st.is("align-bad-reads-at-root"))
                     {
-                        cout<<"Best node aligns with less than 5% of identical sites. Aligning to root instead.\n";
+                        if(!Settings_handle::st.is("silent"))
+                            cout<<"Best node aligns with less than 5% of identical sites. Aligning to root instead.\n";
                         reads->at(i).node_to_align = root->get_name();
 
                         if(Settings_handle::st.is("placement-file"))
@@ -608,13 +631,15 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
                     }
                     else
                     {
-                        cout<<"Best node aligns with less than 5% of identical sites. Read is discarded.\n";
+                        if(!Settings_handle::st.is("silent"))
+                            cout<<"Best node aligns with less than 5% of identical sites. Read is discarded.\n";
                         reads->at(i).node_to_align = "discarded_read";
                     }
                 }
                 else
                 {
-                    cout<<"Best node "<<best_node<<" (score "<<best_score<<").\n";
+                    if(!Settings_handle::st.is("silent"))
+                        cout<<"  best node "<<best_node<<" (score "<<best_score<<").\n";
                     reads->at(i).node_score = best_score;
                     reads->at(i).node_to_align = best_node;
 
@@ -628,7 +653,8 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
         }
         else
         {
-            cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") has no tid. Aligned to root.\n";
+            if(!Settings_handle::st.is("silent"))
+                cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") has no tid. Aligned to root.\n";
             reads->at(i).node_to_align = root->get_name();
 
             if(Settings_handle::st.is("placement-file"))
