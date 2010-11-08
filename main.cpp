@@ -186,6 +186,11 @@ int main(int argc, char *argv[])
     fr.set_chars_by_line(70);
     fr.write(outfile, aligned_sequences, true);
 
+    if(Settings_handle::st.is("output-ancestors"))
+    {
+        fr.write_anctree(outfile, root);
+    }
+
     if(Settings_handle::st.is("output-graph"))
         fr.write_graph(outfile, root, true);
 

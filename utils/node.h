@@ -704,11 +704,14 @@ public:
 
     /************************************/
 
-    string print_tree() {
+    string print_tree(bool int_names=false) {
         if(!leaf)
         {
             stringstream ss;
-            ss<<"("<<left_child->print_subtree()<<","<<right_child->print_subtree()<<");";
+            ss<<"("<<left_child->print_subtree(int_names)<<","<<right_child->print_subtree(int_names)<<")";
+            if(int_names)
+                ss<<this->get_name()<<":0";
+            ss<<";";
             return ss.str();
         } else {
             return "";
@@ -717,11 +720,14 @@ public:
 
     /************************************/
 
-    string print_subtree() {
+    string print_subtree(bool int_names=false) {
         if(!leaf)
         {
             stringstream ss;
-            ss<<"("<<left_child->print_subtree()<<","<<right_child->print_subtree()<<"):"<<dist_to_parent;
+            ss<<"("<<left_child->print_subtree(int_names)<<","<<right_child->print_subtree(int_names)<<")";
+            if(int_names)
+                ss<<this->get_name();
+            ss<<":"<<dist_to_parent;
             return ss.str();
         } else {
             stringstream ss;

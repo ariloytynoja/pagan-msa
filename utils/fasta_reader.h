@@ -47,6 +47,15 @@ public:
         output.close();
     }
 
+    void write_anctree(const string outfile, Node *root, bool overwrite=true)
+    {
+        ofstream output( (outfile+".anctree").c_str(), overwrite ? (ios::out) : (ios::out|ios::app));
+        if (! output) { throw IOException ("Fasta_reader::write_anctree. Failed to open file"); }
+
+        output<<root->print_tree(true);
+        output.close();
+    }
+
     void write_graph(ostream & output, Node * root) const throw (Exception);
     void write_graph(const string & path, Node * root, bool overwrite=true) const throw (Exception)
     {

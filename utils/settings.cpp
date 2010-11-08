@@ -31,7 +31,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("full-probability", "compute full probability")
         ("output-graph","output ancestral graph")
         ("sample-path", "sample the alignment path from posterior probabilities")
-//        ("sample-additional-paths", po::value<int>()->default_value(0), "sample additional paths from posterior probabilities")
+        ("sample-additional-paths", po::value<int>()->default_value(0), "sample additional paths from posterior probabilities")
     ;
 
     boost::program_options::options_description reads_alignment("Reads alignment options");
