@@ -555,7 +555,7 @@ void Node::write_metapost_alignment_graph(ostream *output, ostream *output2, int
             Site *lsite = this->left_child->get_sequence()->get_site_at(offspring->left_index);
 
             char lc = 's';
-            if(lsite->get_site_type()==Site::real_site)
+            if(lsite->get_site_type()==Site::real_site || lsite->get_site_type()==Site::non_real)
                 lc = full_alphabet.at(lsite->get_state());
             else if(lsite->get_site_type()==Site::stop_site)
                 lc = 'e';
@@ -571,7 +571,7 @@ void Node::write_metapost_alignment_graph(ostream *output, ostream *output2, int
             Site *rsite = this->right_child->get_sequence()->get_site_at(offspring->right_index);
 
             char rc = 's';
-            if(rsite->get_site_type()==Site::real_site)
+            if(rsite->get_site_type()==Site::real_site || rsite->get_site_type()==Site::non_real)
                 rc = full_alphabet.at(rsite->get_state());
             else if(rsite->get_site_type()==Site::stop_site)
                 rc = 'e';
@@ -830,6 +830,9 @@ void Node::prune_down()
     if(this->is_leaf())
         return;
 
+    this->has_left_child(true);
+    this->has_right_child(true);
+
     left_child->prune_down();
     right_child->prune_down();
 
@@ -897,6 +900,10 @@ void Node::prune_down()
         this->has_sequence(true);
 
 //    cout<<"prune down out "<<this->get_name()<<endl;
+//    if(has_left_child())
+//        cout<<" left "<<left_child->get_name()<<endl;
+//    if(has_right_child())
+//        cout<<" right "<<right_child->get_name()<<endl;
 }
 
 void Node::prune_up()
@@ -908,6 +915,8 @@ void Node::prune_up()
         Node* tmp_child = right_child;
         left_child = tmp_child->left_child;
         right_child = tmp_child->right_child;
+        tmp_child->has_left_child(false);
+        tmp_child->has_right_child(false);
         delete tmp_child;
     }
 
@@ -916,6 +925,8 @@ void Node::prune_up()
         Node* tmp_child = left_child;
         left_child = tmp_child->left_child;
         right_child = tmp_child->right_child;
+        tmp_child->has_left_child(false);
+        tmp_child->has_right_child(false);
         delete tmp_child;
     }
 //    cout<<"prune up out "<<this->get_name()<<endl;

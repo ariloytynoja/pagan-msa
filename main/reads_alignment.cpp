@@ -303,7 +303,8 @@ void Reads_alignment::find_paired_reads(vector<Fasta_entry> *reads)
                 fit1->comment = fit2->comment;
                 fit1->first_read_length = fit1->sequence.length();
                 fit1->sequence += "0"+fit2->sequence;
-                fit1->quality += "0"+fit2->quality;
+                if(fit1->quality!="")
+                    fit1->quality += "0"+fit2->quality;
 
                 stringstream trimming;
                 trimming << "P1ST"<<fit1->trim_start<<":P1ET"<<fit1->trim_end<<":P2ST"<<fit2->trim_start<<":P2ET"<<fit2->trim_end;
@@ -754,7 +755,8 @@ double Reads_alignment::read_match_score(Node *node, Fasta_entry *read, Model_fa
 
 void Reads_alignment::remove_target_overlapping_identical_reads(vector<Fasta_entry> *reads, Model_factory *mf)
 {
-    cout<<"Removing identical reads mapped at overlapping positions.\n";
+    if(!Settings_handle::st.is("silent"))
+        cout<<"Removing identical reads mapped at overlapping positions.\n";
 
     vector<Fasta_entry>::iterator ri1 = reads->begin();
 
@@ -799,7 +801,7 @@ void Reads_alignment::remove_target_overlapping_identical_reads(vector<Fasta_ent
                 int r1_length = (int)ri1->sequence.length();
                 int r2_length = (int)ri2->sequence.length();
 
-                cout<<"idnetical? "<<matching<<" "<<r1_length<<" "<<r2_length<<endl;
+//                cout<<"identical? "<<matching<<" "<<r1_length<<" "<<r2_length<<endl;
                 if(Settings_handle::st.is("pair-end")) // remove the midpoint marker
                 {
                     r1_length--;
@@ -808,12 +810,14 @@ void Reads_alignment::remove_target_overlapping_identical_reads(vector<Fasta_ent
 
                 if( matching == r2_length )
                 {
-                    cout<<"Read "<<ri2->name<<" is fully embedded in read "<<ri1->name<<" and overlapping sites are identical.  Read "<<ri2->name<<" is deleted.\n";
+                    if(!Settings_handle::st.is("silent"))
+                        cout<<"Read "<<ri2->name<<" is fully embedded in read "<<ri1->name<<" and overlapping sites are identical.  Read "<<ri2->name<<" is deleted.\n";
                     reads->erase(ri2);
                 }
                 else if( matching == r1_length )
                 {
-                    cout<<"Read "<<ri1->name<<" is fully embedded in read "<<ri2->name<<" and overlapping sites are identical.  Read "<<ri1->name<<" is deleted.\n";
+                    if(!Settings_handle::st.is("silent"))
+                        cout<<"Read "<<ri1->name<<" is fully embedded in read "<<ri2->name<<" and overlapping sites are identical.  Read "<<ri1->name<<" is deleted.\n";
                     reads->erase(ri1);
                     ri1--;
                     ri2 = reads->end();
@@ -836,7 +840,8 @@ void Reads_alignment::remove_target_overlapping_identical_reads(vector<Fasta_ent
 
 void Reads_alignment::remove_target_overlapping_reads(vector<Fasta_entry> *reads)
 {
-    cout<<"Removing reads mapped at overlapping positions.\n";
+    if(!Settings_handle::st.is("silent"))
+        cout<<"Removing reads mapped at overlapping positions.\n";
 
     vector<Fasta_entry>::iterator ri1 = reads->begin();
 
@@ -851,7 +856,8 @@ void Reads_alignment::remove_target_overlapping_reads(vector<Fasta_entry> *reads
                 if( ri2->node_start_pos1 >= ri1->node_start_pos1 && ri2->node_end_pos1 <= ri1->node_end_pos1 &&
                     ri2->node_start_pos2 >= ri1->node_start_pos2 && ri2->node_end_pos2 <= ri1->node_end_pos2 )
                 {
-                    cout<<"Read "<<ri2->name<<" is fully embedded in read "<<ri1->name<<".  Read "<<ri2->name<<" is deleted.\n";
+                    if(!Settings_handle::st.is("silent"))
+                        cout<<"Read "<<ri2->name<<" is fully embedded in read "<<ri1->name<<".  Read "<<ri2->name<<" is deleted.\n";
                     reads->erase(ri2);
                 }
                 else
@@ -864,7 +870,8 @@ void Reads_alignment::remove_target_overlapping_reads(vector<Fasta_entry> *reads
             {
                 if( ri2->node_start_pos1 >= ri1->node_start_pos1 && ri2->node_end_pos2 <= ri1->node_end_pos2 )
                 {
-                    cout<<"Read "<<ri2->name<<" is fully embedded in read "<<ri1->name<<".  Read "<<ri2->name<<" is deleted.\n";
+                    if(!Settings_handle::st.is("silent"))
+                        cout<<"Read "<<ri2->name<<" is fully embedded in read "<<ri1->name<<".  Read "<<ri2->name<<" is deleted.\n";
                     reads->erase(ri2);
                 }
                 else
@@ -925,7 +932,8 @@ int Reads_alignment::reads_pairwise_matching_sites(Node *node)
 void Reads_alignment::remove_overlapping_reads(vector<Fasta_entry> *reads, Model_factory *mf)
 {
 
-    cout<<"Removing pairwise overlapping reads.\n";
+    if(!Settings_handle::st.is("silent"))
+        cout<<"Removing pairwise overlapping reads.\n";
 
     vector<Fasta_entry>::iterator ri1 = reads->begin();
 
@@ -955,19 +963,22 @@ void Reads_alignment::remove_overlapping_reads(vector<Fasta_entry> *reads, Model
             if( matching == r1_length
                 && matching == r2_length )
             {
-                cout<<"Reads "<<ri1->name<<" and "<<ri2->name<<" are identical. Read "<<ri2->name<<" is deleted.\n";
+                if(!Settings_handle::st.is("silent"))
+                    cout<<"Reads "<<ri1->name<<" and "<<ri2->name<<" are identical. Read "<<ri2->name<<" is deleted.\n";
                 reads->erase(ri2);
             }
             else if(matching == r1_length)
             {
-                cout<<"Read "<<ri1->name<<" is fully embedded in read "<<ri2->name<<". Read "<<ri1->name<<" is deleted.\n";
+                if(!Settings_handle::st.is("silent"))
+                    cout<<"Read "<<ri1->name<<" is fully embedded in read "<<ri2->name<<". Read "<<ri1->name<<" is deleted.\n";
                 reads->erase(ri1);
                 ri1--;
                 ri2 = reads->end();
             }
             else if(matching == r2_length)
             {
-                cout<<"Read "<<ri2->name<<" is fully embedded in read "<<ri1->name<<".  Read "<<ri2->name<<" is deleted.\n";
+                if(!Settings_handle::st.is("silent"))
+                    cout<<"Read "<<ri2->name<<" is fully embedded in read "<<ri1->name<<".  Read "<<ri2->name<<" is deleted.\n";
                 reads->erase(ri2);
             }
             else

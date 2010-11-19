@@ -220,8 +220,9 @@ class Simple_alignment
         else if (a<b)
             return false;
         else
-            if ((double)rand()/(double)RAND_MAX>0.5)
-                return true;
+            return false;
+//            if ((double)rand()/(double)RAND_MAX>0.5)
+//                return true;
         return false;
     }
 
@@ -457,8 +458,8 @@ class Simple_alignment
 
         //no_terminal_edges = true;
 
-        if(!Settings_handle::st.is("test-every-node"))
-        {
+//        if(!Settings_handle::st.is("test-every-node"))
+//        {
             max_allowed_skip_distance = 5;
             max_allowed_skip_branches = 50000;
             max_allowed_match_skip_branches = 50000;
@@ -468,7 +469,7 @@ class Simple_alignment
 
             if(Settings_handle::st.is("pair-end"))
                 pair_end_reads = true;
-        }
+//        }
     }
 
     void mark_no_gap_penalty_sites(Sequence *left, Sequence *right)

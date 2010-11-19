@@ -69,6 +69,11 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
     for(;si!=seq_entry.sequence.end();si++,qi++)
     {
 
+        if(*si=='0')
+        {
+            continue;
+        }
+
         Site site( &edges );
         site.set_state( full_char_alphabet.find( *si ) );
         site.set_empty_children();

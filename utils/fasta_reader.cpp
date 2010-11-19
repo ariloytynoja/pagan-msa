@@ -106,7 +106,7 @@ void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_
 void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool short_names = false) const throw (Exception)
 {
 
-    string temp, name, comment, sequence = "";  // Initialization
+    string temp, name, comment, tmp_tid, sequence = "";  // Initialization
 
     while(!input.eof())
     {
@@ -125,6 +125,12 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
                 fe.name = name;
                 fe.comment = comment;
                 fe.sequence = sequence;
+                fe.quality = "";
+                fe.first_read_length = -1;
+                fe.trim_start = 0;
+                fe.trim_end = 0;
+                fe.tid = tmp_tid;
+
                 seqs.push_back(fe);
                 name = "";
                 sequence = "";
@@ -140,9 +146,18 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
                 String_tokenizer * st = new String_tokenizer(temp, " ", true, false);
                 name = st->next_token();
                 comment = "";
+                tmp_tid = "";
                 while (st->has_more_token())
                 {
-                  comment += st->next_token()+" ";
+                    string block = st->next_token();
+                    block = Text_utils::remove_surrounding_whitespaces(block);
+                    comment += block+" ";
+
+                    if(block.substr(0,4)=="TID=")
+                    {
+                        block = block.substr(4);
+                        tmp_tid = block;
+                    }
                 }
                 delete st;
             }
@@ -160,6 +175,11 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
         fe.name = name;
         fe.comment = comment;
         fe.sequence = sequence;
+        fe.quality = "";
+        fe.first_read_length = -1;
+        fe.trim_start = 0;
+        fe.trim_end = 0;
+        fe.tid = tmp_tid;
         seqs.push_back(fe);
     }
 
@@ -603,7 +623,7 @@ void Fasta_reader::write_graph(ostream & output, Node * root) const throw (Excep
 bool Fasta_reader::check_alphabet(string alphabet, string full_alphabet, vector<Fasta_entry> & seqs) throw (Exception)
 {
 
-    bool allow_gaps = Settings_handle::st.is("cds-seqfile");
+    bool allow_gaps = Settings_handle::st.is("ref-seqfile");
 
     // Check that alphabet is correct but use (faster?) build-in alphabet.
     //
@@ -780,10 +800,10 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
 
     if(names_match != leaf_nodes->size())
     {
-        if(Settings_handle::st.is("cds-seqfile"))
+        if(Settings_handle::st.is("ref-seqfile"))
         {
-            cout<<"\nAll leaf node names in the guidetree file '"<<Settings_handle::st.get("cds-treefile").as<string>()<<"' do not match\n"<<
-                " with a sequence name in the sequence file '"<<Settings_handle::st.get("cds-seqfile").as<string>()<<"'."<<endl;
+            cout<<"\nAll leaf node names in the guidetree file '"<<Settings_handle::st.get("ref-treefile").as<string>()<<"' do not match\n"<<
+                " with a sequence name in the sequence file '"<<Settings_handle::st.get("ref-seqfile").as<string>()<<"'."<<endl;
         }
         else
         {

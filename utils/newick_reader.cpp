@@ -58,7 +58,7 @@ using namespace ppa;
 
 Newick_reader::Newick_reader()
 {
-
+    node_index = 1;
 }
 
 /*******************************************/
@@ -97,6 +97,7 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
     {
         String_tokenizer * st = new String_tokenizer(elt.nhx, ":", true, false);
 
+        node->set_nhx_tid("");
         while (st->has_more_token())
         {
             string block = st->next_token();
@@ -105,7 +106,6 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
             {
                 block = block.substr(4);
                 node->set_nhx_tid(block);
-//                cout<<block<<endl;
             }
         }
 
@@ -149,8 +149,11 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
             Node * child_1 = parenthesis_to_node(elements[1]);
             node->add_right_child(child_1);
 
-            node->set_name(description);
-
+//            node->set_name(description);
+            stringstream ss("");
+            ss<<"node"<<node_index;
+            node->set_name(ss.str());
+            node_index++;
             node->is_leaf(false);
         }
         catch(exception e)
@@ -183,6 +186,35 @@ Node * Newick_reader::parenthesis_to_tree(const string & description) throw (Exc
     //New root node:
     Node * node = new Node();
 
+
+    Newick_reader::Element elt = Newick_reader::get_element(description);
+
+    if(!Text_utils::is_empty(elt.length))
+    {
+        node->set_distance_to_parent(Text_utils::to_double(elt.length));
+//        cout << "NODE: LENGTH: " << elt.length << endl;
+    }
+
+    if(!Text_utils::is_empty(elt.nhx))
+    {
+        String_tokenizer * st = new String_tokenizer(elt.nhx, ":", true, false);
+
+        node->set_nhx_tid("");
+        while (st->has_more_token())
+        {
+            string block = st->next_token();
+            block = Text_utils::remove_surrounding_whitespaces(block);
+            if(block.substr(0,4)=="TID=")
+            {
+                block = block.substr(4);
+                node->set_nhx_tid(block);
+            }
+        }
+
+        delete st;
+//        node->set_distance_to_parent(Text_utils::to_double(elt.length));
+    }
+
     Node_tokenizer nt(content);
     vector<string> elements;
     while(nt.has_next())
@@ -210,6 +242,7 @@ Node * Newick_reader::parenthesis_to_tree(const string & description) throw (Exc
             node->add_right_child(child_1);
 
             node->set_name("root");
+//            cout<<"root "<<node->get_name()<<" "<<node->get_nhx_tid()<<" "<<node->get_distance_to_parent()<<endl;
         }
         catch(exception e)
         {
@@ -234,10 +267,10 @@ Newick_reader::Element Newick_reader::get_element(const string & elt) throw (Exc
     {
         string::size_type openNHX = elt.rfind("[&&NHX");
         string::size_type closeNHX = elt.rfind(']');
+        string::size_type lastBracket = elt.rfind(')');
 
         string eltt = elt;
-
-        if(openNHX != string::npos)
+        if(openNHX != string::npos && lastBracket != string::npos && lastBracket < openNHX)
         {
             if(closeNHX != string::npos)
             {

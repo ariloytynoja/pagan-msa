@@ -327,7 +327,7 @@ public:
                 this->reconstruct_parsimony_ancestor(mf);
             }
         }
-        else if( Settings_handle::st.is("cds-seqfile") )
+        else if( Settings_handle::st.is("ref-seqfile") )
         {
             this->read_alignment(mf);
 
@@ -721,6 +721,7 @@ public:
     /************************************/
 
     string print_subtree(bool int_names=false) {
+//        cout<<"print_subtree: "<<get_name()<<endl;
         if(!leaf)
         {
             stringstream ss;
@@ -749,12 +750,12 @@ public:
     string print_nhx_tree() const {
         if(!leaf)
         {
-            string tid = "";
+            stringstream tid("");
             if(this->get_nhx_tid()!="")
-                tid = "TID="+this->get_nhx_tid();
+                tid << "[&&NHX:TID="+this->get_nhx_tid()<<"]";
 
             stringstream ss;
-            ss<<"("<<left_child->print_nhx_subtree()<<","<<right_child->print_nhx_subtree()<<"[&&NHX:"<<tid<<"]);";
+            ss<<"("<<left_child->print_nhx_subtree()<<","<<right_child->print_nhx_subtree()<<"):"<<dist_to_parent<<tid.str()<<";";
             return ss.str();
         } else {
             return "";
@@ -765,20 +766,19 @@ public:
 
     string print_nhx_subtree() const {
 
-        string tid = "";
+        stringstream tid("");
         if(this->get_nhx_tid()!="")
-            tid = "TID="+this->get_nhx_tid();
+            tid << "[&&NHX:TID="+this->get_nhx_tid()<<"]";
 
         if(!leaf)
         {
-
             stringstream ss;
-            ss<<"("<<left_child->print_nhx_subtree()<<","<<right_child->print_nhx_subtree()<<"):"<<dist_to_parent<<"[&&NHX:"<<tid<<"]";
+            ss<<"("<<left_child->print_nhx_subtree()<<","<<right_child->print_nhx_subtree()<<"):"<<dist_to_parent<<tid.str();
             return ss.str();
 
         } else {
             stringstream ss;
-            ss<<name<<":"<<dist_to_parent<<"[&&NHX:"<<tid<<"]";
+            ss<<name<<":"<<dist_to_parent<<tid.str();
             return ss.str();
         }
     }

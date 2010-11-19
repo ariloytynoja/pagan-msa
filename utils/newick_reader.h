@@ -58,6 +58,7 @@ namespace ppa
 
 class Newick_reader
 {
+    int node_index;
 public:
     Newick_reader();
     ~Newick_reader() {}

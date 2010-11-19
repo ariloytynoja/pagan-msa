@@ -37,9 +37,9 @@ int main(int argc, char *argv[])
 
         fr.read(seqfile, sequences, true);
     }
-    else if(Settings_handle::st.is("cds-seqfile")){
+    else if(Settings_handle::st.is("ref-seqfile")){
 
-        string seqfile =  Settings_handle::st.get("cds-seqfile").as<string>();
+        string seqfile =  Settings_handle::st.get("ref-seqfile").as<string>();
         cout<<"CDS alignment file: "<<seqfile<<endl;
 
         fr.read(seqfile, sequences, true);
@@ -67,8 +67,8 @@ int main(int argc, char *argv[])
 
         tree_ok = true;
     }
-    else if(Settings_handle::st.is("cds-treefile")){
-        string treefile =  Settings_handle::st.get("cds-treefile").as<string>();
+    else if(Settings_handle::st.is("ref-treefile")){
+        string treefile =  Settings_handle::st.get("ref-treefile").as<string>();
         cout<<"CDS tree file: "<<treefile<<endl;
 
         Newick_reader nr;

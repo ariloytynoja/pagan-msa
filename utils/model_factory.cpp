@@ -523,7 +523,7 @@ void Model_factory::dna_model(float *char_pi,Settings *st)
     float end_gap_ext = 0.95;
     float break_gap_ext = 0.99;
 
-    if(st->is("cds-seqfile"))
+    if(st->is("ref-seqfile"))
     {
         ins_rate = 1;
         del_rate = 1;

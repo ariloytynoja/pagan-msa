@@ -96,8 +96,6 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     max_end.bwd_score = 1.0;
     max_end.full_score = 1.0;
 
-//    cout<<max_end.matrix<<";  "<<max_end.x_ind<<"  "<<max_end.y_ind<<"  "<<max_end.score<<";  "<<max_end.x_edge_ind<<"  "<<max_end.y_edge_ind<<endl;
-
     if(max_end.score==-HUGE_VAL) {
         cout<<"left\n";
         this->left->print_sequence();
@@ -853,7 +851,6 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
     int x_ind = fp.mp.x_ind;
     int y_ind = fp.mp.y_ind;
 
-//    cout<<fp.mp.matrix<<"; "<<fp.mp.x_ind<<" "<<fp.mp.y_ind<<"; "<<fp.mp.score<<"; "<<fp.mp.x_edge_ind<<" "<<fp.mp.y_edge_ind<<endl;
 
     left_edges->at(fp.mp.x_edge_ind).is_used(true);
     right_edges->at(fp.mp.y_edge_ind).is_used(true);
