@@ -255,15 +255,12 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
         }
     }
 
-    if(Settings_handle::st.is("trim-read-ends"))
-    {
-        this->trim_fastq_reads(&seqs);
-    }
 }
 
 void Fasta_reader::trim_fastq_reads(vector<Fasta_entry> * seqs) const throw (Exception)
 {
-    cout<<"Trimming read ends.\n";
+    if(!Settings_handle::st.is("silent"))
+        cout<<"Trimming read ends.\n";
 
     int mean_score = Settings_handle::st.get("trim-mean-qscore").as<int>();
     int window_width = Settings_handle::st.get("trim-window-width").as<int>();
@@ -364,8 +361,9 @@ void Fasta_reader::trim_fastq_reads(vector<Fasta_entry> * seqs) const throw (Exc
 
         if((int)fit->sequence.length()<minimum_length)
         {
-            cout<<"After trimming, sequence "<<fit->name<<" is below the minimum length of "<<minimum_length;
-            cout<<"; the read is discarded.\n";
+            if(!Settings_handle::st.is("silent"))
+            cout<<"After trimming, sequence "<<fit->name<<" is below the minimum length of "
+                    <<minimum_length<<"; the read is discarded.\n";
             seqs->erase(fit);
         }
         else
@@ -576,6 +574,24 @@ void Fasta_reader::write(ostream & output, const vector<Fasta_entry> & seqs) con
 }
 
 /****************************************************************************************/
+
+void Fasta_reader::write_fastq(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception)
+{
+    // Checking the existence of specified file, and possibility to open it in write mode
+    if (! output) { throw IOException ("Fasta_reader::write_fastq. Failed to open file"); }
+
+    vector<Fasta_entry>::const_iterator vi = seqs.begin();
+
+    // Main loop : for all sequences in vector container
+    for (; vi != seqs.end(); vi++)
+    {
+        output << "@" << vi->name << endl;
+        output << vi->sequence << endl;
+        output << "+" << vi->comment << endl;
+        output << vi->quality << endl;
+    }
+
+}
 
 void Fasta_reader::write_graph(ostream & output, Node * root) const throw (Exception)
 {
@@ -800,7 +816,7 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
 
     if(names_match != leaf_nodes->size())
     {
-        if(Settings_handle::st.is("ref-seqfile"))
+        if(Settings_handle::st.is("ref-seqfile") && Settings_handle::st.is("ref-treefile"))
         {
             cout<<"\nAll leaf node names in the guidetree file '"<<Settings_handle::st.get("ref-treefile").as<string>()<<"' do not match\n"<<
                 " with a sequence name in the sequence file '"<<Settings_handle::st.get("ref-seqfile").as<string>()<<"'."<<endl;
@@ -845,7 +861,7 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
     }
 
     // Not all sequences need to be in the tree but give a warning that names don't match.
-    if(names_match < 2)
+    if(names_match < 1)
     {
         cout<<"\nNo sequences to align! Exiting.\n\n";
         exit(0);

@@ -7,7 +7,7 @@
 using namespace std;
 using namespace ppa;
 
-Sequence::Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped)
+Sequence::Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped, bool no_trimming)
 {
 
     if(gapped)
@@ -36,7 +36,7 @@ Sequence::Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped)
     edges.reserve(seq_entry.sequence.size()+3);
 
     if( seq_entry.quality != "" && !Settings_handle::st.is("no-fastq") )
-        this->create_fastq_sequence(seq_entry);
+        this->create_fastq_sequence(seq_entry, no_trimming);
 
     else if( seq_entry.edges.size()>0 )
         this->create_graph_sequence(seq_entry);
@@ -76,6 +76,7 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
 
         Site site( &edges );
         site.set_state( full_char_alphabet.find( *si ) );
+        site.set_symbol( *si );
         site.set_empty_children();
         this->push_back_site(site);
 
@@ -99,7 +100,7 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
 
 }
 
-void Sequence::create_fastq_sequence(Fasta_entry &seq_entry)
+void Sequence::create_fastq_sequence(Fasta_entry &seq_entry, bool no_trimming)
 {
 
     Site first_site( &edges, Site::start_site, Site::ends_site );
@@ -111,6 +112,9 @@ void Sequence::create_fastq_sequence(Fasta_entry &seq_entry)
     this->push_back_edge(first_edge);
 
     int quality_threshold = Settings_handle::st.get("qscore-minimum").as<int>();
+
+    if(no_trimming)
+        quality_threshold = 0;
 
     int in_row = 1;
     int prev_row = 1;
@@ -167,11 +171,12 @@ void Sequence::create_fastq_sequence(Fasta_entry &seq_entry)
         if(site_qscore < quality_threshold)
         {
             site.set_state( full_char_alphabet.find( 'N' ) );
-            *si = 'n';
+            site.set_symbol( tolower(*si) );
         }
         else
         {
             site.set_state( full_char_alphabet.find( *si ) );
+            site.set_symbol( *si );
         }
 
         this->push_back_site(site);
@@ -297,6 +302,7 @@ void Sequence::create_graph_sequence(Fasta_entry &seq_entry)
 
         Site site( &edges );
         site.set_state( full_char_alphabet.find( *si ) );
+        site.set_symbol( *si );
         site.set_empty_children();
         this->push_back_site(site);
 

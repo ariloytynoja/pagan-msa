@@ -26,6 +26,21 @@ int main(int argc, char *argv[])
     
     srand(time(0));
     
+    if(Settings_handle::st.is("overlap-merge-only"))
+    {
+
+        if(!Settings_handle::st.is("readsfile"))
+        {
+            cout<<"No reads file given. Exiting.\n\n";
+            exit(0);
+        }
+
+        Reads_alignment ra;
+        ra.merge_reads_only();
+
+        exit(0);
+    }
+
     // Read the sequences
     bool gapped_seqs = false;
     Fasta_reader fr;
@@ -40,7 +55,7 @@ int main(int argc, char *argv[])
     else if(Settings_handle::st.is("ref-seqfile")){
 
         string seqfile =  Settings_handle::st.get("ref-seqfile").as<string>();
-        cout<<"CDS alignment file: "<<seqfile<<endl;
+        cout<<"Reference alignment file: "<<seqfile<<endl;
 
         fr.read(seqfile, sequences, true);
         gapped_seqs = true;
@@ -69,7 +84,7 @@ int main(int argc, char *argv[])
     }
     else if(Settings_handle::st.is("ref-treefile")){
         string treefile =  Settings_handle::st.get("ref-treefile").as<string>();
-        cout<<"CDS tree file: "<<treefile<<endl;
+        cout<<"Reference tree file: "<<treefile<<endl;
 
         Newick_reader nr;
         string tree = nr.read_tree(treefile);
@@ -82,6 +97,7 @@ int main(int argc, char *argv[])
         root = new Node();
         root->set_name(sequences.at(0).name);
         root->add_name_comment( sequences.at(0).comment );
+        root->set_distance_to_parent(0);
 
         string full_char_alphabet = "ACGTRYMKWSBDHVN";
 

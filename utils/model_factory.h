@@ -73,7 +73,7 @@ public:
     void codon_model(Settings *st);
     void codon_model(float ins_rate,float del_rate, float ext_prob);
 
-    Evol_model alignment_model(double distance);
+    Evol_model alignment_model(double distance, bool is_local_alignment=false);
 //    Evol_model char_alignment_model(double distance);
 
     void print_char_p_matrices(Evol_model &model);

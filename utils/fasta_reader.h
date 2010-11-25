@@ -47,6 +47,14 @@ public:
         output.close();
     }
 
+    void write_fastq(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception);
+    void write_fastq(const string & path, const vector<Fasta_entry> & seqs, bool overwrite=true) const throw (Exception)
+    {
+        ofstream output( (path+".fastq").c_str(), overwrite ? (ios::out) : (ios::out|ios::app));
+        write_fastq(output, seqs);
+        output.close();
+    }
+
     void write_anctree(const string outfile, Node *root, bool overwrite=true)
     {
         ofstream output( (outfile+".anctree").c_str(), overwrite ? (ios::out) : (ios::out|ios::app));

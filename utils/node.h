@@ -212,6 +212,19 @@ public:
             nodes->push_back(this);
     }
 
+    void get_leaf_nodes(map<string,Node*> *nodes)
+    {
+        if(this->is_leaf())
+        {
+            nodes->insert(pair<string,Node*>(this->get_name(),this));
+        }
+        else
+        {
+            left_child->get_leaf_nodes(nodes);
+            right_child->get_leaf_nodes(nodes);
+        }
+    }
+
     void get_internal_nodes(vector<Node*> *nodes)
     {
         if(!this->is_leaf())
@@ -348,14 +361,14 @@ public:
 
     }
 
-    void align_sequences_this_node(Model_factory *mf, bool is_reads_sequence=false)
+    void align_sequences_this_node(Model_factory *mf, bool is_reads_sequence=false, bool is_local_alignment=false)
     {
 
         if(Settings::noise>0)
             cout<<"aligning node "<<this->get_name()<<": "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
 
         double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
-        Evol_model model = mf->alignment_model(dist);
+        Evol_model model = mf->alignment_model(dist,is_local_alignment);
 
         Simple_alignment sa;
         sa.align(left_child->get_sequence(),right_child->get_sequence(),&model,
@@ -911,7 +924,7 @@ public:
         return color;
     }
 
-    void add_sequence( Fasta_entry seq_entry, string full_char_alphabet, bool gapped = false);
+    void add_sequence( Fasta_entry seq_entry, string full_char_alphabet, bool gapped = false, bool no_trimming = false);
 
     void add_ancestral_sequence( Sequence* s ) { sequence = s;  node_has_sequence_object = true;}
 

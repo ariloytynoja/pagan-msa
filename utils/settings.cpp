@@ -14,8 +14,8 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.11;
-    date = "18 Nov, 2010";
+    version = 0.12;
+    date = "24 Nov, 2010";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options");
     minimal.add_options()
@@ -45,6 +45,17 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("pair-end","connect paired reads")
         ("454", "correct homopolymer error")
         ("test-every-node","test every node for each read")
+    ;
+
+    boost::program_options::options_description reads_alignment3("Overlapping pair reads options");
+    reads_alignment3.add_options()
+        ("overlap-pair-end","merge overlapping paired reads")
+        ("overlap-minimum", po::value<int>()->default_value(15), "minimum overlapping sites")
+        ("overlap-identity", po::value<float>()->default_value(0.75), "minimum identity at overlap")
+        ("overlap-identical-minimum", po::value<int>()->default_value(10), "minimum identical overlapping sites")
+//        ("overlap-no-truncate","do not truncate suspicious overlap")
+        ("overlap-merge-only","only merge overlapping paired reads")
+        ("overlap-merge-file", po::value<string>(), "output file for merged reads")
     ;
 
     boost::program_options::options_description reads_alignment2("Additional reads alignment options");
@@ -131,9 +142,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 //        ("unused-edges-not-transferred", "mimic PRANK-F behaviour")
     ;
 
-    full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment2).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken);
-    desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment2).add(model).add(tree_edit).add(alignment);
-    max_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment2).add(model).add(graph).add(tree_edit).add(alignment).add(output);
+    full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken);
+    desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(tree_edit).add(alignment);
+    max_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(graph).add(tree_edit).add(alignment).add(output);
     min_desc.add(minimal).add(reads_alignment);
 
     po::store(po::parse_command_line(argc, argv, full_desc), vm);

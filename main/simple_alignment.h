@@ -456,7 +456,7 @@ class Simple_alignment
     void set_reads_alignment_settings()
     {
 
-        //no_terminal_edges = true;
+        no_terminal_edges = true;
 
 //        if(!Settings_handle::st.is("test-every-node"))
 //        {

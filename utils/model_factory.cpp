@@ -558,6 +558,7 @@ void Model_factory::dna_model(float *char_pi,Settings *st)
 void Model_factory::dna_model(float* pi,float kappa, float rho,float ins_rate,float del_rate, float ext_prob, float end_ext_prob, float break_ext_prob)
 {
 
+
     if (Settings::noise>4){
         cout<<"DNA substitution model: base frequencies "
                 <<pi[0]<<", "<<pi[1]<<", "<<pi[2]<<" and "<<pi[3]
@@ -965,8 +966,9 @@ void Model_factory::build_model(int s,Db_matrix *pi,Db_matrix *q,Db_matrix *wU,D
 
 /*******************************************/
 
-Evol_model Model_factory::alignment_model(double distance)
+Evol_model Model_factory::alignment_model(double distance, bool is_local_alignment)
 {
+
 
     // Compute the P matrix for regular DNA alphabet (four bases).
     //
@@ -1012,6 +1014,11 @@ Evol_model Model_factory::alignment_model(double distance)
     model.end_ext_prob = char_end_ext_prob;
     model.break_ext_prob = char_break_ext_prob;
 
+    if(is_local_alignment)
+    {
+        model.log_ext_prob = log(0.1);
+        model.ext_prob = 0.1;
+    }
 //cout<<"model.ins_prob "<<model.ins_prob<<"\n";
 //cout<<"model.del_prob "<<model.del_prob<<"\n";
 //cout<<"model.match_prob "<<model.match_prob<<"\n";

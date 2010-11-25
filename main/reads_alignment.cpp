@@ -20,13 +20,41 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
     fr.read(file, reads, true);
 
     if(!fr.check_alphabet(mf->get_char_alphabet(),mf->get_full_char_alphabet(),reads))
-        cout<<"\nWarning: Illegal characters in input reads sequences removed!"<<endl;
+    {
+        if(!Settings_handle::st.is("silent"))
+            cout<<"\nWarning: Illegal characters in input reads sequences removed!"<<endl;
+    }
 
+    bool single_ref_sequence = false;
+    if(root->get_number_of_leaves()==1)
+        single_ref_sequence = true;
 
+    // Merge overlapping reads
+    //
+    if( Settings_handle::st.is("overlap-pair-end") )
+    {
+        if( Settings_handle::st.is("overlap-pair-end"))
+        {
+            this->merge_paired_reads( &reads, mf );
+        }
+
+    }
+
+    // Trim read ends
+    //
+    if(Settings_handle::st.is("trim-read-ends"))
+    {
+        fr.trim_fastq_reads(&reads);
+    }
+
+    // Couple paired reads
+    //
     if( Settings_handle::st.is("pair-end") )
     {
         this->find_paired_reads( &reads );
     }
+
+    // Or just add the comments..
     else
     {
         this->add_trimming_comment( &reads );
@@ -66,6 +94,9 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
 
             node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
             node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+
+            if(!Settings_handle::st.is("silent"))
+                cout<<"aligning read: "<<reads.at(i).name<<": "<<reads.at(i).comment<<endl;
 
             node->align_sequences_this_node(mf,true);
 
@@ -115,7 +146,17 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
         sort(unique_nodes.begin(),unique_nodes.end(),Reads_alignment::nodeIsSmaller);
 
         map<string,Node*> nodes_map;
-        root->get_internal_nodes(&nodes_map);
+        // for one reference sequence only
+        if(single_ref_sequence)
+        {
+            root->get_leaf_nodes(&nodes_map);
+        }
+
+        // for normal cases
+        else
+        {
+            root->get_internal_nodes(&nodes_map);
+        }
 
         // do one tagged node at time
         //
@@ -212,6 +253,9 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
                 node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
                 node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
 
+                if(!Settings_handle::st.is("silent"))
+                    cout<<"aligning read: "<<reads_for_this.at(i).name<<": "<<reads_for_this.at(i).comment<<endl;
+
                 node->align_sequences_this_node(mf,true);
 
 //                node->get_sequence()->print_sequence();
@@ -245,17 +289,62 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
 
             if(alignment_done)
             {
-                bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
-
-                if(!parent_found)
+                if(single_ref_sequence)
                 {
                     global_root = current_root;
                 }
+                else
+                {
+                    bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
+
+                    if(!parent_found)
+                    {
+                        global_root = current_root;
+                    }
+                }
             }
         }
-
-
     }
+}
+
+
+void Reads_alignment::merge_reads_only()
+{
+    string file = Settings_handle::st.get("readsfile").as<string>();
+
+    Fasta_reader fr;
+    vector<Fasta_entry> reads;
+    cout<<"Reads data file: "<<file<<endl;
+
+    fr.read(file, reads, true);
+
+    int data_type = fr.check_sequence_data_type(reads);
+    Model_factory mf(data_type);
+
+    if(!fr.check_alphabet(mf.get_char_alphabet(),mf.get_full_char_alphabet(),reads))
+        cout<<"\nWarning: Illegal characters in input sequences removed!"<<endl;
+
+    float *dna_pi = fr.base_frequencies();
+
+    mf.dna_model(dna_pi,&Settings_handle::st);
+
+    if(!fr.check_alphabet(mf.get_char_alphabet(),mf.get_full_char_alphabet(),reads))
+    {
+        if(!Settings_handle::st.is("silent"))
+            cout<<"\nWarning: Illegal characters in input reads sequences removed!"<<endl;
+    }
+
+    this->merge_paired_reads( &reads, &mf );
+
+    string path = "outfile";
+    if(Settings_handle::st.is("overlap-merge-file"))
+    {
+        path = Settings_handle::st.get("overlap-merge-file").as<string>();
+    }
+
+    cout<<"Reads output file: "<<path<<".fastq"<<endl;
+
+    fr.write_fastq(path,reads);
 }
 
 void Reads_alignment::add_trimming_comment(vector<Fasta_entry> *reads)
@@ -271,6 +360,220 @@ void Reads_alignment::add_trimming_comment(vector<Fasta_entry> *reads)
     }
 }
 
+
+void Reads_alignment::merge_paired_reads(vector<Fasta_entry> *reads, Model_factory *mf)
+{
+
+    vector<Fasta_entry>::iterator fit1 = reads->begin();
+
+    for(;fit1 != reads->end();fit1++)
+    {
+        string name1 = fit1->name;
+        if(name1.substr(name1.length()-2) != "/1")
+        {
+            continue;
+        }
+
+        vector<Fasta_entry>::iterator fit2 = fit1;
+        fit2++;
+
+        for(;fit2 != reads->end();)
+        {
+            string name2 = fit2->name;
+            if(name2.substr(name2.length()-2) != "/2")
+            {
+                fit2++;
+                continue;
+            }
+
+            if(name1.substr(0,name1.length()-2)==name2.substr(0,name2.length()-2))
+            {
+
+                Node * node_left = new Node();
+                this->copy_node_details(node_left,&(*fit1), mf->get_full_char_alphabet());
+
+                Node * node_right = new Node();
+                this->copy_node_details(node_right,&(*fit2), mf->get_full_char_alphabet());
+
+                Node * node = new Node();
+                node->set_name("merge");
+
+                node->add_left_child(node_left);
+                node->add_right_child(node_right);
+
+                node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+
+                if(Settings::noise>1)
+                    cout<<"aligning paired reads: "<<fit1->name<<" and "<<fit2->name<<endl;
+
+                node->align_sequences_this_node(mf,true,true);
+
+                Sequence *anc_seq = node->get_sequence();
+                int x = 0; int y = 0;
+                stringstream l_seq("");
+                stringstream r_seq("");
+
+                int overlap = 0;
+                int identical = 0;
+
+                for(int i=1;i<anc_seq->sites_length()-1;i++)
+                {
+                    int path_state = anc_seq->get_site_at(i)->get_path_state();
+
+                    if(path_state==Site::xgapped)
+                    {
+                        l_seq<<fit1->sequence.at(x); r_seq<<"-";
+                        x++;
+                    }
+                    else if(path_state==Site::ygapped)
+                    {
+                        l_seq<<"-"; r_seq<<fit2->sequence.at(y);
+                        y++;
+                    }
+                    else if(path_state==Site::matched)
+                    {
+                        l_seq<<fit1->sequence.at(x); r_seq<<fit2->sequence.at(y);
+
+                        overlap++;
+                        if(fit1->sequence.at(x) == fit2->sequence.at(y))
+                            identical++;
+
+                        x++;y++;
+                    }
+                    else
+                    {
+                        cout<<"Error in pair-end merge alignment\n";
+                    }
+                }
+
+                if(Settings::noise>2)
+                {
+                    cout<<"Alignment read pair "<<fit1->name<<" and "<<fit2->name<<".\n";
+                    cout<<l_seq.str()<<endl<<r_seq.str()<<endl<<endl;
+                    cout<<"overlap "<<overlap<<", identical "<<identical<<endl;
+                }
+
+                if( ( overlap >= Settings_handle::st.get("overlap-minimum").as<int>() &&
+                      float(identical)/overlap >= Settings_handle::st.get("overlap-identity").as<float>() )
+                 || ( overlap == identical && overlap >= Settings_handle::st.get("overlap-identical-minimum").as<int>() )
+                    )
+                {
+
+                    if(!Settings_handle::st.is("silent"))
+                        cout<<"Merging "<<fit1->name<<" and "<<fit2->name<<": new name ";
+
+                    fit1->name = name1.substr(0,name1.length()-1)+"m12";
+                    fit1->comment = fit2->comment;
+
+                    if(!Settings_handle::st.is("silent"))
+                        cout<<fit1->name<<".\n";
+
+                    string seq = "";
+                    string qsc = "";
+
+                    x=0;y=0;
+                    for(int i=1;i<anc_seq->sites_length()-1;i++)
+                    {
+                        int path_state = anc_seq->get_site_at(i)->get_path_state();
+
+                        if(path_state==Site::xgapped)
+                        {
+                            seq += fit1->sequence.at(x);
+                            qsc += fit1->quality.at(x);
+                            x++;
+                        }
+                        else if(path_state==Site::ygapped)
+                        {
+                            seq += fit2->sequence.at(y);
+                            qsc += fit2->quality.at(y);
+                            y++;
+                        }
+                        else if(path_state==Site::matched)
+                        {
+                            if(static_cast<int>( fit1->quality.at(x) ) > static_cast<int>( fit2->quality.at(y) ))
+                            {
+                                seq += fit1->sequence.at(x);
+                                qsc += fit1->quality.at(x);
+                            }
+                            else
+                            {
+                                seq += fit2->sequence.at(y);
+                                qsc += fit2->quality.at(y);
+                            }
+                            x++;y++;
+                        }
+                    }
+
+                    fit1->sequence = seq;
+                    fit1->quality = qsc;
+
+                    reads->erase(fit2);
+                    delete node;
+
+                    continue;
+                }
+
+//                else if( float(identical)/overlap >= Settings_handle::st.get("overlap-identity").as<float>()
+//                    && !Settings_handle::st.is("overlap-no-truncate") )
+//                {
+//                    int qsc_sum_left = 0;
+//                    int qsc_sum_right = 0;
+
+//                    x=0;y=0;
+//                    for(int i=1;i<anc_seq->sites_length()-1;i++)
+//                    {
+//                        int path_state = anc_seq->get_site_at(i)->get_path_state();
+
+//                        if(path_state==Site::xgapped)
+//                        {
+//                            x++;
+//                        }
+//                        else if(path_state==Site::ygapped)
+//                        {
+//                            y++;
+//                        }
+//                        else if(path_state==Site::matched)
+//                        {
+//                            qsc_sum_left += static_cast<int>( fit1->quality.at(x) );
+//                            qsc_sum_right += static_cast<int>( fit2->quality.at(y) );
+
+//                            x++;y++;
+//                        }
+//                    }
+
+
+//                    if(qsc_sum_left > qsc_sum_right)
+//                    {
+//                        if(!Settings_handle::st.is("silent"))
+//                            cout<<"Reads "<<fit1->name<<" and "<<fit2->name<<" seem to overlap: truncating "<<fit2->name<<"\n";
+
+//                        fit2->sequence = fit2->sequence.substr(overlap);
+//                        fit2->quality = fit2->quality.substr(overlap);
+//                    }
+//                    else
+//                    {
+//                        if(!Settings_handle::st.is("silent"))
+//                            cout<<"Reads "<<fit1->name<<" and "<<fit2->name<<" seem to overlap: truncating "<<fit1->name<<"\n";
+
+//                        fit1->sequence = fit1->sequence.substr(0,fit1->sequence.length()-overlap);
+//                        fit1->quality = fit1->quality.substr(0,fit1->quality.length()-overlap);
+//                    }
+//                    fit2++;
+//                }
+                else
+                {
+                    fit2++;
+                }
+
+
+                delete node;
+                continue;
+            }
+
+            fit2++;
+        }
+    }
+}
 
 void Reads_alignment::find_paired_reads(vector<Fasta_entry> *reads)
 {
@@ -299,7 +602,14 @@ void Reads_alignment::find_paired_reads(vector<Fasta_entry> *reads)
 
             if(name1.substr(0,name1.length()-2)==name2.substr(0,name2.length()-2))
             {
+                if(!Settings_handle::st.is("silent"))
+                    cout<<"Pairing "<<fit1->name<<" and "<<fit2->name<<": new name ";
+
                 fit1->name = name1.substr(0,name1.length()-1)+"p12";
+
+                if(!Settings_handle::st.is("silent"))
+                    cout<<fit1->name<<".\n";
+
                 fit1->comment = fit2->comment;
                 fit1->first_read_length = fit1->sequence.length();
                 fit1->sequence += "0"+fit2->sequence;
@@ -338,10 +648,8 @@ void Reads_alignment::copy_node_details(Node *reads_node,Fasta_entry *read, stri
     reads_node->set_distance_to_parent(r_dist);
     reads_node->set_name(read->name);
     reads_node->add_name_comment(read->comment);
-    reads_node->add_sequence( *read, full_alpha);
+    reads_node->add_sequence( *read, full_alpha, false, true);
 
-    if(!Settings_handle::st.is("silent"))
-        cout<<"aligning read: "<<read->name<<": "<<read->comment<<endl;
 }
 
 bool Reads_alignment::read_alignment_overlaps(Node * node, string read_name, string ref_node_name)

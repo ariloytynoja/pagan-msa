@@ -200,6 +200,7 @@ struct Site
     Unique_index unique_index;
 
     int character_state;
+    char character_symbol;
 
     int site_type;
     enum Site_type {start_site,real_site,stop_site,break_start_site,break_stop_site,non_real};
@@ -237,6 +238,9 @@ public:
 
     void set_state(int c) { character_state = c; }
     int  get_state() { return character_state; }
+
+    void set_symbol(char c) {  character_symbol = c; }
+    char get_symbol() {  return character_symbol; }
 
     void set_path_state(int c) { path_state = c; }
     int  get_path_state() { return path_state; }
@@ -683,12 +687,12 @@ public:
 
     string *get_gapped_sequence() { return &gapped_seq; }
 
-    Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped = false);
+    Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped = false, bool no_trimming=false);
     Sequence(const vector<Site>* s, const vector<Edge>* e, const string& alphabet);
     Sequence(const int length,const string& alphabet, string gapped_s="");
 
     void create_default_sequence(Fasta_entry &seq_entry);
-    void create_fastq_sequence(Fasta_entry &seq_entry);
+    void create_fastq_sequence(Fasta_entry &seq_entry, bool no_trimming=false);
     void create_graph_sequence(Fasta_entry &seq_entry);
 
     vector<Site> *get_sites() { return &sites; }

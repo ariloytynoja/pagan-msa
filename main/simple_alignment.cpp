@@ -43,6 +43,9 @@ void Simple_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     }
 
 
+//    cout<<"costs: go "<<model->gap_open()<<", gc "<<model->gap_close()<<", ge "<<model->gap_ext()<<", gee "<<
+//            model->gap_end_ext()<<", gbe "<<model->gap_break_ext()<<", ng "<<model->non_gap()<<endl;
+
     // Set the edge weighting scheme, define the dynamic-programming matrices
     //
     log_edge_weight = &ppa::Simple_alignment::edge_log_posterior_weight;
@@ -878,6 +881,9 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
                 x_ind = (*match)[i][j].x_ind;
                 y_ind = (*match)[i][j].y_ind;
 
+//                if(Settings::noise>4 && compute_full_score)
+//                    cout<<"fs "<<i<<" "<<j<<" "<<(*match)[i][j].full_score<<endl;
+
                 left_edges->at((*match)[i][j].x_edge_ind).is_used(true);
                 right_edges->at((*match)[i][j].y_edge_ind).is_used(true);
 
@@ -897,6 +903,9 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
                 x_ind = (*xgap)[i][j].x_ind;
                 y_ind = (*xgap)[i][j].y_ind;
 
+//                if(Settings::noise>4 && compute_full_score)
+//                    cout<<"fs "<<i<<" "<<j<<" "<<(*xgap)[i][j].full_score<<endl;
+
                 left_edges->at((*xgap)[i][j].x_edge_ind).is_used(true);
 
                 Path_pointer pp( (*xgap)[i][j], true );
@@ -914,6 +923,9 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
                 vit_mat = (*ygap)[i][j].matrix;
                 x_ind = (*ygap)[i][j].x_ind;
                 y_ind = (*ygap)[i][j].y_ind;
+
+//                if(Settings::noise>4 && compute_full_score)
+//                    cout<<"fs "<<i<<" "<<j<<" "<<(*ygap)[i][j].full_score<<endl;
 
                 right_edges->at((*ygap)[i][j].y_edge_ind).is_used(true);
 

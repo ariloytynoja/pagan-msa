@@ -24,12 +24,12 @@ Node::~Node()
         delete sequence;
 }
 
-void Node::add_sequence( Fasta_entry seq_entry, string full_char_alphabet, bool gapped)
+void Node::add_sequence( Fasta_entry seq_entry, string full_char_alphabet, bool gapped, bool no_trimming)
 {
     if(Settings::noise>4)
         cout<<"Node::add_sequence "<<name<<"\n";
 
-    sequence = new Sequence(seq_entry, full_char_alphabet, gapped);
+    sequence = new Sequence(seq_entry, full_char_alphabet, gapped, no_trimming);
     this->node_has_sequence_object= true;
 }
 
@@ -214,8 +214,9 @@ void Node::get_alignment_column_at(int j,vector<char> *column,bool include_inter
 
     if(leaf)
     {
-        int state = sequence->get_site_at(j)->get_state();
-        column->push_back(sequence->get_full_alphabet().at(state));
+//        int state = sequence->get_site_at(j)->get_state();
+//        column->push_back(sequence->get_full_alphabet().at(state));
+        column->push_back(sequence->get_site_at(j)->get_symbol());
     }
     else
     {
