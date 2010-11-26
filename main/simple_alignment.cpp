@@ -1304,17 +1304,20 @@ void Simple_alignment::create_ancestral_edges(Sequence *sequence)
             if( tsite->has_bwd_edge() )
             {
                 Edge *child = tsite->get_first_bwd_edge();
+//                cout<<"edge1: "<<child->get_start_site_index()<<" "<<child->get_end_site_index()<<endl;
+
                 this->transfer_child_edge(sequence, child, &left_child_index, left_branch_length );
 
                 while( tsite->has_next_bwd_edge() )
                 {
                     child = tsite->get_next_bwd_edge();
+//                    cout<<"edge2: "<<child->get_start_site_index()<<" "<<child->get_end_site_index()<<endl;
                     this->transfer_child_edge(sequence, child, &left_child_index, left_branch_length );
                 }
             }
 
             // these create edges to/from skipped sites flanked by gaps.
-            if( (pstate == Site::matched || pstate == Site::ends_site ) && prev.left_skip_site_index >= 0)
+            if( (pstate == Site::matched || pstate == Site::ends_site ) && prev.left_skip_site_index >= 0 && edges_for_skipped_flanked_by_gaps)
             {
                 // edge from the skipped site to the *next* site
                 // as no better info is available, *this* edge is "copied" to one coming to the current site
@@ -1330,7 +1333,7 @@ void Simple_alignment::create_ancestral_edges(Sequence *sequence)
 
                 prev.left_skip_site_index = -1;
             }
-            else if(pstate == Site::xskipped && ( prev.path_state == Site::xgapped || prev.path_state == Site::ygapped ) )
+            else if(pstate == Site::xskipped && ( prev.path_state == Site::xgapped || prev.path_state == Site::ygapped ) && edges_for_skipped_flanked_by_gaps)
             {
                 // the same here: use this as a template for an extra edge
                 Edge query(offspring->left_index-1, offspring->left_index);
@@ -1361,16 +1364,18 @@ void Simple_alignment::create_ancestral_edges(Sequence *sequence)
             if( tsite->has_bwd_edge() )
             {
                 Edge *child = tsite->get_first_bwd_edge();
+//                cout<<"edge3: "<<child->get_start_site_index()<<" "<<child->get_end_site_index()<<endl;
                 this->transfer_child_edge(sequence, child, &right_child_index, right_branch_length );
 
                 while( tsite->has_next_bwd_edge() )
                 {
                     child = tsite->get_next_bwd_edge();
+//                    cout<<"edge4: "<<child->get_start_site_index()<<" "<<child->get_end_site_index()<<endl;
                     this->transfer_child_edge(sequence, child, &right_child_index, right_branch_length );
                 }
             }
 
-            if( (pstate == Site::matched || pstate == Site::ends_site ) && prev.right_skip_site_index >= 0)
+            if( (pstate == Site::matched || pstate == Site::ends_site ) && prev.right_skip_site_index >= 0 && edges_for_skipped_flanked_by_gaps)
             {
                 Edge query(prev.right_skip_site_index,prev.right_skip_site_index+1);
                 int ind = right->get_fwd_edge_index_at_site(prev.right_skip_site_index,&query);
@@ -1384,7 +1389,7 @@ void Simple_alignment::create_ancestral_edges(Sequence *sequence)
 
                 prev.right_skip_site_index = -1;
             }
-            else if(pstate == Site::yskipped && ( prev.path_state == Site::xgapped || prev.path_state == Site::ygapped ) )
+            else if(pstate == Site::yskipped && ( prev.path_state == Site::xgapped || prev.path_state == Site::ygapped ) && edges_for_skipped_flanked_by_gaps)
             {
                 Edge query(offspring->right_index-1, offspring->right_index);
                 int ind = right->get_bwd_edge_index_at_site(offspring->right_index,&query);
@@ -1630,6 +1635,8 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *
     // No identical copies
     if(sequence->get_site_at( edge.get_end_site_index() )->contains_bwd_edge( &edge ) )
         return;
+
+//    cout<<"trans: "<<edge.get_start_site_index()<<" "<<edge.get_end_site_index()<<endl;
 
     // Limits for copying old edges:
     //  first, number of nodes since last used

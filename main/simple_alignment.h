@@ -104,7 +104,7 @@ class Simple_alignment
 
     bool no_terminal_edges;
     bool pair_end_reads;
-
+    bool edges_for_skipped_flanked_by_gaps;
     int x_length;
     int y_length;
     int x_read1_length;
@@ -350,6 +350,8 @@ class Simple_alignment
     {
         del_ins_ratio = 1;//model->del_prob/model->ins_prob;
         ins_del_ratio = 1;//model->ins_prob/model->del_prob;
+
+        edges_for_skipped_flanked_by_gaps = false;
 
         weighted_branch_skip_penalty = false; // by default, use penalty *per node*
 
