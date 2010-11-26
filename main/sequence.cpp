@@ -57,7 +57,6 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
 
     Site first_site( &edges, Site::start_site, Site::ends_site );
     first_site.set_state( -1 );
-    first_site.set_symbol('0');
     first_site.set_empty_children();
     this->push_back_site(first_site);
 
@@ -90,7 +89,6 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
 
     Site last_site( &edges, Site::stop_site, Site::ends_site );
     last_site.set_state( -1 );
-    last_site.set_symbol('0');
     last_site.set_empty_children();
     this->push_back_site(last_site);
 
@@ -107,7 +105,6 @@ void Sequence::create_fastq_sequence(Fasta_entry &seq_entry, bool no_trimming)
 
     Site first_site( &edges, Site::start_site, Site::ends_site );
     first_site.set_state( -1 );
-    first_site.set_symbol('0');
     first_site.set_empty_children();
     this->push_back_site(first_site);
 
@@ -275,7 +272,6 @@ void Sequence::create_fastq_sequence(Fasta_entry &seq_entry, bool no_trimming)
 
     Site last_site( &edges, Site::stop_site, Site::ends_site );
     last_site.set_state( -1 );
-    last_site.set_symbol('0');
     last_site.set_empty_children();
     this->push_back_site(last_site);
 
@@ -290,7 +286,6 @@ void Sequence::create_graph_sequence(Fasta_entry &seq_entry)
 {
     Site first_site( &edges, Site::start_site, Site::ends_site );
     first_site.set_state( -1 );
-    first_site.set_symbol('0');
     first_site.set_empty_children();
     this->push_back_site(first_site);
 
@@ -315,7 +310,6 @@ void Sequence::create_graph_sequence(Fasta_entry &seq_entry)
 
     Site last_site( &edges, Site::stop_site, Site::ends_site );
     last_site.set_state( -1 );
-    last_site.set_symbol('0');
     last_site.set_empty_children();
     this->push_back_site(last_site);
 

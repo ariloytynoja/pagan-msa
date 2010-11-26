@@ -223,7 +223,7 @@ struct Site
 
 
 public:
-    Site(vector<Edge> *e,int type=Site::real_site,int p_state=Site::terminal):index(-1),character_state(-1),
+    Site(vector<Edge> *e,int type=Site::real_site,int p_state=Site::terminal):index(-1),character_state(-1),character_symbol('0'),
             site_type(type),path_state(p_state),edges(e),first_fwd_edge_index(-1),current_fwd_edge_index(-1),
             first_bwd_edge_index(-1),current_bwd_edge_index(-1),posterior_support(1),
             branch_count_since_last_used(0),branch_distance_since_last_used(0) {}
