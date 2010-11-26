@@ -54,8 +54,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("overlap-identity", po::value<float>()->default_value(0.75), "minimum identity at overlap")
         ("overlap-identical-minimum", po::value<int>()->default_value(10), "minimum identical overlapping sites")
 //        ("overlap-no-truncate","do not truncate suspicious overlap")
-        ("overlap-merge-only","only merge overlapping paired reads")
         ("overlap-merge-file", po::value<string>(), "output file for merged reads")
+        ("overlap-merge-only","only merge overlapping paired reads")
     ;
 
     boost::program_options::options_description reads_alignment2("Additional reads alignment options");

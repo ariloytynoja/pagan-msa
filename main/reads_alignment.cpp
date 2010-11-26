@@ -33,11 +33,22 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
     //
     if( Settings_handle::st.is("overlap-pair-end") )
     {
-        if( Settings_handle::st.is("overlap-pair-end"))
-        {
-            this->merge_paired_reads( &reads, mf );
-        }
+        this->merge_paired_reads( &reads, mf );
 
+        if(Settings_handle::st.is("overlap-merge-file"))
+        {
+
+            string path = Settings_handle::st.get("overlap-merge-file").as<string>();
+
+            cout<<"Reads output file: "<<path<<".fastq"<<endl;
+
+            fr.write_fastq(path,reads);
+        }
+        if( Settings_handle::st.is("pair-end") )
+        {
+            cout<<"\nWarning: both '--overlap-pair-end' and '--pair-end' options defined.\n"<<
+                    "Pairing of overlapping reads may cause duplicated sequence regions.\n\n";
+        }
     }
 
     // Trim read ends
