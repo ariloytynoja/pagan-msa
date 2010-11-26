@@ -82,7 +82,7 @@ string Newick_reader::read_tree(const string & filename) throw (IOException)
 
 Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exception)
 {
-    //cout << "NODE: " << description << endl;
+//    cout << "NODE: " << description << endl;
     Newick_reader::Element elt = Newick_reader::get_element(description);
 
     //New node:
@@ -270,7 +270,8 @@ Newick_reader::Element Newick_reader::get_element(const string & elt) throw (Exc
         string::size_type lastBracket = elt.rfind(')');
 
         string eltt = elt;
-        if(openNHX != string::npos && lastBracket != string::npos && lastBracket < openNHX)
+        if( (openNHX != string::npos && lastBracket != string::npos && lastBracket < openNHX)
+            || (openNHX != string::npos && lastBracket == string::npos) )
         {
             if(closeNHX != string::npos)
             {
