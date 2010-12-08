@@ -536,13 +536,13 @@ void Model_factory::dna_model(float *char_pi,Settings *st)
 {
     float char_kappa = 2.0;
     float char_rho = 1.0;
-    float ins_rate = 0.05;
-    float del_rate = 0.05;
+    float ins_rate = 0.2;
+    float del_rate = 0.2;
     float gap_ext = 0.5;
     float end_gap_ext = 0.95;
     float break_gap_ext = 0.99;
 
-    if(st->is("ref-seqfile"))
+    if(st->is("ref-seqfile") && !st->is("454"))
     {
         ins_rate = 1;
         del_rate = 1;
@@ -988,7 +988,7 @@ void Model_factory::build_model(int s,Db_matrix *pi,Db_matrix *q,Db_matrix *wU,D
 Evol_model Model_factory::alignment_model(double distance, bool is_local_alignment)
 {
 
-
+//cout<<"dist "<<distance<<endl;
     // Compute the P matrix for regular DNA alphabet (four bases).
     //
     Eigen* e = new Eigen();

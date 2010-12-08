@@ -37,37 +37,36 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     version = 0.12;
     date = "24 Nov, 2010";
 
-    boost::program_options::options_description minimal("Minimal progressive alignment options");
+    boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
         ("seqfile", po::value<string>(), "sequence infile (FASTA)")
         ("treefile", po::value<string>(), "tree file")
-        ("outfile", po::value<string>(), "sequence outfile")
     ;
 
-    boost::program_options::options_description generic("Generic options");
+    boost::program_options::options_description generic("Generic options",100);
     generic.add_options()
         ("help", "display help message")
-        ("silent","minimal output")
-        ("noise", po::value<int>(), "output noise level")
+        ("outfile", po::value<string>(), "sequence outfile")
         ("output-ancestors", "include ancestors in outfile")
         ("full-probability", "compute full probability")
         ("output-graph","output ancestral graph")
         ("sample-path", "sample the alignment path from posterior probabilities")
         ("no-terminal-edges", "expect terminal missing data")
+        ("noise", po::value<int>(), "output noise level")
+        ("silent","minimal output")
     ;
 
-    boost::program_options::options_description reads_alignment("Basic reads alignment options");
+    boost::program_options::options_description reads_alignment("Basic reads alignment options",100);
     reads_alignment.add_options()
         ("ref-seqfile", po::value<string>(), "reference alignment file (FASTA)")
         ("ref-treefile", po::value<string>(), "reference tree file (NH/NHX)")
         ("readsfile", po::value<string>(), "reads file (FASTA/FASTQ)")
-        ("outfile", po::value<string>(), "sequence outfile")
         ("pair-end","connect paired reads")
         ("454", "correct homopolymer error")
         ("test-every-node","test every node for each read")
     ;
 
-    boost::program_options::options_description reads_alignment3("Overlapping pair reads options");
+    boost::program_options::options_description reads_alignment3("Overlapping pair reads options",100);
     reads_alignment3.add_options()
         ("overlap-pair-end","merge overlapping paired reads")
         ("overlap-minimum", po::value<int>()->default_value(15), "minimum overlapping sites")
@@ -78,7 +77,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("overlap-merge-only","only merge overlapping paired reads")
     ;
 
-    boost::program_options::options_description reads_alignment2("Additional reads alignment options");
+    boost::program_options::options_description reads_alignment2("Additional reads alignment options",100);
     reads_alignment2.add_options()
         ("no-fastq", "do not use Q-scores")
         ("qscore-minimum", po::value<int>()->default_value(10), "threshold to mask low Q-score sites")
@@ -102,14 +101,14 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("reads-distance", po::value<float>()->default_value(0.01), "evolutionary distance from pseudo-root")
     ;
 
-    boost::program_options::options_description graph("Graph options");
+    boost::program_options::options_description graph("Graph options",100);
     graph.add_options()
         ("weight-sampled-edges", "use posterior scores to weight sampled edges")
         ("no-weight-transform", "no weight transform for sampled edges")
         ("cuberoot-weight-transform", "cuberoot weight transform for sampled edges")
     ;
 
-    boost::program_options::options_description model("DNA model options");
+    boost::program_options::options_description model("DNA model options",100);
     model.add_options()
         ("ins-rate", po::value<float>(), "insertion rate (per substitution)")
         ("del-rate", po::value<float>(), "deletion rate (per substitution)")
@@ -119,7 +118,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("dna-rho", po::value<float>(), "rho")
     ;
 
-    boost::program_options::options_description tree_edit("Tree manipulation options");
+    boost::program_options::options_description tree_edit("Tree manipulation options",100);
     tree_edit.add_options()
         ("scale-branches", po::value<float>(), "scale tree branches")
         ("truncate-branches", po::value<float>()->default_value(0.1), "truncate tree branches")
@@ -127,7 +126,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("fixed-branches", po::value<float>(), "use fixed-length tree branches")
     ;
 
-    boost::program_options::options_description alignment("Alignment model options");
+    boost::program_options::options_description alignment("Alignment model options",100);
     alignment.add_options()
         ("any-skips-confirm-insertion", po::value<int>(), "#skips to confirm as insertion")
         ("match-skips-confirm-insertion", po::value<int>(), "#skips from match sites to confirm as insertion")
@@ -136,7 +135,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("branch-skip-penalty-per-branch", po::value<float>(), "fixed probability for site(s) being skipped over and later matched")
     ;
 
-    boost::program_options::options_description output("Graph output options");
+    boost::program_options::options_description output("Graph output options",100);
     output.add_options()
         ("mpost-graph-file", po::value<string>(), "sequence graph file for metapost")
         ("output-alignment-graphs", "include aligned graphs")
@@ -145,7 +144,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("plot-slope-up", "plot viterbi path climbing up")
     ;
 
-    boost::program_options::options_description debug("Debugging options");
+    boost::program_options::options_description debug("Debugging options",100);
     debug.add_options()
         ("check-valid-graphs", "check that fwd and bwd edges are identical")
         ("help-all", "display help-all message")
@@ -153,7 +152,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("no-log-odds", "do not use log-odds substitutions scores")
     ;
 
-    boost::program_options::options_description broken("Broken options");
+    boost::program_options::options_description broken("Broken options",100);
     broken.add_options()
         ("sample-additional-paths", po::value<int>()->default_value(0), "sample additional paths from posterior probabilities")
         ("cds-seqfile", po::value<string>(), "reference alignment file (FASTA)")

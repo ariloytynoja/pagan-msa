@@ -396,8 +396,19 @@ public:
 
         this->add_ancestral_sequence( sa.get_simple_sequence() );
 
+        if(Settings::noise>2)
+            this->print_alignment();
+
         if( Settings_handle::st.is("check-valid-graphs") )
             this->check_valid_graph();
+    }
+
+    void print_alignment()
+    {
+        vector<Fasta_entry> alignment;
+        this->get_alignment(&alignment);
+        for(int i=0;i<alignment.size();i++)
+            cout<<">"<<alignment.at(i).name<<endl<<alignment.at(i).sequence<<endl;
     }
 
     void read_alignment(Model_factory *mf)
