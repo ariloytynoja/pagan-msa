@@ -480,18 +480,15 @@ class Simple_alignment
 
         no_terminal_edges = true;
 
-//        if(!Settings_handle::st.is("test-every-node"))
-//        {
-            max_allowed_skip_distance = 5;
-            max_allowed_skip_branches = 50000;
-            max_allowed_match_skip_branches = 50000;
+        max_allowed_skip_distance = 5;
+        max_allowed_skip_branches = 50000;
+        max_allowed_match_skip_branches = 50000;
 
-            branch_skip_weight = 1;
-            branch_skip_probability = 1;
+        branch_skip_weight = 1;
+        branch_skip_probability = 1;
 
-            if(Settings_handle::st.is("pair-end"))
-                pair_end_reads = true;
-//        }
+        if(Settings_handle::st.is("pair-end"))
+            pair_end_reads = true;
     }
 
     void mark_no_gap_penalty_sites(Sequence *left, Sequence *right)

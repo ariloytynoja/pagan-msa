@@ -292,8 +292,11 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
     // set the basic parameters (copy from Settings)
     //
     this->set_basic_settings();
-    this->set_reads_alignment_settings();
-    no_terminal_edges = false;
+    if(!Settings_handle::st.is("perfect-reference"))
+    {
+        this->set_reads_alignment_settings();
+    }
+//    no_terminal_edges = false;
 
 
     // Set the edge weighting scheme, define the dynamic-programming matrices

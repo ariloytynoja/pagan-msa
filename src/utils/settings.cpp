@@ -99,6 +99,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("min-reads-overlap", po::value<float>()->default_value(0.1), "overlap threshold for read and reference")
         ("min-reads-identity", po::value<float>()->default_value(0.3), "identity threshold for aligned sites")
         ("reads-distance", po::value<float>()->default_value(0.01), "evolutionary distance from pseudo-root")
+        ("perfect-reference", "assume perfect reference alignment")
     ;
 
     boost::program_options::options_description graph("Graph options",100);
