@@ -136,6 +136,7 @@ class Simple_alignment
 
     void initialise_array_corner();
     void initialise_array_corner_bwd();
+    void initialise_full_arrays(int ll,int rl);
 
     void compute_fwd_scores(int i,int j);
     void compute_bwd_full_score(int i,int j);
@@ -603,6 +604,8 @@ public:
     void read_alignment(Sequence *left_sequence,Sequence *right_sequence,Evol_model *model,
                         float left_branch_length=0,float right_branch_length=0);
 
+
+    void make_alignment_path(vector<Matrix_pointer> *simple_path);
 
     Sequence* get_simple_sequence() { return ancestral_sequence; }
 

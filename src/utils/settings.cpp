@@ -160,6 +160,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("cds-treefile", po::value<string>(), "reference tree file (NH/NHX)")
 //        ("terminal-gap-cost-divider", po::value<float>()->default_value(2), "divider for terminal gap cost")
 //        ("unused-edges-not-transferred", "mimic PRANK-F behaviour")
+        ("no-hack-1","no new feature")
     ;
 
     full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken);
