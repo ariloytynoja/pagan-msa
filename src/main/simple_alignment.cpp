@@ -331,6 +331,10 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
     int ri = 0;
 
 
+    vector<int> left_child_site_index;
+    vector<int> right_child_site_index;
+    int count = 0;
+
     for(;lgi!=gapped_left->end();lgi++,rgi++)
     {
         bool lgap = (*lgi == '-');
@@ -354,6 +358,41 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
             Path_pointer pp( bwd_p, real_site );
             path.push_back(pp);
 
+            if(real_site)
+            {
+                if(left->get_site_at(li+1)->has_bwd_edge())
+                {
+                    Edge *edge = left->get_site_at(li+1)->get_first_bwd_edge();
+                    int ind = edge->get_start_site_index();
+                    if(ind==0 || (ind>0 && path.at(left_child_site_index.at(ind-1)).real_site) )
+                    {
+                        edge->is_used(true);
+                    }
+                    while(left->get_site_at(li+1)->has_next_bwd_edge())
+                    {
+                        edge = left->get_site_at(li+1)->get_next_bwd_edge();
+                        ind = edge->get_start_site_index();
+                        if(ind==0 || (ind>0 && path.at(left_child_site_index.at(ind-1)).real_site) )
+                        {
+                            edge->is_used(true);
+                        }
+                    }
+                }
+            }
+
+            cout<<"x "<<li<<" "<<ri<<" "<<real_site<<": ";//
+            int ind = left->get_site_at(li+1)->get_first_bwd_edge()->get_start_site_index();
+            cout<<ind<<" ";
+            while(left->get_site_at(li+1)->has_next_bwd_edge())
+            {
+                ind = left->get_site_at(li+1)->get_next_bwd_edge()->get_start_site_index();
+                cout<<ind<<" ";
+            }
+            cout<<endl;
+
+            left_child_site_index.push_back(count);
+            count++;
+
             li++;
         }
         else if(lgap && !rgap)
@@ -374,6 +413,40 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
             Path_pointer pp( bwd_p, real_site );
             path.push_back(pp);
 
+            if(real_site)
+            {
+                if(right->get_site_at(ri+1)->has_bwd_edge())
+                {
+                    Edge *edge = right->get_site_at(ri+1)->get_first_bwd_edge();
+                    int ind = edge->get_start_site_index();
+                    if(ind==0 || (ind>0 && path.at(right_child_site_index.at(ind-1)).real_site) )
+                    {
+                        edge->is_used(true);
+                    }
+                    while(right->get_site_at(ri+1)->has_next_bwd_edge())
+                    {
+                        edge = right->get_site_at(ri+1)->get_next_bwd_edge();
+                        ind = edge->get_start_site_index();
+                        if(ind==0 || (ind>0 && path.at(right_child_site_index.at(ind-1)).real_site) )
+                        {
+                            edge->is_used(true);
+                        }
+                    }
+                }
+            }
+
+            cout<<"y "<<li<<" "<<ri<<" "<<real_site<<": ";//
+            int ind = right->get_site_at(ri+1)->get_first_bwd_edge()->get_start_site_index();
+            cout<<ind<<" ";
+            while(right->get_site_at(ri+1)->has_next_bwd_edge())
+            {
+                ind = right->get_site_at(ri+1)->get_next_bwd_edge()->get_start_site_index();
+                cout<<ind<<" ";
+            }
+            cout<<endl;
+
+            right_child_site_index.push_back(count);
+            count++;
             ri++;
         }
         else if(!lgap && !rgap)
@@ -388,6 +461,65 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
 
             path.push_back(pp);
 
+            if(left->get_site_at(li+1)->has_bwd_edge())
+            {
+                Edge *edge = left->get_site_at(li+1)->get_first_bwd_edge();
+                int ind = edge->get_start_site_index();
+                if(ind==0 || (ind>0 && path.at(left_child_site_index.at(ind-1)).real_site) )
+                {
+                    edge->is_used(true);
+                }
+                while(left->get_site_at(li+1)->has_next_bwd_edge())
+                {
+                    edge = left->get_site_at(li+1)->get_next_bwd_edge();
+                    ind = edge->get_start_site_index();
+                    if(ind==0 || (ind>0 && path.at(left_child_site_index.at(ind-1)).real_site) )
+                    {
+                        edge->is_used(true);
+                    }
+                }
+            }
+
+            if(right->get_site_at(ri+1)->has_bwd_edge())
+            {
+                Edge *edge = right->get_site_at(ri+1)->get_first_bwd_edge();
+                int ind = edge->get_start_site_index();
+                if(ind==0 || (ind>0 && path.at(right_child_site_index.at(ind-1)).real_site) )
+                {
+                    edge->is_used(true);
+                }
+                while(right->get_site_at(ri+1)->has_next_bwd_edge())
+                {
+                    edge = right->get_site_at(ri+1)->get_next_bwd_edge();
+                    ind = edge->get_start_site_index();
+                    if(ind==0 || (ind>0 && path.at(right_child_site_index.at(ind-1)).real_site) )
+                    {
+                        edge->is_used(true);
+                    }
+                }
+            }
+
+            cout<<"m "<<li<<" "<<ri<<" -"<<": ";//
+            int ind = left->get_site_at(li+1)->get_first_bwd_edge()->get_start_site_index();
+            cout<<ind<<" ";
+            while(left->get_site_at(li+1)->has_next_bwd_edge())
+            {
+               ind = left->get_site_at(li+1)->get_next_bwd_edge()->get_start_site_index();
+               cout<<ind<<" ";
+            }
+            cout<<" | ";
+            ind = right->get_site_at(ri+1)->get_first_bwd_edge()->get_start_site_index();
+            cout<<ind<<" ";
+            while(right->get_site_at(ri+1)->has_next_bwd_edge())
+            {
+                ind = right->get_site_at(ri+1)->get_next_bwd_edge()->get_start_site_index();
+                cout<<ind<<" ";
+            }
+            cout<<endl;
+
+            left_child_site_index.push_back(count);
+            right_child_site_index.push_back(count);
+            count++;
             li++;
             ri++;
         }
@@ -396,6 +528,51 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
             gapped_anc.append("-");
         }
     }
+
+    if(left->get_site_at(li+1)->has_bwd_edge())
+    {
+        Edge *edge = left->get_site_at(li+1)->get_first_bwd_edge();
+        int ind = edge->get_start_site_index();
+        if(ind==0 || (ind>0 && path.at(left_child_site_index.at(ind-1)).real_site) )
+        {
+            edge->is_used(true);
+        }
+        while(left->get_site_at(li+1)->has_next_bwd_edge())
+        {
+            edge = left->get_site_at(li+1)->get_next_bwd_edge();
+            ind = edge->get_start_site_index();
+            if(ind==0 || (ind>0 && path.at(left_child_site_index.at(ind-1)).real_site) )
+            {
+                edge->is_used(true);
+            }
+        }
+    }
+
+    if(right->get_site_at(ri+1)->has_bwd_edge())
+    {
+        Edge *edge = right->get_site_at(ri+1)->get_first_bwd_edge();
+        int ind = edge->get_start_site_index();
+        if(ind==0 || (ind>0 && path.at(right_child_site_index.at(ind-1)).real_site) )
+        {
+            edge->is_used(true);
+        }
+        while(right->get_site_at(ri+1)->has_next_bwd_edge())
+        {
+            edge = right->get_site_at(ri+1)->get_next_bwd_edge();
+            ind = edge->get_start_site_index();
+            if(ind==0 || (ind>0 && path.at(right_child_site_index.at(ind-1)).real_site) )
+            {
+                edge->is_used(true);
+            }
+        }
+    }
+
+    cout<<"\npath v"<<endl;
+    for(unsigned int i=0;i<path.size();i++)
+        cout<<path.at(i).mp.x_ind<<" "<<path.at(i).mp.y_ind<<"; "<<path.at(i).mp.x_edge_ind<<" "<<path.at(i).mp.y_edge_ind
+            <<" ("<<path.at(i).mp.matrix<<"); "<<path.at(i).real_site<<"; "
+            <<path.at(i).branch_length_increase<<" "<<path.at(i).branch_count_increase<<endl;
+    cout<<endl;
 
     // Now build the sequence forward following the path saved in a vector;
     //
@@ -987,12 +1164,15 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
         cout<<endl;
     }
     /*DEBUG*/
-//    cout<<"\npath v"<<endl;
-//    for(unsigned int i=0;i<path->size();i++)
-////        cout<<path->at(i).mp.matrix<<" "<<log(path->at(i).mp.fwd_score)<<" "<<log(path->at(i).mp.bwd_score)<<" "<<log(path->at(i).mp.full_score)<<endl;
-//        cout<<path->at(i).mp.matrix<<" "<<path->at(i).mp.fwd_score<<" "<<path->at(i).mp.bwd_score<<" "<<path->at(i).mp.full_score<<endl;
-//    cout<<endl;
+    cout<<"\npath v"<<endl;
+    for(unsigned int i=0;i<path->size();i++)
+        cout<<path->at(i).mp.x_ind<<" "<<path->at(i).mp.y_ind<<"; "<<path->at(i).mp.x_edge_ind<<" "<<path->at(i).mp.y_edge_ind
+            <<" ("<<path->at(i).mp.matrix<<"); "<<path->at(i).real_site<<"; "
+            <<path->at(i).branch_length_increase<<" "<<path->at(i).branch_count_increase<<endl;
 
+//        cout<<path->at(i).mp.matrix<<" "<<log(path->at(i).mp.fwd_score)<<" "<<log(path->at(i).mp.bwd_score)<<" "<<log(path->at(i).mp.full_score)<<endl;
+//        cout<<path->at(i).mp.matrix<<" "<<path->at(i).mp.fwd_score<<" "<<path->at(i).mp.bwd_score<<" "<<path->at(i).mp.full_score<<endl;
+    cout<<endl;
 
 }
 
@@ -1161,6 +1341,7 @@ void Simple_alignment::build_ancestral_sequence(Sequence *sequence, vector<Path_
         cout<<"ANCESTRAL SEQUENCE:\n";
         sequence->print_sequence();
     }
+    sequence->print_sequence();
 
     if(Settings::noise>6)
     {
@@ -1247,6 +1428,7 @@ void Simple_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path
 
             l_pos++; r_pos++;
         }
+
 
         sequence->push_back_site(site);
 
@@ -1463,6 +1645,7 @@ void Simple_alignment::check_skipped_boundaries(Sequence *sequence)
             if( ( psite->get_path_state()==Site::matched || psite->get_path_state()==Site::start_site )
                 && ( tsite->get_path_state()==Site::xskipped || tsite->get_path_state()==Site::yskipped ) )
             {
+//                cout<<"increase1 "<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<"\n";
                 edge->increase_branch_count_as_skipped_edge();
             }
         }
@@ -1483,6 +1666,7 @@ void Simple_alignment::check_skipped_boundaries(Sequence *sequence)
             if( ( tsite->get_path_state()==Site::xskipped || tsite->get_path_state()==Site::yskipped )
                 && ( nsite->get_path_state()==Site::matched || nsite->get_path_state()==Site::ends_site ) )
             {
+//                cout<<"increase2 "<<edge->get_start_site_index()<<" "<<edge->get_end_site_index()<<"\n";
                 edge->increase_branch_count_as_skipped_edge();
             }
         }
@@ -1648,6 +1832,7 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vecto
 //    cout<<child_index->at( edge.get_start_site_index() )<<" "<< child_index->at( edge.get_end_site_index() )<<"; ";
 //    cout<<sequence->get_site_at( edge.get_start_site_index() )->get_site_type()<<" "<<sequence->get_site_at( edge.get_start_site_index() )->get_path_state()<<endl;
 
+
     this->transfer_child_edge(sequence, edge, child, branch_length, connects_neighbour_site, adjust_posterior_weight, branch_weight);
 }
 
@@ -1659,15 +1844,16 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *
     if(sequence->get_site_at( edge.get_end_site_index() )->contains_bwd_edge( &edge ) )
         return;
 
-//    cout<<"trans: "<<edge.get_start_site_index()<<" "<<edge.get_end_site_index()<<endl;
 
     // Limits for copying old edges:
     //  first, number of nodes since last used
-    if(child->get_branch_count_since_last_used()+1 > max_allowed_skip_branches)
+//    if(child->get_branch_count_since_last_used()+1 > max_allowed_skip_branches)
+    if(!child->is_used() && child->get_branch_count_since_last_used()+1 > max_allowed_skip_branches)
         return;
 
     //  then, total branch distance since last used
-    if(child->get_branch_distance_since_last_used()+branch_length > max_allowed_skip_distance)
+//    if(child->get_branch_distance_since_last_used()+branch_length > max_allowed_skip_distance)
+    if(!child->is_used() && child->get_branch_distance_since_last_used()+branch_length > max_allowed_skip_distance)
         return;
 
     // Comparison of distance and node count since last used to find boundaries of path branches.
@@ -1697,6 +1883,7 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *
     // Edge is not used: just update the history
     else if(!child->is_used())
     {
+//        cout<<"not used"<<edge.get_start_site_index()<<" "<<edge.get_end_site_index()<<"\n";
         edge.set_branch_distance_since_last_used( child->get_branch_distance_since_last_used()+branch_length );
         edge.set_branch_count_since_last_used( child->get_branch_count_since_last_used()+1 );
 
