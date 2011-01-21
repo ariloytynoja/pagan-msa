@@ -33,6 +33,7 @@ Sequence::Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped, bo
     if(gapped)
     {
         gapped_seq = seq_entry.sequence;
+
         string::iterator si = seq_entry.sequence.begin();
         for (;si != seq_entry.sequence.end();si++)
         {
@@ -396,6 +397,7 @@ void Sequence::print_sequence(vector<Site> *sites)
 //cout<<i<<" "<<tsite->get_state()<<endl;
         cout<<i<<": ";
         if(tsite->get_site_type()==Site::real_site)
+//            cout<<tsite->get_index()<<" "<<tsite->get_state();//full_char_alphabet.at(tsite->get_state());
             cout<<tsite->get_index()<<" "<<full_char_alphabet.at(tsite->get_state());
         else
             cout<<tsite->get_index()<<" +";
