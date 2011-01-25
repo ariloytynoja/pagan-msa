@@ -312,7 +312,6 @@ class Simple_alignment
 
     void insert_gap_vector_path_pointer(vector<Path_pointer> *path, int i, int j, int matrix,float branch_length,int k)
     {
-        cout<<"insert m "<<matrix<<" i="<<i<<" j="<<j<<endl;
         Matrix_pointer mp(-1,i,j,matrix);
         if(matrix == Simple_alignment::x_mat)
         {
