@@ -460,42 +460,55 @@ public:
 
     void delete_bwd_edge(int edge_ind)
     {
+//        cout<<"delete fwd ("<<edge_ind<<")\n";
         if(this->has_bwd_edge())
         {
             Edge *edge = this->get_first_bwd_edge();
 
             if(edge->get_index() == edge_ind)
             {
+//                cout<<"delete fwd first\n";
                 if(this->has_next_bwd_edge())
                 {
-                    edge = this->get_next_bwd_edge();
-                    int next_ind = edge->get_index();
+                    Edge *edge2 = this->get_next_bwd_edge();
+                    int next_ind = edge2->get_index();
                     current_bwd_edge_index = first_bwd_edge_index = next_ind;
                 }
                 else
                 {
                     current_bwd_edge_index = first_bwd_edge_index = -1;
                 }
+//                cout<<"delete fwd end "<<current_bwd_edge_index<<" "<<first_bwd_edge_index<<"\n";
+
                 return;
             }
 
-            int prev_ind = edge->get_index();
 
             while(this->has_next_bwd_edge())
             {
+                int prev_ind = edge->get_index();
+//                cout<<"delete fwd pre "<<prev_ind<<"\n";
+
                 edge = this->get_next_bwd_edge();
                 if(edge->get_index() == edge_ind)
                 {
+//                    cout<<"delete fwd later\n";
                     if(this->has_next_bwd_edge())
                     {
                         edge = this->get_next_bwd_edge();
                         int next_ind = edge->get_index();
                         edges->at(prev_ind).set_next_bwd_edge_index(next_ind);
+//                        cout<<"delete fwd new "<<prev_ind<<" "<<next_ind<<"\n";
                     }
                     else
                     {
                         edges->at(prev_ind).set_next_bwd_edge_index(-1);
                     }
+//                    cout<<"delete fwd end "<<current_bwd_edge_index<<" "<<first_bwd_edge_index<<"\n";
+
+//                    cout<<"delete fwd end "<<current_bwd_edge_index<<" "<<edges->at(current_bwd_edge_index).get_start_site_index()<<" "<<edges->at(current_bwd_edge_index).get_end_site_index()<<"\n";
+//                    cout<<"delete fwd end "<<first_bwd_edge_index<<" "<<edges->at(first_bwd_edge_index).get_start_site_index()<<" "<<edges->at(first_bwd_edge_index).get_end_site_index()<<"\n";
+
                 }
             }
         }
@@ -503,12 +516,14 @@ public:
 
     void delete_fwd_edge(int edge_ind)
     {
+//        cout<<"delete bwd \n";
         if(this->has_fwd_edge())
         {
             Edge *edge = this->get_first_fwd_edge();
 
             if(edge->get_index() == edge_ind)
             {
+//                cout<<"delete bwd first\n";
                 if(this->has_next_fwd_edge())
                 {
                     edge = this->get_next_fwd_edge();
@@ -519,16 +534,19 @@ public:
                 {
                     current_fwd_edge_index = first_fwd_edge_index = -1;
                 }
+//                cout<<"delete bwd end "<<current_fwd_edge_index<<" "<<first_fwd_edge_index<<"\n";
+
                 return;
             }
 
-            int prev_ind = edge->get_index();
-
             while(this->has_next_fwd_edge())
             {
+                int prev_ind = edge->get_index();
+
                 edge = this->get_next_fwd_edge();
                 if(edge->get_index() == edge_ind)
                 {
+//                    cout<<"delete bwd later\n";
                     if(this->has_next_fwd_edge())
                     {
                         edge = this->get_next_fwd_edge();
@@ -539,6 +557,7 @@ public:
                     {
                         edges->at(prev_ind).set_next_fwd_edge_index(-1);
                     }
+//                    cout<<"delete bwd end "<<current_fwd_edge_index<<" "<<first_fwd_edge_index<<"\n";
                 }
             }
         }
