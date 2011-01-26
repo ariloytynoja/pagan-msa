@@ -105,6 +105,9 @@ class Simple_alignment
     vector<int> *left_child_site_index_p;
     vector<int> *right_child_site_index_p;
 
+    vector<int> *path_left_child_site_index_p;
+    vector<int> *path_right_child_site_index_p;
+
     vector<int> *opposite_index_left_child_p;
     vector<int> *opposite_index_right_child_p;
 
@@ -188,6 +191,9 @@ class Simple_alignment
 
     void iterate_bwd_edges_for_known_gap(Site * site,vector<Matrix_pointer> *z_slice,vector<Matrix_pointer> *w_slice,
                                                      vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type);
+
+    void iterate_bwd_edges_for_known_double_gap(Site * site,vector<Matrix_pointer> *z_slice,vector<Matrix_pointer> *w_slice,
+                                                            vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type);
 
     void iterate_bwd_edges_for_known_match(Site * left_site,Site * right_site,Matrix_pointer *max);
 
