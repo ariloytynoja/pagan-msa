@@ -190,14 +190,14 @@ class Simple_alignment
     /*********************************/
 
     void iterate_bwd_edges_for_known_gap(Site * site,vector<Matrix_pointer> *z_slice,vector<Matrix_pointer> *w_slice,
-                                                     vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type);
+                                                     vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type,int first_gp);
 
     void iterate_bwd_edges_for_known_double_gap(Site * site,vector<Matrix_pointer> *z_slice,vector<Matrix_pointer> *w_slice,
                                                             vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type);
 
-    void iterate_bwd_edges_for_known_match(Site * left_site,Site * right_site,Matrix_pointer *max);
+    void iterate_bwd_edges_for_known_match(Site * left_site,Site * right_site,Matrix_pointer *max,int first_xgap,int first_ygap);
 
-    void iterate_bwd_edges_for_vector_end(Site * left_site,Site * right_site,Matrix_pointer *max);
+    void iterate_bwd_edges_for_vector_end(Site * left_site,Site * right_site,Matrix_pointer *max,int last_matrix);
 
     /*********************************/
 
@@ -229,7 +229,7 @@ class Simple_alignment
 
 
     /*********************************/
-    void score_m_match_v(Edge * left_edge,Edge * right_edge,double m_log_match,Matrix_pointer *max);
+    void score_m_match_v(Edge * left_edge,Edge * right_edge,double m_log_match,Matrix_pointer *max, bool allow_any=false);
     void score_x_match_v(Edge * left_edge,Edge * right_edge,double m_log_match,Matrix_pointer *max);
     void score_y_match_v(Edge * left_edge,Edge * right_edge,double m_log_match,Matrix_pointer *max);
 
@@ -318,6 +318,7 @@ class Simple_alignment
 
     void insert_gap_vector_path_pointer(vector<Path_pointer> *path, int i, int j, int matrix,float branch_length,int k)
     {
+//        cout<<"si "<<i<<" "<<j<<" "<<matrix<<endl;
         Matrix_pointer mp(-1,i,j,matrix);
         if(matrix == Simple_alignment::x_mat)
         {
