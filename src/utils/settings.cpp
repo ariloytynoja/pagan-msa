@@ -34,7 +34,7 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.13;
+    version = 0.131;
     date = "18 Jan, 2011";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
@@ -75,6 +75,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 //        ("overlap-no-truncate","do not truncate suspicious overlap")
         ("overlap-merge-file", po::value<string>(), "output file for merged reads")
         ("overlap-merge-only","only merge overlapping paired reads")
+        ("trim-before-merge", "trim read ends with low Q-scores before merging")
     ;
 
     boost::program_options::options_description reads_alignment2("Additional reads alignment options",100);

@@ -53,6 +53,11 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
     //
     if( Settings_handle::st.is("overlap-pair-end") )
     {
+        if(Settings_handle::st.is("trim-before-merge"))
+        {
+            fr.trim_fastq_reads(&reads);
+         }
+
         this->merge_paired_reads( &reads, mf );
 
         if(Settings_handle::st.is("overlap-merge-file"))
