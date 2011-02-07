@@ -102,11 +102,11 @@ class Simple_alignment
     vector<Matrix_pointer> *xvectp;
     vector<Matrix_pointer> *yvectp;
 
-    vector<int> *left_child_site_index_p;
-    vector<int> *right_child_site_index_p;
+    vector<int> *left_child_site_to_path_index_p;
+    vector<int> *right_child_site_to_path_index_p;
 
-    vector<int> *path_left_child_site_index_p;
-    vector<int> *path_right_child_site_index_p;
+    vector<int> *path_to_left_child_site_index_p;
+    vector<int> *path_to_right_child_site_index_p;
 
     vector<int> *opposite_index_left_child_p;
     vector<int> *opposite_index_right_child_p;
@@ -189,13 +189,13 @@ class Simple_alignment
 
     /*********************************/
 
-    void iterate_bwd_edges_for_known_gap(Site * site,vector<Matrix_pointer> *z_slice,vector<Matrix_pointer> *w_slice,
-                                                     vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type,int first_gp);
+    void iterate_bwd_edges_for_known_gap(Site * left_site,Site * right_site,vector<Matrix_pointer> *z_slice,vector<Matrix_pointer> *w_slice,
+                                                     vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type);
 
     void iterate_bwd_edges_for_known_double_gap(Site * site,vector<Matrix_pointer> *z_slice,vector<Matrix_pointer> *w_slice,
                                                             vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type);
 
-    void iterate_bwd_edges_for_known_match(Site * left_site,Site * right_site,Matrix_pointer *max,int first_xgap,int first_ygap);
+    void iterate_bwd_edges_for_known_match(Site * left_site,Site * right_site,Matrix_pointer *max);
 
     void iterate_bwd_edges_for_vector_end(Site * left_site,Site * right_site,Matrix_pointer *max,int last_matrix);
 
@@ -233,10 +233,10 @@ class Simple_alignment
     void score_x_match_v(Edge * left_edge,Edge * right_edge,double m_log_match,Matrix_pointer *max);
     void score_y_match_v(Edge * left_edge,Edge * right_edge,double m_log_match,Matrix_pointer *max);
 
-    void score_gap_ext_v(Edge *edge,vector<Matrix_pointer> *z_slice,Matrix_pointer *max,bool is_x_matrix,int gap_type);
-    void score_gap_double_v(Edge *edge,vector<Matrix_pointer> *w_slice,Matrix_pointer *max,bool is_x_matrix);
-    void score_gap_open_v(Edge *edge,vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix);
-    void score_gap_close_v(Edge *edge,vector<Matrix_pointer> *z_slice,Matrix_pointer *max,bool is_x_matrix);
+    void score_gap_ext_v(Edge *left_edge,Edge *right_edge,vector<Matrix_pointer> *z_slice,Matrix_pointer *max,bool is_x_matrix,int gap_type);
+    void score_gap_double_v(Edge *left_edge,Edge *right_edge,vector<Matrix_pointer> *w_slice,Matrix_pointer *max,bool is_x_matrix);
+    void score_gap_open_v(Edge *left_edge,Edge *right_edge,vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix);
+    void score_gap_close_v(Edge *left_edge,Edge *right_edge,vector<Matrix_pointer> *z_slice,Matrix_pointer *max,bool is_x_matrix);
 
     /*********************************/
 
