@@ -105,6 +105,9 @@ class Simple_alignment
     vector<int> *left_child_site_to_path_index_p;
     vector<int> *right_child_site_to_path_index_p;
 
+    vector<int> *left_child_site_to_last_path_index_p;
+    vector<int> *right_child_site_to_last_path_index_p;
+
     vector<int> *path_to_left_child_site_index_p;
     vector<int> *path_to_right_child_site_index_p;
 
@@ -190,12 +193,12 @@ class Simple_alignment
     /*********************************/
 
     void iterate_bwd_edges_for_known_gap(Site * left_site,Site * right_site,vector<Matrix_pointer> *z_slice,vector<Matrix_pointer> *w_slice,
-                                                     vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type);
+                                                     vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type,bool alignment_end=false);
 
     void iterate_bwd_edges_for_known_double_gap(Site * site,vector<Matrix_pointer> *z_slice,vector<Matrix_pointer> *w_slice,
                                                             vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type);
 
-    void iterate_bwd_edges_for_known_match(Site * left_site,Site * right_site,Matrix_pointer *max);
+    void iterate_bwd_edges_for_known_match(Site * left_site,Site * right_site,Matrix_pointer *max,int prev_mat);
 
     void iterate_bwd_edges_for_vector_end(Site * left_site,Site * right_site,Matrix_pointer *max,int last_matrix);
 
@@ -233,9 +236,9 @@ class Simple_alignment
     void score_x_match_v(Edge * left_edge,Edge * right_edge,double m_log_match,Matrix_pointer *max);
     void score_y_match_v(Edge * left_edge,Edge * right_edge,double m_log_match,Matrix_pointer *max);
 
-    void score_gap_ext_v(Edge *left_edge,Edge *right_edge,vector<Matrix_pointer> *z_slice,Matrix_pointer *max,bool is_x_matrix,int gap_type);
+    void score_gap_ext_v(Edge *left_edge,Edge *right_edge,vector<Matrix_pointer> *z_slice,Matrix_pointer *max,bool is_x_matrix,int gap_type,bool alignment_end = false);
     void score_gap_double_v(Edge *left_edge,Edge *right_edge,vector<Matrix_pointer> *w_slice,Matrix_pointer *max,bool is_x_matrix);
-    void score_gap_open_v(Edge *left_edge,Edge *right_edge,vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix);
+    void score_gap_open_v(Edge *left_edge,Edge *right_edge,vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix,bool alignment_end = false);
     void score_gap_close_v(Edge *left_edge,Edge *right_edge,vector<Matrix_pointer> *z_slice,Matrix_pointer *max,bool is_x_matrix);
 
     /*********************************/
@@ -318,7 +321,7 @@ class Simple_alignment
 
     void insert_gap_vector_path_pointer(vector<Path_pointer> *path, int i, int j, int matrix,float branch_length,int k)
     {
-//        cout<<"si "<<i<<" "<<j<<" "<<matrix<<endl;
+        cout<<"si "<<i<<" "<<j<<" "<<matrix<<endl;
         Matrix_pointer mp(-1,i,j,matrix);
         if(matrix == Simple_alignment::x_mat)
         {
