@@ -297,7 +297,7 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
     this->set_basic_settings();
     if(!Settings_handle::st.is("perfect-reference"))
     {
-        this->set_reads_alignment_settings();
+        this->set_reference_alignment_settings();
     }
 
 
@@ -1301,8 +1301,7 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
     Matrix_pointer max_end;
     this->iterate_bwd_edges_for_vector_end(left_site,right_site,&max_end,mp.matrix);
 
-//    if(debug)
-    if(0)
+    if(debug)
     {
         cout<<"m\n";
         for(int i=0;i<mvectp->size();i++)
@@ -2125,6 +2124,11 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
 
 void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path_pointer fp,vector<Matrix_pointer> *simple_path)
 {
+
+//    cout<<"\npath"<<endl;
+//    for(unsigned int i=0;i<simple_path->size();i++)
+//        cout<<i<<": "<<simple_path->at(i).matrix<<" "<<simple_path->at(i).x_ind<<" "<<simple_path->at(i).y_ind<<endl;
+
     vector<Edge> *left_edges = left->get_edges();
     vector<Edge> *right_edges = right->get_edges();
 
@@ -2141,138 +2145,6 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
         right_edges->at(fp.mp.y_edge_ind).is_used(true);
 
     bool debug = false;
-
-    /*
-    int i = left->get_sites()->size()-2;
-    int j = right->get_sites()->size()-2;
-
-    // Pre-existing gaps in the end skipped over
-    //
-    int k = path_length;
-
-    this->insert_preexisting_vector_gap(path, &i, &j, x_ind, y_ind,&k);
-
-    this->insert_new_path_pointer(path,&i,&j,fp);
-
-    bool debug = true;
-
-    // Actual alignment path
-    //
-
-    while(k>=0)
-    {
-        if(debug)
-            cout<<"p "<<x_ind<<" "<<y_ind<<"; "<<i<<" "<<j<<" "<<vit_mat<<endl;
-
-        if(vit_mat == Simple_alignment::m_mat)
-        {
-
-            vit_mat = (*mvectp)[k].matrix;
-            x_ind = (*mvectp)[k].x_ind;
-            y_ind = (*mvectp)[k].y_ind;
-
-
-            if((*mvectp)[k].x_edge_ind>=0)
-                left_edges->at((*mvectp)[k].x_edge_ind).is_used(true);
-            if((*mvectp)[k].y_edge_ind>=0)
-                right_edges->at((*mvectp)[k].y_edge_ind).is_used(true);
-
-            Path_pointer pp( (*mvectp)[k], true );
-
-            i--; j--;
-
-            if(debug)
-                cout<<"m "<<x_ind<<" "<<y_ind<<"; "<<i<<" "<<j<<" k "<<k<<endl;
-
-            // Pre-existing gaps in the middle skipped over
-            //
-            this->insert_preexisting_vector_gap(path, &i, &j, x_ind, y_ind,&k);
-
-            this->insert_new_path_pointer(path,&i,&j,pp);
-        }
-        else if(vit_mat == Simple_alignment::x_mat)
-        {
-            vit_mat = (*xvectp)[k].matrix;
-            x_ind = (*xvectp)[k].x_ind;
-            y_ind = (*xvectp)[k].y_ind;
-
-            if((*xvectp)[k].x_edge_ind>=0)
-                left_edges->at((*xvectp)[k].x_edge_ind).is_used(true);
-
-            Path_pointer pp( (*xvectp)[k], true );
-
-            i--;
-
-            if(debug)
-                cout<<"x "<<x_ind<<" "<<y_ind<<"; "<<i<<" "<<j<<" k "<<k<<endl;
-
-            // Pre-existing gaps in the middle skipped over
-            //
-            this->insert_preexisting_vector_gap(path, &i, &j, x_ind, y_ind,&k);
-
-            this->insert_new_path_pointer(path,&i,&j,pp);
-        }
-        else if(vit_mat == Simple_alignment::y_mat)
-        {
-            vit_mat = (*yvectp)[k].matrix;
-            x_ind = (*yvectp)[k].x_ind;
-            y_ind = (*yvectp)[k].y_ind;
-
-
-            if((*yvectp)[k].y_edge_ind>=0)
-                right_edges->at((*yvectp)[k].y_edge_ind).is_used(true);
-
-            Path_pointer pp( (*yvectp)[k], true );
-
-            j--;
-
-            if(debug)
-                cout<<"y "<<x_ind<<" "<<y_ind<<"; "<<i<<" "<<j<<" k "<<k<<endl;
-
-            // Pre-existing gaps in the middle skipped over
-            //
-            this->insert_preexisting_vector_gap(path, &i, &j, x_ind, y_ind,&k);
-
-            this->insert_new_path_pointer(path,&i,&j,pp);
-        }
-        else
-        {
-            cout<<"incorrect backward pointer: "<<vit_mat<<endl;
-            exit(-1);
-        }
-
-        k--;
-        if(k<1)
-            break;
-        cout<<"k "<<k<<endl;
-
-    }
-
-//    for(int i=0;i<left->get_edges()->size();i++)
-//        cout<<"Left "<<i<<" "<<left->get_edges()->at(i).is_used()<<endl;
-
-//    for(int i=0;i<right->get_edges()->size();i++)
-//        cout<<"Right "<<i<<" "<<right->get_edges()->at(i).is_used()<<endl;
-
-
-    ////////////////////////////////////////////////
-//    cout<<"new path\n";
-
-//    cout<<"left\n";
-//    for(unsigned int i=0;i<left_child_site_to_last_path_index_p->size();i++)
-//            cout<<left_child_site_to_last_path_index_p->at(i)<<",";
-
-//    cout<<"\nright\n";
-//    for(unsigned int i=0;i<right_child_site_to_last_path_index_p->size();i++)
-//            cout<<right_child_site_to_last_path_index_p->at(i)<<",";
-
-//    cout<<"\n\npath"<<endl;
-//    for(unsigned int i=0;i<path->size();i++)
-//            cout<<i<<": "<<simple_path->at(i).matrix<<" "<<simple_path->at(i).x_ind<<" "<<simple_path->at(i).y_ind<<endl;
-//    cout<<endl;
-//    cout<<endl;
-*/
-
 //    debug = true;
 
     vector<Path_pointer> vector_path;
@@ -2336,6 +2208,8 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
                     cout<<"mi "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
                 k--;
             }
+            if(k<1)
+                break;
 
             Matrix_pointer mp(-1,x_ind,y_ind,vit_mat);
             Path_pointer pp( mp, true );
@@ -2391,6 +2265,8 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
                     cout<<"mi "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
                 k--;
             }
+            if(k<1)
+                break;
 
             Matrix_pointer mp(-1,x_ind,y_ind,vit_mat);
             Path_pointer pp( mp, true );
@@ -2444,6 +2320,9 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
                     cout<<"mi "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
                 k--;
             }
+
+            if(k<1)
+                break;
 
             Matrix_pointer mp(-1,x_ind,y_ind,vit_mat);
             Path_pointer pp( mp, true );
@@ -2680,7 +2559,7 @@ void Simple_alignment::build_ancestral_sequence(Sequence *sequence, vector<Path_
     this->check_skipped_boundaries(sequence);
 
 //    cout<<"ANCESTRAL SEQUENCE:\n";
-    sequence->print_sequence();
+//    sequence->print_sequence();
 
     if(Settings::noise>4)
     {
@@ -3839,6 +3718,14 @@ void Simple_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site * 
                     }
                 }
             }
+        }
+
+        if(Settings::noise>1)
+        {
+            cout<<"viterbi score: "<<setprecision(8)<<max->score<<" ["<<exp(max->score)<<"] ("<<max->matrix<<")";
+            if(compute_full_score)
+                cout<<", full probability: "<<log(max->fwd_score)<<" ["<<max->fwd_score<<"]";
+            cout<<setprecision(4)<<endl; /*DEBUG*/
         }
 
     }
