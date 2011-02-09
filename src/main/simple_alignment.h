@@ -160,7 +160,7 @@ class Simple_alignment
     void compute_posterior_score(int i,int j,double full_score);
 
     void backtrack_new_path(vector<Path_pointer> *path,Path_pointer pp);
-    void backtrack_new_vector_path(vector<Path_pointer> *path,Path_pointer fp,int path_length);
+    void backtrack_new_vector_path(vector<Path_pointer> *path,Path_pointer fp,vector<Matrix_pointer> *simple_path);
     void sample_new_path(vector<Path_pointer> *path,Path_pointer pp);
     void build_ancestral_sequence(Sequence *sequence,vector<Path_pointer> *path);
 
@@ -321,7 +321,7 @@ class Simple_alignment
 
     void insert_gap_vector_path_pointer(vector<Path_pointer> *path, int i, int j, int matrix,float branch_length,int k)
     {
-        cout<<"si "<<i<<" "<<j<<" "<<matrix<<endl;
+//        cout<<"si "<<i<<" "<<j<<" "<<matrix<<endl;
         Matrix_pointer mp(-1,i,j,matrix);
         if(matrix == Simple_alignment::x_mat)
         {

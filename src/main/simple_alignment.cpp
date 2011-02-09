@@ -321,7 +321,7 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
     string *gapped_left = left->get_gapped_sequence();
     string *gapped_right = right->get_gapped_sequence();
 
-    cout<<">left\n"<<*gapped_left<<endl<<">right\n"<<*gapped_right<<endl;
+//    cout<<">left\n"<<*gapped_left<<endl<<">right\n"<<*gapped_right<<endl;
 
     if(gapped_left->length() != gapped_right->length())
     {
@@ -329,14 +329,14 @@ void Simple_alignment::read_alignment(Sequence *left_sequence,Sequence *right_se
         exit(-1);
     }
 
-    for(int i=0;i<gapped_left->size();i++)
-        if(gapped_left->at(i)!='-' || gapped_right->at(i)!='-')
-            cout<<gapped_left->at(i);
-    cout<<endl;
-    for(int i=0;i<gapped_left->size();i++)
-        if(gapped_left->at(i)!='-' || gapped_right->at(i)!='-')
-            cout<<gapped_right->at(i);
-    cout<<endl;
+//    for(int i=0;i<gapped_left->size();i++)
+//        if(gapped_left->at(i)!='-' || gapped_right->at(i)!='-')
+//            cout<<gapped_left->at(i);
+//    cout<<endl;
+//    for(int i=0;i<gapped_left->size();i++)
+//        if(gapped_left->at(i)!='-' || gapped_right->at(i)!='-')
+//            cout<<gapped_right->at(i);
+//    cout<<endl;
 
     string::iterator lgi = gapped_left->begin();
     string::iterator rgi = gapped_right->begin();
@@ -1142,8 +1142,8 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
     bool i_seq_start = true;
     bool j_seq_start = true;
 
-//    bool debug = false;
-    bool debug = true;
+    bool debug = false;
+//    bool debug = true;
 
     for(int i=0;i<simple_path->size();i++)
     {
@@ -1172,7 +1172,7 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
 
         mp = simple_path->at(i);
 
-        cout<<"pointer "<<mp.matrix<<" "<<i_ind<<" "<<j_ind<<endl;
+//        cout<<"pointer "<<mp.matrix<<" "<<i_ind<<" "<<j_ind<<endl;
 
         if(mp.matrix == Simple_alignment::x_mat)
         {
@@ -1295,18 +1295,19 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
     left_site = left->get_site_at(left_length-1);
     right_site = right->get_site_at(right_length-1);
 
-    cout<<"end "<<left_site->get_first_bwd_edge()->get_start_site_index()<<" "<<right_site->get_first_bwd_edge()->get_start_site_index()<<endl;
-    cout<<left_child_site_to_path_index_p->size()<<" "<<right_child_site_to_path_index_p->size()<<endl;
+//    cout<<"end "<<left_site->get_first_bwd_edge()->get_start_site_index()<<" "<<right_site->get_first_bwd_edge()->get_start_site_index()<<endl;
+//    cout<<left_child_site_to_path_index_p->size()<<" "<<right_child_site_to_path_index_p->size()<<endl;
 
     Matrix_pointer max_end;
     this->iterate_bwd_edges_for_vector_end(left_site,right_site,&max_end,mp.matrix);
 
-    if(debug)
+//    if(debug)
+    if(0)
     {
         cout<<"m\n";
         for(int i=0;i<mvectp->size();i++)
         {
-            cout<<mvectp->at(i).matrix<<" ["<<mvectp->at(i).x_ind<<" "<<mvectp->at(i).y_ind<<"] ["<<
+            cout<<i<<": "<<mvectp->at(i).matrix<<" ["<<mvectp->at(i).x_ind<<" "<<mvectp->at(i).y_ind<<"] ["<<
                    mvectp->at(i).x_edge_ind<<" "<<mvectp->at(i).y_edge_ind<<"] "<<mvectp->at(i).score<<"\t| ";
             cout<<xvectp->at(i).matrix<<" ["<<xvectp->at(i).x_ind<<" "<<xvectp->at(i).y_ind<<"] ["<<
                    xvectp->at(i).x_edge_ind<<" "<<xvectp->at(i).y_edge_ind<<"] "<<xvectp->at(i).score<<"\t| ";
@@ -1335,11 +1336,11 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
 
     // Backtrack the Viterbi path
     Path_pointer pp(max_end,true);
-    this->backtrack_new_vector_path(&path,pp,simple_path->size());
+    this->backtrack_new_vector_path(&path,pp,simple_path);
 
-    cout<<"lengths "<<simple_path->size()<<" "<<path.size()<<endl;
-    if(simple_path->size()!=path.size())
-        cout<<"lengths differ\n";
+//    cout<<"lengths "<<simple_path->size()<<" "<<path.size()<<endl;
+//    if(simple_path->size()!=path.size())
+//        cout<<"lengths differ\n";
 
     this->debug_msg("Simple_alignment::make_alignment_path path found",1);
 
@@ -2122,10 +2123,12 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
 
 /********************************************/
 
-void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path_pointer fp,int path_length)
+void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path_pointer fp,vector<Matrix_pointer> *simple_path)
 {
     vector<Edge> *left_edges = left->get_edges();
     vector<Edge> *right_edges = right->get_edges();
+
+    int path_length = simple_path->size();
 
     int vit_mat = fp.mp.matrix;
     int x_ind = fp.mp.x_ind;
@@ -2137,6 +2140,9 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
     if(fp.mp.y_edge_ind>=0)
         right_edges->at(fp.mp.y_edge_ind).is_used(true);
 
+    bool debug = false;
+
+    /*
     int i = left->get_sites()->size()-2;
     int j = right->get_sites()->size()-2;
 
@@ -2248,14 +2254,260 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
 //    for(int i=0;i<right->get_edges()->size();i++)
 //        cout<<"Right "<<i<<" "<<right->get_edges()->at(i).is_used()<<endl;
 
-    /*DEBUG*/
-    if(Settings::noise>4)
+
+    ////////////////////////////////////////////////
+//    cout<<"new path\n";
+
+//    cout<<"left\n";
+//    for(unsigned int i=0;i<left_child_site_to_last_path_index_p->size();i++)
+//            cout<<left_child_site_to_last_path_index_p->at(i)<<",";
+
+//    cout<<"\nright\n";
+//    for(unsigned int i=0;i<right_child_site_to_last_path_index_p->size();i++)
+//            cout<<right_child_site_to_last_path_index_p->at(i)<<",";
+
+//    cout<<"\n\npath"<<endl;
+//    for(unsigned int i=0;i<path->size();i++)
+//            cout<<i<<": "<<simple_path->at(i).matrix<<" "<<simple_path->at(i).x_ind<<" "<<simple_path->at(i).y_ind<<endl;
+//    cout<<endl;
+//    cout<<endl;
+*/
+
+//    debug = true;
+
+    vector<Path_pointer> vector_path;
+
+    vit_mat = fp.mp.matrix;
+    x_ind = fp.mp.x_ind;
+    y_ind = fp.mp.y_ind;
+
+    if(fp.mp.x_edge_ind>=0)
+        left_edges->at(fp.mp.x_edge_ind).is_used(true);
+    if(fp.mp.y_edge_ind>=0)
+        right_edges->at(fp.mp.y_edge_ind).is_used(true);
+
+
+    // Pre-existing gaps in the end skipped over
+    //
+    int k = path_length;
+
+    int next_path_index;
+    if(vit_mat==Simple_alignment::m_mat)
     {
-        cout<<"\npath"<<endl;
-        for(unsigned int i=0;i<path->size();i++)
-            cout<<path->at(i).mp.matrix;
-        cout<<endl;
+        next_path_index = left_child_site_to_path_index_p->at(x_ind);
+        if(next_path_index != right_child_site_to_path_index_p->at(y_ind))
+            cout<<"test: start condition failed\n";
     }
+    else if(vit_mat==Simple_alignment::x_mat)
+    {
+        next_path_index = left_child_site_to_path_index_p->at(x_ind);
+
+        y_ind = -1;
+    }
+    else if(vit_mat==Simple_alignment::y_mat)
+    {
+        next_path_index = right_child_site_to_path_index_p->at(y_ind);
+
+        x_ind = -1;
+    }
+
+//    cout<<"s "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
+
+
+    // Actual alignment path
+    //
+    while(k>=0)
+    {
+        if(debug)
+            cout<<"p "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
+
+        if(vit_mat == Simple_alignment::m_mat)
+        {
+            // Pre-existing gaps in the middle skipped over
+            //
+            while(next_path_index<k)
+            {
+                Matrix_pointer *smp = &simple_path->at(k-1);
+                Matrix_pointer mp(-1,smp->y_ind,smp->x_ind,smp->matrix);
+                Path_pointer pp( mp, false );
+                vector_path.insert(vector_path.begin(),pp);
+
+                if(debug)
+                    cout<<"mi "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+                k--;
+            }
+
+            Matrix_pointer mp(-1,x_ind,y_ind,vit_mat);
+            Path_pointer pp( mp, true );
+            vector_path.insert(vector_path.begin(),pp);
+
+            if(debug)
+                cout<<"im "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+
+            vit_mat = (*mvectp)[k].matrix;
+            x_ind = (*mvectp)[k].x_ind;
+            y_ind = (*mvectp)[k].y_ind;
+
+            if((*mvectp)[k].x_edge_ind>=0)
+                left_edges->at((*mvectp)[k].x_edge_ind).is_used(true);
+            if((*mvectp)[k].y_edge_ind>=0)
+                right_edges->at((*mvectp)[k].y_edge_ind).is_used(true);
+
+            if(vit_mat==Simple_alignment::m_mat)
+            {
+                next_path_index = left_child_site_to_path_index_p->at(x_ind);
+                if(next_path_index != right_child_site_to_path_index_p->at(y_ind))
+                    cout<<"test: loop condition failed\n";
+            }
+            else if(vit_mat==Simple_alignment::x_mat)
+            {
+                next_path_index = left_child_site_to_path_index_p->at(x_ind);
+                y_ind = -1;
+            }
+            else if(vit_mat==Simple_alignment::y_mat)
+            {
+                next_path_index = right_child_site_to_path_index_p->at(y_ind);
+                x_ind = -1;
+            }
+
+            k--;
+
+            if(debug)
+                cout<<"m "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+
+        }
+        else if(vit_mat == Simple_alignment::x_mat)
+        {
+            // Pre-existing gaps in the middle skipped over
+            //
+            while(next_path_index<k)
+            {
+                Matrix_pointer *smp = &simple_path->at(k-1);
+                Matrix_pointer mp(-1,smp->y_ind,smp->x_ind,smp->matrix);
+                Path_pointer pp( mp, false );
+                vector_path.insert(vector_path.begin(),pp);
+
+                if(debug)
+                    cout<<"mi "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+                k--;
+            }
+
+            Matrix_pointer mp(-1,x_ind,y_ind,vit_mat);
+            Path_pointer pp( mp, true );
+            vector_path.insert(vector_path.begin(),pp);
+
+            if(debug)
+                cout<<"ix "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+
+            vit_mat = (*xvectp)[k].matrix;
+            x_ind = (*xvectp)[k].x_ind;
+            y_ind = (*xvectp)[k].y_ind;
+
+            if((*xvectp)[k].x_edge_ind>=0)
+                left_edges->at((*xvectp)[k].x_edge_ind).is_used(true);
+
+            if(vit_mat==Simple_alignment::m_mat)
+            {
+                next_path_index = left_child_site_to_path_index_p->at(x_ind);
+                if(next_path_index != right_child_site_to_path_index_p->at(y_ind))
+                    cout<<"test: loop condition failed\n";
+            }
+            else if(vit_mat==Simple_alignment::x_mat)
+            {
+                next_path_index = left_child_site_to_path_index_p->at(x_ind);
+                y_ind = -1;
+            }
+            else if(vit_mat==Simple_alignment::y_mat)
+            {
+                next_path_index = right_child_site_to_path_index_p->at(y_ind);
+                x_ind = -1;
+            }
+
+            k--;
+
+            if(debug)
+                cout<<"x "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+
+        }
+        else if(vit_mat == Simple_alignment::y_mat)
+        {
+            // Pre-existing gaps in the middle skipped over
+            //
+            while(next_path_index<k)
+            {
+                Matrix_pointer *smp = &simple_path->at(k-1);
+                Matrix_pointer mp(-1,smp->y_ind,smp->x_ind,smp->matrix);
+                Path_pointer pp( mp, false );
+                vector_path.insert(vector_path.begin(),pp);
+
+                if(debug)
+                    cout<<"mi "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+                k--;
+            }
+
+            Matrix_pointer mp(-1,x_ind,y_ind,vit_mat);
+            Path_pointer pp( mp, true );
+            vector_path.insert(vector_path.begin(),pp);
+
+            if(debug)
+                cout<<"iy "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+
+            vit_mat = (*yvectp)[k].matrix;
+            x_ind = (*yvectp)[k].x_ind;
+            y_ind = (*yvectp)[k].y_ind;
+
+            if((*yvectp)[k].y_edge_ind>=0)
+                right_edges->at((*yvectp)[k].y_edge_ind).is_used(true);
+
+            if(vit_mat==Simple_alignment::m_mat)
+            {
+                next_path_index = left_child_site_to_path_index_p->at(x_ind);
+                if(next_path_index != right_child_site_to_path_index_p->at(y_ind))
+                    cout<<"test: start loop failed\n";
+            }
+            else if(vit_mat==Simple_alignment::x_mat)
+            {
+                next_path_index = left_child_site_to_path_index_p->at(x_ind);
+                y_ind = -1;
+            }
+            else if(vit_mat==Simple_alignment::y_mat)
+            {
+                next_path_index = right_child_site_to_path_index_p->at(y_ind);
+                x_ind = -1;
+            }
+
+            k--;
+
+            if(debug)
+                cout<<"y "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+
+        }
+        else
+        {
+            cout<<"incorrect backward pointer: "<<vit_mat<<endl;
+            exit(-1);
+        }
+
+        if(k<1)
+            break;
+
+    }
+
+    path->clear();
+    for(unsigned int i=0;i<vector_path.size();i++)
+        path->push_back(vector_path.at(i));
+
+    ////////////////////////////////////////////////
+
+    /*DEBUG*/
+//    if(Settings::noise>0)
+//    {
+//        cout<<"\npath"<<endl;
+//        for(unsigned int i=0;i<path->size();i++)
+//            cout<<path->at(i).mp.matrix<<" "<<path->at(i).mp.x_ind<<" "<<path->at(i).mp.y_ind<<": "<<vector_path.at(i).mp.matrix<<" "<<vector_path.at(i).mp.x_ind<<" "<<vector_path.at(i).mp.y_ind<<endl;
+////            cout<<path->at(i).mp.matrix<<" "<<path->at(i).mp.x_ind<<" "<<path->at(i).mp.y_ind<<": "<<simple_path->at(i).matrix<<" "<<simple_path->at(i).x_ind<<" "<<simple_path->at(i).y_ind<<endl;
+//        cout<<endl;
+//    }
     /*DEBUG*/
 //    cout<<"\npath v"<<endl;
 //    for(unsigned int i=0;i<path->size();i++)
@@ -2427,7 +2679,7 @@ void Simple_alignment::build_ancestral_sequence(Sequence *sequence, vector<Path_
     //   and record them on the edges. If they are above a limit, the edges (and all between them) are deleted. "
     this->check_skipped_boundaries(sequence);
 
-    cout<<"ANCESTRAL SEQUENCE:\n";
+//    cout<<"ANCESTRAL SEQUENCE:\n";
     sequence->print_sequence();
 
     if(Settings::noise>4)
@@ -2592,7 +2844,7 @@ void Simple_alignment::create_ancestral_edges(Sequence *sequence)
         Site *psite = &sites->at(i);
         int pstate = psite->get_path_state();
 
-        cout<<"ps "<<pstate<<" "<<prev.path_state<<endl;
+//        cout<<"ps "<<pstate<<" "<<prev.path_state<<endl;
 
         Site_children *offspring = psite->get_children();
 
@@ -3349,7 +3601,7 @@ void Simple_alignment::iterate_bwd_edges_for_known_gap(Site * left_site,Site * r
 {
     if(alignment_end)
     {
-        cout<<"alignment end\n";
+//        cout<<"alignment end\n";
 
         Site *site;
         Edge *edge;
@@ -4317,8 +4569,8 @@ void Simple_alignment::score_x_match_v(Edge * left_edge,Edge * right_edge,double
     }
     else
     {
-        cout<<"xmatch: lsi "<<left_child_site_to_path_index_p->at(left_prev_index)<<", pri "<<path_to_right_child_site_index_p->at( left_child_site_to_path_index_p->at(left_prev_index) )
-            <<", les "<<left_edge->get_end_site_index()<<endl;
+//        cout<<"xmatch: lsi "<<left_child_site_to_path_index_p->at(left_prev_index)<<", pri "<<path_to_right_child_site_index_p->at( left_child_site_to_path_index_p->at(left_prev_index) )
+//            <<", les "<<left_edge->get_end_site_index()<<endl;
     }
 }
 
@@ -4349,8 +4601,8 @@ void Simple_alignment::score_y_match_v(Edge * left_edge,Edge * right_edge,double
     }
     else
     {
-        cout<<"ymatch: lsi "<<right_child_site_to_path_index_p->at(right_prev_index)<<", pli "<<path_to_left_child_site_index_p->at( right_child_site_to_path_index_p->at(right_prev_index) )
-            <<", res "<<right_edge->get_end_site_index()<<endl;
+//        cout<<"ymatch: lsi "<<right_child_site_to_path_index_p->at(right_prev_index)<<", pli "<<path_to_left_child_site_index_p->at( right_child_site_to_path_index_p->at(right_prev_index) )
+//            <<", res "<<right_edge->get_end_site_index()<<endl;
     }
 }
 
@@ -4525,8 +4777,8 @@ void Simple_alignment::score_gap_ext_v(Edge *left_edge,Edge *right_edge,vector<M
     //        if(opposite_index != right_edge->get_start_site_index())
             if(opposite_index != right_edge->get_end_site_index())
             {
-                cout<<"x ext failed: pi "<<path_index<<",  oi "<<opposite_index<<", lsi "
-                    <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;
+//                cout<<"x ext failed: pi "<<path_index<<",  oi "<<opposite_index<<", lsi "
+//                    <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;
                 return;
             }
         }
@@ -4540,14 +4792,14 @@ void Simple_alignment::score_gap_ext_v(Edge *left_edge,Edge *right_edge,vector<M
     //        if(opposite_index != left_edge->get_start_site_index())
             if(opposite_index != left_edge->get_end_site_index())
             {
-                cout<<"y ext failed: pi "<<path_index<<",  oi "<<opposite_index<<", lsi "
-                    <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;
+//                cout<<"y ext failed: pi "<<path_index<<",  oi "<<opposite_index<<", lsi "
+//                    <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;
                 return;
             }
         }
 
-        cout<<"ext: "<<is_x_matrix<<": "<<path_index<<" "<<left_edge->get_start_site_index()<<" "<<left_edge->get_end_site_index()<<"; "
-            <<right_edge->get_start_site_index()<<" "<<right_edge->get_end_site_index()<<endl;
+//        cout<<"ext: "<<is_x_matrix<<": "<<path_index<<" "<<left_edge->get_start_site_index()<<" "<<left_edge->get_end_site_index()<<"; "
+//            <<right_edge->get_start_site_index()<<" "<<right_edge->get_end_site_index()<<endl;
     }
     else
     {
@@ -4633,17 +4885,17 @@ void Simple_alignment::score_gap_double_v(Edge *left_edge,Edge *right_edge,vecto
 
         if(opposite_index != left_edge->get_start_site_index())
         {
-            for(int i=0;i<mvectp->size();i++)
-                cout<<i<<" "<<mvectp->at(i).score<<","<<xvectp->at(i).score<<","<<yvectp->at(i).score<<endl;
+//            for(int i=0;i<mvectp->size();i++)
+//                cout<<i<<" "<<mvectp->at(i).score<<","<<xvectp->at(i).score<<","<<yvectp->at(i).score<<endl;
 
-            for(int i=0;i<left_child_site_to_last_path_index_p->size();i++)
-                cout<<left_child_site_to_last_path_index_p->at(i)<<",";
-            cout<<endl;
-            for(int i=0;i<right_child_site_to_last_path_index_p->size();i++)
-                cout<<right_child_site_to_last_path_index_p->at(i)<<",";
-            cout<<endl;
-            cout<<"x dbl failed: pi "<<path_index<<",  oi "<<opposite_index<<", lsi "
-                <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;
+//            for(int i=0;i<left_child_site_to_last_path_index_p->size();i++)
+//                cout<<left_child_site_to_last_path_index_p->at(i)<<",";
+//            cout<<endl;
+//            for(int i=0;i<right_child_site_to_last_path_index_p->size();i++)
+//                cout<<right_child_site_to_last_path_index_p->at(i)<<",";
+//            cout<<endl;
+//            cout<<"x dbl failed: pi "<<path_index<<",  oi "<<opposite_index<<", lsi "
+//                <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;
             return;
         }
     }
@@ -4657,7 +4909,7 @@ void Simple_alignment::score_gap_double_v(Edge *left_edge,Edge *right_edge,vecto
         int opposite_index = path_to_right_child_site_index_p->at(path_index);
 
         if(opposite_index != right_edge->get_start_site_index())
-        {
+        {/*
             for(int i=0;i<mvectp->size();i++)
                 cout<<i<<" "<<mvectp->at(i).score<<","<<xvectp->at(i).score<<","<<yvectp->at(i).score<<endl;
 
@@ -4668,20 +4920,20 @@ void Simple_alignment::score_gap_double_v(Edge *left_edge,Edge *right_edge,vecto
                 cout<<right_child_site_to_last_path_index_p->at(i)<<",";
             cout<<endl;
             cout<<"y dbl failed: pi "<<path_index<<",  oi "<<opposite_index<<", lsi "
-                <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;
+                <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;*/
             return;
         }
     }
 
-    for(int i=0;i<mvectp->size();i++)
-        cout<<i<<" "<<mvectp->at(i).score<<","<<xvectp->at(i).score<<","<<yvectp->at(i).score<<endl;
+//    for(int i=0;i<mvectp->size();i++)
+//        cout<<i<<" "<<mvectp->at(i).score<<","<<xvectp->at(i).score<<","<<yvectp->at(i).score<<endl;
 
-    cout<<"dbl: "<<is_x_matrix<<": "<<path_index<<" "<<left_edge->get_start_site_index()<<" "<<left_edge->get_end_site_index()<<"; "
-        <<right_edge->get_start_site_index()<<" "<<right_edge->get_end_site_index()<<endl;
+//    cout<<"dbl: "<<is_x_matrix<<": "<<path_index<<" "<<left_edge->get_start_site_index()<<" "<<left_edge->get_end_site_index()<<"; "
+//        <<right_edge->get_start_site_index()<<" "<<right_edge->get_end_site_index()<<endl;
 
     double this_score =  (*w_slice)[path_index].score + model->log_gap_close() + model->log_gap_open() + edge_wght;
 
-    cout<<"score "<<this_score<<endl;
+//    cout<<"score "<<this_score<<endl;
     if(this->first_is_bigger(this_score,max->score) )
     {
         max->score = this_score;
@@ -4725,8 +4977,8 @@ void Simple_alignment::score_gap_open_v(Edge *left_edge,Edge *right_edge,vector<
 //            if(opposite_index != right_edge->get_start_site_index())
             if(opposite_index != right_edge->get_end_site_index())
             {
-                cout<<"x open failed: pi "<<path_index<<",  oi "<<opposite_index<<", lsi "
-                    <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;
+//                cout<<"x open failed: pi "<<path_index<<",  oi "<<opposite_index<<", lsi "
+//                    <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;
                 return;
             }
         }
@@ -4740,14 +4992,14 @@ void Simple_alignment::score_gap_open_v(Edge *left_edge,Edge *right_edge,vector<
 //            if(opposite_index != left_edge->get_start_site_index())
             if(opposite_index != left_edge->get_end_site_index())
             {
-                cout<<"y open failed: pi "<<path_index<<",  oi "<<opposite_index<<", lsi "
-                    <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;
+//                cout<<"y open failed: pi "<<path_index<<",  oi "<<opposite_index<<", lsi "
+//                    <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;
                 return;
             }
         }
 
-        cout<<"opn: "<<is_x_matrix<<": "<<path_index<<" "<<left_edge->get_start_site_index()<<" "<<left_edge->get_end_site_index()<<"; "
-            <<right_edge->get_start_site_index()<<" "<<right_edge->get_end_site_index()<<endl;
+//        cout<<"opn: "<<is_x_matrix<<": "<<path_index<<" "<<left_edge->get_start_site_index()<<" "<<left_edge->get_end_site_index()<<"; "
+//            <<right_edge->get_start_site_index()<<" "<<right_edge->get_end_site_index()<<endl;
 
     }
     else
@@ -4822,8 +5074,8 @@ void Simple_alignment::score_gap_close_v(Edge *left_edge,Edge *right_edge,vector
         if(opposite_index != right_edge->get_start_site_index())
 //        if(opposite_index != right_edge->get_end_site_index())
         {
-            cout<<"x close failed: pi "<<path_index<<",  oi "<<opposite_index<<", lsi "
-                <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;
+//            cout<<"x close failed: pi "<<path_index<<",  oi "<<opposite_index<<", lsi "
+//                <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;
             return;
         }
     }
@@ -4837,14 +5089,14 @@ void Simple_alignment::score_gap_close_v(Edge *left_edge,Edge *right_edge,vector
         if(opposite_index != left_edge->get_start_site_index())
 //        if(opposite_index != left_edge->get_end_site_index())
         {
-            cout<<"y close failed: pi "<<path_index<<",  oi "<<opposite_index<<", lsi "
-                <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;
+//            cout<<"y close failed: pi "<<path_index<<",  oi "<<opposite_index<<", lsi "
+//                <<left_edge->get_start_site_index()<<", rsi "<<right_edge->get_start_site_index()<<endl;
             return;
         }
     }
 
-    cout<<"cls: "<<is_x_matrix<<": "<<path_index<<" "<<left_edge->get_start_site_index()<<" "<<left_edge->get_end_site_index()<<"; "
-        <<right_edge->get_start_site_index()<<" "<<right_edge->get_end_site_index()<<endl;
+//    cout<<"cls: "<<is_x_matrix<<": "<<path_index<<" "<<left_edge->get_start_site_index()<<" "<<left_edge->get_end_site_index()<<"; "
+//        <<right_edge->get_start_site_index()<<" "<<right_edge->get_end_site_index()<<endl;
 
 
     double this_score =  (*z_slice)[path_index].score + this->get_log_gap_close_penalty(edge->get_end_site_index(),is_x_matrix) + edge_wght;
