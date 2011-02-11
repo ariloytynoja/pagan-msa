@@ -1331,10 +1331,6 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
 void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path_pointer fp,vector<Matrix_pointer> *simple_path)
 {
 
-//    cout<<"\npath"<<endl;
-//    for(unsigned int i=0;i<simple_path->size();i++)
-//        cout<<i<<": "<<simple_path->at(i).matrix<<" "<<simple_path->at(i).x_ind<<" "<<simple_path->at(i).y_ind<<endl;
-
     vector<Edge> *left_edges = left->get_edges();
     vector<Edge> *right_edges = right->get_edges();
 
@@ -1352,17 +1348,6 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
 
     bool debug = false;
 //    debug = true;
-
-    vector<Path_pointer> vector_path;
-
-    vit_mat = fp.mp.matrix;
-    x_ind = fp.mp.x_ind;
-    y_ind = fp.mp.y_ind;
-
-    if(fp.mp.x_edge_ind>=0)
-        left_edges->at(fp.mp.x_edge_ind).is_used(true);
-    if(fp.mp.y_edge_ind>=0)
-        right_edges->at(fp.mp.y_edge_ind).is_used(true);
 
 
     // Pre-existing gaps in the end skipped over
@@ -1389,8 +1374,6 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
         x_ind = -1;
     }
 
-//    cout<<"s "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
-
 
     // Actual alignment path
     //
@@ -1408,7 +1391,7 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
                 Matrix_pointer *smp = &simple_path->at(k-1);
                 Matrix_pointer mp(-1,smp->y_ind,smp->x_ind,smp->matrix);
                 Path_pointer pp( mp, false );
-                vector_path.insert(vector_path.begin(),pp);
+                path->insert(path->begin(),pp);
 
                 if(debug)
                     cout<<"mi "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
@@ -1419,7 +1402,7 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
 
             Matrix_pointer mp(-1,x_ind,y_ind,vit_mat);
             Path_pointer pp( mp, true );
-            vector_path.insert(vector_path.begin(),pp);
+            path->insert(path->begin(),pp);
 
             if(debug)
                 cout<<"im "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
@@ -1465,7 +1448,7 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
                 Matrix_pointer *smp = &simple_path->at(k-1);
                 Matrix_pointer mp(-1,smp->y_ind,smp->x_ind,smp->matrix);
                 Path_pointer pp( mp, false );
-                vector_path.insert(vector_path.begin(),pp);
+                path->insert(path->begin(),pp);
 
                 if(debug)
                     cout<<"mi "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
@@ -1476,7 +1459,7 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
 
             Matrix_pointer mp(-1,x_ind,y_ind,vit_mat);
             Path_pointer pp( mp, true );
-            vector_path.insert(vector_path.begin(),pp);
+            path->insert(path->begin(),pp);
 
             if(debug)
                 cout<<"ix "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
@@ -1520,7 +1503,7 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
                 Matrix_pointer *smp = &simple_path->at(k-1);
                 Matrix_pointer mp(-1,smp->y_ind,smp->x_ind,smp->matrix);
                 Path_pointer pp( mp, false );
-                vector_path.insert(vector_path.begin(),pp);
+                path->insert(path->begin(),pp);
 
                 if(debug)
                     cout<<"mi "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
@@ -1532,7 +1515,7 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
 
             Matrix_pointer mp(-1,x_ind,y_ind,vit_mat);
             Path_pointer pp( mp, true );
-            vector_path.insert(vector_path.begin(),pp);
+            path->insert(path->begin(),pp);
 
             if(debug)
                 cout<<"iy "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
@@ -1577,32 +1560,6 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
             break;
 
     }
-
-    path->clear();
-    for(unsigned int i=0;i<vector_path.size();i++)
-        path->push_back(vector_path.at(i));
-
-    ////////////////////////////////////////////////
-
-    /*DEBUG*/
-//    if(Settings::noise>0)
-//    {
-//        cout<<"\npath"<<endl;
-//        for(unsigned int i=0;i<path->size();i++)
-//            cout<<path->at(i).mp.matrix<<" "<<path->at(i).mp.x_ind<<" "<<path->at(i).mp.y_ind<<": "<<vector_path.at(i).mp.matrix<<" "<<vector_path.at(i).mp.x_ind<<" "<<vector_path.at(i).mp.y_ind<<endl;
-////            cout<<path->at(i).mp.matrix<<" "<<path->at(i).mp.x_ind<<" "<<path->at(i).mp.y_ind<<": "<<simple_path->at(i).matrix<<" "<<simple_path->at(i).x_ind<<" "<<simple_path->at(i).y_ind<<endl;
-//        cout<<endl;
-//    }
-    /*DEBUG*/
-//    cout<<"\npath v"<<endl;
-//    for(unsigned int i=0;i<path->size();i++)
-//        cout<<path->at(i).mp.x_ind<<" "<<path->at(i).mp.y_ind<<"; "<<path->at(i).mp.x_edge_ind<<" "<<path->at(i).mp.y_edge_ind
-//            <<" ("<<path->at(i).mp.matrix<<"); "<<path->at(i).real_site<<"; "
-//            <<path->at(i).branch_length_increase<<" "<<path->at(i).branch_count_increase<<endl;
-
-////        cout<<path->at(i).mp.matrix<<" "<<log(path->at(i).mp.fwd_score)<<" "<<log(path->at(i).mp.bwd_score)<<" "<<log(path->at(i).mp.full_score)<<endl;
-////        cout<<path->at(i).mp.matrix<<" "<<path->at(i).mp.fwd_score<<" "<<path->at(i).mp.bwd_score<<" "<<path->at(i).mp.full_score<<endl;
-//    cout<<endl;
 
 }
 /********************************************/
