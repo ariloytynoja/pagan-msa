@@ -3182,7 +3182,6 @@ void Simple_alignment::iterate_bwd_edges_for_gap(Site * site,align_slice *z_slic
             this->score_gap_double(edge,w_slice,max,is_x_matrix);
             this->score_gap_open(edge,m_slice,max,is_x_matrix);
         }
-        cout<<"chosen "<<max->score<<"\n";
 
     }
 }
@@ -4546,7 +4545,6 @@ void Simple_alignment::score_gap_double(Edge *edge,align_slice *w_slice,Matrix_p
 
     if(this->first_is_bigger(this_score,max->score) )
     {
-        cout<<"double "<<this_score<<"\n";
         max->score = this_score;
         if(is_x_matrix)
         {
