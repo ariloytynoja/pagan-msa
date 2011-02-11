@@ -292,6 +292,9 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
                 if(!Settings_handle::st.is("silent"))
                     cout<<"aligning read: "<<reads_for_this.at(i).name<<": "<<reads_for_this.at(i).comment<<endl;
 
+//                node->get_left_child()->get_sequence()->print_sequence();
+//                node->get_right_child()->get_sequence()->print_sequence();
+
                 node->align_sequences_this_node(mf,true);
 
 //                node->get_sequence()->print_sequence();

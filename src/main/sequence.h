@@ -468,21 +468,23 @@ public:
             {
                 if(this->has_next_bwd_edge())
                 {
-                    edge = this->get_next_bwd_edge();
-                    int next_ind = edge->get_index();
+                    Edge *edge2 = this->get_next_bwd_edge();
+                    int next_ind = edge2->get_index();
                     current_bwd_edge_index = first_bwd_edge_index = next_ind;
                 }
                 else
                 {
                     current_bwd_edge_index = first_bwd_edge_index = -1;
                 }
+
                 return;
             }
 
-            int prev_ind = edge->get_index();
 
             while(this->has_next_bwd_edge())
             {
+                int prev_ind = edge->get_index();
+
                 edge = this->get_next_bwd_edge();
                 if(edge->get_index() == edge_ind)
                 {
@@ -496,6 +498,7 @@ public:
                     {
                         edges->at(prev_ind).set_next_bwd_edge_index(-1);
                     }
+
                 }
             }
         }
@@ -519,13 +522,14 @@ public:
                 {
                     current_fwd_edge_index = first_fwd_edge_index = -1;
                 }
+
                 return;
             }
 
-            int prev_ind = edge->get_index();
-
             while(this->has_next_fwd_edge())
             {
+                int prev_ind = edge->get_index();
+
                 edge = this->get_next_fwd_edge();
                 if(edge->get_index() == edge_ind)
                 {

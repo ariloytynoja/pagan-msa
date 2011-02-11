@@ -33,6 +33,7 @@ Sequence::Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped, bo
     if(gapped)
     {
         gapped_seq = seq_entry.sequence;
+
         string::iterator si = seq_entry.sequence.begin();
         for (;si != seq_entry.sequence.end();si++)
         {
@@ -396,6 +397,7 @@ void Sequence::print_sequence(vector<Site> *sites)
 //cout<<i<<" "<<tsite->get_state()<<endl;
         cout<<i<<": ";
         if(tsite->get_site_type()==Site::real_site)
+//            cout<<tsite->get_index()<<" "<<tsite->get_state();//full_char_alphabet.at(tsite->get_state());
             cout<<tsite->get_index()<<" "<<full_char_alphabet.at(tsite->get_state());
         else
             cout<<tsite->get_index()<<" +";
@@ -432,12 +434,14 @@ void Sequence::print_sequence(vector<Site> *sites)
             {
                 Edge *tedge = tsite->get_first_fwd_edge();
                 cout<<" F "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
-                        <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+                        <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "
+                        <<tedge->get_branch_distance_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<"]";
                 while(tsite->has_next_fwd_edge())
                 {
                     tedge = tsite->get_next_fwd_edge();
                     cout<<"; f "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
-                        <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+                        <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "
+                        <<tedge->get_branch_distance_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<"]";
                 }
             }
             cout<<"; \t";
@@ -446,12 +450,14 @@ void Sequence::print_sequence(vector<Site> *sites)
         {
             Edge *tedge = tsite->get_first_bwd_edge();
             cout<<"B "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
-                    <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+                    <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "
+                    <<tedge->get_branch_distance_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<"]";
             while(tsite->has_next_bwd_edge())
             {
                 tedge = tsite->get_next_bwd_edge();
                 cout<<"; b "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
-                    <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "<<tedge->get_branch_distance_since_last_used()<<"]";
+                    <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "
+                    <<tedge->get_branch_distance_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<"]";
             }
         }
         cout << setprecision (4);

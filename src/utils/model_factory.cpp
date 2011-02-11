@@ -542,12 +542,12 @@ void Model_factory::dna_model(float *char_pi,Settings *st)
     float end_gap_ext = 0.95;
     float break_gap_ext = 0.99;
 
-    if(st->is("ref-seqfile") && !st->is("454"))
-    {
-        ins_rate = 1;
-        del_rate = 1;
-        end_gap_ext = 0.99;
-    }
+//    if(st->is("ref-seqfile") && !st->is("454"))
+//    {
+//        ins_rate = 1;
+//        del_rate = 1;
+//        end_gap_ext = 0.99;
+//    }
 
     if(st->is("char-kappa"))
         char_kappa =  st->get("char-kappa").as<float>();
@@ -1035,8 +1035,25 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
     if(is_local_alignment)
     {
+
         model.log_ext_prob = log(0.1);
         model.ext_prob = 0.1;
+
+        model.ins_rate = 1;
+        model.del_rate = 1;
+
+        model.ins_prob = (1.0-exp(-1.0*distance));
+        model.del_prob = (1.0-exp(-1.0*distance));
+
+        double t = (1.0-exp(-2*distance));
+
+        t /= 2.0;
+        model.log_id_prob = log(t);
+        model.log_match_prob = log(1.0-2*t);
+
+        model.id_prob = t;
+        model.match_prob = 1.0-2*t;
+
     }
 //cout<<"model.ins_prob "<<model.ins_prob<<"\n";
 //cout<<"model.del_prob "<<model.del_prob<<"\n";
