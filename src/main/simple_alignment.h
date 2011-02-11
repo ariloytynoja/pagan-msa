@@ -105,14 +105,8 @@ class Simple_alignment
     vector<int> *left_child_site_to_path_index_p;
     vector<int> *right_child_site_to_path_index_p;
 
-    vector<int> *left_child_site_to_last_path_index_p;
-    vector<int> *right_child_site_to_last_path_index_p;
-
     vector<int> *path_to_left_child_site_index_p;
     vector<int> *path_to_right_child_site_index_p;
-
-    vector<int> *opposite_index_left_child_p;
-    vector<int> *opposite_index_right_child_p;
 
     Sequence *left;
     Sequence *right;
@@ -177,14 +171,10 @@ class Simple_alignment
 
     /*********************************/
 
-//    void iterate_bwd_edges_for_gap(Site * site,align_slice *x_slice,align_slice *y_slice,align_slice *m_slice,
-//                                   Matrix_pointer *max,bool is_x_matrix, bool is_edge_cell = false);
     void iterate_bwd_edges_for_gap(Site * site,align_slice *x_slice,align_slice *y_slice,align_slice *m_slice,
                                    Matrix_pointer *max,bool is_x_matrix, int gap_type = Simple_alignment::normal_gap);
     void iterate_bwd_edges_for_match(Site * left_site,Site * right_site,Matrix_pointer *max);
-    void iterate_bwd_edges_for_end_corner(Site * left_site,Site * right_site,Matrix_pointer *max);
-    void iterate_known_bwd_edges_for_end_corner(Site * left_site,Site * right_site,Matrix_pointer *max, int matrix);
-
+    void iterate_bwd_edges_for_end_corner(Site * left_site,Site * right_site,Matrix_pointer *max);    
     void iterate_fwd_edges_for_gap(Site * site,align_slice *g_slice,
                                    Matrix_pointer *max_s,Matrix_pointer *max_d,Matrix_pointer *max_m);
     void iterate_fwd_edges_for_match(Site * left_site,Site * right_site,
@@ -194,9 +184,6 @@ class Simple_alignment
 
     void iterate_bwd_edges_for_known_gap(Site * left_site,Site * right_site,vector<Matrix_pointer> *z_slice,vector<Matrix_pointer> *w_slice,
                                                      vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type,bool alignment_end=false);
-
-    void iterate_bwd_edges_for_known_double_gap(Site * site,vector<Matrix_pointer> *z_slice,vector<Matrix_pointer> *w_slice,
-                                                            vector<Matrix_pointer> *m_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type);
 
     void iterate_bwd_edges_for_known_match(Site * left_site,Site * right_site,Matrix_pointer *max,int prev_mat);
 
@@ -224,7 +211,6 @@ class Simple_alignment
     void score_x_match(Edge * left_edge,Edge * right_edge,double log_match,Matrix_pointer *max, double match = 0);
     void score_y_match(Edge * left_edge,Edge * right_edge,double log_match,Matrix_pointer *max, double match = 0);
 
-//    void score_gap_ext(Edge *edge,align_slice *z_slice,Matrix_pointer *max,bool is_x_matrix, bool is_edge_cell = false);
     void score_gap_ext(Edge *edge,align_slice *z_slice,Matrix_pointer *max,bool is_x_matrix, int gap_type = Simple_alignment::normal_gap);
     void score_gap_double(Edge *edge,align_slice *w_slice,Matrix_pointer *max,bool is_x_matrix);
     void score_gap_open(Edge *edge,align_slice *m_slice,Matrix_pointer *max,bool is_x_matrix);
@@ -724,6 +710,10 @@ class Simple_alignment
         }
     }
 
+    void make_alignment_path(vector<Matrix_pointer> *simple_path);
+
+    vector<Path_pointer> get_alignment_path() { return path; }
+
 public:
     Simple_alignment();
 
@@ -734,12 +724,8 @@ public:
                         float left_branch_length=0,float right_branch_length=0);
 
 
-    void make_alignment_path(vector<Matrix_pointer> *simple_path);
-    void make_alignment_path2(vector<Matrix_pointer> *simple_path);
-
     Sequence* get_simple_sequence() { return ancestral_sequence; }
 
-    vector<Path_pointer> get_alignment_path() { return path; }
 };
 
 }
