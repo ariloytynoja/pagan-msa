@@ -461,9 +461,9 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
     bool j_seq_start = true;
 
     bool debug = false;
-//    bool debug = true;
+//    debug = true;
 
-    for(int i=0;i<simple_path->size();i++)
+    for(int i=0;i<(int) simple_path->size();i++)
     {
 
         int j_gap_type = Simple_alignment::normal_gap;
@@ -605,7 +605,7 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
     if(debug)
     {
         cout<<"m\n";
-        for(int i=0;i<mvectp->size();i++)
+        for(int i=0;i<(int) mvectp->size();i++)
         {
             cout<<i<<": "<<mvectp->at(i).matrix<<" ["<<mvectp->at(i).x_ind<<" "<<mvectp->at(i).y_ind<<"] ["<<
                    mvectp->at(i).x_edge_ind<<" "<<mvectp->at(i).y_edge_ind<<"] "<<mvectp->at(i).score<<"\t| ";
@@ -1322,7 +1322,7 @@ void Simple_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_pointe
 
 //        cout<<path->at(i).mp.matrix<<" "<<log(path->at(i).mp.fwd_score)<<" "<<log(path->at(i).mp.bwd_score)<<" "<<log(path->at(i).mp.full_score)<<endl;
 //        cout<<path->at(i).mp.matrix<<" "<<path->at(i).mp.fwd_score<<" "<<path->at(i).mp.bwd_score<<" "<<path->at(i).mp.full_score<<endl;
-    cout<<endl;
+//    cout<<endl;
 
 }
 
@@ -1354,7 +1354,7 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
     //
     int k = path_length;
 
-    int next_path_index;
+    int next_path_index = -1;
     if(vit_mat==Simple_alignment::m_mat)
     {
         next_path_index = left_child_site_to_path_index_p->at(x_ind);
@@ -2726,7 +2726,7 @@ void Simple_alignment::iterate_bwd_edges_for_known_gap(Site * left_site,Site * r
 
 void Simple_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site * right_site,Matrix_pointer *max,int last_matrix)
 {
-
+//cout<<"iterate_bwd_edges_for_vector_end\n";
     if(left_site->has_bwd_edge() && right_site->has_bwd_edge())
     {
 
@@ -2739,33 +2739,37 @@ void Simple_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site * 
         //
         double m_log_match = model->log_non_gap();
 
-        if(last_matrix == Simple_alignment::m_mat)
-        {
+//        if(last_matrix == Simple_alignment::m_mat)
+//        {
             this->score_m_match_v(left_edge,right_edge,m_log_match,max);
-            best_score = max->score;
-        }
+//            cout<<"m1 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
 
-        if(last_matrix == Simple_alignment::x_mat)
-        {
+            best_score = max->score;
+//        }
+
+//        if(last_matrix == Simple_alignment::x_mat)
+//        {
             this->score_gap_close_v(left_edge,right_edge,xvectp,max,true);
+//            cout<<"x1 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
 
             if(this->first_is_bigger(max->score,best_score) )
             {
                 best_score = max->score;
                 max->y_ind = right->sites_length()-2;
             }
-        }
+//        }
 
-        if(last_matrix == Simple_alignment::y_mat)
-        {
+//        if(last_matrix == Simple_alignment::y_mat)
+//        {
             this->score_gap_close_v(left_edge,right_edge,yvectp,max,false);
+//            cout<<"y1 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
 
             if(this->first_is_bigger(max->score,best_score) )
             {
                 best_score = max->score;
                 max->x_ind = left->sites_length()-2;
             }
-        }
+//        }
 
         // first right site extra edges
         //
@@ -2774,19 +2778,21 @@ void Simple_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site * 
             right_edge = right_site->get_next_bwd_edge();
             left_edge = left_site->get_first_bwd_edge();
 
-            if(last_matrix == Simple_alignment::m_mat)
-            {
+//            if(last_matrix == Simple_alignment::m_mat)
+//            {
                 this->score_m_match_v(left_edge,right_edge,m_log_match,max);
+//                cout<<"m2 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
 
                 if(this->first_is_bigger(max->score,best_score) )
                 {
                     best_score = max->score;
                 }
-            }
+//            }
 
-            if(last_matrix == Simple_alignment::y_mat)
-            {
+//            if(last_matrix == Simple_alignment::y_mat)
+//            {
                 this->score_gap_close_v(left_edge,right_edge,yvectp,max,false);
+//                cout<<"y2 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
 
                 if(this->first_is_bigger(max->score,best_score) )
                 {
@@ -2794,7 +2800,7 @@ void Simple_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site * 
                     max->x_ind = left->sites_length()-2;
                 }
             }
-        }
+//        }
 
         // left site extra edges then
         //
@@ -2803,45 +2809,49 @@ void Simple_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site * 
             left_edge = left_site->get_next_bwd_edge();
             right_edge = right_site->get_first_bwd_edge();
 
-            if(last_matrix == Simple_alignment::m_mat)
-            {
+//            if(last_matrix == Simple_alignment::m_mat)
+//            {
                 this->score_m_match_v(left_edge,right_edge,m_log_match,max);
+//                cout<<"m3 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
 
                 if(this->first_is_bigger(max->score,best_score) )
                 {
                     best_score = max->score;
                 }
-            }
+//            }
 
-            if(last_matrix == Simple_alignment::x_mat)
-            {
+//            if(last_matrix == Simple_alignment::x_mat)
+//            {
                 this->score_gap_close_v(left_edge,right_edge,xvectp,max,true);
+//                cout<<"x3 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
 
                 if(this->first_is_bigger(max->score,best_score) )
                 {
                     best_score = max->score;
                     max->y_ind = right->sites_length()-2;
                 }
-            }
+//            }
 
             while(right_site->has_next_bwd_edge())
             {
                 right_edge = right_site->get_next_bwd_edge();
 
-                if(last_matrix == Simple_alignment::m_mat)
-                {
+//                if(last_matrix == Simple_alignment::m_mat)
+//                {
                     this->score_m_match_v(left_edge,right_edge,m_log_match,max);
+//                    cout<<"m4 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
 
                     if(this->first_is_bigger(max->score,best_score) )
                     {
                         best_score = max->score;
                     }
-                }
+//                }
 
 
-                if(last_matrix == Simple_alignment::y_mat)
-                {
+//                if(last_matrix == Simple_alignment::y_mat)
+//                {
                     this->score_gap_close_v(left_edge,right_edge,yvectp,max,false);
+//                    cout<<"y4 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
 
                     if(this->first_is_bigger(max->score,best_score) )
                     {
@@ -2849,7 +2859,7 @@ void Simple_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site * 
                         max->x_ind = left->sites_length()-2;
                     }
                 }
-            }
+//            }
         }
 
         if(Settings::noise>1)

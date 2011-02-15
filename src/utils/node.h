@@ -407,7 +407,7 @@ public:
     {
         vector<Fasta_entry> alignment;
         this->get_alignment(&alignment);
-        for(int i=0;i<alignment.size();i++)
+        for(int i=0;i<(int) alignment.size();i++)
             cout<<">"<<alignment.at(i).name<<endl<<alignment.at(i).sequence<<endl;
     }
 
