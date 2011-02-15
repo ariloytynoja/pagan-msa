@@ -2771,6 +2771,7 @@ void Simple_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site * 
             }
 //        }
 
+
         // first right site extra edges
         //
         while(right_site->has_next_bwd_edge())
@@ -2788,6 +2789,17 @@ void Simple_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site * 
                     best_score = max->score;
                 }
 //            }
+
+/*added*/
+                this->score_gap_close_v(left_edge,right_edge,xvectp,max,true);
+//                cout<<"x2 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
+
+                if(this->first_is_bigger(max->score,best_score) )
+                {
+                    best_score = max->score;
+                    max->y_ind = right->sites_length()-2;
+                }
+/*added*/
 
 //            if(last_matrix == Simple_alignment::y_mat)
 //            {
@@ -2820,6 +2832,17 @@ void Simple_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site * 
                 }
 //            }
 
+    /*added*/
+                this->score_gap_close_v(left_edge,right_edge,yvectp,max,false);
+//                cout<<"y4 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
+
+                if(this->first_is_bigger(max->score,best_score) )
+                {
+                    best_score = max->score;
+                    max->x_ind = left->sites_length()-2;
+                }
+    /*added*/
+
 //            if(last_matrix == Simple_alignment::x_mat)
 //            {
                 this->score_gap_close_v(left_edge,right_edge,xvectp,max,true);
@@ -2847,6 +2870,16 @@ void Simple_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site * 
                     }
 //                }
 
+    /*added*/
+                    this->score_gap_close_v(left_edge,right_edge,xvectp,max,true);
+//                    cout<<"x4 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
+
+                    if(this->first_is_bigger(max->score,best_score) )
+                    {
+                        best_score = max->score;
+                        max->y_ind = right->sites_length()-2;
+                    }
+    /*added*/
 
 //                if(last_matrix == Simple_alignment::y_mat)
 //                {
