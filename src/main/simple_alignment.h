@@ -105,8 +105,12 @@ class Simple_alignment
     vector<int> *left_child_site_to_path_index_p;
     vector<int> *right_child_site_to_path_index_p;
 
+    vector<int> *left_child_site_to_last_path_index_p;
+    vector<int> *right_child_site_to_last_path_index_p;
+
     vector<int> *path_to_left_child_site_index_p;
     vector<int> *path_to_right_child_site_index_p;
+
 
     Sequence *left;
     Sequence *right;

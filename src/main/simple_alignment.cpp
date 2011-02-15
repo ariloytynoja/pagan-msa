@@ -433,6 +433,15 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
     left_child_site_to_path_index.push_back(0);
     right_child_site_to_path_index.push_back(0);
 
+    vector<int> left_child_site_to_last_path_index;
+    vector<int> right_child_site_to_last_path_index;
+
+    left_child_site_to_last_path_index_p = &left_child_site_to_last_path_index;
+    right_child_site_to_last_path_index_p = &right_child_site_to_last_path_index;
+
+    left_child_site_to_last_path_index.push_back(0);
+    right_child_site_to_last_path_index.push_back(0);
+
 
     vector<int> path_to_left_child_site_index;
     vector<int> path_to_right_child_site_index;
@@ -498,6 +507,7 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
             i_ind++;
 
             left_child_site_to_path_index.push_back(i+1);
+            left_child_site_to_last_path_index.push_back(i+1);
 
             left_site = left->get_site_at(i_ind);
             right_site = right->get_site_at(j_ind);
@@ -509,6 +519,9 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
 
             if(max_x->y_ind<0)
                 max_x->y_ind = path_to_right_child_site_index_p->at(left_child_site_to_path_index_p->at(max_x->x_ind));
+
+            if(prev_mat == Simple_alignment::y_mat)
+                max_x->y_ind = path_to_right_child_site_index_p->at(left_child_site_to_last_path_index_p->at(max_x->x_ind));
 
             if(debug)
                 cout<<"X: "<<max_x->x_ind<<" "<<max_x->y_ind<<": "<<max_x->matrix<<endl;
@@ -526,6 +539,7 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
             j_ind++;
 
             right_child_site_to_path_index.push_back(i+1);
+            right_child_site_to_last_path_index.push_back(i+1);
 
             left_site = left->get_site_at(i_ind);
             right_site = right->get_site_at(j_ind);
@@ -537,6 +551,9 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
 
             if(max_y->x_ind<0)
                 max_y->x_ind = path_to_left_child_site_index_p->at(right_child_site_to_path_index_p->at(max_y->y_ind));
+
+            if(prev_mat == Simple_alignment::x_mat)
+                max_y->x_ind = path_to_left_child_site_index_p->at(right_child_site_to_last_path_index_p->at(max_y->y_ind));
 
             if(debug)
                 cout<<"Y: "<<max_y->x_ind<<" "<<max_y->y_ind<<": "<<max_y->matrix<<endl;
@@ -553,6 +570,9 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
 
             left_child_site_to_path_index.push_back(i+1);
             right_child_site_to_path_index.push_back(i+1);
+
+            left_child_site_to_last_path_index.push_back(i+1);
+            right_child_site_to_last_path_index.push_back(i+1);
 
             left_site = left->get_site_at(i_ind);
             right_site = right->get_site_at(j_ind);
@@ -582,11 +602,17 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
         path_to_left_child_site_index.push_back(i_ind);
         path_to_right_child_site_index.push_back(j_ind);
 
+        left_child_site_to_last_path_index.at(i_ind) = i+1;
+        right_child_site_to_last_path_index.at(j_ind) = i+1;
+
     }
 
 
     left_child_site_to_path_index.push_back(simple_path->size());
     right_child_site_to_path_index.push_back(simple_path->size());
+
+    left_child_site_to_last_path_index.push_back(simple_path->size());
+    right_child_site_to_last_path_index.push_back(simple_path->size());
 
 
     this->debug_msg("Simple_alignment::make_alignment_path vector filled",1);
@@ -1349,6 +1375,20 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
     bool debug = false;
 //    debug = true;
 
+    if(debug)
+    {
+        cout<<"left; s-to-p; s-to-lp; p-to-s; \n";
+        for(int i=0;i<left_child_site_to_path_index_p->size();i++)
+        {
+            cout<<i<<"; "<<left_child_site_to_path_index_p->at(i)<<"; "<<left_child_site_to_last_path_index_p->at(i)<<"; "<<path_to_left_child_site_index_p->at(i)<<endl;
+        }
+        cout<<"right; s-to-p; s-to-lp; p-to-s; \n";
+        for(int i=0;i<right_child_site_to_path_index_p->size();i++)
+        {
+            cout<<i<<"; "<<right_child_site_to_path_index_p->at(i)<<"; "<<right_child_site_to_last_path_index_p->at(i)<<"; "<<path_to_right_child_site_index_p->at(i)<<endl;
+        }
+        cout<<endl;
+    }
 
     // Pre-existing gaps in the end skipped over
     //
@@ -1380,7 +1420,7 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
     while(k>=0)
     {
         if(debug)
-            cout<<"p "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
+            cout<<endl<<"p "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
 
         if(vit_mat == Simple_alignment::m_mat)
         {
@@ -1424,12 +1464,14 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
             }
             else if(vit_mat==Simple_alignment::x_mat)
             {
-                next_path_index = left_child_site_to_path_index_p->at(x_ind);
+                next_path_index = left_child_site_to_last_path_index_p->at(x_ind);
+//                next_path_index = left_child_site_to_path_index_p->at(x_ind);
                 y_ind = -1;
             }
             else if(vit_mat==Simple_alignment::y_mat)
             {
-                next_path_index = right_child_site_to_path_index_p->at(y_ind);
+                next_path_index = right_child_site_to_last_path_index_p->at(y_ind);
+//                next_path_index = right_child_site_to_path_index_p->at(y_ind);
                 x_ind = -1;
             }
 
@@ -1468,6 +1510,9 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
             x_ind = (*xvectp)[k].x_ind;
             y_ind = (*xvectp)[k].y_ind;
 
+            if(debug)
+                cout<<"xb "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+
             if((*xvectp)[k].x_edge_ind>=0)
                 left_edges->at((*xvectp)[k].x_edge_ind).is_used(true);
 
@@ -1479,12 +1524,15 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
             }
             else if(vit_mat==Simple_alignment::x_mat)
             {
-                next_path_index = left_child_site_to_path_index_p->at(x_ind);
+                next_path_index = left_child_site_to_last_path_index_p->at(x_ind);
+//                next_path_index = left_child_site_to_path_index_p->at(x_ind);
                 y_ind = -1;
             }
             else if(vit_mat==Simple_alignment::y_mat)
             {
-                next_path_index = right_child_site_to_path_index_p->at(y_ind);
+//                next_path_index = left_child_site_to_last_path_index_p->at(x_ind);
+                next_path_index = right_child_site_to_last_path_index_p->at(y_ind);
+//                next_path_index = right_child_site_to_path_index_p->at(y_ind);
                 x_ind = -1;
             }
 
@@ -1524,6 +1572,9 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
             x_ind = (*yvectp)[k].x_ind;
             y_ind = (*yvectp)[k].y_ind;
 
+            if(debug)
+                cout<<"yb "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+
             if((*yvectp)[k].y_edge_ind>=0)
                 right_edges->at((*yvectp)[k].y_edge_ind).is_used(true);
 
@@ -1535,12 +1586,15 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
             }
             else if(vit_mat==Simple_alignment::x_mat)
             {
-                next_path_index = left_child_site_to_path_index_p->at(x_ind);
+//                next_path_index = left_child_site_to_last_path_index_p->at(x_ind);
+                next_path_index = right_child_site_to_last_path_index_p->at(y_ind);
+//                next_path_index = left_child_site_to_path_index_p->at(x_ind);
                 y_ind = -1;
             }
             else if(vit_mat==Simple_alignment::y_mat)
             {
-                next_path_index = right_child_site_to_path_index_p->at(y_ind);
+                next_path_index = right_child_site_to_last_path_index_p->at(y_ind);
+//                next_path_index = right_child_site_to_path_index_p->at(y_ind);
                 x_ind = -1;
             }
 
