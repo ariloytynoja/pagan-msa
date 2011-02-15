@@ -1375,7 +1375,12 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
     bool debug = false;
 //    debug = true;
 
-    if(debug)
+    // Pre-existing gaps in the end skipped over
+    //
+    int k = path_length;
+    int next_path_index = -1;
+
+    if(0 && debug)
     {
         cout<<"left; s-to-p; s-to-lp; p-to-s; \n";
         for(int i=0;i<left_child_site_to_path_index_p->size();i++)
@@ -1388,13 +1393,13 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
             cout<<i<<"; "<<right_child_site_to_path_index_p->at(i)<<"; "<<right_child_site_to_last_path_index_p->at(i)<<"; "<<path_to_right_child_site_index_p->at(i)<<endl;
         }
         cout<<endl;
+        cout<<endl<<"P "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
+
     }
+    if(debug)
+        cout<<endl<<"P "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
 
-    // Pre-existing gaps in the end skipped over
-    //
-    int k = path_length;
 
-    int next_path_index = -1;
     if(vit_mat==Simple_alignment::m_mat)
     {
         next_path_index = left_child_site_to_path_index_p->at(x_ind);
@@ -1464,21 +1469,21 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
             }
             else if(vit_mat==Simple_alignment::x_mat)
             {
-                next_path_index = left_child_site_to_last_path_index_p->at(x_ind);
-//                next_path_index = left_child_site_to_path_index_p->at(x_ind);
+//                next_path_index = left_child_site_to_last_path_index_p->at(x_ind);
+                next_path_index = left_child_site_to_path_index_p->at(x_ind);
                 y_ind = -1;
             }
             else if(vit_mat==Simple_alignment::y_mat)
             {
-                next_path_index = right_child_site_to_last_path_index_p->at(y_ind);
-//                next_path_index = right_child_site_to_path_index_p->at(y_ind);
+//                next_path_index = right_child_site_to_last_path_index_p->at(y_ind);
+                next_path_index = right_child_site_to_path_index_p->at(y_ind);
                 x_ind = -1;
             }
 
             k--;
 
             if(debug)
-                cout<<"m "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+                cout<<"m "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
 
         }
         else if(vit_mat == Simple_alignment::x_mat)
@@ -1539,7 +1544,7 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
             k--;
 
             if(debug)
-                cout<<"x "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+                cout<<"x "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
 
         }
         else if(vit_mat == Simple_alignment::y_mat)
@@ -1601,7 +1606,7 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
             k--;
 
             if(debug)
-                cout<<"y "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+                cout<<"y "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
 
         }
         else
