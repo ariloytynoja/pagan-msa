@@ -278,7 +278,7 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
                 node->add_left_child(current_root);
 
                 if(!Settings_handle::st.is("silent"))
-                    cout<<"("<<i+1<<"/"<<reads.size()<<") ";
+                    cout<<"("<<i+1<<"/"<<reads_for_this.size()<<") ";
 
                 Node * reads_node = new Node();
                 this->copy_node_details(reads_node,&reads_for_this.at(i), mf->get_full_char_alphabet());
@@ -551,54 +551,6 @@ void Reads_alignment::merge_paired_reads(vector<Fasta_entry> *reads, Model_facto
 
                     continue;
                 }
-
-//                else if( float(identical)/overlap >= Settings_handle::st.get("overlap-identity").as<float>()
-//                    && !Settings_handle::st.is("overlap-no-truncate") )
-//                {
-//                    int qsc_sum_left = 0;
-//                    int qsc_sum_right = 0;
-
-//                    x=0;y=0;
-//                    for(int i=1;i<anc_seq->sites_length()-1;i++)
-//                    {
-//                        int path_state = anc_seq->get_site_at(i)->get_path_state();
-
-//                        if(path_state==Site::xgapped)
-//                        {
-//                            x++;
-//                        }
-//                        else if(path_state==Site::ygapped)
-//                        {
-//                            y++;
-//                        }
-//                        else if(path_state==Site::matched)
-//                        {
-//                            qsc_sum_left += static_cast<int>( fit1->quality.at(x) );
-//                            qsc_sum_right += static_cast<int>( fit2->quality.at(y) );
-
-//                            x++;y++;
-//                        }
-//                    }
-
-
-//                    if(qsc_sum_left > qsc_sum_right)
-//                    {
-//                        if(!Settings_handle::st.is("silent"))
-//                            cout<<"Reads "<<fit1->name<<" and "<<fit2->name<<" seem to overlap: truncating "<<fit2->name<<"\n";
-
-//                        fit2->sequence = fit2->sequence.substr(overlap);
-//                        fit2->quality = fit2->quality.substr(overlap);
-//                    }
-//                    else
-//                    {
-//                        if(!Settings_handle::st.is("silent"))
-//                            cout<<"Reads "<<fit1->name<<" and "<<fit2->name<<" seem to overlap: truncating "<<fit1->name<<"\n";
-
-//                        fit1->sequence = fit1->sequence.substr(0,fit1->sequence.length()-overlap);
-//                        fit1->quality = fit1->quality.substr(0,fit1->quality.length()-overlap);
-//                    }
-//                    fit2++;
-//                }
                 else
                 {
                     fit2++;

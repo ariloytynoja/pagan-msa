@@ -2322,12 +2322,10 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *
 
     // Limits for copying old edges:
     //  first, number of nodes since last used
-//    if(child->get_branch_count_since_last_used()+1 > max_allowed_skip_branches)
     if(!child->is_used() && child->get_branch_count_since_last_used()+1 > max_allowed_skip_branches)
         return;
 
     //  then, total branch distance since last used
-//    if(child->get_branch_distance_since_last_used()+branch_length > max_allowed_skip_distance)
     if(!child->is_used() && child->get_branch_distance_since_last_used()+branch_length > max_allowed_skip_distance)
         return;
 
@@ -2356,7 +2354,9 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *
 
     }
     // Edge is not used: just update the history
-    else if(!child->is_used())
+//    else if(!child->is_used())
+//    else if(0 && !child->is_used())
+    else if(!child->is_used() && count_start == 0 &&  count_end == 0)
     {
 //        cout<<"not used"<<edge.get_start_site_index()<<" "<<edge.get_end_site_index()<<"\n";
         edge.set_branch_distance_since_last_used( child->get_branch_distance_since_last_used()+branch_length );
@@ -2371,11 +2371,22 @@ void Simple_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *
             edge.multiply_weight(child->get_posterior_weight());
 
     }
+    else if(!child->is_used())
+    {
+        edge.set_branch_distance_since_last_used( child->get_branch_distance_since_last_used()+branch_length );
+        edge.set_branch_count_since_last_used( child->get_branch_count_since_last_used()+1 );
+    }
 
     if(!sequence->contains_this_bwd_edge_at_site(edge.get_end_site_index(),&edge))
     {
 
-        edge.set_branch_count_as_skipped_edge( child->get_branch_count_as_skipped_edge() );
+//            edge.set_branch_count_as_skipped_edge( child->get_branch_count_as_skipped_edge() );
+// ->
+        if(!child->is_used())
+            edge.set_branch_count_as_skipped_edge( child->get_branch_count_as_skipped_edge() );
+        else
+            edge.set_branch_count_as_skipped_edge( 0 );
+// <-
         sequence->push_back_edge(edge);
 
         sequence->get_site_at( edge.get_start_site_index() )->add_new_fwd_edge_index( sequence->get_current_edge_index() );
@@ -2785,7 +2796,6 @@ void Simple_alignment::iterate_bwd_edges_for_known_gap(Site * left_site,Site * r
 
 void Simple_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site * right_site,Matrix_pointer *max,int last_matrix)
 {
-//cout<<"iterate_bwd_edges_for_vector_end\n";
     if(left_site->has_bwd_edge() && right_site->has_bwd_edge())
     {
 
@@ -2798,38 +2808,25 @@ void Simple_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site * 
         //
         double m_log_match = model->log_non_gap();
 
-//        if(last_matrix == Simple_alignment::m_mat)
-//        {
-            this->score_m_match_v(left_edge,right_edge,m_log_match,max);
-//            cout<<"m1 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
+        this->score_m_match_v(left_edge,right_edge,m_log_match,max);
 
+        best_score = max->score;
+
+        this->score_gap_close_v(left_edge,right_edge,xvectp,max,true);
+
+        if(this->first_is_bigger(max->score,best_score) )
+        {
             best_score = max->score;
-//        }
+            max->y_ind = right->sites_length()-2;
+        }
 
-//        if(last_matrix == Simple_alignment::x_mat)
-//        {
-            this->score_gap_close_v(left_edge,right_edge,xvectp,max,true);
-//            cout<<"x1 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
+        this->score_gap_close_v(left_edge,right_edge,yvectp,max,false);
 
-            if(this->first_is_bigger(max->score,best_score) )
-            {
-                best_score = max->score;
-                max->y_ind = right->sites_length()-2;
-            }
-//        }
-
-//        if(last_matrix == Simple_alignment::y_mat)
-//        {
-            this->score_gap_close_v(left_edge,right_edge,yvectp,max,false);
-//            cout<<"y1 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
-
-            if(this->first_is_bigger(max->score,best_score) )
-            {
-                best_score = max->score;
-                max->x_ind = left->sites_length()-2;
-            }
-//        }
-
+        if(this->first_is_bigger(max->score,best_score) )
+        {
+            best_score = max->score;
+            max->x_ind = left->sites_length()-2;
+        }
 
         // first right site extra edges
         //
@@ -2838,40 +2835,29 @@ void Simple_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site * 
             right_edge = right_site->get_next_bwd_edge();
             left_edge = left_site->get_first_bwd_edge();
 
-//            if(last_matrix == Simple_alignment::m_mat)
-//            {
-                this->score_m_match_v(left_edge,right_edge,m_log_match,max);
-//                cout<<"m2 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
+            this->score_m_match_v(left_edge,right_edge,m_log_match,max);
 
-                if(this->first_is_bigger(max->score,best_score) )
-                {
-                    best_score = max->score;
-                }
-//            }
-
-/*added*/
-                this->score_gap_close_v(left_edge,right_edge,xvectp,max,true);
-//                cout<<"x2 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
-
-                if(this->first_is_bigger(max->score,best_score) )
-                {
-                    best_score = max->score;
-                    max->y_ind = right->sites_length()-2;
-                }
-/*added*/
-
-//            if(last_matrix == Simple_alignment::y_mat)
-//            {
-                this->score_gap_close_v(left_edge,right_edge,yvectp,max,false);
-//                cout<<"y2 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
-
-                if(this->first_is_bigger(max->score,best_score) )
-                {
-                    best_score = max->score;
-                    max->x_ind = left->sites_length()-2;
-                }
+            if(this->first_is_bigger(max->score,best_score) )
+            {
+                best_score = max->score;
             }
-//        }
+
+            this->score_gap_close_v(left_edge,right_edge,xvectp,max,true);
+
+            if(this->first_is_bigger(max->score,best_score) )
+            {
+                best_score = max->score;
+                max->y_ind = right->sites_length()-2;
+            }
+
+            this->score_gap_close_v(left_edge,right_edge,yvectp,max,false);
+
+            if(this->first_is_bigger(max->score,best_score) )
+            {
+                best_score = max->score;
+                max->x_ind = left->sites_length()-2;
+            }
+        }
 
         // left site extra edges then
         //
@@ -2880,78 +2866,56 @@ void Simple_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site * 
             left_edge = left_site->get_next_bwd_edge();
             right_edge = right_site->get_first_bwd_edge();
 
-//            if(last_matrix == Simple_alignment::m_mat)
-//            {
+            this->score_m_match_v(left_edge,right_edge,m_log_match,max);
+
+            if(this->first_is_bigger(max->score,best_score) )
+            {
+                best_score = max->score;
+            }
+
+            this->score_gap_close_v(left_edge,right_edge,yvectp,max,false);
+
+            if(this->first_is_bigger(max->score,best_score) )
+            {
+                best_score = max->score;
+                max->x_ind = left->sites_length()-2;
+            }
+
+            this->score_gap_close_v(left_edge,right_edge,xvectp,max,true);
+
+            if(this->first_is_bigger(max->score,best_score) )
+            {
+                best_score = max->score;
+                max->y_ind = right->sites_length()-2;
+            }
+
+            while(right_site->has_next_bwd_edge())
+            {
+                right_edge = right_site->get_next_bwd_edge();
+
                 this->score_m_match_v(left_edge,right_edge,m_log_match,max);
-//                cout<<"m3 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
 
                 if(this->first_is_bigger(max->score,best_score) )
                 {
                     best_score = max->score;
                 }
-//            }
 
-    /*added*/
-                this->score_gap_close_v(left_edge,right_edge,yvectp,max,false);
-//                cout<<"y4 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
-
-                if(this->first_is_bigger(max->score,best_score) )
-                {
-                    best_score = max->score;
-                    max->x_ind = left->sites_length()-2;
-                }
-    /*added*/
-
-//            if(last_matrix == Simple_alignment::x_mat)
-//            {
                 this->score_gap_close_v(left_edge,right_edge,xvectp,max,true);
-//                cout<<"x3 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
 
                 if(this->first_is_bigger(max->score,best_score) )
                 {
                     best_score = max->score;
                     max->y_ind = right->sites_length()-2;
                 }
-//            }
 
-            while(right_site->has_next_bwd_edge())
-            {
-                right_edge = right_site->get_next_bwd_edge();
+                this->score_gap_close_v(left_edge,right_edge,yvectp,max,false);
 
-//                if(last_matrix == Simple_alignment::m_mat)
-//                {
-                    this->score_m_match_v(left_edge,right_edge,m_log_match,max);
-//                    cout<<"m4 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
-
-                    if(this->first_is_bigger(max->score,best_score) )
-                    {
-                        best_score = max->score;
-                    }
-//                }
-
-    /*added*/
-                    this->score_gap_close_v(left_edge,right_edge,xvectp,max,true);
-//                    cout<<"x4 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
-
-                    if(this->first_is_bigger(max->score,best_score) )
-                    {
-                        best_score = max->score;
-                        max->y_ind = right->sites_length()-2;
-                    }
-    /*added*/
-
-//                if(last_matrix == Simple_alignment::y_mat)
-//                {
-                    this->score_gap_close_v(left_edge,right_edge,yvectp,max,false);
-//                    cout<<"y4 "<<left_edge->get_start_site_index()<<" "<<right_edge->get_start_site_index()<<endl;
-
-                    if(this->first_is_bigger(max->score,best_score) )
-                    {
-                        best_score = max->score;
-                        max->x_ind = left->sites_length()-2;
-                    }
+                if(this->first_is_bigger(max->score,best_score) )
+                {
+                    best_score = max->score;
+                    max->x_ind = left->sites_length()-2;
                 }
-//            }
+            }
         }
 
         if(Settings::noise>1)

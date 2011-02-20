@@ -34,8 +34,8 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.17;
-    date = "15 Feb, 2011";
+    version = 0.18;
+    date = "20 Feb, 2011";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -72,7 +72,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("overlap-minimum", po::value<int>()->default_value(15), "minimum overlapping sites")
         ("overlap-identity", po::value<float>()->default_value(0.75), "minimum identity at overlap")
         ("overlap-identical-minimum", po::value<int>()->default_value(10), "minimum identical overlapping sites")
-//        ("overlap-no-truncate","do not truncate suspicious overlap")
         ("overlap-merge-file", po::value<string>(), "output file for merged reads")
         ("overlap-merge-only","only merge overlapping paired reads")
         ("trim-before-merge", "trim read ends with low Q-scores before merging")
