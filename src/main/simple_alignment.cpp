@@ -1391,12 +1391,12 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
     if(0 && debug)
     {
         cout<<"left; s-to-p; s-to-lp; p-to-s; \n";
-        for(int i=0;i<left_child_site_to_path_index_p->size();i++)
+        for(int i=0;i<(int)left_child_site_to_path_index_p->size();i++)
         {
             cout<<i<<"; "<<left_child_site_to_path_index_p->at(i)<<"; "<<left_child_site_to_last_path_index_p->at(i)<<"; "<<path_to_left_child_site_index_p->at(i)<<endl;
         }
         cout<<"right; s-to-p; s-to-lp; p-to-s; \n";
-        for(int i=0;i<right_child_site_to_path_index_p->size();i++)
+        for(int i=0;i<(int)right_child_site_to_path_index_p->size();i++)
         {
             cout<<i<<"; "<<right_child_site_to_path_index_p->at(i)<<"; "<<right_child_site_to_last_path_index_p->at(i)<<"; "<<path_to_right_child_site_index_p->at(i)<<endl;
         }
