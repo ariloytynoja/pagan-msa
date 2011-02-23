@@ -44,11 +44,12 @@ struct Matrix_pointer
     int x_edge_ind;
     int y_edge_ind;
     int matrix;
+    int path_index;
 
     Matrix_pointer() : score(-HUGE_VAL), full_score(0), fwd_score(0), bwd_score(0), x_ind(-1), y_ind(-1),
-                        x_edge_ind(-1), y_edge_ind(-1), matrix(-1) {}
+                        x_edge_ind(-1), y_edge_ind(-1), matrix(-1), path_index(-1) {}
     Matrix_pointer(double s,int x, int y, int m) : score(s), full_score(0), fwd_score(0), bwd_score(0),
-                        x_ind(x), y_ind(y), x_edge_ind(-1), y_edge_ind(-1), matrix(m) {}
+                        x_ind(x), y_ind(y), x_edge_ind(-1), y_edge_ind(-1), matrix(m), path_index(-1) {}
 };
 
 struct Path_pointer

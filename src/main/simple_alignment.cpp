@@ -471,6 +471,13 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
 
     bool debug = false;
 //    debug = true;
+    if(debug)
+    {
+        cout<<"Left:\n";
+        left->print_sequence();
+        cout<<"Right:\n";
+        right->print_sequence();
+    }
 
     for(int i=0;i<(int) simple_path->size();i++)
     {
@@ -515,16 +522,17 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
             this->iterate_bwd_edges_for_known_gap(left_site,right_site,&xvect,&yvect,&mvect,max_x,true,j_gap_type,j_seq_start);
 
             if(debug)
-                cout<<"X: "<<max_x->x_ind<<" "<<max_x->y_ind<<": "<<max_x->matrix<<endl;
+                cout<<"X1: "<<max_x->x_ind<<" "<<max_x->y_ind<<": "<<max_x->matrix<<" "<<max_x->path_index<<endl;
 
             if(max_x->y_ind<0)
                 max_x->y_ind = path_to_right_child_site_index_p->at(left_child_site_to_path_index_p->at(max_x->x_ind));
 
-            if(prev_mat == Simple_alignment::y_mat)
+//            if(prev_mat == Simple_alignment::y_mat)
+            if(max_x->matrix == Simple_alignment::y_mat)
                 max_x->y_ind = path_to_right_child_site_index_p->at(left_child_site_to_last_path_index_p->at(max_x->x_ind));
 
             if(debug)
-                cout<<"X: "<<max_x->x_ind<<" "<<max_x->y_ind<<": "<<max_x->matrix<<endl;
+                cout<<"X2: "<<max_x->x_ind<<" "<<max_x->y_ind<<": "<<max_x->matrix<<" "<<max_x->path_index<<endl;
 
 
             i_seq_start = false;
@@ -547,16 +555,17 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
             this->iterate_bwd_edges_for_known_gap(left_site,right_site,&yvect,&xvect,&mvect,max_y,false,i_gap_type,i_seq_start);
 
             if(debug)
-                cout<<"Y: "<<max_y->x_ind<<" "<<max_y->y_ind<<": "<<max_y->matrix<<endl;
+                cout<<"Y1: "<<max_y->x_ind<<" "<<max_y->y_ind<<": "<<max_y->matrix<<" "<<max_y->path_index<<endl;
 
             if(max_y->x_ind<0)
                 max_y->x_ind = path_to_left_child_site_index_p->at(right_child_site_to_path_index_p->at(max_y->y_ind));
 
-            if(prev_mat == Simple_alignment::x_mat)
+//            if(prev_mat == Simple_alignment::x_mat)
+            if(max_y->matrix == Simple_alignment::x_mat)
                 max_y->x_ind = path_to_left_child_site_index_p->at(right_child_site_to_last_path_index_p->at(max_y->y_ind));
 
             if(debug)
-                cout<<"Y: "<<max_y->x_ind<<" "<<max_y->y_ind<<": "<<max_y->matrix<<endl;
+                cout<<"Y2: "<<max_y->x_ind<<" "<<max_y->y_ind<<": "<<max_y->matrix<<" "<<max_y->path_index<<endl;
 
 
             j_seq_start = false;
@@ -580,7 +589,7 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
             this->iterate_bwd_edges_for_known_match(left_site,right_site,max_m,last_m_path_index);
 
             if(debug)
-                cout<<"M: "<<max_m->x_ind<<" "<<max_m->y_ind<<": "<<max_m->matrix<<endl;
+                cout<<"M: "<<max_m->x_ind<<" "<<max_m->y_ind<<": "<<max_m->matrix<<" "<<max_m->path_index<<endl;
 
 
             i_seq_start = false;
@@ -633,16 +642,16 @@ void Simple_alignment::make_alignment_path(vector<Matrix_pointer> *simple_path)
         cout<<"m\n";
         for(int i=0;i<(int) mvectp->size();i++)
         {
-            cout<<i<<": "<<mvectp->at(i).matrix<<" ["<<mvectp->at(i).x_ind<<" "<<mvectp->at(i).y_ind<<"] ["<<
+            cout<<i<<": "<<mvectp->at(i).matrix<<" ["<<mvectp->at(i).x_ind<<" "<<mvectp->at(i).y_ind<<"] ["<<mvectp->at(i).path_index<<"] ["<<
                    mvectp->at(i).x_edge_ind<<" "<<mvectp->at(i).y_edge_ind<<"] "<<mvectp->at(i).score<<"\t| ";
-            cout<<xvectp->at(i).matrix<<" ["<<xvectp->at(i).x_ind<<" "<<xvectp->at(i).y_ind<<"] ["<<
+            cout<<xvectp->at(i).matrix<<" ["<<xvectp->at(i).x_ind<<" "<<xvectp->at(i).y_ind<<"] ["<<xvectp->at(i).path_index<<"] ["<<
                    xvectp->at(i).x_edge_ind<<" "<<xvectp->at(i).y_edge_ind<<"] "<<xvectp->at(i).score<<"\t| ";
-            cout<<yvectp->at(i).matrix<<" ["<<yvectp->at(i).x_ind<<" "<<yvectp->at(i).y_ind<<"] ["<<
+            cout<<yvectp->at(i).matrix<<" ["<<yvectp->at(i).x_ind<<" "<<yvectp->at(i).y_ind<<"] ["<<yvectp->at(i).path_index<<"] ["<<
                    yvectp->at(i).x_edge_ind<<" "<<yvectp->at(i).y_edge_ind<<"] "<<yvectp->at(i).score<<endl;
         }
 
         cout<<"end\n";
-            cout<<max_end.matrix<<"; x "<<max_end.x_ind<<", y "<<max_end.y_ind<<"; xe "<<
+            cout<<max_end.matrix<<"; x "<<max_end.x_ind<<", y "<<max_end.y_ind<<", pi "<<max_end.path_index<<"; xe "<<
                    max_end.x_edge_ind<<", ye "<<max_end.y_edge_ind<<"; "<<max_end.score<<endl;
     }
 
@@ -1365,7 +1374,7 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
     int vit_mat = fp.mp.matrix;
     int x_ind = fp.mp.x_ind;
     int y_ind = fp.mp.y_ind;
-
+    int next_path_index = fp.mp.path_index;
 
     if(fp.mp.x_edge_ind>=0)
         left_edges->at(fp.mp.x_edge_ind).is_used(true);
@@ -1374,6 +1383,237 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
 
     bool debug = false;
 //    debug = true;
+
+    // Pre-existing gaps in the end skipped over
+    //
+    int k = path_length;
+
+    if(0 && debug)
+    {
+        cout<<"left; s-to-p; s-to-lp; p-to-s; \n";
+        for(int i=0;i<left_child_site_to_path_index_p->size();i++)
+        {
+            cout<<i<<"; "<<left_child_site_to_path_index_p->at(i)<<"; "<<left_child_site_to_last_path_index_p->at(i)<<"; "<<path_to_left_child_site_index_p->at(i)<<endl;
+        }
+        cout<<"right; s-to-p; s-to-lp; p-to-s; \n";
+        for(int i=0;i<right_child_site_to_path_index_p->size();i++)
+        {
+            cout<<i<<"; "<<right_child_site_to_path_index_p->at(i)<<"; "<<right_child_site_to_last_path_index_p->at(i)<<"; "<<path_to_right_child_site_index_p->at(i)<<endl;
+        }
+        cout<<endl;
+        cout<<endl<<"P "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
+
+    }
+    if(debug)
+        cout<<endl<<"P "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
+
+
+    if(vit_mat==Simple_alignment::x_mat)
+    {
+        y_ind = -1;
+    }
+    else if(vit_mat==Simple_alignment::y_mat)
+    {
+        x_ind = -1;
+    }
+
+
+    // Actual alignment path
+    //
+    while(k>=0)
+    {
+        if(debug)
+            cout<<endl<<"p "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
+
+        if(vit_mat == Simple_alignment::m_mat)
+        {
+            // Pre-existing gaps in the middle skipped over
+            //
+            while(next_path_index<k)
+            {
+                Matrix_pointer *smp = &simple_path->at(k-1);
+                Matrix_pointer mp(-1,smp->y_ind,smp->x_ind,smp->matrix);
+                Path_pointer pp( mp, false );
+                path->insert(path->begin(),pp);
+
+                if(debug)
+                    cout<<"mi "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+                k--;
+            }
+            if(k<1)
+                break;
+
+            Matrix_pointer mp(-1,x_ind,y_ind,vit_mat);
+            Path_pointer pp( mp, true );
+            path->insert(path->begin(),pp);
+
+            if(debug)
+                cout<<"im "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+
+            vit_mat = (*mvectp)[k].matrix;
+            x_ind = (*mvectp)[k].x_ind;
+            y_ind = (*mvectp)[k].y_ind;
+            next_path_index = (*mvectp)[k].path_index;
+
+            if((*mvectp)[k].x_edge_ind>=0)
+                left_edges->at((*mvectp)[k].x_edge_ind).is_used(true);
+            if((*mvectp)[k].y_edge_ind>=0)
+                right_edges->at((*mvectp)[k].y_edge_ind).is_used(true);
+
+            if(vit_mat==Simple_alignment::x_mat)
+            {
+                y_ind = -1;
+            }
+            else if(vit_mat==Simple_alignment::y_mat)
+            {
+                x_ind = -1;
+            }
+
+            k--;
+
+            if(debug)
+                cout<<"m "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
+
+        }
+        else if(vit_mat == Simple_alignment::x_mat)
+        {
+            // Pre-existing gaps in the middle skipped over
+            //
+            while(next_path_index<k)
+            {
+                Matrix_pointer *smp = &simple_path->at(k-1);
+                Matrix_pointer mp(-1,smp->y_ind,smp->x_ind,smp->matrix);
+                Path_pointer pp( mp, false );
+                path->insert(path->begin(),pp);
+
+                if(debug)
+                    cout<<"mi "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+                k--;
+            }
+            if(k<1)
+                break;
+
+            Matrix_pointer mp(-1,x_ind,y_ind,vit_mat);
+            Path_pointer pp( mp, true );
+            path->insert(path->begin(),pp);
+
+            if(debug)
+                cout<<"ix "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+
+            vit_mat = (*xvectp)[k].matrix;
+            x_ind = (*xvectp)[k].x_ind;
+            y_ind = (*xvectp)[k].y_ind;
+            next_path_index = (*xvectp)[k].path_index;
+
+            if(debug)
+                cout<<"xb "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+
+            if((*xvectp)[k].x_edge_ind>=0)
+                left_edges->at((*xvectp)[k].x_edge_ind).is_used(true);
+
+            if(vit_mat==Simple_alignment::x_mat)
+            {
+                y_ind = -1;
+            }
+            else if(vit_mat==Simple_alignment::y_mat)
+            {
+                x_ind = -1;
+            }
+
+            k--;
+
+            if(debug)
+                cout<<"x "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
+
+        }
+        else if(vit_mat == Simple_alignment::y_mat)
+        {
+            // Pre-existing gaps in the middle skipped over
+            //
+            while(next_path_index<k)
+            {
+                Matrix_pointer *smp = &simple_path->at(k-1);
+                Matrix_pointer mp(-1,smp->y_ind,smp->x_ind,smp->matrix);
+                Path_pointer pp( mp, false );
+                path->insert(path->begin(),pp);
+
+                if(debug)
+                    cout<<"mi "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+                k--;
+            }
+
+            if(k<1)
+                break;
+
+            Matrix_pointer mp(-1,x_ind,y_ind,vit_mat);
+            Path_pointer pp( mp, true );
+            path->insert(path->begin(),pp);
+
+            if(debug)
+                cout<<"iy "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+
+            vit_mat = (*yvectp)[k].matrix;
+            x_ind = (*yvectp)[k].x_ind;
+            y_ind = (*yvectp)[k].y_ind;
+            next_path_index = (*yvectp)[k].path_index;
+
+            if(debug)
+                cout<<"yb "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
+
+            if((*yvectp)[k].y_edge_ind>=0)
+                right_edges->at((*yvectp)[k].y_edge_ind).is_used(true);
+
+            if(vit_mat==Simple_alignment::x_mat)
+            {
+                y_ind = -1;
+            }
+            else if(vit_mat==Simple_alignment::y_mat)
+            {
+                x_ind = -1;
+            }
+
+            k--;
+
+            if(debug)
+                cout<<"y "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
+
+        }
+        else
+        {
+            cout<<"incorrect backward pointer: "<<vit_mat<<endl;
+            exit(-1);
+        }
+
+        if(k<1)
+            break;
+
+    }
+
+}
+
+/********************************************/
+
+/*
+void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path_pointer fp,vector<Matrix_pointer> *simple_path)
+{
+
+    vector<Edge> *left_edges = left->get_edges();
+    vector<Edge> *right_edges = right->get_edges();
+
+    int path_length = simple_path->size();
+
+    int vit_mat = fp.mp.matrix;
+    int x_ind = fp.mp.x_ind;
+    int y_ind = fp.mp.y_ind;
+
+
+    if(fp.mp.x_edge_ind>=0)
+        left_edges->at(fp.mp.x_edge_ind).is_used(true);
+    if(fp.mp.y_edge_ind>=0)
+        right_edges->at(fp.mp.y_edge_ind).is_used(true);
+
+    bool debug = false;
+    debug = true;
 
     // Pre-existing gaps in the end skipped over
     //
@@ -1621,6 +1861,8 @@ void Simple_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,Path
     }
 
 }
+*/
+
 /********************************************/
 
 void Simple_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer fp)
@@ -3483,6 +3725,7 @@ void Simple_alignment::score_m_match_v(Edge * left_edge,Edge * right_edge,double
         if(this->first_is_bigger(this_score,max->score) )
         {
             max->score = this_score;
+            max->path_index = left_path_index;
             max->x_ind = left_prev_index;
             max->y_ind = right_prev_index;
             max->x_edge_ind = left_edge->get_index();
@@ -3508,6 +3751,7 @@ void Simple_alignment::score_x_match_v(Edge * left_edge,Edge * right_edge,double
         if(this->first_is_bigger(this_score,max->score) )
         {
             max->score = this_score;
+            max->path_index = left_path_index;
             max->x_ind = left_prev_index;
             max->y_ind = right_prev_index;
             max->x_edge_ind = left_edge->get_index();
@@ -3534,6 +3778,7 @@ void Simple_alignment::score_y_match_v(Edge * left_edge,Edge * right_edge,double
         if(this->first_is_bigger(this_score,max->score) )
         {
             max->score = this_score;
+            max->path_index = right_path_index;
             max->x_ind = left_prev_index;
             max->y_ind = right_prev_index;
             max->x_edge_ind = left_edge->get_index();
@@ -3756,6 +4001,8 @@ void Simple_alignment::score_gap_ext_v(Edge *left_edge,Edge *right_edge,vector<M
     if(this->first_is_bigger(this_score,max->score) )
     {
         max->score = this_score;
+        max->path_index = path_index;
+
         if(is_x_matrix)
         {
             max->matrix = Simple_alignment::x_mat;
@@ -3820,6 +4067,8 @@ void Simple_alignment::score_gap_double_v(Edge *left_edge,Edge *right_edge,vecto
     if(this->first_is_bigger(this_score,max->score) )
     {
         max->score = this_score;
+        max->path_index = path_index;
+
         if(is_x_matrix)
         {
             max->matrix = Simple_alignment::y_mat;
@@ -3899,6 +4148,8 @@ void Simple_alignment::score_gap_open_v(Edge *left_edge,Edge *right_edge,vector<
     {
         max->score = this_score;
         max->matrix = Simple_alignment::m_mat;
+        max->path_index = path_index;
+
         if(is_x_matrix)
         {
             max->x_ind = edge->get_start_site_index();
@@ -3959,6 +4210,8 @@ void Simple_alignment::score_gap_close_v(Edge *left_edge,Edge *right_edge,vector
     if(this->first_is_bigger(this_score,max->score) )
     {
         max->score = this_score;
+        max->path_index = path_index;
+
         if(is_x_matrix)
         {
             max->matrix = Simple_alignment::x_mat;
