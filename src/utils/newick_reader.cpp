@@ -69,8 +69,8 @@ knowledge of the CeCILL license and that you accept its terms.
 #include <fstream>
 #include <vector>
 
-#include "newick_reader.h"
-#include "text_utils.h"
+#include "utils/newick_reader.h"
+#include "utils/text_utils.h"
 
 using namespace std;
 

@@ -24,11 +24,12 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include "exceptions.h"
+#include "utils/exceptions.h"
 #include "utils/settings.h"
 #include "utils/settings_handle.h"
 #include "main/sequence.h"
-#include "main/simple_alignment.h"
+#include "main/viterbi_alignment.h"
+#include "main/reference_alignment.h"
 #include "utils/model_factory.h"
 #include "utils/fasta_entry.h"
 
@@ -390,11 +391,11 @@ public:
         double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
         Evol_model model = mf->alignment_model(dist,is_local_alignment);
 
-        Simple_alignment sa;
-        sa.align(left_child->get_sequence(),right_child->get_sequence(),&model,
+        Viterbi_alignment va;
+        va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
                  left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence);
 
-        this->add_ancestral_sequence( sa.get_simple_sequence() );
+        this->add_ancestral_sequence( va.get_simple_sequence() );
 
         if(Settings::noise>2)
             this->print_alignment();
@@ -431,11 +432,11 @@ public:
         double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
         Evol_model model = mf->alignment_model(dist);
 
-        Simple_alignment sa;
-        sa.read_alignment(left_child->get_sequence(),right_child->get_sequence(),&model,
+        Reference_alignment ra;
+        ra.read_alignment(left_child->get_sequence(),right_child->get_sequence(),&model,
                  left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
 
-        this->add_ancestral_sequence( sa.get_simple_sequence() );
+        this->add_ancestral_sequence( ra.get_simple_sequence() );
 
     }
 

@@ -18,8 +18,8 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef READS_ALIGNMENT_H
-#define READS_ALIGNMENT_H
+#ifndef READS_ALIGNER_H
+#define READS_ALIGNER_H
 
 #include <vector>
 #include "utils/settings.h"
@@ -27,16 +27,16 @@
 #include "utils/model_factory.h"
 #include "utils/fasta_entry.h"
 #include "utils/fasta_reader.h"
-#include "utils/node.h"
+#include "main/node.h"
 #include "main/sequence.h"
-#include "main/simple_alignment.h"
+#include "main/viterbi_alignment.h"
 
 using namespace std;
 
 namespace ppa
 {
 
-class Reads_alignment
+class Reads_aligner
 {
     Node *global_root;
     void find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
@@ -61,7 +61,7 @@ class Reads_alignment
 
     void sort_reads_vector(vector<Fasta_entry> *reads)
     {
-        stable_sort(reads->begin(),reads->end(),Reads_alignment::better_score);
+        stable_sort(reads->begin(),reads->end(),Reads_aligner::better_score);
     }
     
     static bool nodeIsSmaller(const string& l,const string& r)
@@ -75,7 +75,7 @@ class Reads_alignment
         return (vl<vr);
     }
 public:
-    Reads_alignment();
+    Reads_aligner();
     void align(Node *root, Model_factory *mf,int count);
 
     void merge_reads_only();
@@ -84,4 +84,4 @@ public:
 };
 }
 
-#endif // READS_ALIGNMENT_H
+#endif // READS_ALIGNER_H

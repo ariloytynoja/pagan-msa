@@ -35,6 +35,8 @@
 #include <float.h>
 #include <time.h>
 
+namespace ppa {
+
 class Eigen
 {
 public:
@@ -52,4 +54,5 @@ public:
     
 };
 
+}
 #endif

@@ -68,9 +68,9 @@ knowledge of the CeCILL license and that you accept its terms.
 #include <algorithm>
 #include <iostream>
 #include <set>
-#include "fasta_reader.h"
-#include "text_utils.h"
-#include "settings_handle.h"
+#include "utils/fasta_reader.h"
+#include "utils/text_utils.h"
+#include "utils/settings_handle.h"
 
 using namespace ppa;
 

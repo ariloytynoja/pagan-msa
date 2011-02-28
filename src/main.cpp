@@ -23,12 +23,12 @@
 #include "utils/settings.h"
 #include "utils/settings_handle.h"
 #include "utils/newick_reader.h"
-#include "utils/node.h"
 #include "utils/fasta_reader.h"
 #include "utils/xml_writer.h"
 #include "utils/model_factory.h"
 #include "utils/evol_model.h"
-#include "main/reads_alignment.h"
+#include "main/node.h"
+#include "main/reads_aligner.h"
 
 using namespace std;
 
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
             exit(0);
         }
 
-        Reads_alignment ra;
+        Reads_aligner ra;
         ra.merge_reads_only();
 
         exit(0);
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
 
     if( Settings_handle::st.is("readsfile") )
     {
-        Reads_alignment ra;
+        Reads_aligner ra;
         ra.align(root,&mf,count);
 
         root = ra.get_global_root();

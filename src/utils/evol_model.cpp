@@ -18,7 +18,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include "evol_model.h"
+#include "utils/evol_model.h"
 
 using namespace ppa;
 

@@ -18,7 +18,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include "reads_alignment.h"
+#include "main/reads_aligner.h"
 #include <sstream>
 #include <fstream>
 #include <algorithm>
@@ -26,9 +26,9 @@
 using namespace std;
 using namespace ppa;
 
-Reads_alignment::Reads_alignment(){}
+Reads_aligner::Reads_aligner(){}
 
-void Reads_alignment::align(Node *root, Model_factory *mf, int count)
+void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 {
 
     string file = Settings_handle::st.get("readsfile").as<string>();
@@ -179,7 +179,7 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
         {
             unique_nodes.push_back(*sit);
         }
-        sort(unique_nodes.begin(),unique_nodes.end(),Reads_alignment::nodeIsSmaller);
+        sort(unique_nodes.begin(),unique_nodes.end(),Reads_aligner::nodeIsSmaller);
 
         map<string,Node*> nodes_map;
         // for one reference sequence only
@@ -347,7 +347,7 @@ void Reads_alignment::align(Node *root, Model_factory *mf, int count)
 }
 
 
-void Reads_alignment::merge_reads_only()
+void Reads_aligner::merge_reads_only()
 {
     string file = Settings_handle::st.get("readsfile").as<string>();
 
@@ -386,7 +386,7 @@ void Reads_alignment::merge_reads_only()
     fr.write_fastq(path,reads);
 }
 
-void Reads_alignment::add_trimming_comment(vector<Fasta_entry> *reads)
+void Reads_aligner::add_trimming_comment(vector<Fasta_entry> *reads)
 {
     vector<Fasta_entry>::iterator fit1 = reads->begin();
 
@@ -400,7 +400,7 @@ void Reads_alignment::add_trimming_comment(vector<Fasta_entry> *reads)
 }
 
 
-void Reads_alignment::merge_paired_reads(vector<Fasta_entry> *reads, Model_factory *mf)
+void Reads_aligner::merge_paired_reads(vector<Fasta_entry> *reads, Model_factory *mf)
 {
 
     vector<Fasta_entry>::iterator fit1 = reads->begin();
@@ -566,7 +566,7 @@ void Reads_alignment::merge_paired_reads(vector<Fasta_entry> *reads, Model_facto
     }
 }
 
-void Reads_alignment::find_paired_reads(vector<Fasta_entry> *reads)
+void Reads_aligner::find_paired_reads(vector<Fasta_entry> *reads)
 {
 
     vector<Fasta_entry>::iterator fit1 = reads->begin();
@@ -632,7 +632,7 @@ void Reads_alignment::find_paired_reads(vector<Fasta_entry> *reads)
     }
 }
 
-void Reads_alignment::copy_node_details(Node *reads_node,Fasta_entry *read, string full_alpha)
+void Reads_aligner::copy_node_details(Node *reads_node,Fasta_entry *read, string full_alpha)
 {
     double r_dist = Settings_handle::st.get("reads-distance").as<float>();
 
@@ -643,7 +643,7 @@ void Reads_alignment::copy_node_details(Node *reads_node,Fasta_entry *read, stri
 
 }
 
-bool Reads_alignment::read_alignment_overlaps(Node * node, string read_name, string ref_node_name)
+bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, string ref_node_name)
 {
     float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
     float min_identity = Settings_handle::st.get("min-reads-identity").as<float>();
@@ -709,7 +709,7 @@ bool Reads_alignment::read_alignment_overlaps(Node * node, string read_name, str
 }
 
 
-bool Reads_alignment::correct_sites_index(Node *current_root, string ref_node_name, int alignments_done, map<string,Node*> *nodes_map)
+bool Reads_aligner::correct_sites_index(Node *current_root, string ref_node_name, int alignments_done, map<string,Node*> *nodes_map)
 {
 
     // correct the sites index at the parent node; insertions corrected later
@@ -807,7 +807,7 @@ bool Reads_alignment::correct_sites_index(Node *current_root, string ref_node_na
 
 }
 
-void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
+void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
 {
 
     multimap<string,string> tid_nodes;
@@ -970,7 +970,7 @@ void Reads_alignment::find_nodes_for_reads(Node *root, vector<Fasta_entry> *read
     }
 }
 
-double Reads_alignment::read_match_score(Node *node, Fasta_entry *read, Model_factory *mf, float best_score)
+double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_factory *mf, float best_score)
 {
 
     double r_dist = Settings_handle::st.get("reads-distance").as<float>();
@@ -1052,7 +1052,7 @@ double Reads_alignment::read_match_score(Node *node, Fasta_entry *read, Model_fa
     return score;
 }
 
-void Reads_alignment::remove_target_overlapping_identical_reads(vector<Fasta_entry> *reads, Model_factory *mf)
+void Reads_aligner::remove_target_overlapping_identical_reads(vector<Fasta_entry> *reads, Model_factory *mf)
 {
     if(!Settings_handle::st.is("silent"))
         cout<<"Removing identical reads mapped at overlapping positions.\n";
@@ -1137,7 +1137,7 @@ void Reads_alignment::remove_target_overlapping_identical_reads(vector<Fasta_ent
     }
 }
 
-void Reads_alignment::remove_target_overlapping_reads(vector<Fasta_entry> *reads)
+void Reads_aligner::remove_target_overlapping_reads(vector<Fasta_entry> *reads)
 {
     if(!Settings_handle::st.is("silent"))
         cout<<"Removing reads mapped at overlapping positions.\n";
@@ -1184,7 +1184,7 @@ void Reads_alignment::remove_target_overlapping_reads(vector<Fasta_entry> *reads
     }
 }
 
-void Reads_alignment::align_two_reads(Node *node, Fasta_entry *ri1, Fasta_entry *ri2, Model_factory *mf)
+void Reads_aligner::align_two_reads(Node *node, Fasta_entry *ri1, Fasta_entry *ri2, Model_factory *mf)
 {
     double r_dist = Settings_handle::st.get("reads-distance").as<float>();
 
@@ -1208,7 +1208,7 @@ void Reads_alignment::align_two_reads(Node *node, Fasta_entry *ri1, Fasta_entry 
 
 }
 
-int Reads_alignment::reads_pairwise_matching_sites(Node *node)
+int Reads_aligner::reads_pairwise_matching_sites(Node *node)
 {
     int matching = 0;
 
@@ -1228,7 +1228,7 @@ int Reads_alignment::reads_pairwise_matching_sites(Node *node)
     return matching;
 }
 
-void Reads_alignment::remove_overlapping_reads(vector<Fasta_entry> *reads, Model_factory *mf)
+void Reads_aligner::remove_overlapping_reads(vector<Fasta_entry> *reads, Model_factory *mf)
 {
 
     if(!Settings_handle::st.is("silent"))

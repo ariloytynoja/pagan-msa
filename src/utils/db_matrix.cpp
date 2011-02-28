@@ -20,8 +20,8 @@
 
 #include <cstdlib>
 #include <iostream>
-#include "db_matrix.h"
-#include "settings.h"
+#include "utils/db_matrix.h"
+#include "utils/settings.h"
 
 using namespace std;
 using namespace ppa;

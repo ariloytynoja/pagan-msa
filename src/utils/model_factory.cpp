@@ -21,10 +21,10 @@
 #include <iomanip>
 #include <iostream>
 #include <vector>
-#include "model_factory.h"
-#include "settings.h"
-#include "settings_handle.h"
-#include "eigen.h"
+#include "utils/model_factory.h"
+#include "utils/settings.h"
+#include "utils/settings_handle.h"
+#include "utils/eigen.h"
 
 using namespace ppa;
 using namespace std;

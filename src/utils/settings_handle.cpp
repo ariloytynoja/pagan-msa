@@ -18,7 +18,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include "settings_handle.h"
+#include "utils/settings_handle.h"
 
 using namespace ppa;
 

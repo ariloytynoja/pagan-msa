@@ -23,10 +23,10 @@
 
 #include <string>
 #include <vector>
-#include "db_matrix.h"
-#include "int_matrix.h"
-#include "evol_model.h"
-#include "settings.h"
+#include "utils/db_matrix.h"
+#include "utils/int_matrix.h"
+#include "utils/evol_model.h"
+#include "utils/settings.h"
 
 namespace ppa{
 

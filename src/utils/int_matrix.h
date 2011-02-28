@@ -32,6 +32,8 @@
 #include <iostream>
 #include <cassert>
 
+namespace ppa {
+
 class Int_matrix{
 private:
     int x;
@@ -73,4 +75,5 @@ public:
 	void allowResize(bool xr, bool yr=false, bool zr=false, bool wr=false);
 };
 
+}
 #endif

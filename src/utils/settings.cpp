@@ -20,7 +20,7 @@
 
 #include <cstdio>
 #include <iostream>
-#include "settings.h"
+#include "utils/settings.h"
 
 namespace po = boost::program_options;
 
@@ -34,8 +34,8 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.18;
-    date = "20 Feb, 2011";
+    version = 0.19;
+    date = "28 Feb, 2011";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()

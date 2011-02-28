@@ -21,8 +21,8 @@
 #ifndef EVOL_MODEL_H
 #define EVOL_MODEL_H
 
-#include "db_matrix.h"
-#include "int_matrix.h"
+#include "utils/db_matrix.h"
+#include "utils/int_matrix.h"
 #include <string>
 
 namespace ppa {

@@ -66,7 +66,7 @@
 #ifndef TEXT_UTILS_H
 #define TEXT_UTILS_H
 
-#include "exceptions.h"
+#include "utils/exceptions.h"
 
 #include <string>
 #include <vector>

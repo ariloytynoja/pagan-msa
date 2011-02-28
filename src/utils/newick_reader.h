@@ -68,8 +68,8 @@ knowledge of the CeCILL license and that you accept its terms.
 #define NEWICK_READER_H
 
 #include <string>
-#include "exceptions.h"
-#include "node.h"
+#include "utils/exceptions.h"
+#include "main/node.h"
 
 using namespace std;
 

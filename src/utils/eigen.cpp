@@ -24,8 +24,10 @@
  * See the PAML documentation and code for details.
  */
 
-#include "eigen.h"
-#include "settings.h"
+#include "utils/eigen.h"
+#include "utils/settings.h"
+
+using namespace ppa;
 
 Eigen::Eigen()
 {

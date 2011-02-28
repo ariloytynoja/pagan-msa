@@ -24,9 +24,9 @@
 #include <string>
 #include <vector>
 #include <fstream>
-#include "exceptions.h"
-#include "node.h"
-#include "settings.h"
+#include "utils/exceptions.h"
+#include "main/node.h"
+#include "utils/settings.h"
 #include "utils/fasta_entry.h"
 
 using namespace std;

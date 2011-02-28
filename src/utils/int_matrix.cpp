@@ -20,8 +20,8 @@
 
 #include <cstdlib>
 #include <iostream>
-#include "int_matrix.h"
-#include "settings.h"
+#include "utils/int_matrix.h"
+#include "utils/settings.h"
 
 
 using namespace std;
