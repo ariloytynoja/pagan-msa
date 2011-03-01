@@ -21,6 +21,7 @@
 #include <iomanip>
 #include <iostream>
 #include <vector>
+#include <ctime>
 #include "utils/model_factory.h"
 #include "utils/settings.h"
 #include "utils/settings_handle.h"
@@ -243,10 +244,318 @@ void Model_factory::define_dna_alphabet()
 
 /*******************************************/
 
+
+void Model_factory::define_protein_alphabet()
+{
+
+    char_alphabet = "ARNDCQEGHILKMFPSTWYV";
+    full_char_alphabet = char_alphabet;
+
+    char_as = char_alphabet.length();
+
+
+    int count = 0;
+    for(int i=0;i<char_as;i++)
+    {
+        Char_symbol letter;
+
+        letter.index = i;
+        letter.symbol = full_char_alphabet.at(i);
+        letter.n_residues = 1;
+        letter.residues.push_back(full_char_alphabet.at(i));
+        letter.first_residue = i;
+        letter.second_residue = -1;
+        char_letters.push_back(letter);
+
+        count++;
+    }
+
+    for(int i=0;i<char_as-1;i++)
+    {
+        for(int j=i+1;j<char_as;j++)
+        {
+            Char_symbol letter;
+
+            letter.index = count;
+            letter.symbol = tolower(full_char_alphabet.at(i));
+            letter.n_residues = 2;
+            letter.residues.push_back(full_char_alphabet.at(i));
+            letter.residues.push_back(full_char_alphabet.at(j));
+            letter.first_residue = i;
+            letter.second_residue = j;
+            char_letters.push_back(letter);
+
+            full_char_alphabet += tolower(full_char_alphabet.at(i));
+
+            count++;
+        }
+    }
+
+    this->print_char_alphabet();
+
+
+    char_fas = full_char_alphabet.length();
+
+    /************************************************************/
+
+    double tmp_pi[20] = {0.0866279, 0.043972, 0.0390894, 0.0570451, 0.0193078, 0.0367281, 0.0580589, 0.0832518, 0.0244313, 0.048466, 0.086209, 0.0620286, 0.0195027, 0.0384319, 0.0457631, 0.0695179, 0.0610127, 0.0143859, 0.0352742, 0.0708956};
+
+    double tmp_q[400] = {-1.0644447077525, 0.024253680012, 0.0199296524112, 0.0421562148098, 0.019829882912, 0.0333710782038, 0.091898529865, 0.117944490096, 0.0077435982602, 0.00937017411, 0.034303854235, 0.056214349179, 0.0174255844392, 0.0080896843586, 0.065832507505, 0.234330242141, 0.129414648097, 0.0016275200247, 0.008491734537, 0.142217282556,
+                         0.0477814374309, -0.9283507809291, 0.0248352939324, 0.0084029714104, 0.0101982061898, 0.11148814755, 0.0254969723473, 0.048674413647, 0.052213352795, 0.009062124214, 0.042903719239, 0.331941090612, 0.0133235035374, 0.0039473788809, 0.0310955230559, 0.085103118001, 0.0338262340451, 0.016744036728, 0.0134582713486, 0.0178549859644,
+                         0.0441670615592, 0.027937434312, -1.38391347672512, 0.309721806842, 0.0051215097968, 0.056694964284, 0.0549932739622, 0.093704896008, 0.096657307877, 0.026861601976, 0.011338897352, 0.186830763486, 0.0038658446967, 0.00369569221099, 0.0089275113111, 0.276280123717, 0.123859441762, 0.00103458645453, 0.0383077812, 0.0139129779176,
+                         0.0640178448442, 0.006477251488, 0.212232770148, -0.94297329251968, 0.00058492787022, 0.0226532677023, 0.358464938024, 0.0720614260512, 0.0227376245588, 0.001911353642, 0.0073109283823, 0.029764733853, 0.0020234831358, 0.00179593805976, 0.0194028221904, 0.074506504504, 0.0228715867982, 0.0018668150853, 0.0114891949562, 0.010799881226,
+                         0.088970318416, 0.023225614652, 0.0103686978864, 0.00172817559999, -0.46436390434772, 0.00362939371299, 0.0012396736328, 0.0255311625132, 0.0060827096236, 0.00824576291, 0.033128997983, 0.00459221916954, 0.0076154533014, 0.015296664838, 0.0050066661924, 0.097857567114, 0.0312985388968, 0.010315697313, 0.0191832740086, 0.071047316584,
+                         0.0787099366842, 0.133477006, 0.060339961416, 0.0351844479133, 0.00190795624962, -1.31468853172694, 0.317551411783, 0.0274774230936, 0.104910689643, 0.005521101322, 0.074957777201, 0.24159519414, 0.030136742202, 0.00384014619352, 0.0427139961732, 0.071524881773, 0.0523445036856, 0.0031035709083, 0.008032288082, 0.0213594972636,
+                         0.137118971515, 0.019310611604, 0.0370254015012, 0.352205574616, 0.0004122601456, 0.200883241107, -1.17853838814971, 0.0472634621406, 0.0139264517825, 0.00617432607, 0.013298858967, 0.160308574698, 0.0061457688348, 0.00311812993141, 0.0312266801005, 0.0490058789081, 0.0501991141155, 0.0022522133463, 0.0069244312826, 0.0417384374836,
+                         0.122727478488, 0.02570888938, 0.043997465064, 0.0493773258384, 0.0059212002572, 0.0121221828612, 0.0329610245313, -0.4741383934945, 0.006093410533, 0.0014757945466, 0.0052849306733, 0.0231712797588, 0.00339542007, 0.0019189431989, 0.011146518267, 0.093280508578, 0.0137786810791, 0.0048478037397, 0.0036545482168, 0.0132749884132,
+                         0.0274570594166, 0.0939747598, 0.154649002326, 0.0530905054876, 0.0048071015816, 0.157714501491, 0.0330950244725, 0.020763831438, -0.9455247927498, 0.00669751654, 0.043058119558, 0.0552322503552, 0.0078818406807, 0.0261095183349, 0.0318601786938, 0.0514549945251, 0.0288777379989, 0.0037772913771, 0.136632497248, 0.0083910614248,
+                         0.0167482050465, 0.008221840588, 0.0216647526984, 0.0022496876087, 0.003284932553, 0.0041839549677, 0.0073964135655, 0.00253502563518, 0.003376161347, -1.17498318692916, 0.27336615273, 0.0200868455952, 0.083031965142, 0.040717445093, 0.00457305166728, 0.022206797976, 0.088966278632, 0.0030567591897, 0.014821160614, 0.55449575628,
+                         0.0344705408285, 0.021883589212, 0.0051413506032, 0.00483769259197, 0.0074197365386, 0.0319346789409, 0.0089563400907, 0.00510364337166, 0.0122025059606, 0.15368423202, -0.69175870029473, 0.015975776073, 0.094666495854, 0.081290001923, 0.0190303105564, 0.0239655313281, 0.0199280900994, 0.0095710687431, 0.0140609310556, 0.127636184504,
+                         0.0785078337935, 0.23531264024, 0.117737663694, 0.0273733764605, 0.00142943173442, 0.14305227669, 0.150049162927, 0.0310993759044, 0.0217544113216, 0.015694841712, 0.022203558995, -1.07152398375532, 0.0182209045452, 0.0034141362684, 0.0254852873376, 0.067232846627, 0.084623394646, 0.0019781331795, 0.0047007809888, 0.0216539266904,
+                         0.0774016821384, 0.030039999464, 0.0077483399574, 0.0059186573054, 0.0075393483596, 0.056754463806, 0.0182957528036, 0.01449413838, 0.0098736900133, 0.20634205636, 0.41846021018, 0.0579518322936, -1.2597234186325, 0.045758173097, 0.0078405461599, 0.0343352383995, 0.092502574724, 0.0074188949454, 0.0151127724254, 0.14593504782,
+                         0.0182346531826, 0.004516408092, 0.00375891879174, 0.00266574034104, 0.007684890556, 0.00366990113448, 0.00471054498671, 0.0041568456258, 0.0165979167123, 0.05134827302, 0.18234669053, 0.0055103727096, 0.023220499701, -0.67999937105987, 0.0073881779164, 0.0379519766649, 0.0104882661681, 0.022005248076, 0.227669563576, 0.0460744832752,
+                         0.124618565545, 0.029878490308, 0.0076255992414, 0.0241862096784, 0.0021123505512, 0.0342809801532, 0.0396167807095, 0.020277640926, 0.0170090221974, 0.0048431492208, 0.035849495396, 0.0345434792256, 0.0033413780883, 0.0062045996636, -0.5770185229931, 0.112151837712, 0.0485285253768, 0.0020054663895, 0.0076208498132, 0.0223241027972,
+                         0.292004459041, 0.05383008268, 0.155350266162, 0.061138656376, 0.027178817748, 0.037788440247, 0.0409279829071, 0.111708930276, 0.0180832908897, 0.01548197904, 0.029719604451, 0.059989719918, 0.0096324810435, 0.0209811655989, 0.073828693968, -1.326554610767, 0.267114820854, 0.0075345000378, 0.0277605484806, 0.0165001710484,
+                         0.183747304969, 0.024378648436, 0.079353827364, 0.0213842684566, 0.0099045924752, 0.0315100653768, 0.0477688308585, 0.0188010037494, 0.0115635053091, 0.07067118256, 0.028157755998, 0.086032427628, 0.029568433524, 0.0066065589057, 0.0363992375304, 0.304350756558, -1.1004826896859, 0.0015948784176, 0.0102700127816, 0.098419398788,
+                         0.0098004742107, 0.05117989024, 0.00281118065298, 0.0074025714917, 0.013845044146, 0.0079236101097, 0.0090895272073, 0.0280544413194, 0.0064149020097, 0.010298201078, 0.057355623581, 0.008529242643, 0.0100576594062, 0.058786971516, 0.0063796049555, 0.0364094439818, 0.0067641119728, -0.44467569893618, 0.087670143938, 0.0259030544764,
+                         0.0208543675065, 0.016776769076, 0.0424510884, 0.0185802165661, 0.0105002187974, 0.008363355651, 0.0113971362467, 0.0086252194872, 0.094633174672, 0.02036395922, 0.034364459162, 0.0082661793504, 0.0083556782799, 0.248050243532, 0.0098869347026, 0.0547101006747, 0.0177637255796, 0.035754572001, -0.6920103710931, 0.022312972188,
+                         0.173776433679, 0.011074304228, 0.0076711383924, 0.0086899653085, 0.019349118692, 0.0110654786961, 0.0341810742559, 0.0155886497946, 0.0028916398054, 0.3790671258, 0.15520551106, 0.0189456434124, 0.040145332815, 0.0249765843548, 0.0144102052697, 0.0161795265281, 0.084699660521, 0.0052561618971, 0.011101848966, -1.034275403476 };
+
+    Db_matrix *cPi = new Db_matrix(char_fas,"pi_char");
+    Db_matrix *cQ  = new Db_matrix(char_as,char_as,"Q_char");
+
+    for(int j=0;j<char_as;j++)
+    {
+        cPi->s(tmp_pi[j],j);
+        for(int i=0;i<char_as;i++)
+        {
+            cQ->s(tmp_q[j*char_as+i],j,i);
+        }
+    }
+
+
+    /************************************************************/
+
+
+    parsimony_table = new Int_matrix(char_fas,char_fas,"parsimony_char");
+
+    for(int i=0;i<char_fas;i++)
+    {
+        for(int j=0;j<char_fas;j++)
+        {
+            if(i==j)
+            {
+                parsimony_table->s(i,i,j);
+            }
+            else
+            {
+                Char_symbol *letter1 = &char_letters.at(i);
+                Char_symbol *letter2 = &char_letters.at(j);
+
+                if(letter1->n_residues == 1 && letter2->n_residues == 1)
+                {
+                    for(int k=char_as;k<char_fas;k++)
+                    {
+                        Char_symbol *letterX = &char_letters.at(k);
+
+                        if( letterX->first_residue == letter1->first_residue && letterX->second_residue == letter2->first_residue
+                            || letterX->first_residue == letter2->first_residue && letterX->second_residue == letter1->first_residue )
+                        {
+                            parsimony_table->s(k,i,j);
+                        }
+                    }
+                }
+
+                else if(letter1->n_residues == 1 && letter2->n_residues == 2 &&
+                        ( letter1->first_residue == letter2->first_residue ||
+                            letter1->first_residue == letter2->second_residue ) )
+                {
+                    parsimony_table->s(letter1->first_residue,i,j);
+
+                }
+
+                else if(letter2->n_residues == 1 && letter1->n_residues == 2 &&
+                        ( letter2->first_residue == letter1->first_residue ||
+                            letter2->first_residue == letter1->second_residue ) )
+                {
+                    parsimony_table->s(letter2->first_residue,i,j);
+
+                }
+
+                else
+                {
+                    // search for max score in Q matrix
+
+                    float maxQ = -1; char maxl1, maxl2;
+
+                    int m = letter1->first_residue;
+                    int n = letter2->first_residue;
+
+                    if(cQ->g(m,n)>maxQ)
+                    {
+                        maxQ = cQ->g(m,n);
+                        maxl1 = letter1->first_residue;
+                        maxl2 = letter2->first_residue;
+                    }
+
+                    if(letter2->n_residues == 2)
+                    {
+
+                        m = letter1->first_residue;
+                        n = letter2->second_residue;
+
+                        if(cQ->g(m,n)>maxQ)
+                        {
+                            maxQ = cQ->g(m,n);
+                            maxl1 = letter1->first_residue;
+                            maxl2 = letter2->second_residue;
+                        }
+                    }
+
+                    if(letter1->n_residues == 2)
+                    {
+                        m = letter1->second_residue;
+                        n = letter2->first_residue;
+
+                        if(cQ->g(m,n)>maxQ)
+                        {
+                            maxQ = cQ->g(m,n);
+                            maxl1 = letter1->second_residue;
+                            maxl2 = letter2->first_residue;
+                        }
+                    }
+
+                    if(letter1->n_residues == 2 && letter2->n_residues == 2)
+                    {
+                        m = letter1->second_residue;
+                        n = letter2->second_residue;
+
+                        if(cQ->g(m,n)>maxQ)
+                        {
+                            maxQ = cQ->g(m,n);
+                            maxl1 = letter1->second_residue;
+                            maxl2 = letter2->second_residue;
+                        }
+                    }
+
+
+                    // find the corresponding ambiguity character
+
+                    for(int k=20;k<char_fas;k++)
+                    {
+                        Char_symbol *letterX = &char_letters.at(k);
+
+                        if( letterX->first_residue == maxl1 && letterX->second_residue == maxl2
+                                || letterX->second_residue == maxl1 && letterX->first_residue == maxl2 )
+                        {
+                            parsimony_table->s(k,i,j);
+                        }
+                    }
+                }
+
+            }
+        } // for(j)
+    } // for(i)
+
+
+    this->print_int_matrix(parsimony_table);
+
+    /*********************/
+
+    // for situation where the parent's state has been updated and child's state may need to be changed.
+    // if child's state is included in parent's state, use parsimony_table to get the minimum overlap;
+    // if child's state is not included, change has happened between child and parent and child is not updated.
+
+    child_parsimony_table = new Int_matrix(char_fas,char_fas,"child_parsimony_char");
+
+    for(int i=0;i<char_fas;i++)
+    {
+        for(int j=0;j<char_fas;j++)
+        {
+            Char_symbol *parent = &char_letters.at(i);
+            Char_symbol *child = &char_letters.at(j);
+
+            // parent and child are idnetical
+
+            if(i == j)
+            {
+                child_parsimony_table->s(j,i,j);
+            }
+
+            else if(child->n_residues == 1 )
+            {
+                if( parent->first_residue == child->first_residue || parent->second_residue == child->first_residue)
+                    child_parsimony_table->s(j,i,j);
+                else
+                    child_parsimony_table->s(-1,i,j);
+            }
+
+            // parent is known -> child must be the same
+
+            else if(parent->n_residues == 1)
+            {
+                if(parent->first_residue == child->first_residue || parent->first_residue == child->second_residue)
+                    child_parsimony_table->s(i,i,j);
+                else
+                    child_parsimony_table->s(-1,i,j);
+            }
+
+            else
+            {
+                int c = -1;
+                if(parent->first_residue == child->first_residue || parent->first_residue == child->second_residue)
+                    c = parent->first_residue;
+                else if(parent->second_residue == child->first_residue || parent->second_residue == child->second_residue)
+                    c = parent->second_residue;
+
+                if(c>=0)
+                {
+                    for(int k=0;k<char_as;k++)
+                    {
+                        Char_symbol *letterX = &char_letters.at(k);
+                        if(letterX->first_residue == c || letterX->second_residue == c)
+                        {
+                            child_parsimony_table->s(k,i,j);
+                        }
+                    }
+                }
+                else
+                {
+                    child_parsimony_table->s(-1,i,j);
+                }
+
+            }
+        }
+    }
+
+    this->print_int_matrix(child_parsimony_table);
+
+
+    if(Settings::noise>5)
+    {
+        cout<<"\nModel_factory::define_protein_alphabet(). Protein parsimony table.\n\n  ";
+        for(int i=0;i<char_fas;i++)
+            cout<<full_char_alphabet.at(i)<<" ";
+        cout<<endl;
+
+        for(int i=0;i<char_fas;i++)
+        {
+            cout<<full_char_alphabet.at(i)<<" ";
+            for(int j=0;j<char_fas;j++)
+            {
+                cout<<full_char_alphabet.at(parsimony_table->g(i,j))<<" ";
+            }
+            cout<<endl;
+        }
+        cout<<endl;
+    }
+
+}
+
 /*
  * Definition of protein alpahbet including ambiguity characters.
  */
-void Model_factory::define_protein_alphabet()
+void Model_factory::define_protein_alphabet_old()
 {
     char_alphabet = "HRKQNEDSTGPACVIMLFYW";
     full_char_alphabet = "RKQEDNGHASTPCIVMLFYWZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZX";
@@ -407,100 +716,6 @@ void Model_factory::define_protein_alphabet()
  */
 void Model_factory::define_codon_alphabet()
 {
-//    char_alphabet = "AAA, AAC, AAG, AAT, ACA, ACC, ACG, ACT, AGA, AGC, AGG, AGT, ATA, ATC, ATG, ATT, "
-//                    "CAA, CAC, CAG, CAT, CCA, CCC, CCG, CCT, CGA, CGC, CGG, CGT, CTA, CTC, CTG, CTT, "
-//                    "GAA, GAC, GAG, GAT, GCA, GCC, GCG, GCT, GGA, GGC, GGG, GGT, GTA, GTC, GTG, GTT, "
-//                         "TAC,      TAT, TCA, TCC, TCG, TCT,      TGC, TGG, TGT, TTA, TTC, TTG, TTT";
-//
-//    full_char_alphabet = "AAA, AAC, AAG, AAT, ACA, ACC, ACG, ACT, AGA, AGC, AGG, AGT, ATA, ATC, ATG, ATT, "
-//                         "CAA, CAC, CAG, CAT, CCA, CCC, CCG, CCT, CGA, CGC, CGG, CGT, CTA, CTC, CTG, CTT, "
-//                         "GAA, GAC, GAG, GAT, GCA, GCC, GCG, GCT, GGA, GGC, GGG, GGT, GTA, GTC, GTG, GTT, "
-//                              "TAC,      TAT, TCA, TCC, TCG, TCT,      TGC, TGG, TGT, TTA, TTC, TTG, TTT, "
-//
-//                         "TGC,TGT, TAC,TAT, TTC,TTT, GAA,GAG, CAC,CAT, GAC,GAT, AAA,AAG, AAC,AAT, CAA,CAG, "
-//                         "ATA,ATC, TTA,TTG, CCA,CCC, CCG,CCT, GCA,GCC, GCG,GCT, ATA,ATT, ATG,TGC, CCA,CCT, "
-//                         "CCC,CCG, CTC,CTG, GCA,GCT, GCC,GCG, AGC,AGT, AAA,CAA, ATG,TGT, AAC,GGC, AGA,AGG, "
-//                         "CGA,CGT, CGC,CGG, TCA,TCT, TCC,TCG, CTA,CTT, GTC,GTG, GTA,GTT, GGA,GGT, AGC,GCG, "
-//                         "CTC,TGT, AAT,GGC, CTC,TGC, GGA,GGG, AAT,GGT, ACA,ACT, AGT,CAA, ACC,ACG, CAG,CCC, "
-//                         "GTG,TAC, GGC,GGG, ACC,TGG, ACG,CAG, ACT,CAA, GGG,TGT, ACG,TGG, "
-//
-//                         "ATG,TGC,TGT, AAC,AAT,AGT, ATA,ATC,ATT, AGA,AGG,CGA, CGC,CGG,CGT, AGC,AGT,CAG, "
-//                         "GCC,GCG,TGG, ACC,ACG,TAC, ACA,ACT,TAT, ACA,ACT,TGG, CAA,CCA,CCT, GTA,GTG,GTT, "
-//                         "ACC,ACG,TAT, GGA,GGG,GGT, ACA,ACT,CAG, AAT,GGG,TGT, AAC,AGC,AGT, CAG,CCA,CCT, "
-//                         "AAA,AGT,CAA, ACC,ACG,CAG, AAC,GGA,GGG, GTC,GTG,TAT, ACA,ACT,CAA, ACC,ACG,TGG, "
-//                         "CAA,TCA,TCT,"
-//
-//                         "GGA,GGC,GGG,GGT, CCA,CCC,CCG,CCT, TAC,TAT,TTC,TTT, GAA,GAC,GAG,GAT, AAC,AAT,GAC,GAT, "
-//                         "GCA,GCC,GCG,GCT, AAA,AAG,CAA,CAG, AAC,AAT,AGC,AGT, CAA,CAG,GAA,GAG, ACA,ACC,ACG,ACT, "
-//                         "GTA,GTC,GTG,GTT, CTA,CTC,CTG,CTT, CTA,CTT,TTA,TTG, TCA,TCC,TCG,TCT, ACA,ACT,CAA,CAG, "
-//                         "AAC,GGA,GGG,GGT,"
-//
-//                         "CAG,CCA,CCC,CCG,CCT, AGC,GCA,GCC,GCG,GCT, AGT,TCA,TCC,TCG,TCT, AAC,AAT,GGA,GGG,GGT, "
-//
-//                         "AAC,AAT,GAA,GAC,GAG,GAT, GTA,GTC,GTG,GTT,TAC,TAT, AAC,AAT,CAC,CAT,GAC,GAT, "
-//                         "AGA,AGG,CGA,CGC,CGG,CGT, GGA,GGC,GGG,GGT,TGC,TGT, AAC,AAT,GGA,GGC,GGG,GGT, "
-//                         "CTA,CTC,CTG,CTT,TTA,TTG, AGC,AGT,TCA,TCC,TCG,TCT, "
-//
-//                         "ATA,ATC,ATT,GTA,GTC,GTG,GTT, ATG,CTA,CTC,CTG,CTT,TTA,TTG, "
-//
-//                         "AAA,AAG,AGA,AGG,CGA,CGC,CGG,CGT, ACT,ATA,ATC,ATT,GTA,GTC,GTG,GTT, "
-//                         "AAA,AAG,ACA,ACC,ACG,ACT,CAA,CAG, AAC,AAT,AGC,AGT,TCA,TCC,TCG,TCT, "
-//                         "ACA,ACC,ACG,ACT,TCA,TCC,TCG,TCT, "
-//
-//                         "ATG,CTA,CTC,CTG,CTT,TTA,TTC,TTG,TTT, ATG,CAC,CAT,CTA,CTC,CTG,CTT,TTA,TTG, "
-//                         "AAA,AAG,AGA,AGG,CAA,CGA,CGC,CGG,CGT, ACA,ACC,ACG,ACT,AGC,TCA,TCC,TCG,TCT, "
-//
-//                         "AAA,AAG,AGA,AGG,CAA,CAG,CGA,CGC,CGG,CGT, ACA,ACC,ACG,ACT,ATA,ATC,ATT,GTA,GTC,GTG,GTT, "
-//
-//                         "ATA,ATC,ATG,ATT,CTA,CTC,CTG,CTT,TTA,TTC,TTG,TTT, "
-//                         "AAA,AAG,AGA,AGG,CAA,CAC,CAG,CAT,CGA,CGC,CGG,CGT, "
-//
-//                         "AAA,AAG,AAT,AGA,AGG,CAA,CAC,CAG,CAT,CGA,CGC,CGG,CGT, "
-//                         "ACA,ACC,ACG,AGC,AGT,GCA,GCC,GCG,GCT,TCA,TCC,TCG,TCT, "
-//
-//                         "ATA,ATC,ATG,ATT,CTA,CTC,CTG,CTT,GTA,GTC,GTG,GTT,TTA,TTG, "
-//                         "AAC,ACA,ACC,ACG,ACT,AGC,AGT,GCA,GCC,GCG,GCT,TCA,TCC,TCG,TCT, "
-//                         "AAC,AAT,ACA,ACC,ACG,ACT,AGC,AGT,GCA,GCC,GCG,GCT,TCA,TCC,TCG,TCT, "
-//                         "ATA,ATC,ATG,ATT,CTA,CTC,CTG,CTT,GTC,GTG,GTT,TAC,TAT,TTA,TTC,TTG,TTT, "
-//
-//                         "ATA,ATC,ATG,ATT,CTA,CTC,CTG,CTT,GTC,GTG,GTT,TAC,TAT,TGG,TTA,TTC,TTG,TTT, "
-//                         "ATA,ATC,ATG,ATT,CTA,CTC,CTG,CTT,GTA,GTC,GTG,GTT,TAT,TTA,TTC,TTG,TTT,TAC, "
-//                         "AAC,AAT,ACA,ACC,ACG,ACT,AGC,AGT,CAA,CAG,GCA,GCC,GCG,GCT,TCA,TCC,TCG,TCT, "
-//
-//                         "ATA,ATC,ATG,ATT,CTA,CTC,CTG,CTT,GTA,GTC,GTG,GTT,TAC,TAT,TGC,TGT,TTA,TTC,TTG,TTT, "
-//                         "AAA,AAG,ACA,ACC,ACG,ACT,AGA,AGC,AGG,AGT,CAA,CAC,CAG,CAT,CGA,CGC,CGG,CGT,GCA,GCC,GCG,GCT,TCA,TCC,TCG,TCT, "
-//                         "AAA,AAC,AAG,AAT,ACA,ACC,ACG,ACT,AGA,AGC,AGG,AGT,CAA,CAC,CAG,CAT,CGA,CGC,CGG,CGT,GAA,GAC,GAG,GAT,GCA,GCC,GCG,GCT,TCA,TCC,TCG,TCT, "
-//                         "AAA,AAC,AAG,AAT,ACA,ACC,ACG,ACT,AGA,AGC,AGG,AGT,CAA,CAC,CAG,CAT,CCA,CCC,CCG,CCT,CGA,CGC,CGG,CGT,GAA,GAC,GAG,GAT,GCA,GCC,GCG,GCT,GTA,TCA,TCC,TCG,TCT,TGC,TGT, "
-//                         "AAA,AAC,AAG,AAT,ACA,ACC,ACG,ACT,AGA,AGC,AGG,AGT,CAA,CAC,CAG,CAT,CCA,CCC,CCG,CCT,CGA,CGC,CGG,CGT,GAA,GAC,GAG,GAT,GCA,GCC,GCG,GCT,GGA,GGC,GGG,GGT,GTA,TCA,TCC,TCG,TCT,TGC,TGT, "
-//                         "AAA,AAC,AAG,AAT,ACA,ACC,ACG,ACT,AGA,AGC,AGG,AGT,ATA,ATC,ATG,ATT,CAA,CAC,CAG,CAT,CCA,CCC,CCG,CCT,CGA,CGC,CGG,CGT,CTA,CTC,CTG,CTT,GAA,GAC,GAG,GAT,GCA,GCC,GCG,GCT,GGA,GGC,GGG,GGT,GTA,GTC,GTG,GTT,TAC,TAT,TCA,TCC,TCG,TCT,TGC,TGG,TGT,TTA,TTC,TTG,TTT";
-//
-//    char_as = char_alphabet.length();
-//    char_fas = full_char_alphabet.length();
-//
-//    int n_residues[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//                        2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
-//                        3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,6,6,6,6,6,6,6,6,
-//                        7,7,8,8,8,8,8,9,9,9,9,10,11,12,12,13,13,14,15,16,17,18,18,18,20,26,32,39,43,61};
-//
-//    string ambiguity[] = {'1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29','30','31','32',
-//                          '33','34','35','36','37','38','39','40','41','42','43','44','45','46','47','48','49','50','51','52','53','54','55','56','57','58','59','60','61',
-//                          '55,57','49,50','59,61','33,35','18,20','34,36','1,3','2,4','17,19','13,14','58,60','21,22','23,24','37,38','39,40','13,16','15,55','21,24','22,23','30,31',
-//                          '37,40','38,39','10,12','1,17','15,57','2,42','9,11','25,28','26,27','51,54','52,53','29,32','46,47','45,48','41,44','10,39','30,57','4,42','30,55','41,43',
-//                          '4,44','5,8','12,17','6,7','19,22','47,49','42,43','6,56','7,19','8,17','43,57','7,56',
-//                          '15,55,57','2,4,12','13,14,16','9,11,25','26,27,28','10,12,19','38,39,56','6,7,49','5,8,50','5,8,56','17,21,24','45,47,48','6,7,50','41,43,44','5,8,19',
-//                          '4,43,57','2,10,12','19,21,24','1,12,17','6,7,19','2,41,43','46,47,50','5,8,17','6,7,56','17,51,54','41,42,43,44','21,22,23,24','49,50,59,61','33,34,35,36',
-//                          '2,4,34,36','37,38,39,40','1,3,17,19','2,4,10,12','17,19,33,35','5,6,7,8','45,46,47,48','29,30,31,32','29,32,58,60','51,52,53,54','5,8,17,19','2,41,43,44',
-//                          '19,21,22,23,24','10,37,38,39,40','12,51,52,53,54','2,4,41,43,44','2,4,33,34,35,36','45,46,47,48,49,50','2,4,18,20,34,36','9,11,25,26,27,28','41,42,43,44,55,57',
-//                          '2,4,41,42,43,44','29,30,31,32,58,60','10,12,51,52,53,54','13,14,16,45,46,47,48','15,29,30,31,32,58,60','1,3,9,11,25,26,27,28','8,13,14,16,45,46,47,48',
-//                          '1,3,5,6,7,8,17,19','2,4,10,12,51,52,53,54','5,6,7,8,51,52,53,54','15,29,30,31,32,58,59,60,61','15,18,20,29,30,31,32,58,60','1,3,9,11,17,25,26,27,28',
-//                          '5,6,7,8,10,51,52,53,54','1,3,9,11,17,19,25,26,27,28','5,6,7,8,13,14,16,45,46,47,48','13,14,15,16,29,30,31,32,58,59,60,61','1,3,9,11,17,18,19,20,25,26,27,28',
-//                          '1,3,4,9,11,17,18,19,20,25,26,27,28','5,6,7,10,12,37,38,39,40,51,52,53,54','13,14,15,16,29,30,31,32,45,46,47,48,58,60','2,5,6,7,8,10,12,37,38,39,40,51,52,53,54',
-//                          '2,4,5,6,7,8,10,12,37,38,39,40,51,52,53,54','13,14,15,16,29,30,31,32,46,47,48,49,50,58,59,60,61','13,14,15,16,29,30,31,32,46,47,48,49,50,56,58,59,60,61',
-//                          '13,14,15,16,29,30,31,32,45,46,47,48,50,58,59,60,61,49','2,4,5,6,7,8,10,12,17,19,37,38,39,40,51,52,53,54','13,14,15,16,29,30,31,32,45,46,47,48,49,50,55,57,58,59,60,61',
-//                          '1,3,5,6,7,8,9,10,11,12,17,18,19,20,25,26,27,28,37,38,39,40,51,52,53,54','1,2,3,4,5,6,7,8,9,10,11,12,17,18,19,20,25,26,27,28,33,34,35,36,37,38,39,40,51,52,53,54',
-//                          '1,2,3,4,5,6,7,8,9,10,11,12,17,18,19,20,21,22,23,24,25,26,27,28,33,34,35,36,37,38,39,40,45,51,52,53,54,55,57',
-//                          '1,2,3,4,5,6,7,8,9,10,11,12,17,18,19,20,21,22,23,24,25,26,27,28,33,34,35,36,37,38,39,40,41,42,43,44,45,51,52,53,54,55,57',
-//                          '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61'};
 }
 
 /*******************************************/
@@ -542,13 +757,6 @@ void Model_factory::dna_model(float *char_pi,Settings *st)
     float end_gap_ext = 0.95;
     float break_gap_ext = 0.99;
 
-//    if(st->is("ref-seqfile") && !st->is("454"))
-//    {
-//        ins_rate = 1;
-//        del_rate = 1;
-//        end_gap_ext = 0.99;
-//    }
-
     if(st->is("char-kappa"))
         char_kappa =  st->get("char-kappa").as<float>();
 
@@ -577,7 +785,6 @@ void Model_factory::dna_model(float *char_pi,Settings *st)
 void Model_factory::dna_model(float* pi,float kappa, float rho,float ins_rate,float del_rate, float ext_prob, float end_ext_prob, float break_ext_prob)
 {
 
-
     if (Settings::noise>4){
         cout<<"DNA substitution model: base frequencies "
                 <<pi[0]<<", "<<pi[1]<<", "<<pi[2]<<" and "<<pi[3]
@@ -601,7 +808,9 @@ void Model_factory::dna_model(float* pi,float kappa, float rho,float ins_rate,fl
 
     charPi = new Db_matrix(char_fas,"pi_char");
 
-    FOR(j,char_as) {
+
+    for(int j=0;j<char_as;j++)
+    {
         charPi->s(pi[j],j);
     }
 
@@ -742,7 +951,8 @@ void Model_factory::protein_model(float ins_rate,float del_rate, float ext_prob,
 
     charPi = new Db_matrix(char_fas,"pi_char");
 
-    FOR(j,char_as) {
+    for(int j=0;j<char_as;j++)
+    {
         charPi->s(tmp_pi[j],j);
     }
 
@@ -769,8 +979,10 @@ void Model_factory::protein_model(float ins_rate,float del_rate, float ext_prob,
 
     Db_matrix *charQ  = new Db_matrix(char_as,char_as,"Q_char");
 
-    FOR(j,char_as) {
-        FOR(i,char_as) {
+    for(int j=0;j<char_as;j++)
+    {
+        for(int i=0;i<char_as;i++)
+        {
             charQ->s(tmp_q[j*char_as+i],j,i);
         }
     }
@@ -831,7 +1043,8 @@ void Model_factory::codon_model(float ins_rate,float del_rate, float ext_prob)
 
     charPi = new Db_matrix(char_fas,"pi_char");
 
-    FOR(j,char_as) {
+    for(int j=0;j<char_as;j++)
+    {
         charPi->s(tmp_pi[j],j);
     }
 
@@ -899,8 +1112,10 @@ void Model_factory::codon_model(float ins_rate,float del_rate, float ext_prob)
 
     Db_matrix *charQ  = new Db_matrix(char_as,char_as,"Q_char");
 
-    FOR(j,char_as) {
-        FOR(i,char_as) {
+    for(int j=0;j<char_as;j++)
+    {
+        for(int i=0;i<char_as;i++)
+        {
             charQ->s(tmp_q[j*char_as+i],j,i);
         }
     }
@@ -942,11 +1157,12 @@ void Model_factory::build_model(int s,Db_matrix *pi,Db_matrix *q,Db_matrix *wU,D
     double* twv = new double[s*s];
     int npi0 = 0;
 
-    FOR(i,s) {
-
+    for(int i=0;i<s;i++)
+    {
         tpi[i] = pi->g(i);
 
-        FOR(j,s) {
+        for(int j=0;j<s;j++)
+        {
             tcq[i*s+j] = q->g(i,j);
         }
     }
@@ -962,11 +1178,12 @@ void Model_factory::build_model(int s,Db_matrix *pi,Db_matrix *q,Db_matrix *wU,D
         exit (-1);
     }
 
-    FOR(i,s) {
-
+    for(int i=0;i<s;i++)
+    {
         wRoot->s(twr[i],i);
 
-        FOR(j,s) {
+        for(int j=0;j<s;j++)
+        {
             wU->s(twu[i*s+j],i,j);
             wV->s(twv[i*s+j],i,j);
         }
@@ -998,11 +1215,12 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
     double* twu = new double[char_as*char_as];
     double* twv = new double[char_as*char_as];
 
-    FOR(i,char_as) {
-
+    for(int i=0;i<char_as;i++)
+    {
         twr[i] = charRoot->g(i);
 
-        FOR(j,char_as) {
+        for(int j=0;j<char_as;j++)
+        {
             twu[i*char_as+j] = charU->g(i,j);
             twv[i*char_as+j] = charV->g(i,j);
         }
@@ -1061,13 +1279,13 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 //cout<<"sum "<<model.ins_prob+model.del_prob+model.match_prob<<"\n";
 //cout<<"model.ext_prob "<<model.ext_prob<<"\n";
 
-    FOR(i,char_as) {
-
+    for(int i=0;i<char_as;i++)
+    {
         model.charPi->s(charPi->g(i),i);
         model.logCharPi->s(log( charPi->g(i) ),i);
 
-        FOR(j,char_as) {
-
+        for(int j=0;j<char_as;j++)
+        {
             float sp = tmr[i*char_as+j];
             if( ! Settings_handle::st.is("no-log-odds") )
             {
@@ -1120,9 +1338,10 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
         int n,m;
 
-        FOR(i,char_fas) {
-            FOR(j,char_fas) {
-
+        for(int i=0;i<char_fas;i++)
+        {
+            for(int j=0;j<char_fas;j++)
+            {
                 model.parsimony_table->s( parsimony_table->g(i,j), i,j);
 
                 if(i<char_as && j<char_as)
@@ -1130,8 +1349,10 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
                 double max = 0;
 
-                FOR(n,char_as) {
-                    FOR(m,char_as) {
+                for(int n=0;n<char_as;n++)
+                {
+                    for(int m=0;m<char_as;m++)
+                    {
                         double t = model.charPr->g(n,m)*char_ambiguity->g(m,j)*char_ambiguity->g(n,i);
                         if(max < t) max = t;
                     }
@@ -1175,9 +1396,10 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
         int n,m;
 
-        FOR(i,char_fas) {
-            FOR(j,char_fas) {
-
+        for(int i=0;i<char_fas;i++)
+        {
+            for(int j=0;j<char_fas;j++)
+            {
                 model.parsimony_table->s( parsimony_table->g(i,j), i,j);
 
                 if(i<char_as && j<char_as)
@@ -1185,8 +1407,10 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
                 double max = 0;
 
-                FOR(n,char_as) {
-                    FOR(m,char_as) {
+                for(int n=0;n<char_as;n++)
+                {
+                    for(int m=0;m<char_as;m++)
+                    {
                         double t = model.charPr->g(n,m)*char_ambiguity->g(m,j)*char_ambiguity->g(n,i);
                         if(max < t) max = t;
                     }
@@ -1215,6 +1439,23 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
 /*******************************************/
 
+void Model_factory::print_int_matrix(Int_matrix *m)
+{
+    cout<<"    ";
+    for(int i=0;i<m->X();i++)
+        cout<<" "<<setw(4)<<i;
+    cout<<endl;
+    for(int j=0;j<m->X();j++)
+    {
+        cout<<setw(4)<<j;
+        for(int i=0;i<m->X();i++)
+            cout<<" "<<setw(4)<<m->g(i,j);
+
+        cout<<endl;
+    }
+    cout<<endl;
+}
+
 void Model_factory::print_char_p_matrices(Evol_model &model)
 {
     // Print out the model
@@ -1225,25 +1466,26 @@ void Model_factory::print_char_p_matrices(Evol_model &model)
     cout<<"\ncharacter equilibrium frequencies (pi)"<<endl;
     cout << fixed << noshowpos << setprecision (4);
 
-    FOR(i,char_as)
+    for(int i=0;i<char_as;i++)
         cout << setw(4) <<char_alphabet.at(i)<<"   ";
     cout<<endl;
 
-    FOR(j,char_as) {
+    for(int j=0;j<char_as;j++)
         cout<<" "<<model.charPi->g(j);
-    }
     cout<<endl;
 
     cout<<"\nsubstitution matrix"<<endl;
     cout << fixed << noshowpos << setprecision (4);
 
-    FOR(i,char_as)
+    for(int i=0;i<char_as;i++)
         cout << setw(6) <<char_alphabet.at(i)<<" ";
     cout<<endl;
 
-    FOR(i,char_as) {
+    for(int i=0;i<char_as;i++)
+    {
         cout<<char_alphabet.at(i)<<" ";
-        FOR(j,char_as) {
+        for(int j=0;j<char_as;j++)
+        {
             cout<<" "<<model.charPr->g(i,j);
         }
         cout<<endl;
@@ -1251,13 +1493,15 @@ void Model_factory::print_char_p_matrices(Evol_model &model)
     cout<<"\nlog substitution matrix"<<endl;
     cout << fixed << showpos << setprecision (4);
 
-    FOR(i,char_as)
+    for(int i=0;i<char_as;i++)
         cout << setw(7) <<char_alphabet.at(i)<<" ";
     cout<<endl;
 
-    FOR(i,char_as) {
+    for(int i=0;i<char_as;i++)
+    {
         cout<<char_alphabet.at(i)<<" ";
-        FOR(j,char_as) {
+        for(int j=0;j<char_as;j++)
+        {
             cout<<" "<<model.logCharPr->g(i,j);
         }
         cout<<endl;
@@ -1269,13 +1513,15 @@ void Model_factory::print_char_p_matrices(Evol_model &model)
     cout<<"\nsubstitution matrix"<<endl;
     cout << fixed << noshowpos << setprecision (4);
 
-    FOR(i,char_fas)
+    for(int i=0;i<char_fas;i++)
         cout << setw(6) <<full_char_alphabet.at(i)<<" ";
     cout<<endl;
 
-    FOR(i,char_fas) {
+    for(int i=0;i<char_fas;i++)
+    {
         cout<<full_char_alphabet.at(i)<<" ";
-        FOR(j,char_fas) {
+        for(int j=0;j<char_fas;j++)
+        {
             cout<<" "<<model.charPr->g(i,j);
         }
         cout<<endl;
@@ -1285,13 +1531,15 @@ void Model_factory::print_char_p_matrices(Evol_model &model)
     cout<<"\nlog substitution matrix"<<endl;
     cout << fixed << showpos << setprecision (4);
 
-    FOR(i,char_fas)
+    for(int i=0;i<char_fas;i++) 
         cout << setw(7) <<full_char_alphabet.at(i)<<" ";
     cout<<endl;
 
-    FOR(i,char_fas) {
+    for(int i=0;i<char_fas;i++)
+    {
         cout<<full_char_alphabet.at(i)<<" ";
-        FOR(j,char_fas) {
+        for(int j=0;j<char_fas;j++)
+        {
             cout<<" "<<model.logCharPr->g(i,j);
         }
         cout<<endl;
@@ -1314,50 +1562,52 @@ void Model_factory::print_char_q_matrices(Db_matrix *charQ)
     cout<<"\ncharacter equilibrium frequencies (pi)"<<endl;
     cout << fixed << noshowpos << setprecision (4);
 
-    FOR(i,char_as)
+    for(int i=0;i<char_as;i++)
         cout << setw(4) <<char_alphabet.at(i)<<"   ";
     cout<<endl;
 
-    FOR(j,char_as) {
+    for(int j=0;j<char_as;j++)
         cout<<" "<<charPi->g(j);
-    }
     cout<<endl;
 
     cout<<"\noriginal substitution matrix"<<endl;
     cout << fixed << showpos << setprecision (4);
 
-    FOR(i,char_as)
+    for(int i=0;i<char_as;i++) 
         cout << setw(7) <<char_alphabet.at(i)<<" ";
     cout<<endl;
 
-    FOR(i,char_as) {
-     cout<<full_char_alphabet.at(i)<<" ";
-     FOR(j,char_as) {
+    for(int i=0;i<char_as;i++)
+    {
+        cout<<full_char_alphabet.at(i)<<" ";
+        for(int j=0;j<char_as;j++)
             cout<<" "<<charQ->g(i,j);
-        }
+
         cout<<endl;
     }
 
     cout<<"\neigen values & vectors"<<endl;
     cout << fixed << showpos << setprecision (4);
 
-    FOR(j,char_as) {
+    for(int j=0;j<char_as;j++)
         cout<<" "<<charRoot->g(j);
-    }
+
     cout<<endl<<endl;
 
-    FOR(i,char_as) {
-        FOR(j,char_as) {
+    for(int i=0;i<char_as;i++)
+    {
+        for(int j=0;j<char_as;j++)
             cout<<" "<<charU->g(i,j);
-        }
+
         cout<<endl;
     }
     cout<<endl;
 
-    FOR(i,char_as) {
-        FOR(j,char_as) {
+    for(int i=0;i<char_as;i++)
+    {
+        for(int j=0;j<char_as;j++)
             cout<<" "<<charV->g(i,j);
-        }
+
         cout<<endl;
     }
     cout<<endl;

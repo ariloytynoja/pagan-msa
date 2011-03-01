@@ -35,6 +35,8 @@ struct Char_symbol
     int index;
     char symbol;
     int n_residues;
+    int first_residue;
+    int second_residue;
     std::vector<char> residues;
 };
 
@@ -61,15 +63,16 @@ class Model_factory
     Db_matrix * charV;
     Db_matrix * charRoot;
 
-    int i;
-    int j;
-    int k;
-    int l;
+//    int i;
+//    int j;
+//    int k;
+//    int l;
 
     std::vector<Char_symbol> char_letters;
 
     void define_dna_alphabet();
     void define_protein_alphabet();
+    void define_protein_alphabet_old();
     void define_codon_alphabet();
 
     void print_char_alphabet();
@@ -96,6 +99,7 @@ public:
     Evol_model alignment_model(double distance, bool is_local_alignment=false);
 //    Evol_model char_alignment_model(double distance);
 
+    void print_int_matrix(Int_matrix *m);
     void print_char_p_matrices(Evol_model &model);
 
     std::string get_char_alphabet() { return char_alphabet; }
