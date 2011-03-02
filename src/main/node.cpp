@@ -44,12 +44,12 @@ Node::~Node()
         delete sequence;
 }
 
-void Node::add_sequence( Fasta_entry seq_entry, string full_char_alphabet, bool gapped, bool no_trimming)
+void Node::add_sequence( Fasta_entry seq_entry, int data_type, bool gapped, bool no_trimming)
 {
     if(Settings::noise>4)
         cout<<"Node::add_sequence "<<name<<"\n";
 
-    sequence = new Sequence(seq_entry, full_char_alphabet, gapped, no_trimming);
+    sequence = new Sequence(seq_entry, data_type, gapped, no_trimming);
     this->node_has_sequence_object= true;
 }
 

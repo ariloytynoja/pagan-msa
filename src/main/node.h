@@ -956,7 +956,7 @@ public:
         return color;
     }
 
-    void add_sequence( Fasta_entry seq_entry, string full_char_alphabet, bool gapped = false, bool no_trimming = false);
+    void add_sequence( Fasta_entry seq_entry, int data_type, bool gapped = false, bool no_trimming = false);
 
     void add_ancestral_sequence( Sequence* s ) { sequence = s;  node_has_sequence_object = true;}
 

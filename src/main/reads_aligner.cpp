@@ -39,7 +39,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
     fr.read(file, reads, true);
 
-    if(!fr.check_alphabet(mf->get_char_alphabet(),mf->get_full_char_alphabet(),reads))
+    if(!fr.check_alphabet(&reads,Model_factory::dna))
     {
         if(!Settings_handle::st.is("silent"))
             cout<<"\nWarning: Illegal characters in input reads sequences removed!"<<endl;
@@ -123,7 +123,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
                 cout<<"("<<i+1<<"/"<<reads.size()<<") ";
 
             Node * reads_node = new Node();
-            this->copy_node_details(reads_node,&reads.at(i), mf->get_full_char_alphabet());
+            this->copy_node_details(reads_node,&reads.at(i));
 
 
             node->add_right_child(reads_node);
@@ -281,7 +281,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
                     cout<<"("<<i+1<<"/"<<reads_for_this.size()<<") ";
 
                 Node * reads_node = new Node();
-                this->copy_node_details(reads_node,&reads_for_this.at(i), mf->get_full_char_alphabet());
+                this->copy_node_details(reads_node,&reads_for_this.at(i));
 
 
                 node->add_right_child(reads_node);
@@ -357,21 +357,15 @@ void Reads_aligner::merge_reads_only()
 
     fr.read(file, reads, true);
 
-    int data_type = fr.check_sequence_data_type(reads);
+    int data_type = fr.check_sequence_data_type(&reads);
     Model_factory mf(data_type);
 
-    if(!fr.check_alphabet(mf.get_char_alphabet(),mf.get_full_char_alphabet(),reads))
+    if(!fr.check_alphabet(&reads,Model_factory::dna))
         cout<<"\nWarning: Illegal characters in input sequences removed!"<<endl;
 
     float *dna_pi = fr.base_frequencies();
 
     mf.dna_model(dna_pi,&Settings_handle::st);
-
-    if(!fr.check_alphabet(mf.get_char_alphabet(),mf.get_full_char_alphabet(),reads))
-    {
-        if(!Settings_handle::st.is("silent"))
-            cout<<"\nWarning: Illegal characters in input reads sequences removed!"<<endl;
-    }
 
     this->merge_paired_reads( &reads, &mf );
 
@@ -429,10 +423,10 @@ void Reads_aligner::merge_paired_reads(vector<Fasta_entry> *reads, Model_factory
             {
 
                 Node * node_left = new Node();
-                this->copy_node_details(node_left,&(*fit1), mf->get_full_char_alphabet());
+                this->copy_node_details(node_left,&(*fit1));
 
                 Node * node_right = new Node();
-                this->copy_node_details(node_right,&(*fit2), mf->get_full_char_alphabet());
+                this->copy_node_details(node_right,&(*fit2));
 
                 Node * node = new Node();
                 node->set_name("merge");
@@ -632,14 +626,14 @@ void Reads_aligner::find_paired_reads(vector<Fasta_entry> *reads)
     }
 }
 
-void Reads_aligner::copy_node_details(Node *reads_node,Fasta_entry *read, string full_alpha)
+void Reads_aligner::copy_node_details(Node *reads_node,Fasta_entry *read)
 {
     double r_dist = Settings_handle::st.get("reads-distance").as<float>();
 
     reads_node->set_distance_to_parent(r_dist);
     reads_node->set_name(read->name);
     reads_node->add_name_comment(read->comment);
-    reads_node->add_sequence( *read, full_alpha, false, true);
+    reads_node->add_sequence( *read, Model_factory::dna, false, true);
 
 }
 
@@ -982,7 +976,7 @@ double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_fact
     reads_node1->set_distance_to_parent(r_dist);
     reads_node1->set_name(read->name);
     reads_node1->add_name_comment(read->comment);
-    reads_node1->add_sequence( *read, mf->get_full_char_alphabet());
+    reads_node1->add_sequence( *read, Model_factory::dna);
 
     Node * tmpnode = new Node();
     tmpnode->set_name("");
@@ -1194,14 +1188,14 @@ void Reads_aligner::align_two_reads(Node *node, Fasta_entry *ri1, Fasta_entry *r
     reads_node1->set_distance_to_parent(r_dist);
     reads_node1->set_name(ri1->name);
     reads_node1->add_name_comment(ri1->comment);
-    reads_node1->add_sequence( *ri1, mf->get_full_char_alphabet());
+    reads_node1->add_sequence( *ri1, Model_factory::dna);
     node->add_right_child(reads_node1);
 
     Node * reads_node2 = new Node();
     reads_node2->set_distance_to_parent(r_dist);
     reads_node2->set_name(ri2->name);
     reads_node2->add_name_comment(ri2->comment);
-    reads_node2->add_sequence( *ri2, mf->get_full_char_alphabet());
+    reads_node2->add_sequence( *ri2, Model_factory::dna);
     node->add_left_child(reads_node2);
 
     node->align_sequences_this_node(mf,true);

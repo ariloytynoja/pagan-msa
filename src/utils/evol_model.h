@@ -31,7 +31,7 @@ class Evol_model
 {
     std::string full_char_alphabet;
 public:
-    Evol_model(std::string alpha,float dist);
+    Evol_model(int data_t,float dist);
     ~Evol_model();
 
     Db_matrix *charPi;
@@ -39,6 +39,8 @@ public:
     Db_matrix *logCharPi;
     Db_matrix *logCharPr;
     Int_matrix *parsimony_table;
+
+    int data_type;
 
     float distance;
 
@@ -78,6 +80,8 @@ public:
     float score(int i,int j) { return charPr->g(i,j); }
 
     int parsimony_state(int i,int j) { return parsimony_table->g(i,j); }
+
+    int get_data_type() { return data_type; }
 
     std::string get_full_alphabet() { return full_char_alphabet; }
 

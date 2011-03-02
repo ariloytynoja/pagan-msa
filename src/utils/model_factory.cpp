@@ -71,13 +71,23 @@ Model_factory::~Model_factory()
 
 /*******************************************/
 
+string Model_factory::dna_char_alphabet = "ACGT";
+string Model_factory::dna_full_char_alphabet = "ACGTRYMKWSBDHVN";
+string Model_factory::protein_char_alphabet = "ARNDCQEGHILKMFPSTWYV";
+string Model_factory::protein_full_char_alphabet = "";
+
+vector<string> Model_factory::dna_character_alphabet = vector<string>();
+vector<string> Model_factory::dna_full_character_alphabet = vector<string>();
+vector<string> Model_factory::protein_character_alphabet = vector<string>();
+vector<string> Model_factory::protein_full_character_alphabet = vector<string>();
+
 /*
  * Definition of DNA alpahbet including ambiguity characters.
  */
 void Model_factory::define_dna_alphabet()
 {
-    char_alphabet = "ACGT";
-    full_char_alphabet = "ACGTRYMKWSBDHVN";
+    char_alphabet = this->dna_char_alphabet;
+    full_char_alphabet = this->dna_full_char_alphabet;
 
     char_as = char_alphabet.length();
     char_fas = full_char_alphabet.length();
@@ -247,8 +257,32 @@ void Model_factory::define_dna_alphabet()
 
 void Model_factory::define_protein_alphabet()
 {
+/*
+    cout<<this->get_dna_char_alphabet()<<"\n"<<this->get_dna_full_char_alphabet()<<endl;
+    cout<<this->get_protein_char_alphabet()<<"\n"<<this->get_protein_full_char_alphabet()<<endl;
 
-    char_alphabet = "ARNDCQEGHILKMFPSTWYV";
+    cout<<"dna\n";
+    vector<string> *tmp = this->get_dna_character_alphabet();
+    for(int i=0;i<tmp->size();i++)
+        cout<<tmp->at(i)<<endl;
+
+    cout<<"full dna\n";
+    tmp = this->get_dna_full_character_alphabet();
+    for(int i=0;i<tmp->size();i++)
+        cout<<tmp->at(i)<<endl;
+
+    cout<<"prot\n";
+    tmp = this->get_protein_character_alphabet();
+    for(int i=0;i<tmp->size();i++)
+        cout<<tmp->at(i)<<endl;
+
+    cout<<"full prot\n";
+    tmp = this->get_protein_full_character_alphabet();
+        for(int i=0;i<tmp->size();i++)
+            cout<<tmp->at(i)<<endl;
+/**/
+
+    char_alphabet = this->protein_char_alphabet;
     full_char_alphabet = char_alphabet;
 
     char_as = char_alphabet.length();
@@ -270,6 +304,21 @@ void Model_factory::define_protein_alphabet()
         count++;
     }
 
+    full_char_alphabet += "X";
+
+    Char_symbol letter;
+
+    letter.index = count;
+    letter.symbol = 'X';
+    letter.n_residues = 20;
+    for(int i=0;i<char_as;i++)
+        letter.residues.push_back(full_char_alphabet.at(i));
+    letter.first_residue = count;
+    letter.second_residue = -1;
+    char_letters.push_back(letter);
+
+    count++;
+
     for(int i=0;i<char_as-1;i++)
     {
         for(int j=i+1;j<char_as;j++)
@@ -277,7 +326,7 @@ void Model_factory::define_protein_alphabet()
             Char_symbol letter;
 
             letter.index = count;
-            letter.symbol = tolower(full_char_alphabet.at(i));
+            letter.symbol = 'x';
             letter.n_residues = 2;
             letter.residues.push_back(full_char_alphabet.at(i));
             letter.residues.push_back(full_char_alphabet.at(j));
@@ -285,16 +334,18 @@ void Model_factory::define_protein_alphabet()
             letter.second_residue = j;
             char_letters.push_back(letter);
 
-            full_char_alphabet += tolower(full_char_alphabet.at(i));
+            full_char_alphabet += "X";
 
             count++;
         }
     }
 
-    this->print_char_alphabet();
-
-
     char_fas = full_char_alphabet.length();
+
+
+//    this->print_char_alphabet();
+
+
 
     /************************************************************/
 
@@ -352,7 +403,17 @@ void Model_factory::define_protein_alphabet()
                 Char_symbol *letter1 = &char_letters.at(i);
                 Char_symbol *letter2 = &char_letters.at(j);
 
-                if(letter1->n_residues == 1 && letter2->n_residues == 1)
+                if(letter1->index == char_as) // 'X'
+                {
+                    parsimony_table->s(j,i,j);
+                }
+
+                else if(letter2->index == char_as) // 'X'
+                {
+                    parsimony_table->s(i,i,j);
+                }
+
+                else if(letter1->n_residues == 1 && letter2->n_residues == 1)
                 {
                     for(int k=char_as;k<char_fas;k++)
                     {
@@ -371,7 +432,6 @@ void Model_factory::define_protein_alphabet()
                             letter1->first_residue == letter2->second_residue ) )
                 {
                     parsimony_table->s(letter1->first_residue,i,j);
-
                 }
 
                 else if(letter2->n_residues == 1 && letter1->n_residues == 2 &&
@@ -379,7 +439,6 @@ void Model_factory::define_protein_alphabet()
                             letter2->first_residue == letter1->second_residue ) )
                 {
                     parsimony_table->s(letter2->first_residue,i,j);
-
                 }
 
                 else
@@ -458,8 +517,6 @@ void Model_factory::define_protein_alphabet()
     } // for(i)
 
 
-    this->print_int_matrix(parsimony_table);
-
     /*********************/
 
     // for situation where the parent's state has been updated and child's state may need to be changed.
@@ -482,6 +539,16 @@ void Model_factory::define_protein_alphabet()
                 child_parsimony_table->s(j,i,j);
             }
 
+            else if(parent->index == char_as) // 'X'
+            {
+                child_parsimony_table->s(j,i,j);
+            }
+
+            else if(child->index == char_as) // 'X'
+            {
+                child_parsimony_table->s(i,i,j);
+            }
+
             else if(child->n_residues == 1 )
             {
                 if( parent->first_residue == child->first_residue || parent->second_residue == child->first_residue)
@@ -492,7 +559,7 @@ void Model_factory::define_protein_alphabet()
 
             // parent is known -> child must be the same
 
-            else if(parent->n_residues == 1)
+            else if(parent->n_residues == 1 && parent->symbol != 'X')
             {
                 if(parent->first_residue == child->first_residue || parent->first_residue == child->second_residue)
                     child_parsimony_table->s(i,i,j);
@@ -527,9 +594,22 @@ void Model_factory::define_protein_alphabet()
             }
         }
     }
+//    this->print_int_matrix(parsimony_table);
 
-    this->print_int_matrix(child_parsimony_table);
+//    this->print_int_matrix(child_parsimony_table);
 
+    for(int i=0;i<char_fas;i++)
+    {
+        for(int j=0;j<char_fas;j++)
+        {
+            int p = parsimony_table->g(i,j);
+            int pi = child_parsimony_table->g(p,i);
+            int pj = child_parsimony_table->g(p,j);
+
+            if(pi<0 || pj<0)
+                cout<<i<<" "<<j<<" "<<p<<" "<<pi<<" "<<pj<<endl;
+        }
+    }
 
     if(Settings::noise>5)
     {
@@ -1228,7 +1308,7 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
     e->computePMatrix(char_as,tmr,twu,twv,twr,distance);
 
-    Evol_model model(full_char_alphabet, distance);
+    Evol_model model(sequence_data_type, distance);
 
     model.ins_rate = char_ins_rate;
     model.del_rate = char_del_rate;
@@ -1273,11 +1353,6 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
         model.match_prob = 1.0-2*t;
 
     }
-//cout<<"model.ins_prob "<<model.ins_prob<<"\n";
-//cout<<"model.del_prob "<<model.del_prob<<"\n";
-//cout<<"model.match_prob "<<model.match_prob<<"\n";
-//cout<<"sum "<<model.ins_prob+model.del_prob+model.match_prob<<"\n";
-//cout<<"model.ext_prob "<<model.ext_prob<<"\n";
 
     for(int i=0;i<char_as;i++)
     {
@@ -1308,6 +1383,7 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
     delete e;
 
+    /***************************************************************/
 
     if(sequence_data_type == Model_factory::dna)
     {
@@ -1365,6 +1441,8 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
         delete char_ambiguity;
     }
+
+    /***************************************************************/
 
     else if(sequence_data_type == Model_factory::protein)
     {
@@ -1424,6 +1502,8 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
         delete char_ambiguity;
 
     }
+
+    /***************************************************************/
 
     else if(sequence_data_type == Model_factory::codon)
     {

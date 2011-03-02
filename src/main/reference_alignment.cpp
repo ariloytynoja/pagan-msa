@@ -41,7 +41,7 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
     left = left_sequence;
     right = right_sequence;
     model = evol_model;
-    full_char_alphabet = model->get_full_alphabet();
+//    full_char_alphabet = model->get_full_alphabet();
 
     left_branch_length = l_branch_length;
     right_branch_length = r_branch_length;

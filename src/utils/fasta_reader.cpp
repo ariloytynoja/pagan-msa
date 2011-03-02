@@ -141,6 +141,8 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
             // If a name and a sequence were found
             if((name != "") && (sequence != ""))
             {
+                transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
+
                 Fasta_entry fe;
                 fe.name = name;
                 fe.comment = comment;
@@ -189,7 +191,7 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
     // Addition of the last sequence in file
     if((name != "") && (sequence != ""))
     {
-//        transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
+        transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
 
         Fasta_entry fe;
         fe.name = name;
@@ -296,8 +298,6 @@ void Fasta_reader::trim_fastq_reads(vector<Fasta_entry> * seqs) const throw (Exc
         string sequence = fit->sequence;
         string quality = fit->quality;
 
-//        cout<<"B: "<<sequence<<endl;
-
         int trim_site = -1;
         int i = 0;
         for(;i < (int)quality.length();i++)
@@ -317,21 +317,11 @@ void Fasta_reader::trim_fastq_reads(vector<Fasta_entry> * seqs) const throw (Exc
                 break;
         }
 
-//        if(trim_site>=0)
-//        {
-//            cout<<"\nfwd trim "<<trim_site<<"\n";
-//            for(int k=0;k<trim_site+2 && k<(int)quality.length();k++)
-//                cout<<sequence.at(k)<<" "<<static_cast<int>(quality.at(k))-33<<endl;
-//        }
-
         if(trim_site>=0)
         {
-//            cout<<fit->sequence<<endl;
             fit->sequence = sequence.substr(trim_site);
             fit->quality = quality.substr(trim_site);
             fit->trim_start = trim_site;
-//            cout<<fit->sequence<<endl;
-//            cout<<fit->name<<" start trimming "<<fit->trim_start<<endl;
         }
 
 
@@ -359,25 +349,14 @@ void Fasta_reader::trim_fastq_reads(vector<Fasta_entry> * seqs) const throw (Exc
                 break;
         }
 
-//        if(trim_site>=0)
-//        {
-//            cout<<"\nbwd trim "<<trim_site<<"\n";
-//            for(int k=quality.length()-1;k>trim_site-2 && k>=0;k--)
-//                cout<<sequence.at(k)<<" "<<static_cast<int>(quality.at(k))-33<<endl;
-//        }
 
         if(trim_site>=0)
         {
-//            cout<<fit->sequence<<endl;
             fit->sequence = sequence.substr(0,trim_site+1);
             fit->quality = quality.substr(0,trim_site+1);
             fit->trim_end = quality.length()-(trim_site+1);
-//            cout<<fit->sequence<<endl;
-//            cout<<fit->name<<" end trimming "<<fit->trim_end<<endl;
         }
 
-
-        //        cout<<"A: "<<fit->sequence<<endl;
 
         if((int)fit->sequence.length()<minimum_length)
         {
@@ -411,6 +390,8 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
             // If a name and a sequence were found
             if((name != "") && (sequence != ""))
             {
+                transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
+
                 Fasta_entry fe;
                 fe.name = name;
                 fe.comment = comment;
@@ -542,7 +523,7 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
     // Addition of the last sequence in file
     if((name != "") && (sequence != ""))
     {
-//        transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
+        transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
 
         Fasta_entry fe;
         fe.name = name;
@@ -656,23 +637,28 @@ void Fasta_reader::write_graph(ostream & output, Node * root) const throw (Excep
 
 /****************************************************************************************/
 
-bool Fasta_reader::check_alphabet(string alphabet, string full_alphabet, vector<Fasta_entry> & seqs) throw (Exception)
+bool Fasta_reader::check_alphabet(vector<Fasta_entry> * sequences,int data_type) throw (Exception)
 {
 
     bool allow_gaps = Settings_handle::st.is("ref-seqfile");
 
+    if(data_type<0)
+        data_type = this->check_sequence_data_type(sequences);
+
     // Check that alphabet is correct but use (faster?) build-in alphabet.
     //
-    if(alphabet == "ACGT") {
+    if(data_type == Model_factory::dna)
+    {
 
+        string full_alphabet = Model_factory::get_dna_full_char_alphabet();
 
         dna_pi[0] = dna_pi[1] = dna_pi[2] = dna_pi[3] = 0.0;
 
         bool chars_ok = true;
-        vector<Fasta_entry>::iterator vi = seqs.begin();
+        vector<Fasta_entry>::iterator vi = sequences->begin();
 
         // Main loop : for all sequences in vector container
-        for (; vi != seqs.end(); vi++)
+        for (; vi != sequences->end(); vi++)
         {
             // Convert U -> T and all uppercase
             this->rna_to_DNA(&vi->sequence);
@@ -728,13 +714,16 @@ bool Fasta_reader::check_alphabet(string alphabet, string full_alphabet, vector<
 
         return chars_ok;
     }
-    else if(alphabet == "HRKQNEDSTGPACVIMLFYW")
+
+    else if(data_type == Model_factory::protein)
     {
+        string full_alphabet = Model_factory::get_protein_full_char_alphabet();
+
         bool chars_ok = true;
-        vector<Fasta_entry>::iterator vi = seqs.begin();
+        vector<Fasta_entry>::iterator vi = sequences->begin();
 
         // Main loop : for all sequences in vector container
-        for (; vi != seqs.end(); vi++)
+        for (; vi != sequences->end(); vi++)
         {
             string::iterator si = vi->sequence.begin();
             for (;si != vi->sequence.end();si++)
@@ -766,18 +755,18 @@ bool Fasta_reader::check_alphabet(string alphabet, string full_alphabet, vector<
 
 /****************************************************************************************/
 
-int Fasta_reader::check_sequence_data_type(const vector<Fasta_entry> &seqs)
+int Fasta_reader::check_sequence_data_type(const vector<Fasta_entry> *sequences)
 {
 
-    vector<Fasta_entry>::const_iterator vi = seqs.begin();
+    vector<Fasta_entry>::const_iterator vi = sequences->begin();
 
     int dna = 0;
     int protein = 0;
     string dna_alphabet = "ACGTUN";
-    string protein_alphabet = "HRKQNEDSTGPACVIMLFYW";
+    string protein_alphabet = Model_factory::get_protein_char_alphabet();
 
     // Main loop : for all sequences in vector container
-    for (; vi != seqs.end(); vi++)
+    for (; vi != sequences->end(); vi++)
     {
         string::const_iterator si = vi->sequence.begin();
         for (;si != vi->sequence.end();si++)
@@ -902,8 +891,11 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
 
 /****************************************************************************************/
 
-void Fasta_reader::place_sequences_to_nodes(const vector<Fasta_entry> *sequences,vector<Node*> *leaf_nodes, string full_char_alphabet, bool gapped)
+void Fasta_reader::place_sequences_to_nodes(const vector<Fasta_entry> *sequences,vector<Node*> *leaf_nodes, bool gapped, int data_type)
 {
+
+    if(data_type<0)
+        data_type = this->check_sequence_data_type(sequences);
 
     vector<Fasta_entry>::const_iterator si = sequences->begin();
     for (; si != sequences->end(); si++)
@@ -915,7 +907,7 @@ void Fasta_reader::place_sequences_to_nodes(const vector<Fasta_entry> *sequences
         {
             if((*ni)->get_name() == s_name) {
                 (*ni)->add_name_comment( si->comment );
-                (*ni)->add_sequence( *si, full_char_alphabet, gapped);
+                (*ni)->add_sequence( *si, data_type, gapped);
             }
         }
     }

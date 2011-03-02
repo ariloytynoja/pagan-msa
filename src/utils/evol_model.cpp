@@ -19,12 +19,17 @@
  ***************************************************************************/
 
 #include "utils/evol_model.h"
+#include "utils/model_factory.h"
 
 using namespace ppa;
 
-Evol_model::Evol_model(std::string alpha,float dist)
+Evol_model::Evol_model(int data_t,float dist)
 {
-    full_char_alphabet = alpha;
+    data_type = data_t;
+    full_char_alphabet = Model_factory::get_dna_full_char_alphabet();
+    if(data_type == Model_factory::protein)
+        full_char_alphabet = Model_factory::get_protein_full_char_alphabet();
+
     int char_fas = full_char_alphabet.length();
 
     distance = dist;

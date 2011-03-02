@@ -600,6 +600,12 @@ class Sequence
     string gapped_seq;
 public:
 
+    Sequence(Fasta_entry &seq_entry,const int data_type,bool gapped = false, bool no_trimming=false);
+//    Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped = false, bool no_trimming=false);
+//    Sequence(const vector<Site>* s, const vector<Edge>* e, const string& alphabet);
+    Sequence(const int length,const string& alphabet, string gapped_s="");
+    Sequence(const int length,const int data_type, string gapped_s="");
+
     bool is_terminal_sequence() { return terminal_sequence; }
     void is_terminal_sequence(bool t) { terminal_sequence = t; }
 
@@ -711,9 +717,6 @@ public:
 
     string *get_gapped_sequence() { return &gapped_seq; }
 
-    Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped = false, bool no_trimming=false);
-    Sequence(const vector<Site>* s, const vector<Edge>* e, const string& alphabet);
-    Sequence(const int length,const string& alphabet, string gapped_s="");
 
     void create_default_sequence(Fasta_entry &seq_entry);
     void create_fastq_sequence(Fasta_entry &seq_entry, bool no_trimming=false);

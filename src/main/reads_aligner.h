@@ -51,7 +51,7 @@ class Reads_aligner
     void add_trimming_comment(vector<Fasta_entry> *reads);
     void merge_paired_reads(vector<Fasta_entry> *reads, Model_factory *mf);
     void find_paired_reads(vector<Fasta_entry> *reads);
-    void copy_node_details(Node *reads_node,Fasta_entry *read, string full_alpha);
+    void copy_node_details(Node *reads_node,Fasta_entry *read);
     bool correct_sites_index(Node *current_root, string ref_node_name, int alignments_done, map<string,Node*> *nodes_map);
 
     static bool better_score(const Fasta_entry& a,const Fasta_entry& b)

@@ -22,6 +22,7 @@
 #define MATRIX_POINTER_H
 
 #include <cmath>
+#include "utils/model_factory.h"
 
 namespace ppa {
 
@@ -113,7 +114,7 @@ protected:
     float right_branch_length;
 
     Evol_model *model;
-    string full_char_alphabet;
+//    string full_char_alphabet;
 
     vector<Path_pointer> path;
 
@@ -415,6 +416,12 @@ protected:
 
     void print_input_sequences()
     {
+
+        string full_char_alphabet = Model_factory::get_dna_full_char_alphabet();
+
+        if(model->get_data_type() == Model_factory::protein)
+            full_char_alphabet = Model_factory::get_protein_full_char_alphabet();
+
         cout<<"sequences:"<<endl<<" ";
         for(int i=1;i<left->sites_length()-1;i++)
             cout<<full_char_alphabet.at(left->get_site_at(i)->get_state());

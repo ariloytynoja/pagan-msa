@@ -45,7 +45,12 @@ int main(int argc, char *argv[])
     int rv = Settings_handle::st.read_command_line_arguments(argc, argv);
     
     srand(time(0));
+
     
+    /***********************************************************************/
+    /*  Overlapping paired-end read merge only                             */
+    /***********************************************************************/
+
     if(Settings_handle::st.is("overlap-merge-only"))
     {
 
@@ -61,24 +66,29 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    // Read the sequences
-    bool gapped_seqs = false;
-    Fasta_reader fr;
-    vector<Fasta_entry> sequences;
-    if(Settings_handle::st.is("seqfile")){
 
+    /***********************************************************************/
+    /*  Read the sequences                                                 */
+    /***********************************************************************/
+
+    bool reference_alignment = false;
+    vector<Fasta_entry> sequences;
+    Fasta_reader fr;
+
+    if(Settings_handle::st.is("seqfile"))
+    {
         string seqfile =  Settings_handle::st.get("seqfile").as<string>();
         cout<<"Data file: "<<seqfile<<endl;
 
         fr.read(seqfile, sequences, true);
     }
-    else if(Settings_handle::st.is("ref-seqfile")){
-
+    else if(Settings_handle::st.is("ref-seqfile"))
+    {
         string seqfile =  Settings_handle::st.get("ref-seqfile").as<string>();
         cout<<"Reference alignment file: "<<seqfile<<endl;
 
         fr.read(seqfile, sequences, true);
-        gapped_seqs = true;
+        reference_alignment = true;
     }
     else
     {
@@ -88,11 +98,17 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    // Read the guidetree
+
+
+    /***********************************************************************/
+    /*  Read the guidetree                                                 */
+    /***********************************************************************/
 
     Node *root;
     bool tree_ok = false;
-    if(Settings_handle::st.is("treefile")){
+
+    if(Settings_handle::st.is("treefile"))
+    {
         string treefile =  Settings_handle::st.get("treefile").as<string>();
         cout<<"Tree file: "<<treefile<<endl;
 
@@ -102,7 +118,8 @@ int main(int argc, char *argv[])
 
         tree_ok = true;
     }
-    else if(Settings_handle::st.is("ref-treefile")){
+    else if(Settings_handle::st.is("ref-treefile"))
+    {
         string treefile =  Settings_handle::st.get("ref-treefile").as<string>();
         cout<<"Reference tree file: "<<treefile<<endl;
 
@@ -112,16 +129,16 @@ int main(int argc, char *argv[])
 
         tree_ok = true;
     }
-    else if(gapped_seqs && sequences.size()==1)
+    else if(reference_alignment && sequences.size()==1)
     {
+        int data_type = fr.check_sequence_data_type(&sequences);
+
         root = new Node();
         root->set_name(sequences.at(0).name);
         root->add_name_comment( sequences.at(0).comment );
         root->set_distance_to_parent(0);
 
-        string full_char_alphabet = "ACGTRYMKWSBDHVN";
-
-        root->add_sequence( sequences.at(0), full_char_alphabet);
+        root->add_sequence( sequences.at(0), data_type);
 
         tree_ok = true;
     }
@@ -133,9 +150,11 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    /*
-    / Check that input is fine.
-   */
+
+
+    /***********************************************************************/
+    /*  Check that input is fine                                           */
+    /***********************************************************************/
 
     // Check that the guidetree and sequences match
 
@@ -156,16 +175,14 @@ int main(int argc, char *argv[])
     leaf_nodes.clear();
     root->get_leaf_nodes(&leaf_nodes);
 
-    // Get the sequence data type
-    //
-    int data_type = fr.check_sequence_data_type(sequences);
-
 
     // Check that the sequences are fine; also computes the base frequencies.
 
+    int data_type = fr.check_sequence_data_type(&sequences);
+
     Model_factory mf(data_type);
 
-    if(!fr.check_alphabet(mf.get_char_alphabet(),mf.get_full_char_alphabet(),sequences))
+    if(!fr.check_alphabet(&sequences,data_type))
         cout<<"\nWarning: Illegal characters in input sequences removed!"<<endl;
 
     if(data_type==Model_factory::dna)
@@ -184,15 +201,20 @@ int main(int argc, char *argv[])
         mf.protein_model(&Settings_handle::st); // does it need the handle????
     }
 
-    // Place the sequences to nodes
-    // and align them!
 
-    fr.place_sequences_to_nodes(&sequences,&leaf_nodes,mf.get_full_char_alphabet(),gapped_seqs);
+
+
+    /***********************************************************************/
+    /*  Place the sequences to nodes and align them!                       */
+    /***********************************************************************/
+
+    fr.place_sequences_to_nodes(&sequences,&leaf_nodes,reference_alignment,data_type);
 
     int count = 1;
     root->name_internal_nodes(&count);
 
     root->start_alignment(&mf);
+
 
     // If reads sequences, add them to the alignment
 
@@ -204,8 +226,12 @@ int main(int argc, char *argv[])
         root = ra.get_global_root();
     }
 
-    // Collect results.
-    //
+
+
+    /***********************************************************************/
+    /*  Collect the results and output them                                */
+    /***********************************************************************/
+
     vector<Fasta_entry> aligned_sequences;
     root->get_alignment(&aligned_sequences,Settings_handle::st.is("output-ancestors"));
 
@@ -222,22 +248,22 @@ int main(int argc, char *argv[])
     fr.set_chars_by_line(70);
     fr.write(outfile, aligned_sequences, true);
 
-    if(Settings_handle::st.is("output-ancestors"))
-    {
-        fr.write_anctree(outfile, root);
-    }
-
-    if(Settings_handle::st.is("output-graph"))
-        fr.write_graph(outfile, root, true);
-
     count = 1;
     root->set_name_ids(&count);
 
     Xml_writer xw;
     xw.write(outfile, root, aligned_sequences, true);
 
+
+    if(Settings_handle::st.is("output-ancestors"))
+    {
+        fr.write_anctree(outfile, root);
+    }
+
     if(Settings_handle::st.is("output-nhx-tree"))
+    {
         root->write_nhx_tree(outfile);
+    }
 
     if(Settings::noise>1 )
     {
@@ -249,9 +275,15 @@ int main(int argc, char *argv[])
         }
     }
 
+    if(Settings_handle::st.is("output-graph"))
+    {
+        fr.write_graph(outfile, root, true);
+    }
+
     if(Settings_handle::st.is("mpost-graph-file")){
         root->write_sequence_graphs();
     }
+
 
     delete root;
 }

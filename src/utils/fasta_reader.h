@@ -92,14 +92,13 @@ public:
     }
 
 
-    bool check_alphabet(string alphabet, string full_alphabet, vector<Fasta_entry> & seqs)  throw (Exception);
-//    void check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes, const Settings *st) const;
+    bool check_alphabet(vector<Fasta_entry> *sequences, int data_type = -1)  throw (Exception);
     bool check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes) const;
 
     float* base_frequencies() { return dna_pi; }
-    int check_sequence_data_type(const vector<Fasta_entry> & seqs);
+    int check_sequence_data_type(const vector<Fasta_entry> * sequences);
 
-    void place_sequences_to_nodes(const vector<Fasta_entry> *sequences,vector<Node*> *leaf_nodes, string full_char_alphabet, bool gapped = false);
+    void place_sequences_to_nodes(const vector<Fasta_entry> *sequences,vector<Node*> *leaf_nodes, bool gapped = false, int data_type = -1);
 };
 }
 

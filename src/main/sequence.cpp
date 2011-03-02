@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include "utils/settings.h"
+#include "utils/model_factory.h"
 #include "utils/settings_handle.h"
 #include "main/sequence.h"
 #include <iomanip>
@@ -27,22 +28,17 @@
 using namespace std;
 using namespace ppa;
 
-Sequence::Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped, bool no_trimming)
+Sequence::Sequence(Fasta_entry &seq_entry,const int data_type,bool gapped, bool no_trimming)
 {
-
     if(gapped)
     {
         gapped_seq = seq_entry.sequence;
 
-        string::iterator si = seq_entry.sequence.begin();
-        for (;si != seq_entry.sequence.end();si++)
-        {
+        for (string::iterator si = seq_entry.sequence.begin();si != seq_entry.sequence.end();)
             if(*si == '-')
-            {
                 seq_entry.sequence.erase(si);
-                si--;
-            }
-        }
+            else
+                si++;
     }
     else
     {
@@ -51,7 +47,10 @@ Sequence::Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped, bo
 
     this->initialise_indeces();
 
-    full_char_alphabet = alphabet;
+    full_char_alphabet = Model_factory::get_dna_full_char_alphabet();
+    if(data_type == Model_factory::protein)
+        full_char_alphabet = Model_factory::get_protein_full_char_alphabet();
+
 
     sites.reserve(seq_entry.sequence.size()+2);
     edges.reserve(seq_entry.sequence.size()+3);
@@ -71,6 +70,7 @@ Sequence::Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped, bo
     {
         this->print_sequence(&sites);
     }
+
 }
 
 void Sequence::create_default_sequence(Fasta_entry &seq_entry)
@@ -369,24 +369,24 @@ Sequence::Sequence(const int length,const string& alphabet, string gapped_s)
     terminal_sequence = false;
 }
 
-
-Sequence::Sequence(const vector<Site>* s, const vector<Edge>* e, const string& alphabet)
+Sequence::Sequence(const int length,const int data_type, string gapped_s)
 {
-    sites = *s;
-    edges = *e;
-    full_char_alphabet = alphabet;
-    for(unsigned int i=0;i<sites.size();i++)
-    {
-        sites.at(i).set_edge_vector(&edges);
-    }
+
+    gapped_seq = gapped_s;
+
+    this->initialise_indeces();
+
+    sites.reserve(length+2);
+    edges.reserve(length+3);
+
+    full_char_alphabet = Model_factory::get_dna_full_char_alphabet();
+    if(data_type == Model_factory::protein)
+        full_char_alphabet = Model_factory::get_protein_full_char_alphabet();
 
     terminal_sequence = false;
-
-    if(Settings::noise>5)
-    {
-        this->print_sequence(&sites);
-    }
 }
+
+
 
 void Sequence::print_sequence(vector<Site> *sites)
 {
