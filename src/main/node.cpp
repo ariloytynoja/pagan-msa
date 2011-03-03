@@ -24,10 +24,6 @@
 using namespace std;
 using namespace ppa;
 
-//Node::Node()
-//{
-//    isleaf = true;
-//}
 
 Node::~Node()
 {

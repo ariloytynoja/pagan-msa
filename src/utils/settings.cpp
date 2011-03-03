@@ -117,6 +117,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("end-gap-extension", po::value<float>(), "terminal gap extension probability")
         ("dna-kappa", po::value<float>(), "kappa")
         ("dna-rho", po::value<float>(), "rho")
+        ("codons", "translate and align codons")
     ;
 
     boost::program_options::options_description tree_edit("Tree manipulation options",100);
@@ -145,12 +146,14 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("plot-slope-up", "plot viterbi path climbing up")
     ;
 
-    boost::program_options::options_description debug("Debugging options",100);
+    boost::program_options::options_description debug("Debugging and testing options",100);
     debug.add_options()
         ("check-valid-graphs", "check that fwd and bwd edges are identical")
         ("help-all", "display help-all message")
         ("ambiguity-factor", po::value<float>(), "multiplier for subst. score of ambiguity characters")
         ("no-log-odds", "do not use log-odds substitutions scores")
+        ("use-aa-groups", "use amino-acid parsimony reconstruction with 51 groups")
+        ("time", "track time (debugging)")
     ;
 
     boost::program_options::options_description broken("Broken options",100);
@@ -158,8 +161,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("sample-additional-paths", po::value<int>()->default_value(0), "sample additional paths from posterior probabilities")
         ("cds-seqfile", po::value<string>(), "reference alignment file (FASTA)")
         ("cds-treefile", po::value<string>(), "reference tree file (NH/NHX)")
-//        ("terminal-gap-cost-divider", po::value<float>()->default_value(2), "divider for terminal gap cost")
-//        ("unused-edges-not-transferred", "mimic PRANK-F behaviour")
     ;
 
     full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken);

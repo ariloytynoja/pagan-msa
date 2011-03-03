@@ -148,7 +148,7 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
 
     // Now build the sequence forward following the path saved in a vector;
     //
-    ancestral_sequence = new Sequence(path.size(),model->get_full_alphabet(),gapped_anc);
+    ancestral_sequence = new Sequence(path.size(),model->get_data_type(),gapped_anc);
 
     this->make_alignment_path(&simple_path);
 

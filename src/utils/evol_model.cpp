@@ -20,6 +20,7 @@
 
 #include "utils/evol_model.h"
 #include "utils/model_factory.h"
+#include "utils/settings_handle.h"
 
 using namespace ppa;
 
@@ -27,12 +28,16 @@ Evol_model::Evol_model(int data_t,float dist)
 {
     data_type = data_t;
     full_char_alphabet = Model_factory::get_dna_full_char_alphabet();
+
     if(data_type == Model_factory::protein)
         full_char_alphabet = Model_factory::get_protein_full_char_alphabet();
 
     int char_fas = full_char_alphabet.length();
 
     distance = dist;
+
+    if(data_type == Model_factory::dna && Settings_handle::st.is("codons"))
+        char_fas = Model_factory::get_codon_full_character_alphabet()->size();
 
     charPi = new Db_matrix(char_fas,"pi_char");
     charPr = new Db_matrix(char_fas,char_fas,"P_char");

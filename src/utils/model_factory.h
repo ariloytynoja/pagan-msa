@@ -34,10 +34,20 @@ struct Char_symbol
 {
     int index;
     char symbol;
-    int n_residues;
+    int n_units;
     int first_residue;
     int second_residue;
     std::vector<char> residues;
+};
+
+struct Codon_symbol
+{
+    int index;
+    std::string symbol;
+    int n_units;
+    int first_codon;
+    int second_codon;
+    std::vector<std::string> codons;
 };
 
 class Model_factory
@@ -62,6 +72,8 @@ class Model_factory
     static std::vector<std::string> dna_full_character_alphabet;
     static std::vector<std::string> protein_character_alphabet;
     static std::vector<std::string> protein_full_character_alphabet;
+    static std::vector<std::string> codon_character_alphabet;
+    static std::vector<std::string> codon_full_character_alphabet;
 
     Db_matrix *charPi;
     float char_ins_rate;
@@ -77,14 +89,18 @@ class Model_factory
     Db_matrix * charV;
     Db_matrix * charRoot;
 
-    std::vector<Char_symbol> char_letters;
+    Db_matrix *char_ambiguity;
+
+    std::vector<Char_symbol> char_symbols;
+    std::vector<Codon_symbol> codon_symbols;
 
     void define_dna_alphabet();
     void define_protein_alphabet();
-    void define_protein_alphabet_old();
+    void define_protein_alphabet_groups();
     void define_codon_alphabet();
 
     void print_char_alphabet();
+    void print_codon_alphabet();
 
     void build_model(int s,Db_matrix *pi,Db_matrix *q,Db_matrix *wU,Db_matrix *wV,Db_matrix *wRoot);
     void print_char_q_matrices(Db_matrix *charQ);
@@ -181,6 +197,43 @@ public:
 
         }
         return &protein_full_character_alphabet;
+    }
+
+    static std::vector<std::string> *get_codon_character_alphabet()
+    {
+        if(codon_character_alphabet.empty())
+        {
+            std::string full_alpha = "AAAAACAAGAATACAACCACGACTAGAAGCAGGAGTATAATCATGATTCAACACCAGCATCCACCCCCGCCTCGACGCCGGCGTCTACTCCTGCTTGAAGACGAGGATGCAGCCGCGGCTGGAGGCGGGGGTGTAGTCGTGGTTTACTATTCATCCTCGTCTTGCTGGTGTTTATTCTTGTTTNNN";
+
+            for(int i=0;i<62;i++)
+            {
+                codon_character_alphabet.push_back(full_alpha.substr(i*3,3));
+            }
+        }
+        return &codon_character_alphabet;
+    }
+
+    static std::vector<std::string> *get_codon_full_character_alphabet()
+    {
+
+        if(codon_full_character_alphabet.empty())
+        {
+            std::string full_alpha = "AAAAACAAGAATACAACCACGACTAGAAGCAGGAGTATAATCATGATTCAACACCAGCATCCACCCCCGCCTCGACGCCGGCGTCTACTCCTGCTTGAAGACGAGGATGCAGCCGCGGCTGGAGGCGGGGGTGTAGTCGTGGTTTACTATTCATCCTCGTCTTGCTGGTGTTTATTCTTGTTTNNN";
+
+            for(int i=0;i<62;i++)
+            {
+                codon_full_character_alphabet.push_back(full_alpha.substr(i*3,3));
+            }
+
+            for(int i=0;i<61;i++)
+            {
+                for(int j=0;j<61;j++)
+                {
+                    codon_full_character_alphabet.push_back(full_alpha.substr(i*3,3)+full_alpha.substr(j*3,3));
+                }
+            }
+        }
+        return &codon_full_character_alphabet;
     }
 
     /********************************/

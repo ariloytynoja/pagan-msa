@@ -20,6 +20,7 @@
 
 #include <string>
 #include <vector>
+#include <ctime>
 #include "utils/settings.h"
 #include "utils/settings_handle.h"
 #include "utils/newick_reader.h"
@@ -36,6 +37,7 @@ using namespace ppa;
 
 int main(int argc, char *argv[])
 {
+    clock_t t_start=clock();
 
     /*
     / Input: command line arguments & data
@@ -175,17 +177,27 @@ int main(int argc, char *argv[])
     leaf_nodes.clear();
     root->get_leaf_nodes(&leaf_nodes);
 
-
     // Check that the sequences are fine; also computes the base frequencies.
 
     int data_type = fr.check_sequence_data_type(&sequences);
+
+    if(Settings_handle::st.is("time"))
+        cout <<"Time main::input: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
+
 
     Model_factory mf(data_type);
 
     if(!fr.check_alphabet(&sequences,data_type))
         cout<<"\nWarning: Illegal characters in input sequences removed!"<<endl;
 
-    if(data_type==Model_factory::dna)
+    if(data_type==Model_factory::dna && Settings_handle::st.is("codons"))
+    {
+        // Create a codon alignment model using K&G.
+        if(Settings::noise>2)
+            cout<<"creating a codon model\n";
+        mf.codon_model(&Settings_handle::st); // does it need the handle????
+    }
+    else if(data_type==Model_factory::dna)
     {
         // Create a DNA alignment model using empirical base frequencies.
         if(Settings::noise>2)
@@ -202,6 +214,8 @@ int main(int argc, char *argv[])
     }
 
 
+    if(Settings_handle::st.is("time"))
+        cout <<"Time main::model: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
 
 
     /***********************************************************************/
@@ -215,6 +229,8 @@ int main(int argc, char *argv[])
 
     root->start_alignment(&mf);
 
+    if(Settings_handle::st.is("time"))
+        cout <<"Time main::align: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
 
     // If reads sequences, add them to the alignment
 
@@ -224,6 +240,9 @@ int main(int argc, char *argv[])
         ra.align(root,&mf,count);
 
         root = ra.get_global_root();
+
+        if(Settings_handle::st.is("time"))
+            cout <<"Time main::reads_align: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
     }
 
 
@@ -284,6 +303,8 @@ int main(int argc, char *argv[])
         root->write_sequence_graphs();
     }
 
+    if(Settings_handle::st.is("time"))
+        cout <<"Time main::exit: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
 
     delete root;
 }

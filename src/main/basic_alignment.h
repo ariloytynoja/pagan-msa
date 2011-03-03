@@ -405,7 +405,6 @@ protected:
 
     /********************************************/
 
-    void print_sequences(vector<Site> *sites);
     string print_pairwise_alignment(vector<Site> *sites);
 
     void debug_print_input_sequences(int noise_level)

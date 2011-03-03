@@ -186,7 +186,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
 
         // Now build the sequence forward following the path saved in a vector;
         //
-        ancestral_sequence = new Sequence(path.size(),model->get_full_alphabet());
+        ancestral_sequence = new Sequence(path.size(),model->get_data_type());
         this->build_ancestral_sequence(ancestral_sequence,&path);
 
         this->debug_msg("Viterbi_alignment: sequence built",1);
@@ -210,7 +210,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
 
         // Now build the sequence forward following the path saved in a vector;
         //
-        ancestral_sequence = new Sequence(sample_path.size(),model->get_full_alphabet());
+        ancestral_sequence = new Sequence(sample_path.size(),model->get_data_type());
         this->build_ancestral_sequence(ancestral_sequence,&sample_path);
 
         this->debug_msg("Viterbi_alignment: sequence sampled and built",1);
@@ -238,7 +238,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
 
             // Now build the sequence forward following the path saved in a vector;
             //
-            Sequence *sampled_sequence = new Sequence(sample_path.size(),model->get_full_alphabet());
+            Sequence *sampled_sequence = new Sequence(sample_path.size(),model->get_data_type());
             this->build_ancestral_sequence(sampled_sequence,&sample_path);
 
             this->debug_msg("Viterbi_alignment: additional sequence sampled and built",1);

@@ -19,6 +19,7 @@
  ***************************************************************************/
 
 #include <iostream>
+#include <map>
 #include "utils/settings.h"
 #include "utils/model_factory.h"
 #include "utils/settings_handle.h"
@@ -28,8 +29,10 @@
 using namespace std;
 using namespace ppa;
 
-Sequence::Sequence(Fasta_entry &seq_entry,const int data_type,bool gapped, bool no_trimming)
+Sequence::Sequence(Fasta_entry &seq_entry,const int data_t,bool gapped, bool no_trimming)
 {
+    data_type = data_t;
+
     if(gapped)
     {
         gapped_seq = seq_entry.sequence;
@@ -62,7 +65,10 @@ Sequence::Sequence(Fasta_entry &seq_entry,const int data_type,bool gapped, bool 
         this->create_graph_sequence(seq_entry);
 
     else
-        this->create_default_sequence(seq_entry);
+        if(data_type == Model_factory::dna && Settings_handle::st.is("codons"))
+            this->create_codon_sequence(seq_entry);
+        else
+            this->create_default_sequence(seq_entry);
 
     terminal_sequence = true;
 
@@ -121,6 +127,60 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
 
 }
 
+
+void Sequence::create_codon_sequence(Fasta_entry &seq_entry)
+{
+
+    Site first_site( &edges, Site::start_site, Site::ends_site );
+    first_site.set_state( -1 );
+    first_site.set_empty_children();
+    this->push_back_site(first_site);
+
+    Edge first_edge( -1,this->get_current_site_index() );
+    this->push_back_edge(first_edge);
+
+    vector<string> *fca = Model_factory::get_codon_character_alphabet();
+    map<string,int> codons;
+    int count = 0;
+    for(vector<string>::iterator it = fca->begin();it != fca->end();it++)
+        codons.insert(make_pair(*it,count++));
+
+    for(int i=0;i<seq_entry.sequence.length();i+=3)
+    {
+        int state = 61;
+
+        string codon = seq_entry.sequence.substr(i,3);
+        map<string,int>::iterator fi = codons.find(codon);
+        if(fi!=codons.end())
+            state = fi->second;
+        else
+            codon = "NNN";
+
+        Site site( &edges );
+        site.set_state( state );
+        site.set_symbol( '-' );
+        site.set_empty_children();
+        this->push_back_site(site);
+
+        Edge edge( this->get_previous_site_index(),this->get_current_site_index() );
+        this->push_back_edge(edge);
+
+        this->get_previous_site()->set_first_fwd_edge_index( this->get_current_edge_index() );
+        this->get_current_site()->set_first_bwd_edge_index( this->get_current_edge_index() );
+    }
+
+    Site last_site( &edges, Site::stop_site, Site::ends_site );
+    last_site.set_state( -1 );
+    last_site.set_empty_children();
+    this->push_back_site(last_site);
+
+    Edge last_edge( this->get_previous_site_index(),this->get_current_site_index() );
+    this->push_back_edge(last_edge);
+
+    this->get_previous_site()->set_first_fwd_edge_index( this->get_current_edge_index() );
+    this->get_current_site()->set_first_bwd_edge_index( this->get_current_edge_index() );
+
+}
 void Sequence::create_fastq_sequence(Fasta_entry &seq_entry, bool no_trimming)
 {
 
@@ -354,23 +414,10 @@ void Sequence::create_graph_sequence(Fasta_entry &seq_entry)
     }
 }
 
-Sequence::Sequence(const int length,const string& alphabet, string gapped_s)
+
+Sequence::Sequence(const int length,const int data_t, string gapped_s)
 {
-
-    gapped_seq = gapped_s;
-
-    this->initialise_indeces();
-
-    sites.reserve(length+2);
-    edges.reserve(length+3);
-
-    full_char_alphabet = alphabet;
-
-    terminal_sequence = false;
-}
-
-Sequence::Sequence(const int length,const int data_type, string gapped_s)
-{
+    data_type = data_t;
 
     gapped_seq = gapped_s;
 
@@ -390,41 +437,27 @@ Sequence::Sequence(const int length,const int data_type, string gapped_s)
 
 void Sequence::print_sequence(vector<Site> *sites)
 {
+
+    vector<string> *alphabet;
+    if(data_type == Model_factory::dna)
+        alphabet = Model_factory::get_dna_full_character_alphabet();
+    else if(data_type == Model_factory::protein)
+        alphabet = Model_factory::get_protein_full_character_alphabet();
+
+
     cout<<endl;
     for(unsigned int i=0;i<sites->size();i++)
     {
         Site *tsite =  &sites->at(i);
-//cout<<i<<" "<<tsite->get_state()<<endl;
+
         cout<<i<<": ";
         if(tsite->get_site_type()==Site::real_site)
-//            cout<<tsite->get_index()<<" "<<tsite->get_state();//full_char_alphabet.at(tsite->get_state());
-            cout<<tsite->get_index()<<" "<<full_char_alphabet.at(tsite->get_state());
+            cout<<tsite->get_index()<<" "<<setw(2)<<alphabet->at(tsite->get_state());
         else
             cout<<tsite->get_index()<<" +";
 
         cout<<"("<<tsite->get_unique_index()->left_index<<","<<tsite->get_unique_index()->right_index<<") ";
         cout<<"["<<tsite->get_path_state()<<"] ";
-//        if(tsite->has_fwd_edge())
-//        {
-//            Edge *tedge = tsite->get_first_fwd_edge();
-//            cout<<" F "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index();
-//            while(tsite->has_next_fwd_edge())
-//            {
-//                tedge = tsite->get_next_fwd_edge();
-//                cout<<"; f "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index();
-//            }
-//        }
-//        if(tsite->has_bwd_edge())
-//        {
-//            Edge *tedge = tsite->get_first_bwd_edge();
-//            cout<<"; B "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index();
-//            while(tsite->has_next_bwd_edge())
-//            {
-//                tedge = tsite->get_next_bwd_edge();
-//                cout<<"; b "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index();
-//            }
-//        }
-
         cout<<"\t";
         cout << setprecision (2);
 

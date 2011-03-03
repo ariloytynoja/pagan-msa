@@ -593,6 +593,7 @@ class Sequence
     vector<Site> sites;
     vector<Edge> edges;
     string full_char_alphabet;
+    int data_type;
 
     vector<Unique_index> unique_index;
 
@@ -601,9 +602,6 @@ class Sequence
 public:
 
     Sequence(Fasta_entry &seq_entry,const int data_type,bool gapped = false, bool no_trimming=false);
-//    Sequence(Fasta_entry &seq_entry,const string &alphabet,bool gapped = false, bool no_trimming=false);
-//    Sequence(const vector<Site>* s, const vector<Edge>* e, const string& alphabet);
-    Sequence(const int length,const string& alphabet, string gapped_s="");
     Sequence(const int length,const int data_type, string gapped_s="");
 
     bool is_terminal_sequence() { return terminal_sequence; }
@@ -719,6 +717,7 @@ public:
 
 
     void create_default_sequence(Fasta_entry &seq_entry);
+    void create_codon_sequence(Fasta_entry &seq_entry);
     void create_fastq_sequence(Fasta_entry &seq_entry, bool no_trimming=false);
     void create_graph_sequence(Fasta_entry &seq_entry);
 
@@ -873,15 +872,14 @@ public:
         copy->set_branch_distance_since_last_used( original->get_branch_distance_since_last_used() );
         copy->set_weight( original->get_posterior_weight() );
     }
-    
+
     void sort_sites_vector()
     {
         sort(sites.begin(),sites.end(),Site::comesBefore);
     }
     
-     void remap_edges_vector()
-     {
-
+    void remap_edges_vector()
+    {
         vector<int> new_site_index;
         new_site_index.resize( this->sites_length() );
 
@@ -900,7 +898,7 @@ public:
         for(int i=0;i<this->sites_length();i++)
             this->get_site_at(i)->set_index(i);
 
-     }
+    }
 
 };
 }

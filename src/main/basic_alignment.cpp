@@ -32,38 +32,6 @@ Basic_alignment::Basic_alignment() { }
 
 /********************************************/
 
-/*
-void Basic_alignment::build_ancestral_sequence(Sequence *sequence, vector<Path_pointer> *path)
-{
-
-    // The path is given as input.
-    // This will create sites with correct child sites.
-    this->create_ancestral_sequence(sequence,path);
-
-    // This will add the edges connecting sites.
-    this->create_ancestral_edges(sequence);
-
-    // This will do a check-up and delete edges if needed:
-    // " To mimic PRANK+F: one has to scan the sequence again to find boundaries 'Match/Skipped' and 'Skipped/Matched'
-    //   and record them on the edges. If they are above a limit, the edges (and all between them) are deleted. "
-    this->check_skipped_boundaries(sequence);
-
-//    cout<<"ANCESTRAL SEQUENCE:\n";
-//    sequence->print_sequence();
-
-    if(Settings::noise>4)
-    {
-        cout<<"ANCESTRAL SEQUENCE:\n";
-        sequence->print_sequence();
-    }
-
-    if(Settings::noise>6)
-    {
-        this->print_path(path);
-    }
-
-}
-*/
 
 void Basic_alignment::build_ancestral_sequence(Sequence *sequence, vector<Path_pointer> *path)
 {

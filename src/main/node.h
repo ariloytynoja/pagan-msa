@@ -21,6 +21,7 @@
 #ifndef NODE_H
 #define NODE_H
 
+#include <ctime>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -388,12 +389,20 @@ public:
         if(Settings::noise>0)
             cout<<"aligning node "<<this->get_name()<<": "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
 
+        clock_t t_start=clock();
+
         double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
         Evol_model model = mf->alignment_model(dist,is_local_alignment);
+
+        if(Settings_handle::st.is("time"))
+            cout <<"Time node::model: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
 
         Viterbi_alignment va;
         va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
                  left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence);
+
+        if(Settings_handle::st.is("time"))
+            cout <<"Time node::viterbi: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
 
         this->add_ancestral_sequence( va.get_simple_sequence() );
 
@@ -402,6 +411,9 @@ public:
 
         if( Settings_handle::st.is("check-valid-graphs") )
             this->check_valid_graph();
+
+        if(Settings_handle::st.is("time"))
+            cout <<"Time node::exit: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
     }
 
     void print_alignment()
