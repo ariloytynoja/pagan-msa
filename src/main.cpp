@@ -56,7 +56,16 @@ int main(int argc, char *argv[])
 
     srand(time(0));
 
-    
+    clock_t analysis_start_time=clock();
+
+    if(!Settings_handle::st.is("silent"))
+    {
+        Settings_handle::st.print_msg();
+        time_t s_time;
+        time( &s_time );
+        cout <<endl<< "The analysis started: " << asctime( localtime( &s_time ) )<<endl;
+    }
+
     /***********************************************************************/
     /*  Overlapping paired-end read merge only                             */
     /***********************************************************************/
@@ -270,7 +279,10 @@ int main(int argc, char *argv[])
         outfile =  Settings_handle::st.get("outfile").as<string>();
 
 
-    cout<<"Alignment files: "<<outfile<<".fas, "<<outfile<<".xml"<<endl;
+    if(Settings_handle::st.is("no-xml"))
+        cout<<"Alignment files: "<<outfile<<".fas"<<endl;
+    else
+        cout<<"Alignment files: "<<outfile<<".fas, "<<outfile<<".xml"<<endl;
 
     fr.set_chars_by_line(70);
     fr.write(outfile, aligned_sequences, true);
@@ -278,9 +290,11 @@ int main(int argc, char *argv[])
     count = 1;
     root->set_name_ids(&count);
 
-    Xml_writer xw;
-    xw.write(outfile, root, aligned_sequences, true);
-
+    if(!Settings_handle::st.is("no-xml"))
+    {
+        Xml_writer xw;
+        xw.write(outfile, root, aligned_sequences, true);
+    }
 
     if(Settings_handle::st.is("output-ancestors"))
     {
@@ -313,6 +327,14 @@ int main(int argc, char *argv[])
 
     if(Settings_handle::st.is("time"))
         cout <<"Time main::exit: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
+
+    if(!Settings_handle::st.is("silent"))
+    {
+        time_t s_time;
+        time( &s_time );
+        cout <<endl<< "The analysis finished: " << asctime( localtime( &s_time ) );
+        cout<<"Total time used: "<<double_t(clock()-analysis_start_time)/CLOCKS_PER_SEC<<" sec."<<endl<<endl;
+    }
 
     delete root;
 }

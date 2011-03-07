@@ -20,6 +20,7 @@
 
 #include <cstdio>
 #include <iostream>
+#include <fstream>
 #include "utils/settings.h"
 
 namespace po = boost::program_options;
@@ -54,6 +55,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("no-terminal-edges", "expect terminal missing data")
         ("noise", po::value<int>(), "output noise level")
         ("silent","minimal output")
+        ("no-xml","write FASTA alignment only")
+        ("config-file",po::value<string>(),"config file with additional arguments")
+        ("config-log-file",po::value<string>(),"log file for given arguments")
     ;
 
     boost::program_options::options_description reads_alignment("Basic reads alignment options",100);
@@ -118,6 +122,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("dna-kappa", po::value<float>(), "kappa")
         ("dna-rho", po::value<float>(), "rho")
         ("codons", "translate and align codons")
+        ("use-aa-groups", "reconstruct amino-acid parsimony with 51 groups")
     ;
 
     boost::program_options::options_description tree_edit("Tree manipulation options",100);
@@ -152,7 +157,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("help-all", "display help-all message")
         ("ambiguity-factor", po::value<float>(), "multiplier for subst. score of ambiguity characters")
         ("no-log-odds", "do not use log-odds substitutions scores")
-        ("use-aa-groups", "use amino-acid parsimony reconstruction with 51 groups")
         ("time", "track time (debugging)")
     ;
 
@@ -169,6 +173,12 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     min_desc.add(minimal).add(reads_alignment);
 
     po::store(po::parse_command_line(argc, argv, full_desc), vm);
+
+    if(Settings::is("config-file"))
+    {
+        ifstream cfg(Settings::get("config-file").as<string>().c_str());
+        po::store(po::parse_config_file(cfg, full_desc), vm);
+    }
 
     if(Settings::is("cds-seqfile") || Settings::is("cds-treefile"))
     {
@@ -194,6 +204,72 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     }
 
 
+
+
+    if(Settings::is("config-log-file"))
+    {
+        cout << endl<< "Writing command line options to file " << Settings::get("config-log-file").as<string>()<<"."<<endl;
+
+        ofstream log_out(Settings::get("config-log-file").as<string>().c_str());
+        time_t s_time;
+        time( &s_time );
+        log_out <<this->print_log_msg()<< "#\n# Analysis started: " << asctime( localtime( &s_time ) );
+        log_out<<"# Command line arguments:"<<endl<<endl;
+
+        po::parsed_options opts = parse_command_line(argc, argv, full_desc);
+
+        typedef vector< po::basic_option<char> > vec_opt;
+
+        for(vec_opt::iterator iter = opts.options.begin(); iter != opts.options.end(); ++iter)
+        {
+            po::basic_option<char>& option = *iter;
+
+            if(option.string_key == "config-log-file" || option.string_key == "config-file")
+                continue;
+
+            stringstream ss_opt;
+            typedef vector< basic_string<char> > vec_string;
+
+            for(vec_string::iterator s_iter = option.value.begin(); s_iter != option.value.end(); ++s_iter)
+            {
+                    ss_opt << *s_iter;
+            }
+            if(ss_opt.str().length()>0)
+                log_out<<option.string_key << " = " << ss_opt.str()<<endl;
+            else
+                log_out<<option.string_key << " = 1"<<endl;
+        }
+
+        if(Settings::is("config-file"))
+        {
+            log_out<<"\n# Additional arguments from file '"<<Settings::get("config-file").as<string>()<<"':"<<endl<<endl;
+
+            ifstream cfg(Settings::get("config-file").as<string>().c_str());
+            opts = po::parse_config_file(cfg, full_desc);
+
+            for(vec_opt::iterator iter = opts.options.begin(); iter != opts.options.end(); ++iter)
+            {
+                po::basic_option<char>& option = *iter;
+
+                if(option.string_key == "config-log-file" || option.string_key == "config-file")
+                    continue;
+
+                stringstream ss_opt;
+                typedef vector< basic_string<char> > vec_string;
+
+                for(vec_string::iterator s_iter = option.value.begin(); s_iter != option.value.end(); ++s_iter)
+                {
+                        ss_opt << *s_iter;
+                }
+                if(ss_opt.str().length()>0)
+                    log_out<<option.string_key << " = " << ss_opt.str()<<endl;
+                else
+                    log_out<<option.string_key << " = 1"<<endl;
+            }
+        }
+        log_out<<endl;
+    }
+
     return 0;
 }
 
@@ -201,6 +277,14 @@ void Settings::print_msg()
 {
     cout<<"\nPAGAN v."<<version<<" ("<<date<<"). (C) 2010-2011 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
     cout<<" This is a development version and may contain bugs. Contact the author before using\n the program for any serious analysis.\n";
+}
+
+string Settings::print_log_msg()
+{
+    stringstream tmp;
+    tmp<<"\n# PAGAN v."<<version<<" ("<<date<<"). (C) 2010-2011 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
+    tmp<<"# This is a development version and may contain bugs. Contact the author before using\n# the program for any serious analysis.\n";
+    return tmp.str();
 }
 
 void Settings::help()

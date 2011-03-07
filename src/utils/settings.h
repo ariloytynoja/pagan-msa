@@ -28,8 +28,12 @@ namespace ppa{
 
 class Settings
 {
-//    boost::program_options::options_description desc;
     boost::program_options::variables_map vm;
+    boost::program_options::options_description full_desc;
+    boost::program_options::options_description desc;
+    boost::program_options::options_description min_desc;
+    boost::program_options::options_description max_desc;
+
     float version;
     std::string date;
 public:
@@ -44,11 +48,7 @@ public:
     void info();
     void info_noexit();
     void print_msg();
-
-    boost::program_options::options_description full_desc;
-    boost::program_options::options_description desc;
-    boost::program_options::options_description min_desc;
-    boost::program_options::options_description max_desc;
+    std::string print_log_msg();
 
     static int noise;
     static float resize_factor;
