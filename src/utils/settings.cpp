@@ -34,8 +34,8 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.19;
-    date = "28 Feb, 2011";
+    version = 0.20;
+    date = "7 Mar, 2011";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -199,8 +199,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
 void Settings::print_msg()
 {
-    cout<<"\nPAGAN v. "<<version<<" ("<<date<<"). (C) 2010 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
-    cout<<" This is a development version and may contain bugs. Contact the author\n before using the program for any serious analysis.\n";
+    cout<<"\nPAGAN v."<<version<<" ("<<date<<"). (C) 2010-2011 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
+    cout<<" This is a development version and may contain bugs. Contact the author before using\n the program for any serious analysis.\n";
 }
 
 void Settings::help()
@@ -223,6 +223,13 @@ void Settings::info()
     cout << min_desc << "\n";
     cout<<"Use option --help for more information.\n\n";
     exit(0);
+}
+
+void Settings::info_noexit()
+{
+    this->print_msg();
+    cout << min_desc << "\n";
+    cout<<"Use option --help for more information.\n\n";
 }
 
 int     Settings::noise             = 0;

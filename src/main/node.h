@@ -728,9 +728,9 @@ public:
 
     void get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_internal_nodes=false);
 
-    void get_alignment_column_at(int j,vector<char> *column,bool include_internal_nodes);
+    void get_alignment_column_at(int j,vector<string> *column,bool include_internal_nodes);
 
-    void get_multiple_alignment_columns_before(int j,vector< vector<char> > *columns, string node_name_wanted, bool left_child_wanted,bool include_internal_nodes);
+    void get_multiple_alignment_columns_before(int j,vector< vector<string> > *columns, string node_name_wanted, bool left_child_wanted,bool include_internal_nodes);
 
     int get_number_of_leaves()
     {

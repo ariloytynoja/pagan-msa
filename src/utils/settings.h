@@ -42,6 +42,7 @@ public:
     void help();
     void help_all();
     void info();
+    void info_noexit();
     void print_msg();
 
     boost::program_options::options_description full_desc;

@@ -33,6 +33,10 @@ Sequence::Sequence(Fasta_entry &seq_entry,const int data_t,bool gapped, bool no_
 {
     data_type = data_t;
 
+    this->set_gap_symbol("-");
+    if(data_type == Model_factory::dna && Settings_handle::st.is("codons"))
+        this->set_gap_symbol("---");
+
     if(gapped)
     {
         gapped_seq = seq_entry.sequence;
@@ -130,6 +134,7 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
 
 void Sequence::create_codon_sequence(Fasta_entry &seq_entry)
 {
+    this->set_gap_symbol("---");
 
     Site first_site( &edges, Site::start_site, Site::ends_site );
     first_site.set_state( -1 );
@@ -158,7 +163,7 @@ void Sequence::create_codon_sequence(Fasta_entry &seq_entry)
 
         Site site( &edges );
         site.set_state( state );
-        site.set_symbol( '-' );
+        site.set_symbol( codon );
         site.set_empty_children();
         this->push_back_site(site);
 
@@ -418,6 +423,10 @@ void Sequence::create_graph_sequence(Fasta_entry &seq_entry)
 Sequence::Sequence(const int length,const int data_t, string gapped_s)
 {
     data_type = data_t;
+
+    this->set_gap_symbol("-");
+    if(data_type == Model_factory::dna && Settings_handle::st.is("codons"))
+        this->set_gap_symbol("---");
 
     gapped_seq = gapped_s;
 

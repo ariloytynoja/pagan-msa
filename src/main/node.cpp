@@ -76,12 +76,12 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
 
             for(int j=1;j<root_length-1;j++)
             {
-                vector<char> column;
+                vector<string> column;
                 this->get_alignment_column_at(j,&column,include_internal_nodes);
 
                 for(unsigned int i=0;i<aligned_sequences->size();i++)
                 {
-                    aligned_sequences->at(i).sequence.push_back(column.at(i));
+                    aligned_sequences->at(i).sequence.append(column.at(i));
                 }
             }
         }
@@ -102,11 +102,11 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
 
                     for(int l=0;l<(int)addition.size();l++)
                     {
-                        vector< vector<char> > columns;
+                        vector< vector<string> > columns;
 
                         for(int i=0; i<(int)addition.at(l).length; i++)
                         {
-                            vector<char> column;
+                            vector<string> column;
                             columns.push_back( column );
                         }
 
@@ -119,7 +119,7 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
                         {
                             for(unsigned int k=0;k<aligned_sequences->size();k++)
                             {
-                                aligned_sequences->at(k).sequence.push_back(columns.at(i).at(k));
+                                aligned_sequences->at(k).sequence.append(columns.at(i).at(k));
                             }
                         }
 
@@ -128,13 +128,13 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
 
                 if(j<root_length-1)
                 {
-                    vector<char> column;
+                    vector<string> column;
 
                     this->get_alignment_column_at(j,&column,include_internal_nodes);
 
                     for(unsigned int i=0;i<aligned_sequences->size();i++)
                     {
-                        aligned_sequences->at(i).sequence.push_back(column.at(i));
+                        aligned_sequences->at(i).sequence.append(column.at(i));
                     }
                 }
             }
@@ -213,19 +213,19 @@ cout<<"site_index: "<<site_index<<endl;
         {
             int j = sampled_sites.at(k);
 cout<<"picking site "<<j<<endl;
-            vector<char> column;
+            vector<string> column;
             this->get_alignment_column_at(j,&column,include_internal_nodes);
 
             for(unsigned int i=0;i<aligned_sequences->size();i++)
             {
-                aligned_sequences->at(i).sequence.push_back(column.at(i));
+                aligned_sequences->at(i).sequence.append(column.at(i));
             }
         }
 
     }
 }
 
-void Node::get_alignment_column_at(int j,vector<char> *column,bool include_internal_nodes)
+void Node::get_alignment_column_at(int j,vector<string> *column,bool include_internal_nodes)
 {
 
     if(leaf)
@@ -249,19 +249,18 @@ void Node::get_alignment_column_at(int j,vector<char> *column,bool include_inter
                 nl = left_child->get_number_of_nodes();
 
             for(int i=0;i<nl;i++)
-                column->push_back('-');
+                column->push_back(sequence->get_gap_symbol());
         }
 
         if(include_internal_nodes)
         {
-            int cstate = sequence->get_site_at(j)->get_state();
-            char c = sequence->get_full_alphabet().at(cstate);
+            string c = sequence->get_site_at(j)->get_symbol();
 
             int pstate = sequence->get_site_at(j)->get_path_state();
             int ptype  = sequence->get_site_at(j)->get_site_type();
 
             if( pstate == Site::xskipped || pstate == Site::yskipped || ptype == Site::non_real)
-                c = '-';
+                c = sequence->get_gap_symbol();
             column->push_back(c);
         }
 
@@ -277,19 +276,19 @@ void Node::get_alignment_column_at(int j,vector<char> *column,bool include_inter
                 nl = right_child->get_number_of_nodes();
 
             for(int i=0;i<nl;i++)
-                column->push_back('-');
+                column->push_back(sequence->get_gap_symbol());
         }
     }
 }
 
-void Node::get_multiple_alignment_columns_before(int j,vector< vector<char> > *columns, string node_name_wanted, bool left_child_wanted,bool include_internal_nodes)
+void Node::get_multiple_alignment_columns_before(int j,vector< vector<string> > *columns, string node_name_wanted, bool left_child_wanted,bool include_internal_nodes)
 {
 
     if(this->is_leaf())
     {
         for(int i=0;i<(int)columns->size();i++)
         {
-            columns->at(i).push_back('-');
+            columns->at(i).push_back(sequence->get_gap_symbol());
         }
         return;
     }
@@ -322,7 +321,7 @@ void Node::get_multiple_alignment_columns_before(int j,vector< vector<char> > *c
             {
                 for(int i=0;i<(int)columns->size();i++)
                 {
-                    columns->at(i).push_back('-');
+                    columns->at(i).push_back(sequence->get_gap_symbol());
                 }
             }
 
@@ -339,7 +338,7 @@ void Node::get_multiple_alignment_columns_before(int j,vector< vector<char> > *c
             {
                 for(int i=0;i<(int)columns->size();i++)
                 {
-                    columns->at(i).push_back('-');
+                    columns->at(i).push_back(sequence->get_gap_symbol());
                 }
             }
 
@@ -358,7 +357,7 @@ void Node::get_multiple_alignment_columns_before(int j,vector< vector<char> > *c
         {
             for(int i=0;i<(int)columns->size();i++)
             {
-                columns->at(i).push_back('-');
+                columns->at(i).push_back(sequence->get_gap_symbol());
             }
         }
 

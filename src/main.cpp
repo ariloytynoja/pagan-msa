@@ -44,8 +44,16 @@ int main(int argc, char *argv[])
    */
 
     // Read the arguments
-    int rv = Settings_handle::st.read_command_line_arguments(argc, argv);
-    
+    try
+    {
+        int rv = Settings_handle::st.read_command_line_arguments(argc, argv);
+    }
+    catch ( const boost::program_options::error& e ) {
+            Settings_handle::st.info_noexit();
+            cout<<"Error in command line arguments: "<<e.what()<<"."<<endl<<endl;
+            exit(0);
+    }
+
     srand(time(0));
 
     

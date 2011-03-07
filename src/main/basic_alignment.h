@@ -416,17 +416,19 @@ protected:
     void print_input_sequences()
     {
 
-        string full_char_alphabet = Model_factory::get_dna_full_char_alphabet();
+        vector<string> *full_char_alphabet = Model_factory::get_dna_full_character_alphabet();
 
         if(model->get_data_type() == Model_factory::protein)
-            full_char_alphabet = Model_factory::get_protein_full_char_alphabet();
+            full_char_alphabet = Model_factory::get_protein_full_character_alphabet();
+        else if(model->get_data_type() == Model_factory::dna && Settings_handle::st.is("codons"))
+            full_char_alphabet = Model_factory::get_codon_full_character_alphabet();
 
         cout<<"sequences:"<<endl<<" ";
         for(int i=1;i<left->sites_length()-1;i++)
-            cout<<full_char_alphabet.at(left->get_site_at(i)->get_state());
+            cout<<full_char_alphabet->at(left->get_site_at(i)->get_state());
         cout<<endl<<" ";
         for(int i=1;i<right->sites_length()-1;i++)
-            cout<<full_char_alphabet.at(right->get_site_at(i)->get_state());
+            cout<<full_char_alphabet->at(right->get_site_at(i)->get_state());
         cout<<endl;
 
         if(Settings::noise>4)
