@@ -167,15 +167,22 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("cds-treefile", po::value<string>(), "reference tree file (NH/NHX)")
     ;
 
+    po::positional_options_description pd;
+    pd.add("config-file", 1);
+
     full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken);
     desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(tree_edit).add(alignment);
     max_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(graph).add(tree_edit).add(alignment).add(output);
     min_desc.add(minimal).add(reads_alignment);
 
-    po::store(po::parse_command_line(argc, argv, full_desc), vm);
+
+//    po::store(po::parse_command_line(argc, argv, full_desc), vm);
+    po::store(po::command_line_parser(argc, argv).options(full_desc).positional(pd).run(), vm);
 
     if(Settings::is("config-file"))
     {
+        cout << endl<< "Reading command line options from file '" << Settings::get("config-file").as<string>()<<"'."<<endl;
+
         ifstream cfg(Settings::get("config-file").as<string>().c_str());
         po::store(po::parse_config_file(cfg, full_desc), vm);
     }
@@ -208,7 +215,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     if(Settings::is("config-log-file"))
     {
-        cout << endl<< "Writing command line options to file " << Settings::get("config-log-file").as<string>()<<"."<<endl;
+        cout << endl<< "Writing command line options to file '" << Settings::get("config-log-file").as<string>()<<"'."<<endl;
 
         ofstream log_out(Settings::get("config-log-file").as<string>().c_str());
         time_t s_time;
