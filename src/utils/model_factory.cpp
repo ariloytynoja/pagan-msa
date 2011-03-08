@@ -407,8 +407,8 @@ void Model_factory::define_protein_alphabet()
                     {
                         Char_symbol *letterX = &char_symbols.at(k);
 
-                        if( letterX->first_residue == letter1->first_residue && letterX->second_residue == letter2->first_residue
-                            || letterX->first_residue == letter2->first_residue && letterX->second_residue == letter1->first_residue )
+                        if( ( letterX->first_residue == letter1->first_residue && letterX->second_residue == letter2->first_residue )
+                            || ( letterX->first_residue == letter2->first_residue && letterX->second_residue == letter1->first_residue ) )
                         {
                             parsimony_table->s(k,i,j);
                         }
@@ -433,7 +433,7 @@ void Model_factory::define_protein_alphabet()
                 {
                     // search for max score in Q matrix
 
-                    float maxQ = -1; char maxl1, maxl2;
+                    float maxQ = -1; char maxl1 = 0; char maxl2 = 0;
 
                     int m = letter1->first_residue;
                     int n = letter2->first_residue;
@@ -492,8 +492,8 @@ void Model_factory::define_protein_alphabet()
                     {
                         Char_symbol *letterX = &char_symbols.at(k);
 
-                        if( letterX->first_residue == maxl1 && letterX->second_residue == maxl2
-                                || letterX->second_residue == maxl1 && letterX->first_residue == maxl2 )
+                        if( ( letterX->first_residue == maxl1 && letterX->second_residue == maxl2 )
+                                || ( letterX->second_residue == maxl1 && letterX->first_residue == maxl2 ) )
                         {
                             parsimony_table->s(k,i,j);
                         }

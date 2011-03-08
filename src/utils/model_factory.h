@@ -140,8 +140,8 @@ public:
         {
             protein_full_char_alphabet = protein_char_alphabet+"X";
 
-            for(int i=0;i<protein_char_alphabet.length()-1;i++)
-                for(int j=i+1;j<protein_char_alphabet.length();j++)
+            for(int i=0;i<(int)protein_char_alphabet.length()-1;i++)
+                for(int j=i+1;j<(int)protein_char_alphabet.length();j++)
                     protein_full_char_alphabet += tolower(protein_char_alphabet.at(i));
         }
         return protein_full_char_alphabet;
@@ -156,7 +156,7 @@ public:
     {
         if(dna_character_alphabet.empty())
         {
-            for(int i=0;i<dna_char_alphabet.length();i++)
+            for(int i=0;i<(int)dna_char_alphabet.length();i++)
                 dna_character_alphabet.push_back(std::string(1,dna_char_alphabet.at(i)));
         }
         return &dna_character_alphabet;
@@ -166,7 +166,7 @@ public:
     {
         if(dna_full_character_alphabet.empty())
         {
-            for(int i=0;i<dna_full_char_alphabet.length();i++)
+            for(int i=0;i<(int)dna_full_char_alphabet.length();i++)
                 dna_full_character_alphabet.push_back(std::string(1,dna_full_char_alphabet.at(i)));
         }
         return &dna_full_character_alphabet;
@@ -176,7 +176,7 @@ public:
     {
         if(protein_character_alphabet.empty())
         {
-            for(int i=0;i<protein_char_alphabet.length();i++)
+            for(int i=0;i<(int)protein_char_alphabet.length();i++)
                 protein_character_alphabet.push_back(std::string(1,protein_char_alphabet.at(i)));
         }
         return &protein_character_alphabet;
@@ -186,13 +186,13 @@ public:
     {
         if(protein_full_character_alphabet.empty())
         {
-            for(int i=0;i<protein_char_alphabet.length();i++)
+            for(int i=0;i<(int)protein_char_alphabet.length();i++)
                 protein_full_character_alphabet.push_back(std::string(1,protein_char_alphabet.at(i)));
 
             protein_full_character_alphabet.push_back("X");
 
-            for(int i=0;i<protein_char_alphabet.length()-1;i++)
-                for(int j=i+1;j<protein_char_alphabet.length();j++)
+            for(int i=0;i<(int)protein_char_alphabet.length()-1;i++)
+                for(int j=i+1;j<(int)protein_char_alphabet.length();j++)
                     protein_full_character_alphabet.push_back(std::string(1,protein_char_alphabet.at(i))+std::string(1,protein_char_alphabet.at(j)));
 
         }

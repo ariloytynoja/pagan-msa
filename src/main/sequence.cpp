@@ -150,7 +150,7 @@ void Sequence::create_codon_sequence(Fasta_entry &seq_entry)
     for(vector<string>::iterator it = fca->begin();it != fca->end();it++)
         codons.insert(make_pair(*it,count++));
 
-    for(int i=0;i<seq_entry.sequence.length();i+=3)
+    for(int i=0;i<(int)seq_entry.sequence.length();i+=3)
     {
         int state = 61;
 
@@ -447,7 +447,7 @@ Sequence::Sequence(const int length,const int data_t, string gapped_s)
 void Sequence::print_sequence(vector<Site> *sites)
 {
 
-    vector<string> *alphabet;
+    vector<string> *alphabet = 0;
     if(data_type == Model_factory::dna)
         alphabet = Model_factory::get_dna_full_character_alphabet();
     else if(data_type == Model_factory::protein)
