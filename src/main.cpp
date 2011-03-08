@@ -58,14 +58,6 @@ int main(int argc, char *argv[])
 
     clock_t analysis_start_time=clock();
 
-    if(!Settings_handle::st.is("silent"))
-    {
-        Settings_handle::st.print_msg();
-        time_t s_time;
-        time( &s_time );
-        cout <<endl<< "The analysis started: " << asctime( localtime( &s_time ) )<<endl;
-    }
-
     /***********************************************************************/
     /*  Overlapping paired-end read merge only                             */
     /***********************************************************************/
@@ -169,6 +161,14 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
+
+    if(!Settings_handle::st.is("silent"))
+    {
+        Settings_handle::st.print_msg();
+        time_t s_time;
+        time( &s_time );
+        cout <<endl<< "The analysis started: " << asctime( localtime( &s_time ) )<<endl;
+    }
 
 
     /***********************************************************************/
