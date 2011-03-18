@@ -644,7 +644,8 @@ void Model_factory::define_protein_alphabet_groups()
 
         letter.index = i;
         letter.symbol = full_char_alphabet.at(i);
-        letter.n_units = n_residues[i];
+        //letter.n_units = n_residues[i];
+        letter.n_units = ambiguity[i].length();
         for(int j=0;j<letter.n_units;j++)
             letter.residues.push_back(ambiguity[i].at(j));
         char_symbols.push_back(letter);
