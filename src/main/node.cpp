@@ -40,6 +40,9 @@ Node::~Node()
         delete sequence;
 }
 
+int Node::number_of_nodes = 0;
+int Node::alignment_number = 0;
+
 void Node::add_sequence( Fasta_entry seq_entry, int data_type, bool gapped, bool no_trimming)
 {
     if(Settings::noise>4)

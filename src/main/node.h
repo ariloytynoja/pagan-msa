@@ -68,6 +68,9 @@ class Node
     bool adjust_left_node_site_index;
     bool adjust_right_node_site_index;
 
+    static int number_of_nodes;
+    static int alignment_number;
+
 public:
     Node() : leaf(true), dist_to_parent(0), name("undefined"), nhx_tid(""),
                     node_has_sequence(false), node_has_sequence_object(false),
@@ -350,6 +353,9 @@ public:
                 this->start_mpost_plot_file();
             }
 
+            this->number_of_nodes = this->get_number_of_leaves()-1;
+            this->alignment_number = 1;
+
             this->align_sequences(mf);
 
             if(Settings_handle::st.is("mpost-posterior-plot-file"))
@@ -386,8 +392,8 @@ public:
     void align_sequences_this_node(Model_factory *mf, bool is_reads_sequence=false, bool is_local_alignment=false)
     {
 
-        if(Settings::noise>0)
-            cout<<"aligning node "<<this->get_name()<<": "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
+        if(!Settings_handle::st.is("silent"))
+            cout<<"aligning node "<<this->get_name()<<" ("<<alignment_number++<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
 
         clock_t t_start=clock();
 

@@ -1267,8 +1267,8 @@ void Model_factory::dna_model(float *char_pi,Settings *st)
 {
     float char_kappa = 2.0;
     float char_rho = 1.0;
-    float ins_rate = 0.2;
-    float del_rate = 0.2;
+    float ins_rate = 1.0;
+    float del_rate = 1.0;
     float gap_ext = 0.9;
     float end_gap_ext = 0.95;
     float break_gap_ext = 0.99;
@@ -1284,6 +1284,9 @@ void Model_factory::dna_model(float *char_pi,Settings *st)
 
     if(st->is("del-rate"))
         del_rate =  st->get("del-rate").as<float>();
+
+    if(st->is("indel-rate"))
+        ins_rate =  del_rate =  st->get("indel-rate").as<float>();
 
     if(st->is("gap-extension"))
         gap_ext =  st->get("gap-extension").as<float>();

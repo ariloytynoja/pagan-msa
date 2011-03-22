@@ -35,8 +35,8 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.20;
-    date = "7 Mar, 2011";
+    version = 0.21;
+    date = "22 Mar, 2011";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -113,10 +113,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("cuberoot-weight-transform", "cuberoot weight transform for sampled edges")
     ;
 
-    boost::program_options::options_description model("DNA model options",100);
+    boost::program_options::options_description model("DNA/Protein model options",100);
     model.add_options()
-        ("ins-rate", po::value<float>(), "insertion rate (per substitution)")
-        ("del-rate", po::value<float>(), "deletion rate (per substitution)")
+        ("indel-rate", po::value<float>(), "insertion-deletion rate")
         ("gap-extension", po::value<float>(), "gap extension probability")
         ("end-gap-extension", po::value<float>(), "terminal gap extension probability")
         ("dna-kappa", po::value<float>(), "kappa")
@@ -153,8 +152,10 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description debug("Debugging and testing options",100);
     debug.add_options()
+        ("ins-rate", po::value<float>(), "insertion rate (per substitution)")
+        ("del-rate", po::value<float>(), "deletion rate (per substitution)")
         ("check-valid-graphs", "check that fwd and bwd edges are identical")
-        ("help-all", "display help-all message")
+        ("full-help", "display full-help message")
         ("ambiguity-factor", po::value<float>(), "multiplier for subst. score of ambiguity characters")
         ("no-log-odds", "do not use log-odds substitutions scores")
         ("time", "track time (debugging)")
