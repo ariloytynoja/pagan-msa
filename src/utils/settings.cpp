@@ -206,7 +206,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         return 1;
     }
 
-    if (vm.count("help-all")) {
+    if (vm.count("full-help")) {
         this->help_all();
         return 1;
     }
