@@ -692,8 +692,8 @@ bool Fasta_reader::check_alphabet(vector<Fasta_entry> * sequences,int data_type)
                     default:
                         // Remove characters not in full alphabet
                         if(full_alphabet.find(c) == string::npos) {
-                            if(Settings::noise>2)
-                                cout<<"deleting "<<*si<<"\n";
+//                            if(Settings::noise>2)
+//                                cout<<"deleting "<<*si<<"\n";
                             vi->sequence.erase(si);
                             si--;
                             if(c!=' ')
