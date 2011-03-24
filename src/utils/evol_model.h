@@ -62,14 +62,16 @@ public:
     float del_prob;
 
     float gap_open() { return id_prob; }
-    float gap_close() { return id_prob; }
+//    float gap_close() { return id_prob; }
+    float gap_close() { return 1.0; }
     float gap_ext() { return ext_prob; }
     float gap_end_ext() { return end_ext_prob; }
     float gap_break_ext() { return break_ext_prob; }
     float non_gap() { return match_prob; }
 
     float log_gap_open() { return log_id_prob; }
-    float log_gap_close() { return log_id_prob; }
+//    float log_gap_close() { return log_id_prob; }
+    float log_gap_close() { return 0; }
     float log_gap_ext() { return log_ext_prob; }
     float log_gap_end_ext() { return log_end_ext_prob; }
     float log_gap_break_ext() { return log_break_ext_prob; }
