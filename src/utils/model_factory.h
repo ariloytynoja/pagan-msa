@@ -119,7 +119,7 @@ public:
     void protein_model(float ins_rate,float del_rate, float ext_prob, float end_ext_prob);
 
     void codon_model(Settings *st);
-    void codon_model(float ins_rate,float del_rate, float ext_prob);
+    void codon_model(float ins_rate,float del_rate, float ext_prob, float end_ext_prob);
 
     Evol_model alignment_model(double distance, bool is_local_alignment=false);
     void print_int_matrix(Int_matrix *m);
