@@ -1767,9 +1767,8 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
     model.ins_prob = (1.0-exp(-1.0*char_ins_rate*distance));
     model.del_prob = (1.0-exp(-1.0*char_del_rate*distance));
 
-    double t = (1.0-exp(-1.0*(char_ins_rate+char_del_rate)*distance));
+    double t = (1.0-exp(-0.5*(char_ins_rate+char_del_rate)*distance));
 
-    t /= 2.0;
     model.log_id_prob = log(t);
     model.log_match_prob = log(1.0-2*t);
     model.log_ext_prob = log(char_ext_prob);
@@ -1782,28 +1781,28 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
     model.end_ext_prob = char_end_ext_prob;
     model.break_ext_prob = char_break_ext_prob;
 
-    if(is_local_alignment)
-    {
+//    if(is_local_alignment)
+//    {
 
-        model.log_ext_prob = log(0.1);
-        model.ext_prob = 0.1;
+//        model.log_ext_prob = log(0.1);
+//        model.ext_prob = 0.1;
 
-        model.ins_rate = 1;
-        model.del_rate = 1;
+//        model.ins_rate = 1;
+//        model.del_rate = 1;
 
-        model.ins_prob = (1.0-exp(-1.0*distance));
-        model.del_prob = (1.0-exp(-1.0*distance));
+//        model.ins_prob = (1.0-exp(-1.0*distance));
+//        model.del_prob = (1.0-exp(-1.0*distance));
 
-        double t = (1.0-exp(-2*distance));
+//        double t = (1.0-exp(-2*distance));
 
-        t /= 2.0;
-        model.log_id_prob = log(t);
-        model.log_match_prob = log(1.0-2*t);
+//        t /= 2.0;
+//        model.log_id_prob = log(t);
+//        model.log_match_prob = log(1.0-2*t);
 
-        model.id_prob = t;
-        model.match_prob = 1.0-2*t;
+//        model.id_prob = t;
+//        model.match_prob = 1.0-2*t;
 
-    }
+//    }
 
     for(int i=0;i<char_as;i++)
     {
