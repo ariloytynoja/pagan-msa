@@ -1781,28 +1781,17 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
     model.end_ext_prob = char_end_ext_prob;
     model.break_ext_prob = char_break_ext_prob;
 
-//    if(is_local_alignment)
-//    {
+    if(is_local_alignment)
+    {
 
-//        model.log_ext_prob = log(0.1);
-//        model.ext_prob = 0.1;
+        float ext = 0.25;
 
-//        model.ins_rate = 1;
-//        model.del_rate = 1;
+        if(Settings_handle::st.is("gap-extension"))
+            ext =  Settings_handle::st.get("gap-extension").as<float>();
 
-//        model.ins_prob = (1.0-exp(-1.0*distance));
-//        model.del_prob = (1.0-exp(-1.0*distance));
-
-//        double t = (1.0-exp(-2*distance));
-
-//        t /= 2.0;
-//        model.log_id_prob = log(t);
-//        model.log_match_prob = log(1.0-2*t);
-
-//        model.id_prob = t;
-//        model.match_prob = 1.0-2*t;
-
-//    }
+        model.log_ext_prob = log(ext);
+        model.ext_prob = ext;
+    }
 
     for(int i=0;i<char_as;i++)
     {
