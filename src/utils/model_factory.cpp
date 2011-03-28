@@ -1736,7 +1736,6 @@ void Model_factory::build_model(int s,Db_matrix *pi,Db_matrix *q,Db_matrix *wU,D
 Evol_model Model_factory::alignment_model(double distance, bool is_local_alignment)
 {
 
-
     // Compute the P matrix for regular DNA alphabet (four bases).
     //
     Eigen* e = new Eigen();

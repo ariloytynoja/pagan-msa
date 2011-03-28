@@ -35,8 +35,8 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.22;
-    date = "24 Mar, 2011";
+    version = 0.23;
+    date = "28 Mar, 2011";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -129,7 +129,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("scale-branches", po::value<float>(), "scale tree branches")
         ("truncate-branches", po::value<float>()->default_value(0.1), "truncate tree branches")
         ("real-branches", "use real tree branch lengths")
-        ("fixed-branches", po::value<float>(), "use fixed-length tree branches")
+        ("fixed-branches", po::value<float>(), "fixed length for tree branches")
+        ("min-branch-length", po::value<float>(), "minimum length for tree branches")
     ;
 
     boost::program_options::options_description alignment("Alignment model options",100);

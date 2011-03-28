@@ -85,7 +85,19 @@ public:
     {
         dist_to_parent = d;
 
-        if( Settings_handle::st.is("scale-branches") || Settings_handle::st.is("truncate-branches")  )
+        if(dist_to_parent<=0)
+        {
+            if( Settings_handle::st.is("min-branch-length") && Settings_handle::st.get("min-branch-length").as<float>() > 0 )
+            {
+                dist_to_parent = Settings_handle::st.get("min-branch-length").as<float>();
+            }
+            else
+            {
+                dist_to_parent = 0.001;
+            }
+        }
+        if( !Settings_handle::st.is("real-branches") &&
+                ( Settings_handle::st.is("scale-branches") || Settings_handle::st.is("truncate-branches") )  )
         {
             if( Settings_handle::st.is("scale-branches") &&
                   Settings_handle::st.get("scale-branches").as<float>() > 0 )
@@ -107,7 +119,7 @@ public:
             dist_to_parent = Settings_handle::st.get("fixed-branches").as<float>();
         }
 
-        if(Settings::noise>5) cout<<"node.set_distance_to_parent("<<d<<")\n";
+        if(Settings::noise>4) cout<<"node.set_distance_to_parent("<<dist_to_parent<<")\n";
     }
 
     double get_distance_to_parent() { return dist_to_parent; }

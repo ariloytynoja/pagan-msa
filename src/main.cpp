@@ -161,7 +161,6 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-
     if(!Settings_handle::st.is("silent"))
     {
         Settings_handle::st.print_msg();
