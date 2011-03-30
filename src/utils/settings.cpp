@@ -102,7 +102,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("pair-read-gap-extension", po::value<float>(), "read spacer extension probability")
         ("min-reads-overlap", po::value<float>()->default_value(0.1), "overlap threshold for read and reference")
         ("min-reads-identity", po::value<float>()->default_value(0.3), "identity threshold for aligned sites")
-        ("reads-distance", po::value<float>()->default_value(0.01), "evolutionary distance from pseudo-root")
+        ("reads-distance", po::value<float>()->default_value(0.1), "evolutionary distance from pseudo-root")
         ("perfect-reference", "assume perfect reference alignment")
     ;
 

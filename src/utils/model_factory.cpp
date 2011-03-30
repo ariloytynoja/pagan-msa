@@ -1760,37 +1760,62 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
     Evol_model model(sequence_data_type, distance);
 
-    model.ins_rate = char_ins_rate;
-    model.del_rate = char_del_rate;
-
-    model.ins_prob = (1.0-exp(-1.0*char_ins_rate*distance));
-    model.del_prob = (1.0-exp(-1.0*char_del_rate*distance));
-
-    double t = (1.0-exp(-0.5*(char_ins_rate+char_del_rate)*distance));
-
-    model.log_id_prob = log(t);
-    model.log_match_prob = log(1.0-2*t);
-    model.log_ext_prob = log(char_ext_prob);
-    model.log_end_ext_prob = log(char_end_ext_prob);
-    model.log_break_ext_prob = log(char_break_ext_prob);
-
-    model.id_prob = t;
-    model.match_prob = 1.0-2*t;
-    model.ext_prob = char_ext_prob;
-    model.end_ext_prob = char_end_ext_prob;
-    model.break_ext_prob = char_break_ext_prob;
-
     if(is_local_alignment)
     {
+        // these are for reads alignment
 
-        float ext = 0.25;
+        float ext = 0.75;
 
         if(Settings_handle::st.is("gap-extension"))
             ext =  Settings_handle::st.get("gap-extension").as<float>();
 
         model.log_ext_prob = log(ext);
         model.ext_prob = ext;
+
+        float rate = 0.005;
+        if(Settings_handle::st.is("indel-rate"))
+            rate =  Settings_handle::st.get("indel-rate").as<float>();
+
+
+        model.ins_rate = rate;
+        model.del_rate = rate;
+
+        model.ins_prob = (1.0-exp(-1.0*rate*distance));
+        model.del_prob = (1.0-exp(-1.0*rate*distance));
+
+        double t = (1.0-exp(-1*rate*distance));
+
+        model.log_id_prob = log(t);
+        model.log_match_prob = log(1.0-2*t);
+        model.id_prob = t;
+        model.match_prob = 1.0-2*t;
     }
+    else
+    {
+        model.log_ext_prob = log(char_ext_prob);
+        model.ext_prob = char_ext_prob;
+
+        model.ins_rate = char_ins_rate;
+        model.del_rate = char_del_rate;
+
+        model.ins_prob = (1.0-exp(-1.0*char_ins_rate*distance));
+        model.del_prob = (1.0-exp(-1.0*char_del_rate*distance));
+
+        double t = (1.0-exp(-0.5*(char_ins_rate+char_del_rate)*distance));
+
+        model.log_id_prob = log(t);
+        model.log_match_prob = log(1.0-2*t);
+        model.id_prob = t;
+        model.match_prob = 1.0-2*t;
+    }
+
+
+    model.log_end_ext_prob = log(char_end_ext_prob);
+    model.log_break_ext_prob = log(char_break_ext_prob);
+
+    model.end_ext_prob = char_end_ext_prob;
+    model.break_ext_prob = char_break_ext_prob;
+
 
     for(int i=0;i<char_as;i++)
     {
@@ -1802,7 +1827,6 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
             float sp = tmr[i*char_as+j];
             if( ! Settings_handle::st.is("no-log-odds") )
             {
-//                float lo = sp / ( charPi->g(i) * charPi->g(j) );
                 float lo = 0.5 * ( charPi->g(i) + charPi->g(j) ) * sp / ( charPi->g(i) * charPi->g(j) );
                 model.charPr->s(lo,i,j);
                 model.logCharPr->s(log( lo ),i,j);
