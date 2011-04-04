@@ -272,6 +272,17 @@ public:
         }
     }
 
+    void get_all_nodes(map<string,Node*> *nodes)
+    {
+        if(!this->is_leaf())
+            left_child->get_all_nodes(nodes);
+
+        nodes->insert(pair<string,Node*>(this->get_name(),this));
+
+        if(!this->is_leaf())
+            right_child->get_all_nodes(nodes);
+    }
+
     void get_internal_nodes(map<string,Node*> *nodes)
     {
         if(!this->is_leaf())
@@ -294,6 +305,16 @@ public:
         }
     }
 
+    void get_node_names(multimap<string,string> *list)
+    {
+        if(!this->is_leaf())
+        {
+            left_child->get_node_names(list);
+            right_child->get_node_names(list);
+        }
+        list->insert(pair<string,string>(this->get_name(),this->get_name()));
+    }
+
     void get_internal_node_names_with_tid_tag(multimap<string,string> *list)
     {
         if(!this->is_leaf())
@@ -305,6 +326,19 @@ public:
             {
                 list->insert(pair<string,string>(this->get_nhx_tid(),this->get_name()));
             }
+        }
+    }
+
+    void get_node_names_with_tid_tag(multimap<string,string> *list)
+    {
+        if(!this->is_leaf())
+        {
+            left_child->get_node_names_with_tid_tag(list);
+            right_child->get_node_names_with_tid_tag(list);
+        }
+        if(this->get_nhx_tid()!="")
+        {
+            list->insert(pair<string,string>(this->get_nhx_tid(),this->get_name()));
         }
     }
 

@@ -36,8 +36,8 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.24;
-    date = "1 Apr, 2011";
+    version = 0.25;
+    date = "4 Apr, 2011";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -95,6 +95,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("discard-overlapping-identical-reads", "discard embedded identical reads")
         ("discard-overlapping-reads", "discard embedded reads")
         ("discard-pairwise-overlapping-reads", "discard embedded reads (pairwise alignment)")
+        ("test-every-internal-node","test every internal node for each read")
         ("align-reads-at-root", "ignore tags and align reads at root")
         ("align-bad-reads-at-root", "align non-matching reads at root")
         ("placement-only", "compute read placement only")

@@ -182,17 +182,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
         sort(unique_nodes.begin(),unique_nodes.end(),Reads_aligner::nodeIsSmaller);
 
         map<string,Node*> nodes_map;
-        // for one reference sequence only
-        if(single_ref_sequence)
-        {
-            root->get_leaf_nodes(&nodes_map);
-        }
-
-        // for normal cases
-        else
-        {
-            root->get_internal_nodes(&nodes_map);
-        }
+        root->get_all_nodes(&nodes_map);
 
         // do one tagged node at time
         //
@@ -292,12 +282,8 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
                 if(!Settings_handle::st.is("silent"))
                     cout<<"aligning read: "<<reads_for_this.at(i).name<<": "<<reads_for_this.at(i).comment<<endl;
 
-//                node->get_left_child()->get_sequence()->print_sequence();
-//                node->get_right_child()->get_sequence()->print_sequence();
-
                 node->align_sequences_this_node(mf,true);
 
-//                node->get_sequence()->print_sequence();
 
                 // check if the alignment significantly overlaps with the reference alignment
                 //
@@ -729,14 +715,14 @@ bool Reads_aligner::correct_sites_index(Node *current_root, string ref_node_name
     int is_left_child = true;
     for(;mit != nodes_map->end();mit++)
     {
-        if(mit->second->get_left_child()->get_name() == ref_node_name)
+        if(!mit->second->is_leaf() && mit->second->get_left_child()->get_name() == ref_node_name)
         {
             current_parent = mit->second;
             current_parent->add_left_child(current_root);
             parent_found = true;
         }
 
-        if(mit->second->get_right_child()->get_name() == ref_node_name)
+        if(!mit->second->is_leaf() && mit->second->get_right_child()->get_name() == ref_node_name)
         {
             current_parent = mit->second;
             current_parent->add_right_child(current_root);
@@ -808,11 +794,15 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
     if(Settings_handle::st.is("test-every-node"))
     {
+        root->get_node_names(&tid_nodes);
+    }
+    else if(Settings_handle::st.is("test-every-internal-node"))
+    {
         root->get_internal_node_names(&tid_nodes);
     }
     else
     {
-        root->get_internal_node_names_with_tid_tag(&tid_nodes);
+        root->get_node_names_with_tid_tag(&tid_nodes);
     }
 
     ofstream pl_output;
@@ -827,14 +817,14 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
         reads->at(i).node_score = -1.0;
 
         string tid = reads->at(i).tid;
-        if(Settings_handle::st.is("test-every-node"))
+        if( Settings_handle::st.is("test-every-node") || Settings_handle::st.is("test-every-internal-node") )
             tid = "<empty>";
 
         if(tid != "")
         {
             int matches = tid_nodes.count(tid);
 
-            if(Settings_handle::st.is("test-every-node"))
+            if( Settings_handle::st.is("test-every-node") || Settings_handle::st.is("test-every-internal-node") )
                 matches = tid_nodes.size();
 
             if(matches == 0)
@@ -853,7 +843,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
             {
                 multimap<string,string>::iterator tit = tid_nodes.find(tid);
 
-                if(Settings_handle::st.is("test-every-node"))
+                if( Settings_handle::st.is("test-every-node") || Settings_handle::st.is("test-every-internal-node") )
                     tit = tid_nodes.begin();
 
                 if(tit != tid_nodes.end())
@@ -875,12 +865,12 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                 string best_node = root->get_name();
 
                 map<string,Node*> nodes;
-                root->get_internal_nodes(&nodes);
-
+//                root->get_internal_nodes(&nodes);
+                root->get_all_nodes(&nodes);
 
                 multimap<string,string>::iterator tit;
 
-                if(Settings_handle::st.is("test-every-node"))
+                if( Settings_handle::st.is("test-every-node") || Settings_handle::st.is("test-every-internal-node") )
                 {
                     tit = tid_nodes.begin();
                 }
@@ -897,7 +887,6 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                     while(tit != tid_nodes.end())
                     {
                         map<string,Node*>::iterator nit = nodes.find(tit->second);
-
                         double score = this->read_match_score( nit->second, &reads->at(i), mf, best_score);
 
                         if(Settings::noise>0)
