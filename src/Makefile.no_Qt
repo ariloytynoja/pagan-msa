@@ -47,7 +47,8 @@ HEADERS       = utils/text_utils.h \
 		utils/settings_handle.h \
 		utils/xml_writer.h \
 		utils/evol_model.h \
-		main/node.h \
+                utils/check_version.h \
+                main/node.h \
 		main/sequence.h \
 		main/basic_alignment.h \
 		main/viterbi_alignment.h \
@@ -65,7 +66,8 @@ SOURCES       = main.cpp \
 		utils/settings_handle.cpp \
 		utils/xml_writer.cpp \
 		utils/evol_model.cpp \
-		main/node.cpp \
+                utils/check_version.cpp \
+                main/node.cpp \
 		main/sequence.cpp \
 		main/basic_alignment.cpp \
 		main/viterbi_alignment.cpp \
@@ -84,7 +86,8 @@ OBJECTS       = main.o \
 		settings_handle.o \
 		xml_writer.o \
 		evol_model.o \
-		node.o \
+                check_version.o \
+                node.o \
 		reference_alignment.o \
 		viterbi_alignment.o \
 		basic_alignment.o \
@@ -244,6 +247,9 @@ evol_model.o: utils/evol_model.cpp utils/evol_model.h \
 		utils/db_matrix.h \
 		utils/int_matrix.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o evol_model.o utils/evol_model.cpp
+
+check_version.o: utils/check_version.cpp utils/check_version.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o check_version.o utils/check_version.cpp
 
 node.o: main/node.cpp main/node.h \
 		utils/exceptions.h \

@@ -47,6 +47,7 @@ public:
     void help_all();
     void info();
     void info_noexit();
+    void check_version();
     void print_msg();
     std::string print_log_msg();
 

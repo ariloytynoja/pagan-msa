@@ -25,7 +25,8 @@ SOURCES += main.cpp \
     main/reference_alignment.cpp \
     main/viterbi_alignment.cpp \
     main/basic_alignment.cpp \
-    main/reads_aligner.cpp
+    main/reads_aligner.cpp \
+    utils/check_version.cpp
 HEADERS += utils/text_utils.h \
     utils/settings.h \
     utils/newick_reader.h \
@@ -44,7 +45,9 @@ HEADERS += utils/text_utils.h \
     main/reference_alignment.h \
     main/viterbi_alignment.h \
     main/basic_alignment.h \
-    main/reads_aligner.h
+    main/reads_aligner.h \
+    utils/check_version.h
 LIBS += -lboost_program_options-mt
 INCLUDEPATH += /usr/include
-OTHER_FILES += missing_things.txt
+OTHER_FILES += missing_things.txt \
+    ../VERSION_HISTORY

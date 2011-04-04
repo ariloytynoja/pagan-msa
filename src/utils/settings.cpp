@@ -22,6 +22,7 @@
 #include <iostream>
 #include <fstream>
 #include "utils/settings.h"
+#include "utils/check_version.h"
 
 namespace po = boost::program_options;
 
@@ -35,8 +36,8 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.23;
-    date = "28 Mar, 2011";
+    version = 0.24;
+    date = "1 Apr, 2011";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -58,6 +59,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("no-xml","write FASTA alignment only")
         ("config-file",po::value<string>(),"config file with additional arguments")
         ("config-log-file",po::value<string>(),"log file for given arguments")
+        ("version","show program version and check for updates")
     ;
 
     boost::program_options::options_description reads_alignment("Basic reads alignment options",100);
@@ -212,6 +214,10 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         return 1;
     }
 
+    if (vm.count("version")) {
+        this->check_version();
+        return 1;
+    }
 
 
 
@@ -323,6 +329,12 @@ void Settings::info_noexit()
     this->print_msg();
     cout << min_desc << "\n";
     cout<<"Use option --help for more information.\n\n";
+}
+
+void Settings::check_version()
+{
+    Check_version cv(version);
+    exit(0);
 }
 
 int     Settings::noise             = 0;
