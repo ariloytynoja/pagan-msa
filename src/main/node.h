@@ -411,6 +411,7 @@ public:
 
             if(Settings_handle::st.is("output-ancestors"))
             {
+//                show_seqs();
                 this->reconstruct_parsimony_ancestor(mf);
             }
         }
@@ -778,11 +779,26 @@ public:
 
     /************************************/
 
-    void get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_internal_nodes=false);
+    void show_seqs()
+    {
+        cout<<"node "<<get_name();
+        for(int i=0;i<sequence->sites_length();i++)
+            cout<<"; ["<<i<<"] "<<sequence->get_site_at(i)->get_state();
+        cout<<endl<<endl;
 
-    void get_alignment_column_at(int j,vector<string> *column,bool include_internal_nodes);
+        if(!is_leaf())
+            get_left_child()->show_seqs();
 
-    void get_multiple_alignment_columns_before(int j,vector< vector<string> > *columns, string node_name_wanted, bool left_child_wanted,bool include_internal_nodes);
+        if(!is_leaf())
+            get_right_child()->show_seqs();
+    }
+
+    void get_alignment(vector<Fasta_entry> *aligned_sequences, bool include_internal_nodes=false);
+
+    void get_alignment_column_at(int j,vector<string> *column, bool include_internal_nodes);
+
+    void get_multiple_alignment_columns_before(int j,vector< vector<string> > *columns, string node_name_wanted,
+                                                bool left_child_wanted, bool include_internal_nodes);
 
     int get_number_of_leaves()
     {

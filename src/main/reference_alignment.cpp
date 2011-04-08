@@ -41,7 +41,6 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
     left = left_sequence;
     right = right_sequence;
     model = evol_model;
-//    full_char_alphabet = model->get_full_alphabet();
 
     left_branch_length = l_branch_length;
     right_branch_length = r_branch_length;
@@ -87,6 +86,8 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
     }
 
 
+    bool is_codons = Settings_handle::st.is("codons");
+
     string::iterator lgi = gapped_left->begin();
     string::iterator rgi = gapped_right->begin();
     int li = 0;
@@ -99,9 +100,29 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
         bool lgap = (*lgi == '-');
         bool rgap = (*rgi == '-');
 
+        if(is_codons)
+        {
+            lgi++;rgi++;
+            bool lgap2 = (*lgi == '-');
+            bool rgap2 = (*rgi == '-');
+            lgi++;rgi++;
+            bool lgap3 = (*lgi == '-');
+            bool rgap3 = (*rgi == '-');
+
+            if(! ( ( (lgap && lgap2 && lgap3) || (!lgap && !lgap2 && !lgap3) ) &&
+                   ( (rgap && rgap2 && rgap3) || (!rgap && !rgap2 && !rgap3) ) )
+              )
+            {
+               cout<<"Reading frame error in a codon refrence alignment. Exiting.\n";
+               exit(-1);
+            }
+        }
+
         if(!lgap && rgap)
         {
             gapped_anc.append("A");
+            if(is_codons)
+                gapped_anc.append("CC");
 
             Matrix_pointer bwd_p;
             bwd_p.matrix = Reference_alignment::x_mat;
@@ -115,6 +136,8 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
         else if(lgap && !rgap)
         {
             gapped_anc.append("A");
+            if(is_codons)
+                gapped_anc.append("GG");
 
             Matrix_pointer bwd_p;
             bwd_p.matrix = Reference_alignment::y_mat;
@@ -128,6 +151,8 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
         else if(!lgap && !rgap)
         {
             gapped_anc.append("A");
+            if(is_codons)
+                gapped_anc.append("TT");
 
             Matrix_pointer bwd_p;
             bwd_p.matrix = Reference_alignment::m_mat;
@@ -142,6 +167,8 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
         else if(lgap && rgap)
         {
             gapped_anc.append("-");
+            if(is_codons)
+                gapped_anc.append("--");
         }
     }
 

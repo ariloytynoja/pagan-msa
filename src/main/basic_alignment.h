@@ -425,10 +425,10 @@ protected:
 
         cout<<"sequences:"<<endl<<" ";
         for(int i=1;i<left->sites_length()-1;i++)
-            cout<<full_char_alphabet->at(left->get_site_at(i)->get_state());
+            cout<<Model_factory::get_ancestral_character_alphabet_at(left->get_site_at(i)->get_state());
         cout<<endl<<" ";
         for(int i=1;i<right->sites_length()-1;i++)
-            cout<<full_char_alphabet->at(right->get_site_at(i)->get_state());
+            cout<<Model_factory::get_ancestral_character_alphabet_at(left->get_site_at(i)->get_state());
         cout<<endl;
 
         if(Settings::noise>4)

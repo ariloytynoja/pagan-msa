@@ -65,8 +65,8 @@ class Model_factory
     static std::string protein_char_alphabet;
     static std::string protein_full_char_alphabet;
 
-    std::vector<std::string> character_alphabet;
-    std::vector<std::string>  full_character_alphabet;
+    std::vector<std::string> *character_alphabet;
+    std::vector<std::string>  *full_character_alphabet;
 
     static std::vector<std::string> dna_character_alphabet;
     static std::vector<std::string> dna_full_character_alphabet;
@@ -74,6 +74,10 @@ class Model_factory
     static std::vector<std::string> protein_full_character_alphabet;
     static std::vector<std::string> codon_character_alphabet;
     static std::vector<std::string> codon_full_character_alphabet;
+
+    static std::vector<std::string> ancestral_character_alphabet;
+
+    static Db_matrix characterPi;
 
     Db_matrix *charPi;
     float char_ins_rate;
@@ -112,6 +116,8 @@ public:
 
     enum Data_type {dna,protein,codon};
 
+    int get_sequence_data_type() { return sequence_data_type; }
+
     void dna_model(float *char_pi,Settings *st);
     void dna_model(float* pi,float kappa, float rho,float ins_rate,float del_rate, float ext_prob, float end_ext_prob, float break_ext_prob);
 
@@ -149,8 +155,8 @@ public:
 
     /********************************/
 
-    std::vector<std::string> get_character_alphabet() { return character_alphabet; }
-    std::vector<std::string> get_full_character_alphabet() { return full_character_alphabet; }
+    std::vector<std::string> *get_character_alphabet() { return character_alphabet; }
+    std::vector<std::string> *get_full_character_alphabet() { return full_character_alphabet; }
 
     static std::vector<std::string> *get_dna_character_alphabet()
     {
@@ -221,22 +227,22 @@ public:
             std::string full_alpha = "AAAAACAAGAATACAACCACGACTAGAAGCAGGAGTATAATCATGATTCAACACCAGCATCCACCCCCGCCTCGACGCCGGCGTCTACTCCTGCTTGAAGACGAGGATGCAGCCGCGGCTGGAGGCGGGGGTGTAGTCGTGGTTTACTATTCATCCTCGTCTTGCTGGTGTTTATTCTTGTTTNNN";
 
             for(int i=0;i<62;i++)
-            {
                 codon_full_character_alphabet.push_back(full_alpha.substr(i*3,3));
-            }
 
-            for(int i=0;i<61;i++)
-            {
-                for(int j=0;j<61;j++)
-                {
+            for(int i=0;i<60;i++)
+                for(int j=i+1;j<61;j++)
                     codon_full_character_alphabet.push_back(full_alpha.substr(i*3,3)+full_alpha.substr(j*3,3));
-                }
-            }
+
         }
         return &codon_full_character_alphabet;
     }
 
     /********************************/
+
+    static std::string get_ancestral_character_alphabet_at(int i) { return ancestral_character_alphabet.at(i); }
+    /********************************/
+
+    std::string get_character_in_full_alphabet_at(int i) { return full_character_alphabet->at(i); }
 
     int parsimony_state(int parent_state,int child_state) { return parsimony_table->g(parent_state,child_state); }
     int get_child_parsimony_state(int parent_state,int child_state) { return child_parsimony_table->g(parent_state,child_state);}

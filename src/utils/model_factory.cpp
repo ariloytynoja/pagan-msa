@@ -91,6 +91,9 @@ vector<string> Model_factory::protein_full_character_alphabet = vector<string>()
 vector<string> Model_factory::codon_character_alphabet = vector<string>();
 vector<string> Model_factory::codon_full_character_alphabet = vector<string>();
 
+vector<string> Model_factory::ancestral_character_alphabet= vector<string>();
+
+
 /*
  * Definition of DNA alpahbet including ambiguity characters.
  */
@@ -520,13 +523,13 @@ void Model_factory::define_protein_alphabet()
             Char_symbol *parent = &char_symbols.at(i);
             Char_symbol *child = &char_symbols.at(j);
 
-            // parent and child are idnetical
-
+            // parent and child are identical
             if(i == j)
             {
                 child_parsimony_table->s(j,i,j);
             }
 
+            // one of them is X -> the other must have more or equal amount of information
             else if(parent->index == char_as) // 'X'
             {
                 child_parsimony_table->s(j,i,j);
@@ -537,24 +540,22 @@ void Model_factory::define_protein_alphabet()
                 child_parsimony_table->s(i,i,j);
             }
 
-            else if(child->n_units == 1 )
+            // child is known: no change
+            else if(child->n_units == 1)
             {
-                if( parent->first_residue == child->first_residue || parent->second_residue == child->first_residue)
-                    child_parsimony_table->s(j,i,j);
-                else
-                    child_parsimony_table->s(-1,i,j);
+                child_parsimony_table->s(j,i,j);
             }
 
-            // parent is known -> child must be the same
-
+            // parent is known: only two comparisons
             else if(parent->n_units == 1 && parent->symbol != 'X')
             {
                 if(parent->first_residue == child->first_residue || parent->first_residue == child->second_residue)
                     child_parsimony_table->s(i,i,j);
                 else
-                    child_parsimony_table->s(-1,i,j);
+                    child_parsimony_table->s(j,i,j);
             }
 
+            // both are known: four comparisons
             else
             {
                 int c = -1;
@@ -576,7 +577,8 @@ void Model_factory::define_protein_alphabet()
                 }
                 else
                 {
-                    child_parsimony_table->s(-1,i,j);
+                    child_parsimony_table->s(j,i,j);
+//                    child_parsimony_table->s(-1,i,j);
                 }
 
             }
@@ -617,9 +619,6 @@ void Model_factory::define_protein_alphabet()
  */
 void Model_factory::define_protein_alphabet_groups()
 {
-//    char_alphabet = "HRKQNEDSTGPACVIMLFYW";
-//    full_char_alphabet = "RKQEDNGHASTPCIVMLFYWZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZX";
-//    full_char_alphabet = "RKQEDNGHASTPCIVMLFYWabcdefghijklmnopqrstuvxyz12345X";
     char_alphabet = "ARNDCQEGHILKMFPSTWYV";
     full_char_alphabet = "ARNDCQEGHILKMFPSTWYVZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZX";
     full_char_alphabet = "ARNDCQEGHILKMFPSTWYVabcdefghijklmnopqrstuvxyz12345X";
@@ -627,12 +626,6 @@ void Model_factory::define_protein_alphabet_groups()
     char_as = char_alphabet.length();
     char_fas = full_char_alphabet.length();
 
-    int n_residues[] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                        2,2,2,2,2,2,2,3,2,4,3,3,5,3,3,3,4,4,7,2,3,2,10,11,12,3,4,16,3,4,20};
-//    string ambiguity[] = {"R","K","Q","E","D","N","G","H","A","S","T","P","C","I","V","M","L","F","Y","W",
-//                          "NG","HA","IV","ST","QE","ML","RK","RKQ","ED","NAST","AST","HML","RKHSA","NED",
-//                          "TIV","MLF","HRKQ","ASTG","HRKQSTA","CV","IML","FY","HRKQNEDSTA","HRKQNEDSTPA",
-//                          "HRKQNEDSTGPA","CIV","MLFY","HRKQNEDSTGPACVIM","LFY","LFYW","HRKQNEDSTGPACVIMLFYW"};
     string ambiguity[] = {"A","R","N","D","C","Q","E","G","H","I","L","K","M","F","P","S","T","W","Y","V",
                           "NG","HA","IV","ST","QE","ML","RK","ED","CV","FY","RKQ","AST","HML","NED","TIV",
                           "MLF","CIV","LFY","IML","NAST","HRKQ","ASTG","MLFY","LFYW","RKHSA","HRKQSTA",
@@ -644,7 +637,6 @@ void Model_factory::define_protein_alphabet_groups()
 
         letter.index = i;
         letter.symbol = full_char_alphabet.at(i);
-        //letter.n_units = n_residues[i];
         letter.n_units = ambiguity[i].length();
         for(int j=0;j<letter.n_units;j++)
             letter.residues.push_back(ambiguity[i].at(j));
@@ -654,59 +646,6 @@ void Model_factory::define_protein_alphabet_groups()
     /*
      * Table for resolving the parental state from the parsimony ambiguity alphabet.
      */
-//    int table[] = {
-//         0, 26, 27, 42, 42, 42, 44, 32, 32, 32, 38, 43, 47, 47, 47, 47, 50, 50, 50, 50,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-//        26,  1, 27, 42, 42, 42, 44, 32, 32, 32, 38, 43, 47, 47, 47, 47, 50, 50, 50, 50,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-//        27, 27,  2, 24, 42, 42, 44, 36, 38, 38, 38, 43, 47, 47, 47, 47, 50, 50, 50, 50,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
-//        42, 42, 24,  3, 28, 33, 44, 42, 42, 42, 42, 43, 47, 47, 47, 47, 50, 50, 50, 50,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,
-//        42, 42, 42, 28,  4, 33, 44, 42, 42, 42, 42, 43, 47, 47, 47, 47, 50, 50, 50, 50,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,
-//        42, 42, 42, 33, 33,  5, 20, 42, 29, 29, 29, 43, 47, 47, 47, 47, 50, 50, 50, 50,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,
-//        44, 44, 44, 44, 44, 20,  6, 44, 37, 37, 37, 44, 47, 47, 47, 47, 50, 50, 50, 50,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,
-//        32, 32, 36, 42, 42, 42, 44,  7, 21, 32, 38, 43, 47, 47, 47, 31, 31, 50, 50, 50,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,
-//        32, 32, 38, 42, 42, 29, 37, 21,  8, 29, 29, 43, 47, 47, 47, 47, 50, 50, 50, 50,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,
-//        32, 32, 38, 42, 42, 29, 37, 32, 29,  9, 23, 43, 47, 47, 47, 47, 50, 50, 50, 50,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,  9,
-//        38, 38, 38, 42, 42, 29, 37, 38, 29, 23, 10, 43, 47, 34, 34, 47, 50, 50, 50, 50, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-//        43, 43, 43, 43, 43, 43, 44, 43, 43, 43, 43, 11, 47, 47, 47, 47, 50, 50, 50, 50, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-//        47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 12, 45, 39, 47, 50, 50, 50, 50, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-//        47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 34, 47, 45, 13, 22, 40, 40, 50, 50, 50, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
-//        47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 34, 47, 39, 22, 14, 47, 50, 50, 50, 50, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
-//        47, 47, 47, 47, 47, 47, 47, 31, 47, 47, 47, 47, 47, 40, 47, 15, 25, 35, 46, 50, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
-//        50, 50, 50, 50, 50, 50, 50, 31, 50, 50, 50, 50, 50, 40, 50, 25, 16, 35, 46, 49, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-//        50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 35, 35, 17, 41, 49, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17,
-//        50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 46, 46, 41, 18, 49, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18,
-//        50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 49, 49, 49, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 44, 47, 44, 44, 50, 44, 44, 44, 44, 44, 50, 44, 44, 47, 50, 44, 44, 44, 47, 50, 50, 44, 44, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 21, 47, 38, 42, 50, 32, 38, 42, 42, 38, 50, 32, 42, 47, 50, 38, 44, 38, 47, 50, 50, 42, 43, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 47, 47, 22, 47, 47, 50, 47, 47, 47, 47, 47, 50, 47, 47, 34, 50, 47, 47, 47, 45, 50, 50, 47, 47, 47, 45, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 38, 47, 23, 42, 50, 38, 38, 42, 29, 29, 50, 38, 42, 47, 50, 38, 37, 38, 47, 50, 50, 42, 43, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 42, 47, 42, 24, 50, 42, 42, 42, 42, 42, 50, 42, 42, 47, 50, 42, 44, 42, 47, 50, 50, 42, 43, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 50, 50, 50, 50, 50, 25, 50, 50, 50, 50, 50, 31, 50, 50, 50, 35, 50, 50, 50, 50, 40, 46, 50, 50, 50, 50, 46, 50, 46, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 32, 47, 38, 42, 50, 26, 27, 42, 42, 38, 50, 32, 42, 47, 50, 36, 44, 38, 47, 50, 50, 42, 43, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 38, 47, 38, 42, 50, 27, 27, 42, 42, 38, 50, 38, 42, 47, 50, 36, 44, 38, 47, 50, 50, 42, 43, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 42, 47, 42, 42, 50, 42, 42, 28, 42, 42, 50, 42, 33, 47, 50, 42, 44, 42, 47, 50, 50, 42, 43, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 42, 47, 29, 42, 50, 42, 42, 42, 29, 29, 50, 42, 42, 47, 50, 42, 44, 42, 47, 50, 50, 42, 43, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 38, 47, 29, 42, 50, 38, 38, 42, 29, 29, 50, 38, 42, 47, 50, 38, 37, 38, 47, 50, 50, 42, 43, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 50, 50, 50, 50, 50, 31, 50, 50, 50, 50, 50, 31, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 32, 47, 38, 42, 50, 32, 38, 42, 42, 38, 50, 32, 42, 47, 50, 38, 44, 38, 47, 50, 50, 42, 43, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 42, 47, 42, 42, 50, 42, 42, 33, 42, 42, 50, 42, 33, 47, 50, 42, 44, 42, 47, 50, 50, 42, 43, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 47, 47, 34, 47, 47, 50, 47, 47, 47, 47, 47, 50, 47, 47, 34, 50, 47, 47, 47, 47, 50, 50, 47, 47, 47, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 50, 50, 50, 50, 50, 35, 50, 50, 50, 50, 50, 50, 50, 50, 50, 35, 50, 50, 50, 50, 50, 46, 50, 50, 50, 50, 46, 50, 46, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 38, 47, 38, 42, 50, 36, 36, 42, 42, 38, 50, 38, 42, 47, 50, 36, 44, 38, 47, 50, 50, 42, 43, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 44, 47, 37, 44, 50, 44, 44, 44, 44, 37, 50, 44, 44, 47, 50, 44, 37, 44, 47, 50, 50, 44, 44, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 38, 47, 38, 42, 50, 38, 38, 42, 42, 38, 50, 38, 42, 47, 50, 38, 44, 38, 47, 50, 50, 42, 43, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 47, 47, 45, 47, 47, 50, 47, 47, 47, 47, 47, 50, 47, 47, 47, 50, 47, 47, 47, 39, 50, 50, 47, 47, 47, 45, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 50, 50, 50, 50, 50, 40, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 40, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 50, 50, 50, 50, 50, 46, 50, 50, 50, 50, 50, 50, 50, 50, 50, 46, 50, 50, 50, 50, 50, 41, 50, 50, 50, 50, 46, 50, 46, 49, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 42, 47, 42, 42, 50, 42, 42, 42, 42, 42, 50, 42, 42, 47, 50, 42, 44, 42, 47, 50, 50, 42, 43, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 43, 47, 43, 43, 50, 43, 43, 43, 43, 43, 50, 43, 43, 47, 50, 43, 44, 43, 47, 50, 50, 43, 43, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 44, 44, 47, 44, 44, 50, 44, 44, 44, 44, 44, 50, 44, 44, 47, 50, 44, 44, 44, 47, 50, 50, 44, 44, 44, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 47, 47, 45, 47, 47, 50, 47, 47, 47, 47, 47, 50, 47, 47, 47, 50, 47, 47, 47, 45, 50, 50, 47, 47, 47, 45, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 50, 50, 50, 50, 50, 46, 50, 50, 50, 50, 50, 50, 50, 50, 50, 46, 50, 50, 50, 50, 50, 46, 50, 50, 50, 50, 46, 50, 46, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 47, 47, 47, 47, 47, 50, 47, 47, 47, 47, 47, 50, 47, 47, 47, 50, 47, 47, 47, 47, 50, 50, 47, 47, 47, 47, 50, 47, 50, 50, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 50, 50, 50, 50, 50, 46, 50, 50, 50, 50, 50, 50, 50, 50, 50, 46, 50, 50, 50, 50, 50, 46, 50, 50, 50, 50, 46, 50, 46, 49, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 49, 50, 50, 50, 50, 50, 50, 49, 49, 50,
-//         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-//     };
 
     int table[] = {
         0, 44, 39, 46, 49, 45, 46, 41, 21, 49, 50, 44, 49, 50, 47, 31, 31, 50, 50, 49, 48,  0, 49, 31, 46, 50, 44, 46, 49, 50, 45,  0, 50, 46, 49, 50, 49, 50, 50,  0, 45,  0, 50, 50,  0,  0,  0,  0,  0,  0,  0,
@@ -880,9 +819,9 @@ void Model_factory::define_codon_alphabet()
 
     count++;
 
-    for(int i=0;i<char_as-1;i++)
+    for(int i=0;i<60;i++)
     {
-        for(int j=i+1;j<char_as;j++)
+        for(int j=i+1;j<61;j++)
         {
             Codon_symbol codon;
 
@@ -900,8 +839,6 @@ void Model_factory::define_codon_alphabet()
     }
 
     char_fas = count;
-
-//    this->print_codon_alphabet();
 
     double tmp_pi[61] = {0.024709, 0.026990, 0.037138, 0.018760, 0.013945, 0.024015, 0.009522, 0.014230, 0.010544, 0.015952, 0.008214, 0.008979, 0.007064, 0.029436, 0.020724, 0.019431, 0.015416, 0.013015, 0.026398, 0.008551, 0.011465, 0.012756, 0.006648, 0.009507, 0.005177, 0.012128, 0.007718, 0.007807, 0.005328, 0.017807, 0.031660, 0.011119, 0.028694, 0.027083, 0.035815, 0.023890, 0.013035, 0.027437, 0.008784, 0.019503, 0.015756, 0.021140, 0.009781, 0.015576, 0.007598, 0.019661, 0.026815, 0.015815, 0.022021, 0.013288, 0.009289, 0.015669, 0.007124, 0.012150, 0.019672, 0.015708, 0.014291, 0.007146, 0.026531, 0.012766, 0.015811};
 
@@ -1130,40 +1067,61 @@ void Model_factory::define_codon_alphabet()
             Codon_symbol *child = &codon_symbols.at(j);
 
             // parent and child are idnetical
-
             if(i == j)
             {
                 child_parsimony_table->s(j,i,j);
             }
 
-            else if(parent->index == char_as) // 'X'
+            // one of them is NNN -> the other must have more or equal amount of information
+            else if(parent->index == char_as) // 'NNN'
             {
                 child_parsimony_table->s(j,i,j);
             }
 
-            else if(child->index == char_as) // 'X'
+            else if(child->index == char_as) // 'NNN'
             {
                 child_parsimony_table->s(i,i,j);
             }
 
-            else if(child->n_units == 1 )
+            // child is known: no change
+            else if(child->n_units == 1)
             {
-                if( parent->first_codon == child->first_codon || parent->second_codon == child->first_codon)
-                    child_parsimony_table->s(j,i,j);
-                else
-                    child_parsimony_table->s(-1,i,j);
+                child_parsimony_table->s(j,i,j);
             }
 
-            // parent is known -> child must be the same
-
+            // parent is known: only two comparisons
             else if(parent->n_units == 1 && parent->symbol != "NNN")
             {
-                if(parent->first_codon == child->first_codon || parent->first_codon == child->second_codon)
+                if( parent->first_codon == child->first_codon || parent->second_codon == child->first_codon)
                     child_parsimony_table->s(i,i,j);
                 else
-                    child_parsimony_table->s(-1,i,j);
+                    child_parsimony_table->s(j,i,j);
             }
 
+//            else if(child->n_units == 1 && parent->n_units == 1)
+//            {
+//                child_parsimony_table->s(j,i,j);
+//            }
+
+//            else if(child->n_units == 1 && parent->n_units == 2)
+//            {
+//                if( parent->first_codon == child->first_codon || parent->second_codon == child->first_codon)
+//                    child_parsimony_table->s(j,i,j);
+//                else
+//                    child_parsimony_table->s(-2,i,j);
+//            }
+
+//            // parent is known -> child must be the same
+
+//            else if(parent->n_units == 1 && child->n_units == 2 && parent->symbol != "NNN")
+//            {
+//                if(parent->first_codon == child->first_codon || parent->first_codon == child->second_codon)
+//                    child_parsimony_table->s(i,i,j);
+//                else
+//                    child_parsimony_table->s(-3,i,j);
+//            }
+
+            // both are known: four comparisons
             else
             {
                 int c = -1;
@@ -1181,16 +1139,19 @@ void Model_factory::define_codon_alphabet()
     //this->print_int_matrix(child_parsimony_table);
 
 
-    for(int i=0;i<char_fas;i++)
+    if(false)
     {
-        for(int j=0;j<char_fas;j++)
+        for(int i=0;i<char_fas;i++)
         {
-            int p = parsimony_table->g(i,j);
-            int pi = child_parsimony_table->g(p,i);
-            int pj = child_parsimony_table->g(p,j);
+            for(int j=0;j<char_fas;j++)
+            {
+                int p = parsimony_table->g(i,j);
+                int pi = child_parsimony_table->g(p,i);
+                int pj = child_parsimony_table->g(p,j);
 
-            if(pi<0 || pj<0)
-                cout<<i<<" "<<j<<" "<<p<<" "<<pi<<" "<<pj<<endl;
+                if(pi<0 || pj<0)
+                    cout<<i<<" "<<j<<" "<<p<<" "<<pi<<" "<<pj<<endl;
+            }
         }
     }
 
@@ -1420,6 +1381,15 @@ void Model_factory::dna_model(float* pi,float kappa, float rho,float ins_rate,fl
     }
 
     delete charQ;
+
+    character_alphabet = this->get_dna_character_alphabet();
+    full_character_alphabet = this->get_dna_full_character_alphabet();
+
+    ancestral_character_alphabet.clear();
+
+    for(int i=0;i<(int)dna_full_char_alphabet.length();i++)
+        ancestral_character_alphabet.push_back(std::string(1,dna_full_char_alphabet.at(i)));
+
 }
 
 /*******************************************/
@@ -1525,6 +1495,24 @@ void Model_factory::protein_model(float ins_rate,float del_rate, float ext_prob,
     }
 
     delete charQ;
+
+    character_alphabet = this->get_protein_character_alphabet();
+    full_character_alphabet = this->get_protein_full_character_alphabet();
+
+    ancestral_character_alphabet.clear();
+
+    for(int i=0;i<(int)protein_char_alphabet.length();i++)
+        ancestral_character_alphabet.push_back(std::string(1,protein_char_alphabet.at(i)));
+
+    ancestral_character_alphabet.push_back("X");
+
+    for(int i=0;i<(int)protein_char_alphabet.length()-1;i++)
+        for(int j=i+1;j<(int)protein_char_alphabet.length();j++)
+            if(charPi->g(i) > charPi->g(j))
+                ancestral_character_alphabet.push_back(std::string(1,protein_char_alphabet.at(i)));
+            else
+                ancestral_character_alphabet.push_back(std::string(1,protein_char_alphabet.at(j)));
+
 }
 
 /*******************************************/
@@ -1558,7 +1546,7 @@ void Model_factory::codon_model(float ins_rate,float del_rate, float ext_prob, f
 {
 
     if (Settings::noise>4){
-        cout<<"Protein substitution model: WAG\n";
+        cout<<"Codon substitution model: Kosiol&Goldman\n";
     }
 
     char_ins_rate = ins_rate;
@@ -1667,6 +1655,76 @@ void Model_factory::codon_model(float ins_rate,float del_rate, float ext_prob, f
     }
 
     delete charQ;
+
+    character_alphabet = this->get_codon_character_alphabet();
+    full_character_alphabet = this->get_codon_full_character_alphabet();
+
+    ancestral_character_alphabet.clear();
+
+    std::string full_alpha = "AAAAACAAGAATACAACCACGACTAGAAGCAGGAGTATAATCATGATTCAACACCAGCATCCACCCCCGCCTCGACGCCGGCGTCTACTCCTGCTTGAAGACGAGGATGCAGCCGCGGCTGGAGGCGGGGGTGTAGTCGTGGTTTACTATTCATCCTCGTCTTGCTGGTGTTTATTCTTGTTTNNN";
+
+    for(int i=0;i<62;i++)
+    {
+        ancestral_character_alphabet.push_back(full_alpha.substr(i*3,3));
+    }
+
+//    for(int i=0;i<61;i++)
+//        for(int j=0;j<61;j++)
+//            if(charPi->g(i) > charPi->g(j))
+//                ancestral_character_alphabet.push_back(full_alpha.substr(i*3,3));
+//            else
+//                ancestral_character_alphabet.push_back(full_alpha.substr(j*3,3));
+
+
+    string alpha = "xACxGxxxT";
+    string ambiguity = "xxAMCRSxGWYxKxxxT";
+
+    for(int i=0;i<60;i++)
+    {
+        for(int j=i+1;j<61;j++)
+        {
+            string codon;
+
+            string c1 = full_alpha.substr(i*3,1);
+            string c2 = full_alpha.substr(j*3,1);
+
+            string::size_type loc1 = alpha.find(c1,0);
+            string::size_type loc2 = alpha.find(c2,0);
+
+            if(loc1 != string::npos && loc2 != string::npos)
+                codon += ambiguity.at(int(loc1+loc2));
+            else
+                codon += "N";
+
+
+            c1 = full_alpha.substr(i*3+1,1);
+            c2 = full_alpha.substr(j*3+1,1);
+
+            loc1 = alpha.find(c1,0);
+            loc2 = alpha.find(c2,0);
+
+            if(loc1 != string::npos && loc2 != string::npos)
+                codon += ambiguity.at(int(loc1+loc2));
+            else
+                codon += "N";
+
+
+            c1 = full_alpha.substr(i*3+2,1);
+            c2 = full_alpha.substr(j*3+2,1);
+
+            loc1 = alpha.find(c1,0);
+            loc2 = alpha.find(c2,0);
+
+            if(loc1 != string::npos && loc2 != string::npos)
+                codon += ambiguity.at(int(loc1+loc2));
+            else
+                codon += "N";
+
+            ancestral_character_alphabet.push_back(codon);
+
+        }
+    }
+
 }
 
 /*******************************************/

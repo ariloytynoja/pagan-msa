@@ -267,6 +267,8 @@ int main(int argc, char *argv[])
     /*  Collect the results and output them                                */
     /***********************************************************************/
 
+//    root->show_seqs();
+
     vector<Fasta_entry> aligned_sequences;
     root->get_alignment(&aligned_sequences,Settings_handle::st.is("output-ancestors"));
 

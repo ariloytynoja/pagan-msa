@@ -142,6 +142,7 @@ void Basic_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path_
 
             l_pos++; r_pos++;
         }
+//cout<<site.get_state()<<endl;
 
         sequence->push_back_site(site);
 

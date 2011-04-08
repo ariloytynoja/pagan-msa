@@ -228,13 +228,11 @@ cout<<"picking site "<<j<<endl;
     }
 }
 
-void Node::get_alignment_column_at(int j,vector<string> *column,bool include_internal_nodes)
+void Node::get_alignment_column_at(int j,vector<string> *column, bool include_internal_nodes)
 {
 
     if(leaf)
     {
-//        int state = sequence->get_site_at(j)->get_state();
-//        column->push_back(sequence->get_full_alphabet().at(state));
         column->push_back(sequence->get_site_at(j)->get_symbol());
     }
     else
@@ -257,7 +255,7 @@ void Node::get_alignment_column_at(int j,vector<string> *column,bool include_int
 
         if(include_internal_nodes)
         {
-            string c = sequence->get_site_at(j)->get_symbol();
+            string c = Model_factory::get_ancestral_character_alphabet_at( sequence->get_site_at(j)->get_state() );
 
             int pstate = sequence->get_site_at(j)->get_path_state();
             int ptype  = sequence->get_site_at(j)->get_site_type();

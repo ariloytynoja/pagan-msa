@@ -1,3 +1,12 @@
+v.0.26
+- repaired the broken ancestor reconstruction: now also for codon data.
+
+
+v.0.25
+- bug fix: reads can now also be aligned against tagged leaf nodes.
+- added option to search optimal placement among internal only or all nodes.
+
+
 v.0.24
 - added option '--version' to check for updates.
 
