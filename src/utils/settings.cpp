@@ -47,7 +47,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description generic("Generic options",100);
     generic.add_options()
-        ("help", "display help message")
+//        ("help", "display help message")
         ("outfile", po::value<string>(), "sequence outfile")
         ("output-ancestors", "include ancestors in outfile")
         ("full-probability", "compute full probability")
@@ -59,7 +59,11 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("no-xml","write FASTA alignment only")
         ("config-file",po::value<string>(),"config file with additional arguments")
         ("config-log-file",po::value<string>(),"log file for given arguments")
-        ("version","show program version and check for updates")
+    ;
+    boost::program_options::options_description help_update("Help and updates",100);
+    help_update.add_options()
+            ("help", "display all program options")
+            ("version","show program version and check for updates")
     ;
 
     boost::program_options::options_description reads_alignment("Basic reads alignment options",100);
@@ -175,10 +179,10 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     po::positional_options_description pd;
     pd.add("config-file", 1);
 
-    full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken);
-    desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(tree_edit).add(alignment);
-    max_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(graph).add(tree_edit).add(alignment).add(output);
-    min_desc.add(minimal).add(reads_alignment);
+    full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken).add(help_update);
+    desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(tree_edit).add(alignment).add(help_update);
+    max_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(help_update);
+    min_desc.add(minimal).add(reads_alignment).add(help_update);
 
 
 //    po::store(po::parse_command_line(argc, argv, full_desc), vm);
@@ -320,16 +324,16 @@ void Settings::help_all()
 void Settings::info()
 {
     this->print_msg();
-    cout << min_desc << "\n";
-    cout<<"Use option --help for more information.\n\n";
+    cout << min_desc << "\n\n";
+//    cout<<"Use option --help for more information.\n\n";
     exit(0);
 }
 
 void Settings::info_noexit()
 {
     this->print_msg();
-    cout << min_desc << "\n";
-    cout<<"Use option --help for more information.\n\n";
+    cout << min_desc << "\n\n";
+//    cout<<"Use option --help for more information.\n\n";
 }
 
 void Settings::check_version()
