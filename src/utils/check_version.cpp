@@ -108,7 +108,7 @@ Check_version::Check_version(float version)
         char v,p;
         while( ss >> v >> p >> d )
         {
-            if(v=='v' && p=='.' && int(d*1000) <= int(version*1000))
+            if(v=='v' && p=='.' && int(d*10000) <= int(version*10000)+10)
             {
                print_this = false;
             }
