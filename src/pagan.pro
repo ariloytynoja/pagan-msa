@@ -47,7 +47,7 @@ HEADERS += utils/text_utils.h \
     main/basic_alignment.h \
     main/reads_aligner.h \
     utils/check_version.h
-LIBS += -lboost_program_options-mt
+LIBS += -lboost_program_options-mt -lboost_regex-mt
 INCLUDEPATH += /usr/include
 OTHER_FILES += missing_things.txt \
     ../VERSION_HISTORY
