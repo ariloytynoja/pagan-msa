@@ -428,7 +428,7 @@ protected:
             cout<<Model_factory::get_ancestral_character_alphabet_at(left->get_site_at(i)->get_state());
         cout<<endl<<" ";
         for(int i=1;i<right->sites_length()-1;i++)
-            cout<<Model_factory::get_ancestral_character_alphabet_at(left->get_site_at(i)->get_state());
+            cout<<Model_factory::get_ancestral_character_alphabet_at(right->get_site_at(i)->get_state());
         cout<<endl;
 
         if(Settings::noise>4)

@@ -338,4 +338,6 @@ int main(int argc, char *argv[])
     }
 
     delete root;
+
+    return 1;
 }

@@ -19,6 +19,7 @@
  ***************************************************************************/
 
 #include "main/reads_aligner.h"
+#include "utils/exonerate_reads.h"
 #include <sstream>
 #include <fstream>
 #include <algorithm>
@@ -96,7 +97,8 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
         this->add_trimming_comment( &reads );
     }
 
-
+    // No search for optimal node or TID tags in the tree
+    //
     if(Settings_handle::st.is("align-reads-at-root"))
     {
         if(Settings_handle::st.is("discard-pairwise-overlapping-reads"))
@@ -124,7 +126,6 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
             Node * reads_node = new Node();
             this->copy_node_details(reads_node,&reads.at(i));
-
 
             node->add_right_child(reads_node);
 
@@ -154,6 +155,9 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
         }
     }
+
+    // Proper placement
+    //
     else
     {
 
@@ -164,13 +168,15 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
         this->find_nodes_for_reads(root, &reads, mf);
 
         if(Settings_handle::st.is("placement-only"))
-            exit(0);
+            exit(1);
+
 
         set<string> unique_nodeset;
         for(int i=0;i<(int)reads.size();i++)
         {
             unique_nodeset.insert(reads.at(i).node_to_align);
         }
+
         if(unique_nodeset.find("discarded_read") != unique_nodeset.end())
             unique_nodeset.erase(unique_nodeset.find("discarded_read"));
 
@@ -188,6 +194,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
         //
         for(vector<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
         {
+            cout<<"node "<<*sit<<endl;
             vector<Fasta_entry> reads_for_this;
 
             for(int i=0;i<(int)reads.size();i++)
@@ -791,6 +798,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 {
 
     multimap<string,string> tid_nodes;
+    bool ignore_tid_tags = true;
 
     if(Settings_handle::st.is("test-every-node"))
     {
@@ -803,6 +811,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
     else
     {
         root->get_node_names_with_tid_tag(&tid_nodes);
+        ignore_tid_tags = false;
     }
 
     ofstream pl_output;
@@ -810,22 +819,99 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
     if(Settings_handle::st.is("placement-file"))
     {
         string fname = Settings_handle::st.get("placement-file").as<string>();
-       pl_output.open(fname.append(".tsv").c_str());
+        pl_output.open(fname.append(".tsv").c_str());
     }
+
     for(int i=0;i<(int)reads->size();i++)
     {
         reads->at(i).node_score = -1.0;
 
         string tid = reads->at(i).tid;
-        if( Settings_handle::st.is("test-every-node") || Settings_handle::st.is("test-every-internal-node") )
+        if( ignore_tid_tags )
             tid = "<empty>";
 
-        if(tid != "")
+
+        // Call Exonerate to reduce the search space
+
+        if(Settings_handle::st.is("exonerate-reads-local"))
         {
+            Exonerate_reads er;
+            if(!er.test_executable())
+                cout<<"The executable for exonerate not found! The option '--exonerate-reads-local' not used!";
+            else
+            {
+                tid_nodes.clear();
+
+                if(Settings_handle::st.is("test-every-node"))
+                {
+                    root->get_node_names(&tid_nodes);
+                }
+                else if(Settings_handle::st.is("test-every-internal-node"))
+                {
+                    root->get_internal_node_names(&tid_nodes);
+                }
+                else
+                {
+                    root->get_node_names_with_tid_tag(&tid_nodes);
+                    ignore_tid_tags = false;
+                }
+
+                if(tid_nodes.size()>0)
+                    er.local_alignment(root,&reads->at(i),&tid_nodes,true);
+
+                if(Settings_handle::st.is("exonerate-reads-gapped"))
+                    er.local_alignment(root,&reads->at(i),&tid_nodes,false);
+            }
+        }
+        else if(Settings_handle::st.is("exonerate-reads-gapped"))
+        {
+            Exonerate_reads er;
+            if(!er.test_executable())
+                cout<<"The executable for exonerate not found! The option '--exonerate-reads-gapped' not used!";
+            else
+            {
+                tid_nodes.clear();
+
+                if(Settings_handle::st.is("test-every-node"))
+                {
+                    root->get_node_names(&tid_nodes);
+                }
+                else if(Settings_handle::st.is("test-every-internal-node"))
+                {
+                    root->get_internal_node_names(&tid_nodes);
+                }
+                else
+                {
+                    root->get_node_names_with_tid_tag(&tid_nodes);
+                    ignore_tid_tags = false;
+                }
+
+                if(tid_nodes.size()>0)
+                    er.local_alignment(root,&reads->at(i),&tid_nodes,false);
+            }
+        }
+
+
+
+
+        // Discarded by Exonerate
+
+        if(reads->at(i).node_to_align == "discarded_read")
+        {
+            continue;
+        }
+
+        // Has TID or exhaustive search
+        else if(tid != "")
+        {
+
             int matches = tid_nodes.count(tid);
 
-            if( Settings_handle::st.is("test-every-node") || Settings_handle::st.is("test-every-internal-node") )
+            if( ignore_tid_tags )
                 matches = tid_nodes.size();
+
+
+            // has TID but no matching node
 
             if(matches == 0)
             {
@@ -839,11 +925,15 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                 }
 
             }
+
+
+            // has only one matching node and no need for ranking
+
             else if(matches == 1 && !Settings_handle::st.is("rank-reads-for-nodes") )
             {
                 multimap<string,string>::iterator tit = tid_nodes.find(tid);
 
-                if( Settings_handle::st.is("test-every-node") || Settings_handle::st.is("test-every-internal-node") )
+                if( ignore_tid_tags )
                     tit = tid_nodes.begin();
 
                 if(tit != tid_nodes.end())
@@ -859,18 +949,21 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
                 }
             }
+
+
+            // has TID and matching nodes, or exhaustive search
+
             else
             {
                 double best_score = -HUGE_VAL;
                 string best_node = root->get_name();
 
                 map<string,Node*> nodes;
-//                root->get_internal_nodes(&nodes);
                 root->get_all_nodes(&nodes);
 
                 multimap<string,string>::iterator tit;
 
-                if( Settings_handle::st.is("test-every-node") || Settings_handle::st.is("test-every-internal-node") )
+                if( ignore_tid_tags )
                 {
                     tit = tid_nodes.begin();
                 }
@@ -934,8 +1027,13 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                 }
             }
         }
+
+
+        // no TID, aligning at root
+
         else
         {
+            cout<<"failed "<<reads->at(i).node_to_align<<endl;
             if(!Settings_handle::st.is("silent"))
                 cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") has no tid. Aligned to root.\n";
             reads->at(i).node_to_align = root->get_name();
@@ -965,10 +1063,10 @@ double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_fact
     reads_node1->set_distance_to_parent(r_dist);
     reads_node1->set_name(read->name);
     reads_node1->add_name_comment(read->comment);
-    reads_node1->add_sequence( *read, Model_factory::dna);
+    reads_node1->add_sequence( *read, Model_factory::dna, false, true);
 
     Node * tmpnode = new Node();
-    tmpnode->set_name("");
+    tmpnode->set_name("(tmp)");
 
     tmpnode->add_left_child(node);
     tmpnode->add_right_child(reads_node1);

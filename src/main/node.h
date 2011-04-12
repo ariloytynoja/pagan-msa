@@ -816,6 +816,8 @@ public:
             return 1+left_child->get_number_of_nodes()+right_child->get_number_of_nodes();
     }
 
+    void set_number_of_nodes(int i) { number_of_nodes = i; }
+
     /************************************/
 
     void print_node_info()

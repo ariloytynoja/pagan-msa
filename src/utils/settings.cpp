@@ -36,8 +36,8 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.26;
-    date = "8 Apr, 2011";
+    version = 0.27;
+    date = "11 Apr, 2011";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -62,8 +62,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     ;
     boost::program_options::options_description help_update("Help and updates",100);
     help_update.add_options()
-            ("help", "display all program options")
-            ("version","show program version and check for updates")
+        ("help", "display all program options")
+        ("version","show program version and check for updates")
     ;
 
     boost::program_options::options_description reads_alignment("Basic reads alignment options",100);
@@ -111,6 +111,17 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("min-reads-identity", po::value<float>()->default_value(0.3), "identity threshold for aligned sites")
         ("reads-distance", po::value<float>()->default_value(0.1), "evolutionary distance from pseudo-root")
         ("perfect-reference", "assume perfect reference alignment")
+    ;
+
+    boost::program_options::options_description exonerate("Exonerate options",100);
+    exonerate.add_options()
+        ("exonerate-reads-local","use Exonerate local alignment to map reads to nodes")
+        ("exonerate-local-keep-best",po::value<int>()->default_value(10),"keep best # of Exonerate local matches (default)")
+        ("exonerate-local-keep-above",po::value<float>(),"keep Exonerate local matches above #% of the best score")
+        ("exonerate-reads-gapped","use Exonerate gapped alignment to map reads to nodes")
+        ("exonerate-gapped-keep-best",po::value<int>()->default_value(5),"keep best # of Exonerate gapped matches (default)")
+        ("exonerate-gapped-keep-above",po::value<float>(),"keep Exonerate gapped matches above #% of the best score")
+        ("keep-despite-exonerate-fails", "keep reads that Exonerate fails for exhasutive search")
     ;
 
     boost::program_options::options_description graph("Graph options",100);
@@ -179,9 +190,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     po::positional_options_description pd;
     pd.add("config-file", 1);
 
-    full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken).add(help_update);
-    desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(tree_edit).add(alignment).add(help_update);
-    max_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(help_update);
+    full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(exonerate).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken).add(help_update);
+    desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(exonerate).add(model).add(tree_edit).add(alignment).add(help_update);
+    max_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(exonerate).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(help_update);
     min_desc.add(minimal).add(reads_alignment).add(help_update);
 
 
