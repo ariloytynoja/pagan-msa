@@ -32,7 +32,7 @@ Viterbi_alignment::Viterbi_alignment() { }
 
 void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
                              Evol_model *evol_model,float l_branch_length,float r_branch_length,
-                             bool is_reads_sequence)
+                             bool is_reads_sequence,int start_offset,int end_offset)
 {
 
     left = left_sequence;
@@ -92,12 +92,36 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     int i_max = match->shape()[0];
 
 
-    for(int j=0;j<j_max;j++)
+    if(start_offset<0 && end_offset<0)
     {
-        for(int i=0;i<i_max;i++)
+        for(int j=0;j<j_max;j++)
         {
-            this->compute_fwd_scores(i,j);
+            for(int i=0;i<i_max;i++)
+            {
+                this->compute_fwd_scores(i,j);
+            }
         }
+    }
+    else
+    {
+
+    if(start_offset<0)
+        start_offset = 0;
+
+    if(end_offset<0)
+        end_offset = i_max;
+
+        int i=0;
+
+        for(;i<start_offset;i++)
+            this->compute_fwd_scores(i,0);
+
+        for(;i<end_offset;i++)
+            for(int j=0;j<j_max;j++)
+                this->compute_fwd_scores(i,j);
+
+        for(;i<i_max;i++)
+            this->compute_fwd_scores(i,j_max-1);
     }
     this->debug_msg("Viterbi_alignment: matrix filled",1);
 

@@ -115,13 +115,16 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description exonerate("Exonerate options",100);
     exonerate.add_options()
-        ("exonerate-reads-local","use Exonerate local alignment to map reads to nodes")
-        ("exonerate-local-keep-best",po::value<int>()->default_value(10),"keep best # of Exonerate local matches (default)")
-        ("exonerate-local-keep-above",po::value<float>(),"keep Exonerate local matches above #% of the best score")
-        ("exonerate-reads-gapped","use Exonerate gapped alignment to map reads to nodes")
-        ("exonerate-gapped-keep-best",po::value<int>()->default_value(5),"keep best # of Exonerate gapped matches (default)")
-        ("exonerate-gapped-keep-above",po::value<float>(),"keep Exonerate gapped matches above #% of the best score")
-        ("keep-despite-exonerate-fails", "keep reads that Exonerate fails for exhasutive search")
+        ("fast-placement","use Exonerate to quickly map reads to nodes")
+        ("exonerate-reads-local","use Exonerate local to map reads to nodes")
+        ("exonerate-local-keep-best",po::value<int>(),"keep best # of local matches")
+        ("exonerate-local-keep-above",po::value<float>()->default_value(0.9),"keep local matches above #% of the best score")
+        ("exonerate-reads-gapped","use Exonerate gapped to map reads to nodes")
+        ("exonerate-gapped-keep-best",po::value<int>()->default_value(1),"keep best # of gapped matches")
+        ("exonerate-gapped-keep-above",po::value<float>(),"keep gapped matches above #% of the best score")
+        ("keep-despite-exonerate-fails", "keep reads that Exonerate fails to align")
+        ("exonerate-anchor-offset",po::value<int>()->default_value(15),"offset for the Exonerate anchor alignment")
+        ("exonerate-anchor-query-offset",po::value<float>()->default_value(2.0),"offset multiplier for the query ends")
     ;
 
     boost::program_options::options_description graph("Graph options",100);

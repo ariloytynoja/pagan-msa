@@ -38,9 +38,18 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     vector<Fasta_entry> reads;
     cout<<"Reads data file: "<<file<<endl;
 
-    fr.read(file, reads, true);
+    try
+    {
+        fr.read(file, reads, true);
+    }
+    catch (ppa::IOException& e) {
+        cout<<"Error reading the reads file '"<<file<<"'.\nExiting.\n\n";
+        exit(0);
+    }
 
-    if(!fr.check_alphabet(&reads,Model_factory::dna))
+    int data_type = fr.check_sequence_data_type(&reads);
+
+    if(!fr.check_alphabet(&reads,data_type))
     {
         if(!Settings_handle::st.is("silent"))
             cout<<"\nWarning: Illegal characters in input reads sequences removed!"<<endl;
@@ -194,7 +203,6 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
         //
         for(vector<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
         {
-            cout<<"node "<<*sit<<endl;
             vector<Fasta_entry> reads_for_this;
 
             for(int i=0;i<(int)reads.size();i++)
@@ -289,7 +297,27 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
                 if(!Settings_handle::st.is("silent"))
                     cout<<"aligning read: "<<reads_for_this.at(i).name<<": "<<reads_for_this.at(i).comment<<endl;
 
-                node->align_sequences_this_node(mf,true);
+                int start_offset = -1;
+                int end_offset = -1;
+
+                if(reads_for_this.at(i).use_local)
+                {
+                    int offset = 20;
+                    int offset_multiplier = 2;
+
+                    start_offset = reads_for_this.at(i).local_tstart - offset - reads_for_this.at(i).local_qstart * offset_multiplier;
+                    end_offset = reads_for_this.at(i).local_tend + offset +
+                            ( reads_node->get_sequence()->sites_length() - reads_for_this.at(i).local_qend ) * offset_multiplier;
+
+                    if(start_offset < 0)
+                        start_offset = -1;
+
+                    if(end_offset > current_root->get_sequence()->sites_length())
+                        end_offset = -1;
+
+                }
+
+                node->align_sequences_this_node(mf,true,false,start_offset,end_offset);
 
 
                 // check if the alignment significantly overlaps with the reference alignment
@@ -626,7 +654,7 @@ void Reads_aligner::copy_node_details(Node *reads_node,Fasta_entry *read)
     reads_node->set_distance_to_parent(r_dist);
     reads_node->set_name(read->name);
     reads_node->add_name_comment(read->comment);
-    reads_node->add_sequence( *read, Model_factory::dna, false, true);
+    reads_node->add_sequence( *read, read->data_type, false, true);
 
 }
 
@@ -833,11 +861,13 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
         // Call Exonerate to reduce the search space
 
-        if(Settings_handle::st.is("exonerate-reads-local"))
+        map<string,hit> exonerate_hits;
+
+        if(Settings_handle::st.is("exonerate-reads-local") || Settings_handle::st.is("fast-placement"))
         {
             Exonerate_reads er;
             if(!er.test_executable())
-                cout<<"The executable for exonerate not found! The option '--exonerate-reads-local' not used!";
+                cout<<"The executable for exonerate not found! The fast placement search not used!";
             else
             {
                 tid_nodes.clear();
@@ -856,11 +886,12 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                     ignore_tid_tags = false;
                 }
 
-                if(tid_nodes.size()>0)
-                    er.local_alignment(root,&reads->at(i),&tid_nodes,true);
 
-                if(Settings_handle::st.is("exonerate-reads-gapped"))
-                    er.local_alignment(root,&reads->at(i),&tid_nodes,false);
+                if(tid_nodes.size()>0)
+                    er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits, true);
+
+                if(Settings_handle::st.is("exonerate-reads-gapped") || Settings_handle::st.is("fast-placement"))
+                    er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false);
             }
         }
         else if(Settings_handle::st.is("exonerate-reads-gapped"))
@@ -887,7 +918,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                 }
 
                 if(tid_nodes.size()>0)
-                    er.local_alignment(root,&reads->at(i),&tid_nodes,false);
+                    er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false);
             }
         }
 
@@ -941,6 +972,18 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                     if(!Settings_handle::st.is("silent"))
                         cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" only matches the node "<<tit->second<<"."<<endl;
                     reads->at(i).node_to_align = tit->second;
+
+                    multimap<string,hit>::iterator ith = exonerate_hits.find(tit->second);
+                    if(ith != exonerate_hits.end())
+                    {
+                        hit h = ith->second;
+
+                        reads->at(i).local_qstart = h.q_start;
+                        reads->at(i).local_qend = h.q_end;
+                        reads->at(i).local_tstart = h.t_start;
+                        reads->at(i).local_tend = h.t_end;
+                        reads->at(i).use_local  = true;
+                    }
 
                     if(Settings_handle::st.is("placement-file"))
                     {
@@ -1063,7 +1106,7 @@ double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_fact
     reads_node1->set_distance_to_parent(r_dist);
     reads_node1->set_name(read->name);
     reads_node1->add_name_comment(read->comment);
-    reads_node1->add_sequence( *read, Model_factory::dna, false, true);
+    reads_node1->add_sequence( *read, read->data_type, false, true);
 
     Node * tmpnode = new Node();
     tmpnode->set_name("(tmp)");

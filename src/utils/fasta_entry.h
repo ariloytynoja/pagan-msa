@@ -43,6 +43,7 @@ struct Fasta_entry
     string sequence;
     string quality;
     vector<Seq_edge> edges;
+    int data_type;
     string tid;
     float node_score;
     string node_to_align;
@@ -53,6 +54,11 @@ struct Fasta_entry
     int node_end_pos2;
     int trim_start;
     int trim_end;
+    int local_qstart;      // local alignment query start
+    int local_qend;        // local alignment query end
+    int local_tstart;      // local alignment target start
+    int local_tend;        // local alignment target end
+    bool use_local;
 };
 
 }

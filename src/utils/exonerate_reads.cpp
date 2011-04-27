@@ -23,7 +23,7 @@ bool Exonerate_reads::test_executable()
     return WEXITSTATUS(status) == 1;
 }
 
-bool Exonerate_reads::split_string(const string& row,hit *h)
+bool Exonerate_reads::split_sugar_string(const string& row,hit *h)
 {
 
     const boost::regex pattern("sugar:\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)\\s+(\\S)\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)\\s+(\\S)\\s+(\\d+)\n");
@@ -44,6 +44,51 @@ bool Exonerate_reads::split_string(const string& row,hit *h)
 
         h->score    = atoi( string(result[9]).c_str() );
     }
+
+    return valid;
+}
+
+bool Exonerate_reads::split_vulgar_string(const string& row,hit *h)
+{
+
+    const boost::regex pattern("vulgar:\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)\\s+(\\S)\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)\\s+(\\S)\\s+(\\d+)\\s+(.+)\n");
+    boost::match_results<string::const_iterator> result;
+    bool valid = boost::regex_match(row, result, pattern);
+
+    if(valid)
+    {
+        h->query    = result[1];
+        h->q_start  = atoi( string(result[2]).c_str() );
+        h->q_end    = atoi( string(result[3]).c_str() );
+        h->q_strand = string(result[4]).at(0);
+
+        h->node     = result[5];
+        h->t_start  = atoi( string(result[6]).c_str() );
+        h->t_end    = atoi( string(result[7]).c_str() );
+        h->t_strand = string(result[8]).at(0);
+
+        h->score    = atoi( string(result[9]).c_str() );
+
+//        string match = result[10];
+
+//        std::string::const_iterator start, end;
+//        start = match.begin();
+//        end = match.end();
+
+//        const boost::regex triple_pattern("([MG])\\s+(\\d+)\\s+(\\d+)");
+//        boost::match_results<std::string::const_iterator> what;
+//        boost::match_flag_type flags = boost::match_default;
+//        while(regex_search(start, end, what, triple_pattern, flags))
+//        {
+//            cout<<what[0]<<endl;
+//            start = what[0].second;
+//            // update flags:
+//            flags |= boost::match_prev_avail;
+//            flags |= boost::match_not_bob;
+//        }
+    }
+
+
 
     return valid;
 }
@@ -84,7 +129,7 @@ void Exonerate_reads::write_exonerate_input(Node *root, Fasta_entry *read, map<s
     return;
 }
 
-void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<string,string> *tid_nodes, bool is_local)
+void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<string,string> *tid_nodes, map<string,hit> *hits, bool is_local)
 {
 
     int r = rand();
@@ -125,7 +170,7 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
     while ( fgets( line, sizeof line, fpipe))
     {
         hit h;
-        bool valid = split_string(string(line),&h);
+        bool valid = split_sugar_string(string(line),&h);
 
         if(valid)
         {
@@ -166,6 +211,7 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
     if(hit_names.size()>0)
     {
         tid_nodes->clear();
+        hits->clear();
 
         vector<hit> best_hits;
         vector<string>::iterator iter = hit_names.begin();
@@ -198,12 +244,14 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
                 lim = int (lim * Settings_handle::st.get("exonerate-gapped-keep-above").as<float>() );
 
 
-            for(int i=0; i<hit_names.size(); i++)
+            for(int i=0; i<(int)hit_names.size(); i++)
             {
                 if(best_hits.at(i).score > lim)
                 {
                     string tid = names.find(best_hits.at(i).node)->second;
                     tid_nodes->insert(pair<string,string>(tid,best_hits.at(i).node));
+                    hits->insert(pair<string,hit>(best_hits.at(i).node,best_hits.at(i)));
+
                     if(Settings::noise>2)
                         cout<<"adding "<<best_hits.at(i).node<<" "<<best_hits.at(i).score<<endl;
                 }
@@ -224,10 +272,12 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
                     Settings_handle::st.get("exonerate-gapped-keep-best").as<int>()>0 )
                 lim = Settings_handle::st.get("exonerate-gapped-keep-best").as<int>();
 
-            for(int i=0; i<lim && i<hit_names.size(); i++)
+            for(int i=0; i<lim && i<(int)hit_names.size(); i++)
             {
                 string tid = names.find(best_hits.at(i).node)->second;
                 tid_nodes->insert(pair<string,string>(tid,best_hits.at(i).node));
+                hits->insert(pair<string,hit>(best_hits.at(i).node,best_hits.at(i)));
+
                 if(Settings::noise>2)
                     cout<<"adding "<<best_hits.at(i).node<<" "<<best_hits.at(i).score<<endl;
             }

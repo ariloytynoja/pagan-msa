@@ -52,4 +52,5 @@ HEADERS += utils/text_utils.h \
 LIBS += -lboost_program_options-mt -lboost_regex-mt
 INCLUDEPATH += /usr/include
 OTHER_FILES += missing_things.txt \
-    ../VERSION_HISTORY
+    ../VERSION_HISTORY \
+    Makefile.no_Qt

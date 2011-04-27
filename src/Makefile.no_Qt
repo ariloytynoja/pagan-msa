@@ -15,7 +15,7 @@ YACCFLAGS= -d
 INCPATH  = -I/usr/include -I. -I./utils -I./main -I../boost/include
 LINK     = /usr/bin/g++
 LFLAGS   = 
-LIBS     = $(SUBLIBS)  -Wl,-rpath, -lboost_program_options -lm -L../boost/lib
+LIBS     = $(SUBLIBS)  -Wl,-rpath, -lboost_program_options -lboost_regex -lm -L../boost/lib
 AR       = ar cqs
 RANLIB   = 
 TAR      = tar -cf
@@ -67,6 +67,7 @@ SOURCES       = main.cpp \
 		utils/xml_writer.cpp \
 		utils/evol_model.cpp \
                 utils/check_version.cpp \
+                utils/exonerate_reads.cpp \
                 main/node.cpp \
 		main/sequence.cpp \
 		main/basic_alignment.cpp \
@@ -87,6 +88,7 @@ OBJECTS       = main.o \
 		xml_writer.o \
 		evol_model.o \
                 check_version.o \
+                exonerate_reads.o \
                 node.o \
 		reference_alignment.o \
 		viterbi_alignment.o \
@@ -250,6 +252,9 @@ evol_model.o: utils/evol_model.cpp utils/evol_model.h \
 
 check_version.o: utils/check_version.cpp utils/check_version.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o check_version.o utils/check_version.cpp
+
+exonerate_reads.o: utils/exonerate_reads.cpp utils/exonerate_reads.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o exonerate_reads.o utils/exonerate_reads.cpp
 
 node.o: main/node.cpp main/node.h \
 		utils/exceptions.h \

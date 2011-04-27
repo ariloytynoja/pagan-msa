@@ -660,6 +660,9 @@ bool Fasta_reader::check_alphabet(vector<Fasta_entry> * sequences,int data_type)
         // Main loop : for all sequences in vector container
         for (; vi != sequences->end(); vi++)
         {
+            vi->use_local = false;
+            vi->data_type = Model_factory::dna;
+
             // Convert U -> T and all uppercase
             this->rna_to_DNA(&vi->sequence);
 
@@ -692,8 +695,6 @@ bool Fasta_reader::check_alphabet(vector<Fasta_entry> * sequences,int data_type)
                     default:
                         // Remove characters not in full alphabet
                         if(full_alphabet.find(c) == string::npos) {
-//                            if(Settings::noise>2)
-//                                cout<<"deleting "<<*si<<"\n";
                             vi->sequence.erase(si);
                             si--;
                             if(c!=' ')
@@ -725,6 +726,9 @@ bool Fasta_reader::check_alphabet(vector<Fasta_entry> * sequences,int data_type)
         // Main loop : for all sequences in vector container
         for (; vi != sequences->end(); vi++)
         {
+            vi->use_local = false;
+            vi->data_type = Model_factory::protein;
+
             string::iterator si = vi->sequence.begin();
             for (;si != vi->sequence.end();si++)
             {

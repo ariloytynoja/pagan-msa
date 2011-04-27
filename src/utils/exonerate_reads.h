@@ -26,7 +26,8 @@ class Exonerate_reads
 {
     static bool better (hit i,hit j) { return (i.score>j.score); }
 
-    bool split_string(const std::string& row,hit *h);
+    bool split_sugar_string(const std::string& row,hit *h);
+    bool split_vulgar_string(const std::string& row,hit *h);
     void write_exonerate_input(Node *root, Fasta_entry *read, map<string,string> *names, int r);
     void delete_files(int r);
 
@@ -34,7 +35,7 @@ public:
     Exonerate_reads();
     bool test_executable();
 
-    void local_alignment(Node *root, Fasta_entry *read, std::multimap<std::string,std::string> *good_hits, bool is_local);
+    void local_alignment(Node *root, Fasta_entry *read, std::multimap<std::string,std::string> *good_hits, std::map<std::string,hit> *hits, bool is_local);
 
 };
 

@@ -417,10 +417,11 @@ public:
         }
         else if( Settings_handle::st.is("ref-seqfile") )
         {
+            cout<<"Reading the reference alignment: "<<flush;
             this->read_alignment(mf);
 
             this->reconstruct_parsimony_ancestor(mf);
-
+            cout<<"done.\n";
         }
     }
 
@@ -436,7 +437,7 @@ public:
 
     }
 
-    void align_sequences_this_node(Model_factory *mf, bool is_reads_sequence=false, bool is_local_alignment=false)
+    void align_sequences_this_node(Model_factory *mf, bool is_reads_sequence=false, bool is_overlap_alignment=false, int start_offset=-1, int end_offset=-1)
     {
 
         if(!Settings_handle::st.is("silent"))
@@ -445,14 +446,14 @@ public:
         clock_t t_start=clock();
 
         double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
-        Evol_model model = mf->alignment_model(dist,is_local_alignment);
+        Evol_model model = mf->alignment_model(dist,is_overlap_alignment);
 
         if(Settings_handle::st.is("time"))
             cout <<"Time node::model: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
 
         Viterbi_alignment va;
         va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
-                 left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence);
+                 left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence, start_offset, end_offset);
 
         if(Settings_handle::st.is("time"))
             cout <<"Time node::viterbi: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;

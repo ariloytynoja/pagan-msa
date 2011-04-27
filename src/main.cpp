@@ -91,14 +91,29 @@ int main(int argc, char *argv[])
         string seqfile =  Settings_handle::st.get("seqfile").as<string>();
         cout<<"Data file: "<<seqfile<<endl;
 
-        fr.read(seqfile, sequences, true);
+        try
+        {
+            fr.read(seqfile, sequences, true);
+        }
+        catch (ppa::IOException& e) {
+            cout<<"Error reading the sequence file '"<<seqfile<<"'.\nExiting.\n\n";
+            exit(0);
+        }
     }
     else if(Settings_handle::st.is("ref-seqfile"))
     {
         string seqfile =  Settings_handle::st.get("ref-seqfile").as<string>();
         cout<<"Reference alignment file: "<<seqfile<<endl;
 
-        fr.read(seqfile, sequences, true);
+        try
+        {
+            fr.read(seqfile, sequences, true);
+        }
+        catch (ppa::IOException& e) {
+            cout<<"Error reading the reference alignment file '"<<seqfile<<"'.\nExiting.\n\n";
+            exit(0);
+        }
+
         reference_alignment = true;
     }
     else
@@ -124,8 +139,15 @@ int main(int argc, char *argv[])
         cout<<"Tree file: "<<treefile<<endl;
 
         Newick_reader nr;
-        string tree = nr.read_tree(treefile);
-        root = nr.parenthesis_to_tree(tree);
+        string tree;
+        try
+        {
+            tree = nr.read_tree(treefile);
+        }
+        catch (ppa::IOException& e) {
+            cout<<"Error reading the guide tree file '"<<treefile<<"'.\nExiting.\n\n";
+            exit(0);
+        }
 
         tree_ok = true;
     }
@@ -135,7 +157,16 @@ int main(int argc, char *argv[])
         cout<<"Reference tree file: "<<treefile<<endl;
 
         Newick_reader nr;
-        string tree = nr.read_tree(treefile);
+        string tree;
+        try
+        {
+            tree = nr.read_tree(treefile);
+        }
+        catch (ppa::IOException& e) {
+            cout<<"Error reading the reference tree file '"<<treefile<<"'.\nExiting.\n\n";
+            exit(0);
+        }
+
         root = nr.parenthesis_to_tree(tree);
 
         tree_ok = true;
@@ -182,11 +213,15 @@ int main(int argc, char *argv[])
     bool tree_branches_ok = fr.check_sequence_names(&sequences,&leaf_nodes);
     if(!tree_branches_ok)
     {
-        cout<<"Attempting to prune the tree.\n";
+        cout<<"Attempting to prune the tree: "<<flush;
         root->prune_tree();
-        cout<<"Pruning done. New tree:"<<endl;
-        cout<<root->print_tree()<<"\n\n";
-
+        if(!Settings_handle::st.is("silent"))
+        {
+            cout<<"pruning done. New tree:"<<endl;
+            cout<<root->print_tree()<<"\n\n";
+        } else {
+            cout<<"done.\n";
+        }
     }
 
 
