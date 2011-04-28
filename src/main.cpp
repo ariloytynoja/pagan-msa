@@ -116,6 +116,27 @@ int main(int argc, char *argv[])
 
         reference_alignment = true;
     }
+    else if(Settings_handle::st.is("reads-pileup") && Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
+    {
+        string seqfile =  Settings_handle::st.get("readsfile").as<string>();
+        cout<<"Reference sequence from: "<<seqfile<<endl;
+
+        try
+        {
+            fr.read(seqfile, sequences, true);
+        }
+        catch (ppa::IOException& e) {
+            cout<<"Error reading the reference alignment file '"<<seqfile<<"'.\nExiting.\n\n";
+            exit(0);
+        }
+
+        vector<Fasta_entry>::iterator it = sequences.begin();
+        it++;
+        for(;it!=sequences.end();)
+            sequences.erase(it);
+
+        reference_alignment = true;
+    }
     else
     {
         cout<<endl<<"Error: No sequence file defined."<<endl;

@@ -87,6 +87,63 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
                     aligned_sequences->at(i).sequence.append(column.at(i));
                 }
             }
+
+            if(Settings_handle::st.is("do-pileup-consensus"))
+            {
+                Sequence *root = this->get_sequence();
+                int root_length = root->sites_length();
+                Fasta_entry entry;
+                entry.name = "consensus";
+                entry.comment = "";
+
+                for(int j=1;j<root_length;j++)
+                {
+                    Site *site = root->get_site_at(j);
+                    int sA = site->get_sumA();
+                    int sC = site->get_sumC();
+                    int sG = site->get_sumG();
+                    int sT = site->get_sumT();
+
+                    if(sA+sC+sG+sT<Settings_handle::st.get("pileup-consensus-minimum").as<int>())
+                    {
+                        entry.sequence.append("-");
+                    }
+                    else{
+                        if(sA>sC && sA>sG && sA>sT)
+                            entry.sequence.append("A");
+                        else if(sC>sA && sC>sG && sC>sT)
+                            entry.sequence.append("C");
+                        else if(sG>sA && sG>sC && sG>sT)
+                            entry.sequence.append("G");
+                        else if(sT>sA && sT>sC && sT>sG)
+                            entry.sequence.append("T");
+                        else if(sA>sC && sA==sG && sA>sT)
+                            entry.sequence.append("R");
+                        else if(sC>sA && sC>sG && sC==sT)
+                            entry.sequence.append("Y");
+                        else if(sA==sC && sA>sG && sA>sT)
+                            entry.sequence.append("M");
+                        else if(sG>sA && sG>sC && sG==sT)
+                            entry.sequence.append("K");
+                        else if(sA>sC && sA>sG && sA==sT)
+                            entry.sequence.append("W");
+                        else if(sC>sA && sC==sG && sC>sT)
+                            entry.sequence.append("S");
+                        else if(sC>sA && sC==sG && sC==sT)
+                            entry.sequence.append("B");
+                        else if(sA>sC && sA==sG && sA==sT)
+                            entry.sequence.append("D");
+                        else if(sA==sC && sA>sG && sA==sT)
+                            entry.sequence.append("H");
+                        else if(sA==sC && sA==sG && sA>sT)
+                            entry.sequence.append("V");
+                        else if(sA==sC && sA==sG && sA==sT)
+                            entry.sequence.append("N");
+                    }
+                }
+                aligned_sequences->push_back(entry);
+            }
+
         }
         else
         {
@@ -143,6 +200,7 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
             }
 
         }
+
     }
     else
     {

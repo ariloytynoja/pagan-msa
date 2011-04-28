@@ -97,6 +97,9 @@ void Basic_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path_
             int lc = left->get_site_at(l_pos)->get_state();
             site.set_state( lc );
 
+            if(Settings_handle::st.is("do-pileup-consensus"))
+                this->compute_site_consensus(&site,left,l_pos,right,-1);
+
             if(path->at(i).real_site)
                 site.set_path_state( Site::xgapped );
             else
@@ -115,6 +118,9 @@ void Basic_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path_
         {
             int rc = right->get_site_at(r_pos)->get_state();
             site.set_state( rc );
+
+            if(Settings_handle::st.is("do-pileup-consensus"))
+                this->compute_site_consensus(&site,left,-1,right,r_pos);
 
             if(path->at(i).real_site)
                 site.set_path_state( Site::ygapped );
@@ -136,6 +142,9 @@ void Basic_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path_
             int rc = right->get_site_at(r_pos)->get_state();
             site.set_state( model->parsimony_state(lc,rc) );
 
+            if(Settings_handle::st.is("do-pileup-consensus"))
+                this->compute_site_consensus(&site,left,l_pos,right,r_pos);
+
             site.set_path_state( Site::matched );
 
             site.set_children(l_pos,r_pos);
@@ -143,6 +152,7 @@ void Basic_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path_
             l_pos++; r_pos++;
         }
 //cout<<site.get_state()<<endl;
+
 
         sequence->push_back_site(site);
 

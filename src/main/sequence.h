@@ -241,12 +241,12 @@ struct Site
     int branch_count_since_last_used;
     float branch_distance_since_last_used;
 
-
+    int sumA, sumC, sumG, sumT;
 public:
     Site(vector<Edge> *e,int type=Site::real_site,int p_state=Site::terminal):index(-1),character_state(-1),character_symbol("0"),
             site_type(type),path_state(p_state),edges(e),first_fwd_edge_index(-1),current_fwd_edge_index(-1),
             first_bwd_edge_index(-1),current_bwd_edge_index(-1),posterior_support(1),
-            branch_count_since_last_used(0),branch_distance_since_last_used(0) {}
+            branch_count_since_last_used(0),branch_distance_since_last_used(0),sumA(0),sumC(0),sumG(0),sumT(0) {}
 
     int get_branch_count_since_last_used() { return branch_count_since_last_used; }
     float get_branch_distance_since_last_used() { return branch_distance_since_last_used; }
@@ -274,6 +274,18 @@ public:
 
     void set_posterior_support(float s) { posterior_support = s; }
     float get_posterior_support() { return posterior_support; }
+
+    /**************************************/
+
+    int get_sumA() { return sumA; }
+    int get_sumC() { return sumC; }
+    int get_sumG() { return sumG; }
+    int get_sumT() { return sumT; }
+
+    void set_sumA(int i) { sumA += i; }
+    void set_sumC(int i) { sumC += i; }
+    void set_sumG(int i) { sumG += i; }
+    void set_sumT(int i) { sumT += i; }
 
     /**************************************/
 

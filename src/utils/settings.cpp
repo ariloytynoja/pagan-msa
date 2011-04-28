@@ -128,6 +128,15 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("exonerate-anchor-query-offset",po::value<float>()->default_value(2.0),"offset multiplier for the query ends")
     ;
 
+    boost::program_options::options_description pileup("Read pileup options",100);
+    pileup.add_options()
+        ("reads-pileup","pileup reads")
+        ("pileup-reads-ordered","pileup reads are ordered")
+        ("pileup-offset", po::value<int>()->default_value(5), "offset for alignment start site")
+        ("do-pileup-consensus", "use consensus for ancestors and print consensus root")
+        ("pileup-consensus-minimum", po::value<int>()->default_value(5), "occurrence threshold for inclusion")
+    ;
+
     boost::program_options::options_description graph("Graph options",100);
     graph.add_options()
         ("weight-sampled-edges", "use posterior scores to weight sampled edges")
@@ -195,9 +204,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     po::positional_options_description pd;
     pd.add("config-file", 1);
 
-    full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(exonerate).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken).add(help_update);
-    desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(exonerate).add(model).add(tree_edit).add(alignment).add(help_update);
-    max_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(exonerate).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(help_update);
+    full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(exonerate).add(pileup).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken).add(help_update);
+    desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(exonerate).add(pileup).add(model).add(tree_edit).add(alignment).add(help_update);
+    max_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(exonerate).add(pileup).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(help_update);
     min_desc.add(minimal).add(reads_alignment).add(help_update);
 
 

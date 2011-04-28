@@ -108,7 +108,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
     // No search for optimal node or TID tags in the tree
     //
-    if(Settings_handle::st.is("align-reads-at-root"))
+    if(Settings_handle::st.is("align-reads-at-root") || Settings_handle::st.is("reads-pileup"))
     {
         if(Settings_handle::st.is("discard-pairwise-overlapping-reads"))
         {
@@ -144,7 +144,27 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
             if(!Settings_handle::st.is("silent"))
                 cout<<"aligning read: "<<reads.at(i).name<<": "<<reads.at(i).comment<<endl;
 
-            node->align_sequences_this_node(mf,true);
+
+            int start_offset = -1;
+            int end_offset = -1;
+
+            if(Settings_handle::st.is("pileup-reads-ordered") && !global_root->is_leaf())
+            {
+                Sequence *tmp_seq = global_root->get_sequence();
+                int i=1;
+                for(;i<tmp_seq->sites_length();i++)
+                {
+                    Site_children *offspring = tmp_seq->get_site_at(i)->get_children();
+                    if(offspring->right_index>=0)
+                        break;
+                }
+
+                start_offset = i - Settings_handle::st.get("pileup-offset").as<int>();
+                if(start_offset<0 || start_offset>tmp_seq->sites_length())
+                    start_offset = -1;
+            }
+
+            node->align_sequences_this_node(mf,true,false,start_offset,end_offset);
 
             // check if the alignment significantly overlaps with the reference alignment
             //

@@ -157,6 +157,102 @@ protected:
 
     /*********************************/
 
+    void compute_site_consensus(Site *site,Sequence *left,int l_pos,Sequence *right,int r_pos)
+    {
+        int sA = 0; int sC = 0; int sG = 0; int sT = 0;
+
+        if(l_pos>=0)
+        {
+            if(!left->is_terminal_sequence())
+            {
+                sA += left->get_site_at(l_pos)->get_sumA();
+                sC += left->get_site_at(l_pos)->get_sumC();
+                sG += left->get_site_at(l_pos)->get_sumG();
+                sT += left->get_site_at(l_pos)->get_sumT();
+            }
+            else
+            {
+                int s = left->get_site_at(l_pos)->get_state();
+                if(s == 0)
+                    sA += 1;
+                else if(s == 1)
+                    sC += 1;
+                else if(s == 2)
+                    sG += 1;
+                else if(s == 3)
+                    sT += 1;
+                else
+                    cout<<"compute_site_consensus: no such option (l)\n";
+            }
+        }
+
+        if(r_pos>=0)
+        {
+            if(!right->is_terminal_sequence())
+            {
+                sA += right->get_site_at(r_pos)->get_sumA();
+                sC += right->get_site_at(r_pos)->get_sumC();
+                sG += right->get_site_at(r_pos)->get_sumG();
+                sT += right->get_site_at(r_pos)->get_sumT();
+            }
+            else
+            {
+                int s = right->get_site_at(r_pos)->get_state();
+                if(s == 0)
+                    sA += 1;
+                else if(s == 1)
+                    sC += 1;
+                else if(s == 2)
+                    sG += 1;
+                else if(s == 3)
+                    sT += 1;
+                else
+                    cout<<"compute_site_consensus: no such option (r)\n";
+            }
+        }
+
+        site->set_sumA(sA);
+        site->set_sumC(sC);
+        site->set_sumG(sG);
+        site->set_sumT(sT);
+
+        if(sA>sC && sA>sG && sA>sT)
+            site->set_state(0);
+        else if(sC>sA && sC>sG && sC>sT)
+            site->set_state(1);
+        else if(sG>sA && sG>sC && sG>sT)
+            site->set_state(2);
+        else if(sT>sA && sT>sC && sT>sG)
+            site->set_state(3);
+        else if(sA>sC && sA==sG && sA>sT)
+            site->set_state(4);
+        else if(sC>sA && sC>sG && sC==sT)
+            site->set_state(5);
+        else if(sA==sC && sA>sG && sA>sT)
+            site->set_state(6);
+        else if(sG>sA && sG>sC && sG==sT)
+            site->set_state(7);
+        else if(sA>sC && sA>sG && sA==sT)
+            site->set_state(8);
+        else if(sC>sA && sC==sG && sC>sT)
+            site->set_state(9);
+        else if(sC>sA && sC==sG && sC==sT)
+            site->set_state(10);
+        else if(sA>sC && sA==sG && sA==sT)
+            site->set_state(11);
+        else if(sA==sC && sA>sG && sA==sT)
+            site->set_state(12);
+        else if(sA==sC && sA==sG && sA>sT)
+            site->set_state(13);
+        else if(sA==sC && sA==sG && sA==sT)
+            site->set_state(14);
+        else
+            cout<<"compute_site_consensus: no such option (s)"<<sA<<" "<<sC<<" "<<sG<<" "<<sT<<"\n";
+
+    }
+
+    /*********************************/
+
     void debug_msg(std::string msg,int noise_level)
     {
         if(Settings::noise>noise_level)
