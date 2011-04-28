@@ -74,6 +74,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("pair-end","connect paired reads")
         ("454", "correct homopolymer error")
         ("test-every-node","test every node for each read")
+        ("fast-placement","use Exonerate to quickly map reads to nodes")
     ;
 
     boost::program_options::options_description reads_alignment3("Overlapping pair reads options",100);
@@ -115,14 +116,14 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description exonerate("Exonerate options",100);
     exonerate.add_options()
-        ("fast-placement","use Exonerate to quickly map reads to nodes")
-        ("exonerate-reads-local","use Exonerate local to map reads to nodes")
-        ("exonerate-local-keep-best",po::value<int>(),"keep best # of local matches")
-        ("exonerate-local-keep-above",po::value<float>()->default_value(0.95),"keep local matches above #% of the best score")
-        ("exonerate-reads-gapped","use Exonerate gapped to map reads to nodes")
+        ("use-exonerate-reads-local","use Exonerate local to map reads to nodes")
+        ("exonerate-local-keep-best",po::value<int>()->default_value(5),"keep best # of local matches")
+        ("exonerate-local-keep-above",po::value<float>(),"keep local matches above #% of the best score")
+        ("use-exonerate-reads-gapped","use Exonerate gapped to map reads to nodes")
         ("exonerate-gapped-keep-best",po::value<int>()->default_value(1),"keep best # of gapped matches")
         ("exonerate-gapped-keep-above",po::value<float>(),"keep gapped matches above #% of the best score")
         ("keep-despite-exonerate-fails", "keep reads that Exonerate fails to align")
+        ("use-exonerate-anchors","use Exonerate to anchor the exact alignment")
         ("exonerate-anchor-offset",po::value<int>()->default_value(15),"offset for the Exonerate anchor alignment")
         ("exonerate-anchor-query-offset",po::value<float>()->default_value(2.0),"offset multiplier for the query ends")
     ;
@@ -181,6 +182,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("ambiguity-factor", po::value<float>(), "multiplier for subst. score of ambiguity characters")
         ("no-log-odds", "do not use log-odds substitutions scores")
         ("time", "track time (debugging)")
+        ("keep-exonerate-files","keep exonerate files")
     ;
 
     boost::program_options::options_description broken("Broken options",100);

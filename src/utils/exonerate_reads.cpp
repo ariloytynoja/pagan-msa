@@ -236,7 +236,6 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
             ( !is_local && Settings_handle::st.is("exonerate-gapped-keep-above") &&
                 Settings_handle::st.get("exonerate-gapped-keep-above").as<float>()>0 ) )
         {
-
             int lim = best_hits.at(0).score;
             if(is_local)
                 lim = int (lim * Settings_handle::st.get("exonerate-local-keep-above").as<float>() );
@@ -289,7 +288,8 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
         read->node_to_align = "discarded_read";
     }
 
-    this->delete_files(r);
+    if(!Settings_handle::st.is("keep-exonerate-files"))
+        this->delete_files(r);
 }
 
 void Exonerate_reads::delete_files(int r)

@@ -828,7 +828,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
     multimap<string,string> tid_nodes;
     bool ignore_tid_tags = true;
 
-    if(Settings_handle::st.is("test-every-node") || Settings_handle::st.is("fast-placement"))
+    if(Settings_handle::st.is("test-every-node"))
     {
         root->get_node_names(&tid_nodes);
     }
@@ -863,7 +863,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
         map<string,hit> exonerate_hits;
 
-        if(Settings_handle::st.is("exonerate-reads-local") || Settings_handle::st.is("fast-placement"))
+        if(Settings_handle::st.is("use-exonerate-reads-local") || Settings_handle::st.is("fast-placement"))
         {
             Exonerate_reads er;
             if(!er.test_executable())
@@ -876,7 +876,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                 {
                     root->get_internal_node_names(&tid_nodes);
                 }
-                else if(Settings_handle::st.is("test-every-node") || Settings_handle::st.is("fast-placement"))
+                else if(Settings_handle::st.is("test-every-node"))
                 {
                     root->get_node_names(&tid_nodes);
                 }
@@ -890,11 +890,11 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                 if(tid_nodes.size()>0)
                     er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits, true);
 
-                if(Settings_handle::st.is("exonerate-reads-gapped") || Settings_handle::st.is("fast-placement"))
+                if(Settings_handle::st.is("use-exonerate-reads-gapped") || Settings_handle::st.is("fast-placement"))
                     er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false);
             }
         }
-        else if(Settings_handle::st.is("exonerate-reads-gapped"))
+        else if(Settings_handle::st.is("use-exonerate-reads-gapped"))
         {
             Exonerate_reads er;
             if(!er.test_executable())
@@ -982,7 +982,8 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                         reads->at(i).local_qend = h.q_end;
                         reads->at(i).local_tstart = h.t_start;
                         reads->at(i).local_tend = h.t_end;
-                        reads->at(i).use_local  = true;
+                        if(Settings_handle::st.is("fast-placement") || Settings_handle::st.is("use-exonerate-anchors"))
+                          reads->at(i).use_local  = true;
                     }
 
                     if(Settings_handle::st.is("placement-file"))
@@ -1076,7 +1077,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
         else
         {
-            cout<<"failed "<<reads->at(i).node_to_align<<endl;
+//            cout<<"failed "<<reads->at(i).node_to_align<<endl;
             if(!Settings_handle::st.is("silent"))
                 cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") has no tid. Aligned to root.\n";
             reads->at(i).node_to_align = root->get_name();
