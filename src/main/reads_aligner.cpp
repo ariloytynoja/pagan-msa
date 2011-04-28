@@ -828,7 +828,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
     multimap<string,string> tid_nodes;
     bool ignore_tid_tags = true;
 
-    if(Settings_handle::st.is("test-every-node"))
+    if(Settings_handle::st.is("test-every-node") || Settings_handle::st.is("fast-placement"))
     {
         root->get_node_names(&tid_nodes);
     }
@@ -872,13 +872,13 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
             {
                 tid_nodes.clear();
 
-                if(Settings_handle::st.is("test-every-node"))
-                {
-                    root->get_node_names(&tid_nodes);
-                }
-                else if(Settings_handle::st.is("test-every-internal-node"))
+                if(Settings_handle::st.is("test-every-internal-node"))
                 {
                     root->get_internal_node_names(&tid_nodes);
+                }
+                else if(Settings_handle::st.is("test-every-node") || Settings_handle::st.is("fast-placement"))
+                {
+                    root->get_node_names(&tid_nodes);
                 }
                 else
                 {

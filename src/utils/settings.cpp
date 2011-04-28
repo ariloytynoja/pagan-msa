@@ -36,8 +36,8 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.27;
-    date = "11 Apr, 2011";
+    version = 0.28;
+    date = "27 Apr, 2011";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -118,7 +118,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("fast-placement","use Exonerate to quickly map reads to nodes")
         ("exonerate-reads-local","use Exonerate local to map reads to nodes")
         ("exonerate-local-keep-best",po::value<int>(),"keep best # of local matches")
-        ("exonerate-local-keep-above",po::value<float>()->default_value(0.9),"keep local matches above #% of the best score")
+        ("exonerate-local-keep-above",po::value<float>()->default_value(0.95),"keep local matches above #% of the best score")
         ("exonerate-reads-gapped","use Exonerate gapped to map reads to nodes")
         ("exonerate-gapped-keep-best",po::value<int>()->default_value(1),"keep best # of gapped matches")
         ("exonerate-gapped-keep-above",po::value<float>(),"keep gapped matches above #% of the best score")
