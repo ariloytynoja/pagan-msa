@@ -162,6 +162,8 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
                 start_offset = i - Settings_handle::st.get("pileup-offset").as<int>();
                 if(start_offset<0 || start_offset>tmp_seq->sites_length())
                     start_offset = -1;
+
+                cout<<"start "<<start_offset<<endl;
             }
 
             node->align_sequences_this_node(mf,true,false,start_offset,end_offset);

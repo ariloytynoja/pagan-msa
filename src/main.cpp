@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
     /*  Read the guidetree                                                 */
     /***********************************************************************/
 
-    Node *root;
+    Node *root = 0;
     bool tree_ok = false;
 
     if(Settings_handle::st.is("treefile"))
