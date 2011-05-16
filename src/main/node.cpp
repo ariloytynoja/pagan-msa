@@ -69,6 +69,237 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
         aligned_sequences->push_back(entry);
     }
 
+    get_alignment_for_nodes(aligned_sequences,include_internal_nodes);
+}
+
+void Node::get_alignment_for_nodes(vector<Fasta_entry> *aligned_sequences,bool include_internal_nodes)
+{
+    if(!this->sequence_site_index_needs_correcting())
+    {
+        Sequence *root = this->get_sequence();
+        int root_length = root->sites_length();
+
+        for(int j=1;j<root_length-1;j++)
+        {
+            vector<string> column;
+            this->get_alignment_column_at(j,&column,include_internal_nodes);
+
+            for(unsigned int i=0;i<aligned_sequences->size();i++)
+            {
+                aligned_sequences->at(i).sequence.append(column.at(i));
+            }
+        }
+
+        if(Settings_handle::st.is("reads-pileup") && Settings_handle::st.is("use-consensus"))
+            this->add_root_consensus(aligned_sequences);
+    }
+    else
+    {
+
+        Sequence *root = this->get_sequence();
+        int root_length = root->sites_length();
+
+        for(int j=1;j<root_length;j++)
+        {
+
+            vector<Insertion_at_node> addition;
+            this->additional_sites_before_alignment_column(j,&addition);
+
+            if(addition.size()>0)
+            {
+
+                for(int l=0;l<(int)addition.size();l++)
+                {
+                    vector< vector<string> > columns;
+
+                    for(int i=0; i<(int)addition.at(l).length; i++)
+                    {
+                        vector<string> column;
+                        columns.push_back( column );
+                    }
+
+                    this->get_multiple_alignment_columns_before(j,&columns,addition.at(l).node_name_wanted,
+                                                                addition.at(l).left_child_wanted,include_internal_nodes);
+
+                    for(int i=0; i<(int)addition.at(l).length; i++)
+                    {
+                        for(unsigned int k=0;k<aligned_sequences->size();k++)
+                        {
+                            aligned_sequences->at(k).sequence.append(columns.at(i).at(k));
+                        }
+                    }
+
+                }
+            }
+
+            if(j<root_length-1)
+            {
+                vector<string> column;
+
+                this->get_alignment_column_at(j,&column,include_internal_nodes);
+
+                for(unsigned int i=0;i<aligned_sequences->size();i++)
+                {
+                    aligned_sequences->at(i).sequence.append(column.at(i));
+                }
+            }
+        }
+    }
+}
+
+void Node::get_alignment_for_reads(vector<Fasta_entry> *aligned_sequences)
+{
+    vector<Node*> nodes;
+    this->get_read_nodes_below(&nodes);
+
+    for(unsigned int i=0;i<nodes.size();i++)
+    {
+        Fasta_entry entry;
+        entry.name = nodes.at(i)->get_name();
+        entry.comment = nodes.at(i)->get_name_comment();
+
+        aligned_sequences->push_back(entry);
+    }
+
+    get_alignment_for_read_nodes(aligned_sequences);
+}
+
+void Node::get_alignment_for_read_nodes(vector<Fasta_entry> *aligned_sequences)
+{
+    Sequence *seq = this->get_sequence();
+    int seq_length = seq->sites_length();
+
+    for(int j=1;j<seq_length-1;j++)
+    {
+        int path_state = seq->get_site_at(j)->get_path_state();
+
+        if(path_state != Site::xskipped && path_state != Site::yskipped)
+        {
+            vector<string> column;
+            this->get_alignment_column_for_reads_at(j,&column);
+
+            for(unsigned int i=0;i<aligned_sequences->size();i++)
+            {
+                aligned_sequences->at(i).sequence.append(column.at(i));
+            }
+        }
+    }
+}
+
+void Node::get_alignment_column_for_reads_at(int j,vector<string> *column)
+{
+    if(!this->get_sequence()->is_read_sequence())
+        return;
+
+    if(this->is_leaf())
+    {
+        column->push_back(this->get_sequence()->get_site_at(j)->get_symbol());
+    }
+    else
+    {
+        Site_children *offspring = this->get_sequence()->get_site_at(j)->get_children();
+        int lj = offspring->left_index;
+        if(lj>=0)
+        {
+            left_child->get_alignment_column_for_reads_at(lj,column);
+        }
+        else
+        {
+            int nl = left_child->get_number_of_read_leaves();
+
+            for(int i=0;i<nl;i++)
+                column->push_back(this->get_sequence()->get_gap_symbol());
+        }
+
+        int rj = offspring->right_index;
+        if(rj>=0)
+        {
+            right_child->get_alignment_column_for_reads_at(rj,column);
+        }
+        else
+        {
+            int nl = right_child->get_number_of_read_leaves();
+            for(int i=0;i<nl;i++)
+                column->push_back(this->get_sequence()->get_gap_symbol());
+        }
+    }
+}
+
+
+void Node::add_root_consensus(vector<Fasta_entry> *aligned_sequences)
+{
+    Sequence *root = this->get_sequence();
+    int root_length = root->sites_length();
+    Fasta_entry entry;
+    entry.name = "consensus";
+    entry.comment = "";
+
+    for(int j=1;j<root_length;j++)
+    {
+        Site *site = root->get_site_at(j);
+        int sA = site->get_sumA();
+        int sC = site->get_sumC();
+        int sG = site->get_sumG();
+        int sT = site->get_sumT();
+
+        if(sA+sC+sG+sT<Settings_handle::st.get("consensus-minimum").as<int>())
+        {
+            entry.sequence.append("-");
+        }
+        else{
+            if(sA>sC && sA>sG && sA>sT)
+                entry.sequence.append("A");
+            else if(sC>sA && sC>sG && sC>sT)
+                entry.sequence.append("C");
+            else if(sG>sA && sG>sC && sG>sT)
+                entry.sequence.append("G");
+            else if(sT>sA && sT>sC && sT>sG)
+                entry.sequence.append("T");
+            else if(sA>sC && sA==sG && sA>sT)
+                entry.sequence.append("R");
+            else if(sC>sA && sC>sG && sC==sT)
+                entry.sequence.append("Y");
+            else if(sA==sC && sA>sG && sA>sT)
+                entry.sequence.append("M");
+            else if(sG>sA && sG>sC && sG==sT)
+                entry.sequence.append("K");
+            else if(sA>sC && sA>sG && sA==sT)
+                entry.sequence.append("W");
+            else if(sC>sA && sC==sG && sC>sT)
+                entry.sequence.append("S");
+            else if(sC>sA && sC==sG && sC==sT)
+                entry.sequence.append("B");
+            else if(sA>sC && sA==sG && sA==sT)
+                entry.sequence.append("D");
+            else if(sA==sC && sA>sG && sA==sT)
+                entry.sequence.append("H");
+            else if(sA==sC && sA==sG && sA>sT)
+                entry.sequence.append("V");
+            else if(sA==sC && sA==sG && sA==sT)
+                entry.sequence.append("N");
+        }
+    }
+    aligned_sequences->push_back(entry);
+}
+
+/*
+void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_internal_nodes)
+{
+    vector<Node*> nodes;
+    if(include_internal_nodes)
+        this->get_all_nodes(&nodes);
+    else
+        this->get_leaf_nodes(&nodes);
+
+    for(unsigned int i=0;i<nodes.size();i++)
+    {
+        Fasta_entry entry;
+        entry.name = nodes.at(i)->get_name();
+        entry.comment = nodes.at(i)->get_name_comment();
+
+        aligned_sequences->push_back(entry);
+    }
+
 //    if(Settings_handle::st.get("sample-additional-paths").as<int>()==0)
     if(true)
     {
@@ -285,6 +516,7 @@ cout<<"picking site "<<j<<endl;
 
     }
 }
+*/
 
 void Node::get_alignment_column_at(int j,vector<string> *column, bool include_internal_nodes)
 {

@@ -272,6 +272,16 @@ public:
         }
     }
 
+    void get_read_nodes_below(vector<Node*> *nodes)
+    {
+        if(this->get_sequence()->is_read_sequence() && !this->is_leaf())
+        {
+            nodes->push_back(right_child);
+            left_child->get_read_nodes_below(nodes);
+        }
+        return;
+    }
+
     void get_all_nodes(map<string,Node*> *nodes)
     {
         if(!this->is_leaf())
@@ -795,6 +805,8 @@ public:
     }
 
     void get_alignment(vector<Fasta_entry> *aligned_sequences, bool include_internal_nodes=false);
+    void get_alignment_for_nodes(vector<Fasta_entry> *aligned_sequences,bool include_internal_nodes);
+    void add_root_consensus(vector<Fasta_entry> *aligned_sequences);
 
     void get_alignment_column_at(int j,vector<string> *column, bool include_internal_nodes);
 
@@ -807,6 +819,18 @@ public:
              return 1;
         else
             return left_child->get_number_of_leaves()+right_child->get_number_of_leaves();
+    }
+
+
+    int get_number_of_read_leaves()
+    {
+        if(!this->get_sequence()->is_read_sequence())
+            return 0;
+
+        if(leaf)
+             return 1;
+        else
+            return left_child->get_number_of_read_leaves()+right_child->get_number_of_read_leaves();
     }
 
     int get_number_of_nodes()
@@ -937,6 +961,11 @@ public:
 
     /************************************/
 
+
+    void get_alignment_for_reads(vector<Fasta_entry> *aligned_sequences);
+    void get_alignment_for_read_nodes(vector<Fasta_entry> *aligned_sequences);
+    void get_alignment_column_for_reads_at(int j,vector<string> *column);
+
     bool site_in_reference(int i)
     {
         if(!this->get_sequence()->is_read_sequence())
@@ -965,6 +994,7 @@ public:
         return false;
     }
 
+
     string find_first_nonread_left_parent()
     {
         string name = "";
@@ -985,7 +1015,7 @@ public:
             int seq_length = seq->sites_length();
             Fasta_entry entry;
             entry.name = "consensus_"+this->find_first_nonread_left_parent();
-            entry.comment = "";
+            entry.comment = this->find_first_nonread_left_parent();
 
             string alpha = Model_factory::get_dna_full_char_alphabet();
 
@@ -1050,6 +1080,13 @@ public:
             }
 
             contigs->push_back(entry);
+
+            vector<Fasta_entry> reads;
+            this->get_alignment_for_reads(&reads);
+
+            for(int i=0;i<reads.size();i++)
+                contigs->push_back(reads.at(i));
+
         }
 
         if(!left_child->is_leaf())

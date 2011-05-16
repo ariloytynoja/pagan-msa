@@ -75,6 +75,7 @@ Sequence::Sequence(Fasta_entry &seq_entry,const int data_t,bool gapped, bool no_
             this->create_default_sequence(seq_entry);
 
     terminal_sequence = true;
+    read_sequence = false;
 
     if(Settings::noise>5)
     {
@@ -439,6 +440,7 @@ Sequence::Sequence(const int length,const int data_t, string gapped_s)
     if(data_type == Model_factory::protein)
         full_char_alphabet = Model_factory::get_protein_full_char_alphabet();
 
+    read_sequence = false;
     terminal_sequence = false;
 }
 

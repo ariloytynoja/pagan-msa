@@ -677,6 +677,7 @@ void Reads_aligner::copy_node_details(Node *reads_node,Fasta_entry *read)
     reads_node->set_name(read->name);
     reads_node->add_name_comment(read->comment);
     reads_node->add_sequence( *read, read->data_type, false, true);
+    reads_node->get_sequence()->is_read_sequence(true);
 
 }
 

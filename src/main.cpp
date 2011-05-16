@@ -368,9 +368,6 @@ int main(int argc, char *argv[])
 
         fr.set_chars_by_line(70);
         fr.write(outfile, contigs, true);
-
-//        for(int i=0;i<contigs.size();i++)
-//            cout<<contigs.at(i).name<<"\n"<<contigs.at(i).sequence<<endl;
     }
     if(Settings_handle::st.is("output-ancestors"))
     {
