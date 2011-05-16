@@ -88,7 +88,7 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
                 }
             }
 
-            if(Settings_handle::st.is("do-pileup-consensus"))
+            if(Settings_handle::st.is("reads-pileup") && Settings_handle::st.is("use-consensus"))
             {
                 Sequence *root = this->get_sequence();
                 int root_length = root->sites_length();
@@ -104,7 +104,7 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
                     int sG = site->get_sumG();
                     int sT = site->get_sumT();
 
-                    if(sA+sC+sG+sT<Settings_handle::st.get("pileup-consensus-minimum").as<int>())
+                    if(sA+sC+sG+sT<Settings_handle::st.get("consensus-minimum").as<int>())
                     {
                         entry.sequence.append("-");
                     }

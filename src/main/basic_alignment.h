@@ -142,9 +142,9 @@ protected:
     bool weight_edges;
     double bwd_full_probability; // for control
 
-    void build_ancestral_sequence(Sequence *sequence,vector<Path_pointer> *path);
+    void build_ancestral_sequence(Sequence *sequence,vector<Path_pointer> *path,bool is_reads_sequence=false);
 
-    void create_ancestral_sequence(Sequence *sequence,vector<Path_pointer> *path);
+    void create_ancestral_sequence(Sequence *sequence,vector<Path_pointer> *path,bool is_reads_sequence);
     void create_ancestral_edges(Sequence *sequence);
     void check_skipped_boundaries(Sequence *sequence);
 
@@ -159,28 +159,69 @@ protected:
 
     void compute_site_consensus(Site *site,Sequence *left,int l_pos,Sequence *right,int r_pos)
     {
-        int sA = 0; int sC = 0; int sG = 0; int sT = 0;
+        int lsA = 0; int lsC = 0; int lsG = 0; int lsT = 0;
+        int rsA = 0; int rsC = 0; int rsG = 0; int rsT = 0;
 
         if(l_pos>=0)
         {
             if(!left->is_terminal_sequence())
             {
-                sA += left->get_site_at(l_pos)->get_sumA();
-                sC += left->get_site_at(l_pos)->get_sumC();
-                sG += left->get_site_at(l_pos)->get_sumG();
-                sT += left->get_site_at(l_pos)->get_sumT();
+                lsA += left->get_site_at(l_pos)->get_sumA();
+                lsC += left->get_site_at(l_pos)->get_sumC();
+                lsG += left->get_site_at(l_pos)->get_sumG();
+                lsT += left->get_site_at(l_pos)->get_sumT();
             }
             else
+//            if(left->is_terminal_sequence() || l_sum==0)
             {
                 int s = left->get_site_at(l_pos)->get_state();
                 if(s == 0)
-                    sA += 1;
+                    lsA += 1;
                 else if(s == 1)
-                    sC += 1;
+                    lsC += 1;
                 else if(s == 2)
-                    sG += 1;
+                    lsG += 1;
                 else if(s == 3)
-                    sT += 1;
+                    lsT += 1;
+                else if(s == 4) {
+                    lsA += 1;
+                    lsG += 1;    }
+                else if(s == 5) {
+                    lsC += 1;
+                    lsT += 1;    }
+                else if(s == 6) {
+                    lsA += 1;
+                    lsC += 1;    }
+                else if(s == 7) {
+                    lsG += 1;
+                    lsT += 1;    }
+                else if(s == 8) {
+                    lsA += 1;
+                    lsT += 1;    }
+                else if(s == 9) {
+                    lsC += 1;
+                    lsG += 1;    }
+                else if(s == 10) {
+                    lsC += 1;
+                    lsG += 1;
+                    lsT += 1;    }
+                else if(s == 11) {
+                    lsA += 1;
+                    lsG += 1;
+                    lsT += 1;    }
+                else if(s == 12) {
+                    lsA += 1;
+                    lsC += 1;
+                    lsT += 1;    }
+                else if(s == 13) {
+                    lsA += 1;
+                    lsC += 1;
+                    lsG += 1;    }
+                else if(s == 14) {
+                    lsA += 1;
+                    lsC += 1;
+                    lsG += 1;
+                    lsT += 1;    }
                 else
                     cout<<"compute_site_consensus: no such option (l)\n";
             }
@@ -190,65 +231,112 @@ protected:
         {
             if(!right->is_terminal_sequence())
             {
-                sA += right->get_site_at(r_pos)->get_sumA();
-                sC += right->get_site_at(r_pos)->get_sumC();
-                sG += right->get_site_at(r_pos)->get_sumG();
-                sT += right->get_site_at(r_pos)->get_sumT();
+                rsA += right->get_site_at(r_pos)->get_sumA();
+                rsC += right->get_site_at(r_pos)->get_sumC();
+                rsG += right->get_site_at(r_pos)->get_sumG();
+                rsT += right->get_site_at(r_pos)->get_sumT();
             }
             else
+//            if(right->is_terminal_sequence() || r_sum==0)
             {
                 int s = right->get_site_at(r_pos)->get_state();
                 if(s == 0)
-                    sA += 1;
+                    rsA += 1;
                 else if(s == 1)
-                    sC += 1;
+                    rsC += 1;
                 else if(s == 2)
-                    sG += 1;
+                    rsG += 1;
                 else if(s == 3)
-                    sT += 1;
+                    rsT += 1;
+                else if(s == 4) {
+                    rsA += 1;
+                    rsG += 1;    }
+                else if(s == 5) {
+                    rsC += 1;
+                    rsT += 1;    }
+                else if(s == 6) {
+                    rsA += 1;
+                    rsC += 1;    }
+                else if(s == 7) {
+                    rsG += 1;
+                    rsT += 1;    }
+                else if(s == 8) {
+                    rsA += 1;
+                    rsT += 1;    }
+                else if(s == 9) {
+                    rsC += 1;
+                    rsG += 1;    }
+                else if(s == 10) {
+                    rsC += 1;
+                    rsG += 1;
+                    rsT += 1;    }
+                else if(s == 11) {
+                    rsA += 1;
+                    rsG += 1;
+                    rsT += 1;    }
+                else if(s == 12) {
+                    rsA += 1;
+                    rsC += 1;
+                    rsT += 1;    }
+                else if(s == 13) {
+                    rsA += 1;
+                    rsC += 1;
+                    rsG += 1;    }
+                else if(s == 14) {
+                    rsA += 1;
+                    rsC += 1;
+                    rsG += 1;
+                    rsT += 1;    }
                 else
                     cout<<"compute_site_consensus: no such option (r)\n";
             }
         }
 
-        site->set_sumA(sA);
-        site->set_sumC(sC);
-        site->set_sumG(sG);
-        site->set_sumT(sT);
+        if(lsA+lsC+lsG+lsT+rsA+rsC+rsG+rsT>0)
+        {
+            int sA = lsA+rsA;
+            int sC = lsC+rsC;
+            int sG = lsG+rsG;
+            int sT = lsT+rsT;
 
-        if(sA>sC && sA>sG && sA>sT)
-            site->set_state(0);
-        else if(sC>sA && sC>sG && sC>sT)
-            site->set_state(1);
-        else if(sG>sA && sG>sC && sG>sT)
-            site->set_state(2);
-        else if(sT>sA && sT>sC && sT>sG)
-            site->set_state(3);
-        else if(sA>sC && sA==sG && sA>sT)
-            site->set_state(4);
-        else if(sC>sA && sC>sG && sC==sT)
-            site->set_state(5);
-        else if(sA==sC && sA>sG && sA>sT)
-            site->set_state(6);
-        else if(sG>sA && sG>sC && sG==sT)
-            site->set_state(7);
-        else if(sA>sC && sA>sG && sA==sT)
-            site->set_state(8);
-        else if(sC>sA && sC==sG && sC>sT)
-            site->set_state(9);
-        else if(sC>sA && sC==sG && sC==sT)
-            site->set_state(10);
-        else if(sA>sC && sA==sG && sA==sT)
-            site->set_state(11);
-        else if(sA==sC && sA>sG && sA==sT)
-            site->set_state(12);
-        else if(sA==sC && sA==sG && sA>sT)
-            site->set_state(13);
-        else if(sA==sC && sA==sG && sA==sT)
-            site->set_state(14);
-        else
-            cout<<"compute_site_consensus: no such option (s)"<<sA<<" "<<sC<<" "<<sG<<" "<<sT<<"\n";
+            site->set_sumA(sA);
+            site->set_sumC(sC);
+            site->set_sumG(sG);
+            site->set_sumT(sT);
 
+            if(sA>sC && sA>sG && sA>sT)
+                site->set_state(0);
+            else if(sC>sA && sC>sG && sC>sT)
+                site->set_state(1);
+            else if(sG>sA && sG>sC && sG>sT)
+                site->set_state(2);
+            else if(sT>sA && sT>sC && sT>sG)
+                site->set_state(3);
+            else if(sA>sC && sA==sG && sA>sT)
+                site->set_state(4);
+            else if(sC>sA && sC>sG && sC==sT)
+                site->set_state(5);
+            else if(sA==sC && sA>sG && sA>sT)
+                site->set_state(6);
+            else if(sG>sA && sG>sC && sG==sT)
+                site->set_state(7);
+            else if(sA>sC && sA>sG && sA==sT)
+                site->set_state(8);
+            else if(sC>sA && sC==sG && sC>sT)
+                site->set_state(9);
+            else if(sC>sA && sC==sG && sC==sT)
+                site->set_state(10);
+            else if(sA>sC && sA==sG && sA==sT)
+                site->set_state(11);
+            else if(sA==sC && sA>sG && sA==sT)
+                site->set_state(12);
+            else if(sA==sC && sA==sG && sA>sT)
+                site->set_state(13);
+            else if(sA==sC && sA==sG && sA==sT)
+                site->set_state(14);
+            else
+                cout<<"compute_site_consensus: no such option (s)"<<sA<<" "<<sC<<" "<<sG<<" "<<sT<<"\n";
+        }
     }
 
     /*********************************/

@@ -74,7 +74,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("pair-end","connect paired reads")
         ("454", "correct homopolymer error")
         ("test-every-node","test every node for each read")
-        ("fast-placement","use Exonerate to quickly map reads to nodes")
+        ("test-every-internal-node","test every internal node for each read")
+        ("fast-placement","use Exonerate to quickly assign reads to nodes")
     ;
 
     boost::program_options::options_description reads_alignment3("Overlapping pair reads options",100);
@@ -100,7 +101,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("discard-overlapping-identical-reads", "discard embedded identical reads")
         ("discard-overlapping-reads", "discard embedded reads")
         ("discard-pairwise-overlapping-reads", "discard embedded reads (pairwise alignment)")
-        ("test-every-internal-node","test every internal node for each read")
         ("align-reads-at-root", "ignore tags and align reads at root")
         ("align-bad-reads-at-root", "align non-matching reads at root")
         ("placement-only", "compute read placement only")
@@ -133,8 +133,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("reads-pileup","pileup reads")
         ("pileup-reads-ordered","pileup reads are ordered")
         ("pileup-offset", po::value<int>()->default_value(5), "offset for alignment start site")
-        ("do-pileup-consensus", "use consensus for ancestors and print consensus root")
-        ("pileup-consensus-minimum", po::value<int>()->default_value(5), "occurrence threshold for inclusion")
+        ("use-consensus", "use consensus for ancestors and print consensus root")
+        ("consensus-minimum", po::value<int>()->default_value(5), "occurrence threshold for inclusion")
     ;
 
     boost::program_options::options_description graph("Graph options",100);

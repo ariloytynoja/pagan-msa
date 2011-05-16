@@ -922,8 +922,6 @@ public:
         }
     }
 
-    /************************************/
-
     string print_xml_subtree() const {
         if(!leaf)
         {
@@ -937,6 +935,127 @@ public:
         }
     }
 
+    /************************************/
+
+    bool site_in_reference(int i)
+    {
+        if(this->get_sequence()->is_read_sequence())
+        {
+            return true;
+        }
+        else
+        {
+            Site_children *offspring = sequence->get_site_at(i)->get_children();
+            int li = offspring->left_index;
+            if(li>=0)
+            {
+                if(left_child->site_in_reference(li))
+                    return true;
+            }
+            int ri = offspring->right_index;
+            if(ri>=0)
+            {
+                if(right_child->site_in_reference(ri))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    string find_first_nonread_left_parent()
+    {
+        string name = "";
+        if(this->get_sequence()->is_read_sequence())
+            name = left_child->find_first_nonread_left_parent();
+        else
+            name = this->get_name();
+
+        return name;
+    }
+
+    void reconstruct_contigs(vector<Fasta_entry> *contigs,bool parent_is_read_sequence)
+    {
+        bool this_is_read_sequence = this->get_sequence()->is_read_sequence();
+        if(!parent_is_read_sequence && this_is_read_sequence)
+        {
+            Sequence *seq = this->get_sequence();
+            int seq_length = seq->sites_length();
+            Fasta_entry entry;
+            entry.name = "consensus_"+this->find_first_nonread_left_parent();
+            entry.comment = "";
+
+            string alpha = Model_factory::get_dna_full_char_alphabet();
+
+            for(int j=1;j<seq_length-1;j++)
+            {
+                Site *site = seq->get_site_at(j);
+                int sA = site->get_sumA();
+                int sC = site->get_sumC();
+                int sG = site->get_sumG();
+                int sT = site->get_sumT();
+
+                bool included_in_reference = this->site_in_reference(j);
+
+                if(included_in_reference && sA+sC+sG+sT==0)
+                {
+                    int state = site->get_state();
+                    int path_state = site->get_path_state();
+
+                    if(state>=0 && state < alpha.length() && path_state != Site::xskipped && path_state != Site::yskipped)
+                    {
+                        char c = alpha.at(site->get_state());
+                        entry.sequence.append(1,tolower(c));
+                    }
+                }
+                else if(!included_in_reference && sA+sC+sG+sT<Settings_handle::st.get("consensus-minimum").as<int>())
+                {
+                    entry.sequence.append("-");
+                }
+                else
+                {
+                    if(sA>sC && sA>sG && sA>sT)
+                        entry.sequence.append("A");
+                    else if(sC>sA && sC>sG && sC>sT)
+                        entry.sequence.append("C");
+                    else if(sG>sA && sG>sC && sG>sT)
+                        entry.sequence.append("G");
+                    else if(sT>sA && sT>sC && sT>sG)
+                        entry.sequence.append("T");
+                    else if(sA>sC && sA==sG && sA>sT)
+                        entry.sequence.append("R");
+                    else if(sC>sA && sC>sG && sC==sT)
+                        entry.sequence.append("Y");
+                    else if(sA==sC && sA>sG && sA>sT)
+                        entry.sequence.append("M");
+                    else if(sG>sA && sG>sC && sG==sT)
+                        entry.sequence.append("K");
+                    else if(sA>sC && sA>sG && sA==sT)
+                        entry.sequence.append("W");
+                    else if(sC>sA && sC==sG && sC>sT)
+                        entry.sequence.append("S");
+                    else if(sC>sA && sC==sG && sC==sT)
+                        entry.sequence.append("B");
+                    else if(sA>sC && sA==sG && sA==sT)
+                        entry.sequence.append("D");
+                    else if(sA==sC && sA>sG && sA==sT)
+                        entry.sequence.append("H");
+                    else if(sA==sC && sA==sG && sA>sT)
+                        entry.sequence.append("V");
+                    else if(sA==sC && sA==sG && sA==sT)
+                        entry.sequence.append("N");
+                }
+            }
+
+            contigs->push_back(entry);
+        }
+
+        if(!left_child->is_leaf())
+            left_child->reconstruct_contigs(contigs,this_is_read_sequence);
+        if(!right_child->is_leaf())
+            right_child->reconstruct_contigs(contigs,this_is_read_sequence);
+    }
+
+    /************************************/
 
     void write_sequence_graphs(bool overwrite=true) const throw (Exception)
     {

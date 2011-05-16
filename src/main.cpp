@@ -353,6 +353,25 @@ int main(int argc, char *argv[])
         xw.write(outfile, root, aligned_sequences, true);
     }
 
+    if(Settings_handle::st.is("use-consensus"))
+    {
+        vector<Fasta_entry> contigs;
+        root->reconstruct_contigs(&contigs,false);
+
+        string outfile =  "outfile";
+        if(Settings_handle::st.is("outfile"))
+            outfile =  Settings_handle::st.get("outfile").as<string>();
+
+        outfile.append("_contigs");
+
+        cout<<"Contig file: "<<outfile<<".fas"<<endl;
+
+        fr.set_chars_by_line(70);
+        fr.write(outfile, contigs, true);
+
+//        for(int i=0;i<contigs.size();i++)
+//            cout<<contigs.at(i).name<<"\n"<<contigs.at(i).sequence<<endl;
+    }
     if(Settings_handle::st.is("output-ancestors"))
     {
         fr.write_anctree(outfile, root);

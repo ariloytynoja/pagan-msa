@@ -35,6 +35,9 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
                              bool is_reads_sequence,int start_offset,int end_offset)
 {
 
+    if(Settings::noise>1)
+        cout<<"Viterbi_alignment::align: start_offset "<<start_offset<<", end_offset "<<end_offset<<endl;
+
     left = left_sequence;
     right = right_sequence;
     model = evol_model;
@@ -211,7 +214,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
         // Now build the sequence forward following the path saved in a vector;
         //
         ancestral_sequence = new Sequence(path.size(),model->get_data_type());
-        this->build_ancestral_sequence(ancestral_sequence,&path);
+        this->build_ancestral_sequence(ancestral_sequence,&path,is_reads_sequence);
 
         this->debug_msg("Viterbi_alignment: sequence built",1);
     }
@@ -235,7 +238,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
         // Now build the sequence forward following the path saved in a vector;
         //
         ancestral_sequence = new Sequence(sample_path.size(),model->get_data_type());
-        this->build_ancestral_sequence(ancestral_sequence,&sample_path);
+        this->build_ancestral_sequence(ancestral_sequence,&sample_path,is_reads_sequence);
 
         this->debug_msg("Viterbi_alignment: sequence sampled and built",1);
     }
@@ -263,7 +266,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
             // Now build the sequence forward following the path saved in a vector;
             //
             Sequence *sampled_sequence = new Sequence(sample_path.size(),model->get_data_type());
-            this->build_ancestral_sequence(sampled_sequence,&sample_path);
+            this->build_ancestral_sequence(sampled_sequence,&sample_path,is_reads_sequence);
 
             this->debug_msg("Viterbi_alignment: additional sequence sampled and built",1);
             this->debug_msg("Viterbi_alignment: sampled alignment",1);

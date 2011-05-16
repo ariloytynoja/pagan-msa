@@ -611,6 +611,7 @@ class Sequence
 
     vector<Unique_index> unique_index;
 
+    bool read_sequence;
     bool terminal_sequence;
     string gapped_seq;
 public:
@@ -620,6 +621,9 @@ public:
 
     bool is_terminal_sequence() { return terminal_sequence; }
     void is_terminal_sequence(bool t) { terminal_sequence = t; }
+
+    bool is_read_sequence() { return read_sequence; }
+    void is_read_sequence(bool t) { read_sequence = t; }
 
     void initialise_indeces() {
         curr_site_index = prev_site_index = curr_edge_index = 0;
