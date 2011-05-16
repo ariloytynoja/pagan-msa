@@ -945,18 +945,21 @@ public:
         }
         else
         {
-            Site_children *offspring = sequence->get_site_at(i)->get_children();
-            int li = offspring->left_index;
-            if(li>=0)
+            if(!is_leaf())
             {
-                if(left_child->site_in_reference(li))
-                    return true;
-            }
-            int ri = offspring->right_index;
-            if(ri>=0)
-            {
-                if(right_child->site_in_reference(ri))
-                    return true;
+                Site_children *offspring = sequence->get_site_at(i)->get_children();
+                int li = offspring->left_index;
+                if(li>=0)
+                {
+                    if(left_child->site_in_reference(li))
+                        return true;
+                }
+                int ri = offspring->right_index;
+                if(ri>=0)
+                {
+                    if(right_child->site_in_reference(ri))
+                        return true;
+                }
             }
         }
         return false;
