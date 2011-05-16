@@ -171,8 +171,7 @@ protected:
                 lsG += left->get_site_at(l_pos)->get_sumG();
                 lsT += left->get_site_at(l_pos)->get_sumT();
             }
-            else
-//            if(left->is_terminal_sequence() || l_sum==0)
+            else if(left->is_read_sequence())
             {
                 int s = left->get_site_at(l_pos)->get_state();
                 if(s == 0)
@@ -236,8 +235,7 @@ protected:
                 rsG += right->get_site_at(r_pos)->get_sumG();
                 rsT += right->get_site_at(r_pos)->get_sumT();
             }
-            else
-//            if(right->is_terminal_sequence() || r_sum==0)
+            else if(right->is_read_sequence())
             {
                 int s = right->get_site_at(r_pos)->get_state();
                 if(s == 0)
