@@ -172,12 +172,16 @@ void Node::get_alignment_for_read_nodes(vector<Fasta_entry> *aligned_sequences)
     for(int j=1;j<seq_length-1;j++)
     {
         int path_state = seq->get_site_at(j)->get_path_state();
+        bool included_in_reference = this->site_in_reference(j);
 
-        if(path_state != Site::xskipped && path_state != Site::yskipped)
+//        if(included_in_reference && path_state != Site::xskipped && path_state != Site::yskipped)
+
+        vector<string> column;
+        bool has_characters = false;
+        this->get_alignment_column_for_reads_at(j,&column,&has_characters);
+
+        if(has_characters || (included_in_reference && path_state != Site::xskipped && path_state != Site::yskipped))
         {
-            vector<string> column;
-            this->get_alignment_column_for_reads_at(j,&column);
-
             for(unsigned int i=0;i<aligned_sequences->size();i++)
             {
                 aligned_sequences->at(i).sequence.append(column.at(i));
@@ -186,7 +190,7 @@ void Node::get_alignment_for_read_nodes(vector<Fasta_entry> *aligned_sequences)
     }
 }
 
-void Node::get_alignment_column_for_reads_at(int j,vector<string> *column)
+void Node::get_alignment_column_for_reads_at(int j,vector<string> *column, bool *has_characters)
 {
     if(!this->get_sequence()->is_read_sequence())
         return;
@@ -194,6 +198,7 @@ void Node::get_alignment_column_for_reads_at(int j,vector<string> *column)
     if(this->is_leaf())
     {
         column->push_back(this->get_sequence()->get_site_at(j)->get_symbol());
+        *has_characters = true;
     }
     else
     {
@@ -201,7 +206,7 @@ void Node::get_alignment_column_for_reads_at(int j,vector<string> *column)
         int lj = offspring->left_index;
         if(lj>=0)
         {
-            left_child->get_alignment_column_for_reads_at(lj,column);
+            left_child->get_alignment_column_for_reads_at(lj,column,has_characters);
         }
         else
         {
@@ -214,7 +219,7 @@ void Node::get_alignment_column_for_reads_at(int j,vector<string> *column)
         int rj = offspring->right_index;
         if(rj>=0)
         {
-            right_child->get_alignment_column_for_reads_at(rj,column);
+            right_child->get_alignment_column_for_reads_at(rj,column,has_characters);
         }
         else
         {

@@ -964,7 +964,7 @@ public:
 
     void get_alignment_for_reads(vector<Fasta_entry> *aligned_sequences);
     void get_alignment_for_read_nodes(vector<Fasta_entry> *aligned_sequences);
-    void get_alignment_column_for_reads_at(int j,vector<string> *column);
+    void get_alignment_column_for_reads_at(int j,vector<string> *column, bool *has_characters);
 
     bool site_in_reference(int i)
     {
@@ -1034,10 +1034,17 @@ public:
                     int state = site->get_state();
                     int path_state = site->get_path_state();
 
-                    if(state>=0 && state < (int)alpha.length() && path_state != Site::xskipped && path_state != Site::yskipped)
+                    if(path_state != Site::xskipped && path_state != Site::yskipped)
                     {
-                        char c = alpha.at(site->get_state());
-                        entry.sequence.append(1,tolower(c));
+                        if(state>=0 && state < (int)alpha.length())
+                        {
+                            char c = alpha.at(site->get_state());
+                            entry.sequence.append(1,tolower(c));
+                        }
+                        else
+                        {
+                            entry.sequence.append("n");
+                        }
                     }
                 }
                 else if(!included_in_reference && sA+sC+sG+sT<Settings_handle::st.get("consensus-minimum").as<int>())
@@ -1084,7 +1091,7 @@ public:
             vector<Fasta_entry> reads;
             this->get_alignment_for_reads(&reads);
 
-            for(int i=0;i<reads.size();i++)
+            for(int i=0;i<(int)reads.size();i++)
                 contigs->push_back(reads.at(i));
 
         }
