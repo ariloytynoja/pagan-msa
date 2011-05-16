@@ -939,7 +939,7 @@ public:
 
     bool site_in_reference(int i)
     {
-        if(this->get_sequence()->is_read_sequence())
+        if(!this->get_sequence()->is_read_sequence())
         {
             return true;
         }
@@ -1001,7 +1001,7 @@ public:
                     int state = site->get_state();
                     int path_state = site->get_path_state();
 
-                    if(state>=0 && state < alpha.length() && path_state != Site::xskipped && path_state != Site::yskipped)
+                    if(state>=0 && state < (int)alpha.length() && path_state != Site::xskipped && path_state != Site::yskipped)
                     {
                         char c = alpha.at(site->get_state());
                         entry.sequence.append(1,tolower(c));
