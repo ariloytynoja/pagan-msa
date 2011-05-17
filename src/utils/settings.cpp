@@ -50,15 +50,12 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 //        ("help", "display help message")
         ("outfile", po::value<string>(), "sequence outfile")
         ("output-ancestors", "include ancestors in outfile")
-        ("full-probability", "compute full probability")
-        ("output-graph","output ancestral graph")
-        ("sample-path", "sample the alignment path from posterior probabilities")
-        ("no-terminal-edges", "expect terminal missing data")
-        ("noise", po::value<int>(), "output noise level")
-        ("silent","minimal output")
-        ("no-xml","write FASTA alignment only")
         ("config-file",po::value<string>(),"config file with additional arguments")
         ("config-log-file",po::value<string>(),"log file for given arguments")
+        ("no-terminal-edges", "assume terminal gaps as missing data")
+        ("silent","minimal output")
+        ("noise", po::value<int>(), "output noise level")
+        ("no-xml","write FASTA alignment only")
     ;
     boost::program_options::options_description help_update("Help and updates",100);
     help_update.add_options()
@@ -73,9 +70,28 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("readsfile", po::value<string>(), "reads file (FASTA/FASTQ)")
         ("pair-end","connect paired reads")
         ("454", "correct homopolymer error")
+        ("use-consensus", "use consensus for read ancestors")
         ("test-every-node","test every node for each read")
         ("test-every-internal-node","test every internal node for each read")
         ("fast-placement","use Exonerate to quickly assign reads to nodes")
+    ;
+
+    boost::program_options::options_description reads_alignment2("Additional reads alignment options",100);
+    reads_alignment2.add_options()
+        ("consensus-minimum", po::value<int>()->default_value(5), "threshold for inclusion in contig")
+        ("placement-only", "compute read placement only")
+        ("placement-file", po::value<string>(), "read placement file")
+        ("output-nhx-tree", "output tree with NHX TID tags")
+        ("reads-distance", po::value<float>()->default_value(0.1), "evolutionary distance from pseudo-root")
+        ("min-reads-overlap", po::value<float>()->default_value(0.1), "overlap threshold for read and reference")
+        ("min-reads-identity", po::value<float>()->default_value(0.3), "identity threshold for aligned sites")
+        ("pair-read-gap-extension", po::value<float>(), "read spacer extension probability")
+        ("rank-reads-for-nodes","rank reads within nodes for alignment")
+        ("discard-overlapping-identical-reads", "discard embedded identical reads")
+        ("discard-overlapping-reads", "discard embedded reads")
+        ("discard-pairwise-overlapping-reads", "discard embedded reads (pairwise alignment)")
+        ("align-reads-at-root", "ignore tags and align reads at root")
+        ("align-bad-reads-at-root", "align non-matching reads at root")
     ;
 
     boost::program_options::options_description reads_alignment3("Overlapping pair reads options",100);
@@ -89,28 +105,14 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("trim-before-merge", "trim read ends with low Q-scores before merging")
     ;
 
-    boost::program_options::options_description reads_alignment2("Additional reads alignment options",100);
-    reads_alignment2.add_options()
+    boost::program_options::options_description reads_alignment4("Trimming and quality options",100);
+    reads_alignment4.add_options()
         ("no-fastq", "do not use Q-scores")
-        ("qscore-minimum", po::value<int>()->default_value(10), "threshold to mask low Q-score sites")
         ("trim-read-ends", "trim read ends with low Q-scores")
         ("trim-mean-qscore", po::value<int>()->default_value(15), "sliding window trimming threshold")
         ("trim-window-width", po::value<int>()->default_value(5), "sliding window width")
+        ("qscore-minimum", po::value<int>()->default_value(10), "threshold to mask low Q-score sites")
         ("minimum-trimmed-length", po::value<int>()->default_value(20), "minimum trimmed read length")
-        ("rank-reads-for-nodes","rank reads within nodes for alignment")
-        ("discard-overlapping-identical-reads", "discard embedded identical reads")
-        ("discard-overlapping-reads", "discard embedded reads")
-        ("discard-pairwise-overlapping-reads", "discard embedded reads (pairwise alignment)")
-        ("align-reads-at-root", "ignore tags and align reads at root")
-        ("align-bad-reads-at-root", "align non-matching reads at root")
-        ("placement-only", "compute read placement only")
-        ("placement-file", po::value<string>(), "read placement file")
-        ("output-nhx-tree", "output tree with NHX TID tags")
-        ("allow-skip-low-qscore", "allow skipping low scoring bases")
-        ("pair-read-gap-extension", po::value<float>(), "read spacer extension probability")
-        ("min-reads-overlap", po::value<float>()->default_value(0.1), "overlap threshold for read and reference")
-        ("min-reads-identity", po::value<float>()->default_value(0.3), "identity threshold for aligned sites")
-        ("reads-distance", po::value<float>()->default_value(0.1), "evolutionary distance from pseudo-root")
         ("perfect-reference", "assume perfect reference alignment")
     ;
 
@@ -133,8 +135,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("reads-pileup","pileup reads")
         ("pileup-reads-ordered","pileup reads are ordered")
         ("pileup-offset", po::value<int>()->default_value(5), "offset for alignment start site")
-        ("use-consensus", "use consensus for ancestors and print consensus root")
-        ("consensus-minimum", po::value<int>()->default_value(5), "occurrence threshold for inclusion")
     ;
 
     boost::program_options::options_description graph("Graph options",100);
@@ -184,6 +184,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description debug("Debugging and testing options",100);
     debug.add_options()
+        ("full-probability", "compute full probability")
+        ("output-graph","output ancestral graph")
+        ("sample-path", "sample the alignment path from posterior probabilities")
         ("ins-rate", po::value<float>(), "insertion rate (per substitution)")
         ("del-rate", po::value<float>(), "deletion rate (per substitution)")
         ("check-valid-graphs", "check that fwd and bwd edges are identical")
@@ -204,9 +207,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     po::positional_options_description pd;
     pd.add("config-file", 1);
 
-    full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(exonerate).add(pileup).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken).add(help_update);
-    desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(exonerate).add(pileup).add(model).add(tree_edit).add(alignment).add(help_update);
-    max_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment3).add(reads_alignment2).add(exonerate).add(pileup).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(help_update);
+    full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken).add(help_update);
+    desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(model).add(tree_edit).add(alignment).add(help_update);
+    max_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(help_update);
     min_desc.add(minimal).add(reads_alignment).add(help_update);
 
 
