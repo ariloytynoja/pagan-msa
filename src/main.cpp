@@ -170,6 +170,8 @@ int main(int argc, char *argv[])
             exit(0);
         }
 
+        root = nr.parenthesis_to_tree(tree);
+
         tree_ok = true;
     }
     else if(Settings_handle::st.is("ref-treefile"))
@@ -353,7 +355,7 @@ int main(int argc, char *argv[])
         xw.write(outfile, root, aligned_sequences, true);
     }
 
-    if(Settings_handle::st.is("use-consensus"))
+    if(Settings_handle::st.is("build-contigs"))
     {
         vector<Fasta_entry> contigs;
         root->reconstruct_contigs(&contigs,false);

@@ -36,8 +36,8 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.29;
-    date = "16 May, 2011";
+    version = 0.30;
+    date = "17 May, 2011";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -71,14 +71,15 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("pair-end","connect paired reads")
         ("454", "correct homopolymer error")
         ("use-consensus", "use consensus for read ancestors")
+        ("build-contigs", "build contigs of read clusters")
         ("test-every-node","test every node for each read")
-        ("test-every-internal-node","test every internal node for each read")
         ("fast-placement","use Exonerate to quickly assign reads to nodes")
     ;
 
     boost::program_options::options_description reads_alignment2("Additional reads alignment options",100);
     reads_alignment2.add_options()
         ("consensus-minimum", po::value<int>()->default_value(5), "threshold for inclusion in contig")
+        ("test-every-internal-node","test every internal node for each read")
         ("placement-only", "compute read placement only")
         ("placement-file", po::value<string>(), "read placement file")
         ("output-nhx-tree", "output tree with NHX TID tags")
@@ -324,14 +325,14 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 void Settings::print_msg()
 {
     cout<<"\nPAGAN v."<<version<<" ("<<date<<"). (C) 2010-2011 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
-    cout<<" This is a development version and may contain bugs. Contact the author before using\n the program for any serious analysis.\n";
+    cout<<" This program is provided \"as-is\", with NO WARRANTY whatsoever; this is a development version\n and may contain bugs. Contact the author before using the program for any serious analysis.\n";
 }
 
 string Settings::print_log_msg()
 {
     stringstream tmp;
     tmp<<"\n# PAGAN v."<<version<<" ("<<date<<"). (C) 2010-2011 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
-    tmp<<"# This is a development version and may contain bugs. Contact the author before using\n# the program for any serious analysis.\n";
+    tmp<<"# This program is provided \"as-is\", with NO WARRANTY whatsoever; this is a development version\n# and may contain bugs. Contact the author before using the program for any serious analysis.\n";
     return tmp.str();
 }
 

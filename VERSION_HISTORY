@@ -1,3 +1,8 @@
+v.0.30
+- separation of consensus ancestor reconstruction and contig assembly
+- corrected read order in consensus alignment
+
+
 v.0.29
 - preliminary support for contig assembly
 - consensus ancestors for (DNA) read alignment

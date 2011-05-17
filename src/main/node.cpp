@@ -174,8 +174,6 @@ void Node::get_alignment_for_read_nodes(vector<Fasta_entry> *aligned_sequences)
         int path_state = seq->get_site_at(j)->get_path_state();
         bool included_in_reference = this->site_in_reference(j);
 
-//        if(included_in_reference && path_state != Site::xskipped && path_state != Site::yskipped)
-
         vector<string> column;
         bool has_characters = false;
         this->get_alignment_column_for_reads_at(j,&column,&has_characters);

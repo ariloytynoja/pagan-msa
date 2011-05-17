@@ -276,8 +276,8 @@ public:
     {
         if(this->get_sequence()->is_read_sequence() && !this->is_leaf())
         {
-            nodes->push_back(right_child);
             left_child->get_read_nodes_below(nodes);
+            nodes->push_back(right_child);
         }
         return;
     }
