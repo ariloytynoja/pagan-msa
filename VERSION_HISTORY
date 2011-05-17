@@ -1,3 +1,16 @@
+v.0.29
+- preliminary support for contig assembly
+- consensus ancestors for (DNA) read alignment
+
+
+v.0.28
+- preliminary support for read pileup using consensus ancestors
+
+
+v.0.27
+- integrated Exonerate to speed up the search for placement nodes
+
+
 v.0.26
 - repaired the broken ancestor reconstruction: now also for codon data.
 
