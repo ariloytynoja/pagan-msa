@@ -354,7 +354,6 @@ void Settings::info()
 {
     this->print_msg();
     cout << min_desc << "\n\n";
-//    cout<<"Use option --help for more information.\n\n";
     exit(0);
 }
 
@@ -362,7 +361,6 @@ void Settings::info_noexit()
 {
     this->print_msg();
     cout << min_desc << "\n\n";
-//    cout<<"Use option --help for more information.\n\n";
 }
 
 void Settings::check_version()
