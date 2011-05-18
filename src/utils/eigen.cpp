@@ -64,7 +64,7 @@ int Eigen::eigenQREV (double Q[], double pi[], double pi_sqrt[], int n, int npi0
     int i,j, inew,jnew, nnew=n-npi0, status;
 
     /* store in U the symmetrical matrix S = sqrt(D) * Q * sqrt(-D) */
-    if (pi_sqrt==NULL) { printf("\nError: pi_sqrt should be calculated before.\n"); exit(-1); }
+    if (pi_sqrt==NULL) { printf("\nError: pi_sqrt should be calculated before.\n"); exit(1); }
 
     if (npi0==0) {
         for (i=0; i<n; i++)

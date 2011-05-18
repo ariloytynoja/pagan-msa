@@ -49,7 +49,7 @@ Model_factory::Model_factory(int s)
     else
     {
         cout<<"Model_factory(): invalid sequence data type. Exiting\n";
-        exit(-1);
+        exit(1);
     }
 }
 

@@ -120,7 +120,7 @@ void Int_matrix::s(int v, int xa, int ya, int za, int wa)
 	}
 	else if(xa>=x){
         cout<<"Int_matrix("<<name<<"): x ("<<xa<<") over the limit ("<<x<<")!"<<endl;
-		exit(-1);
+                exit(1);
 	}
 	if(ya>=y && yar){
 		resize(2);
@@ -128,7 +128,7 @@ void Int_matrix::s(int v, int xa, int ya, int za, int wa)
 	}
 	else if(ya>=y){
         cout<<"Int_matrix("<<name<<"): y ("<<ya<<") over the limit ("<<y<<")!"<<endl;
-		exit(-1);
+                exit(1);
 	}
 	if(za>=z && zar){
 		resize(3);
@@ -136,7 +136,7 @@ void Int_matrix::s(int v, int xa, int ya, int za, int wa)
 	}
 	else if(za>=z){
         cout<<"Int_matrix("<<name<<"): z ("<<za<<") over the limit ("<<z<<")!"<<endl;
-		exit(-1);
+                exit(1);
 	}
 	if(wa>=w && war){
 		resize(4);
@@ -144,7 +144,7 @@ void Int_matrix::s(int v, int xa, int ya, int za, int wa)
 	}
 	else if(wa>=w){
         cout<<"Int_matrix("<<name<<"): w ("<<wa<<") over the limit ("<<w<<")!"<<endl;
-		exit(-1);
+                exit(1);
 	}
 
 	data[xa + ya*x + za*x*y + wa*x*y*z] = v;

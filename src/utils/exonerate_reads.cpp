@@ -158,7 +158,7 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
     {
         perror("Problems with exonerate pipe.\nExiting.\n");
-        exit(-1);
+        exit(1);
     }
 
     // read exonerate output, summing the multiple hit scores

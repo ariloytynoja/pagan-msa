@@ -836,7 +836,7 @@ void Viterbi_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_point
             else
             {
                 cout<<"incorrect backward pointer: "<<vit_mat<<endl;
-                exit(-1);
+                exit(1);
             }
 
             if(i<1 && j<1)
@@ -972,7 +972,7 @@ void Viterbi_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer 
             else
             {
                 cout<<"incorrect backward pointer: "<<vit_mat<<endl;
-                exit(-1);
+                exit(1);
             }
 
             if(i<1 && j<1)

@@ -105,7 +105,7 @@ void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_
     else
     {
         cout<<"Input file format unrecognized. Only FASTA and FASTQ formats supported. Exiting.\n\n";
-        exit(-1);
+        exit(1);
     }
 
     set<string> names;
@@ -249,7 +249,7 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
             if(temp[0] != '+')
             {
                 cout<<"Error in FASTQ comment:"<<temp<<"\nExiting.\n\n";
-                exit(-1);
+                exit(1);
             }
 
             temp.erase(temp.begin());  // Character + deletion
@@ -273,7 +273,7 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
         else if(temp != "")
         {
             cout<<"FASTQ file parse error. Expecting a line starting with '@':  \n"<<temp<<endl<<endl<<"Exiting\n\n.";
-            exit(-1);
+            exit(1);
         }
     }
 
@@ -447,7 +447,7 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
                 {
                     cout<<"Error reading the graph input: previous site "<<prev_site<<" and this site "<<site<<".\nExiting.\n\n";
                 }
-                exit(-1);
+                exit(1);
             }
             prev_site++;
 
@@ -458,7 +458,7 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
                 if(site != 0)
                 {
                     cout<<"Error reading the graph input: 'start' is not the site 0.\nExiting.\n\n";
-                    exit(-1);
+                    exit(1);
                 }
             }
             else if(temp == "end")
@@ -490,7 +490,7 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
                 if(start_site < 0 || end_site < start_site || end_site > site)
                 {
                     cout<<"Error reading the graph input: edge coordinates at site "<<site<<" appear incorrect.\nExiting.\n\n";
-                    exit(-1);
+                    exit(1);
                 }
 
                 if(weight < 0 || weight > 1 || weight + sum_weight > 1)
@@ -877,7 +877,7 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
     if(names_match < 1)
     {
         cout<<"\nNo sequences to align! Exiting.\n\n";
-        exit(0);
+        exit(1);
     }
 
     if((int)sequences->size() > overlap && overlap == (int)leaf_nodes->size())

@@ -44,7 +44,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     }
     catch (ppa::IOException& e) {
         cout<<"Error reading the reads file '"<<file<<"'.\nExiting.\n\n";
-        exit(0);
+        exit(1);
     }
 
     int data_type = fr.check_sequence_data_type(&reads);
@@ -199,7 +199,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
         this->find_nodes_for_reads(root, &reads, mf);
 
         if(Settings_handle::st.is("placement-only"))
-            exit(1);
+            exit(0);
 
 
         set<string> unique_nodeset;

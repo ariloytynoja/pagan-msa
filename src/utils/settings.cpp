@@ -229,7 +229,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     {
         cout<<"\nThe program options '--cds-seqfile' and '--cds-treefile' have been renamed as '--ref-seqfile' and '--ref-treefile'.\n"
                 "Please edit your command argument line accordingly. Exiting.\n\n";
-        exit(0);
+        exit(1);
 
     }
     po::notify(vm);

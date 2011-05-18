@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
     catch ( const boost::program_options::error& e ) {
             Settings_handle::st.info_noexit();
             cout<<"Error in command line arguments: "<<e.what()<<"."<<endl<<endl;
-            exit(0);
+            exit(1);
     }
 
     srand(time(0));
@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
         if(!Settings_handle::st.is("readsfile"))
         {
             cout<<"No reads file given. Exiting.\n\n";
-            exit(0);
+            exit(1);
         }
 
         Reads_aligner ra;
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
         }
         catch (ppa::IOException& e) {
             cout<<"Error reading the sequence file '"<<seqfile<<"'.\nExiting.\n\n";
-            exit(0);
+            exit(1);
         }
     }
     else if(Settings_handle::st.is("ref-seqfile"))
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
         }
         catch (ppa::IOException& e) {
             cout<<"Error reading the reference alignment file '"<<seqfile<<"'.\nExiting.\n\n";
-            exit(0);
+            exit(1);
         }
 
         reference_alignment = true;
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
         }
         catch (ppa::IOException& e) {
             cout<<"Error reading the reference alignment file '"<<seqfile<<"'.\nExiting.\n\n";
-            exit(0);
+            exit(1);
         }
 
         vector<Fasta_entry>::iterator it = sequences.begin();
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
         cout<<endl<<"Error: No sequence file defined."<<endl;
         Settings_handle::st.info();
 
-        exit(0);
+        exit(1);
     }
 
 
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
         }
         catch (ppa::IOException& e) {
             cout<<"Error reading the guide tree file '"<<treefile<<"'.\nExiting.\n\n";
-            exit(0);
+            exit(1);
         }
 
         root = nr.parenthesis_to_tree(tree);
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
         }
         catch (ppa::IOException& e) {
             cout<<"Error reading the reference tree file '"<<treefile<<"'.\nExiting.\n\n";
-            exit(0);
+            exit(1);
         }
 
         root = nr.parenthesis_to_tree(tree);
@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
         cout<<endl<<"Error: No tree file defined."<<endl;
         Settings_handle::st.info();
 
-        exit(0);
+        exit(1);
     }
 
     if(!Settings_handle::st.is("silent"))
@@ -413,5 +413,5 @@ int main(int argc, char *argv[])
 
     delete root;
 
-    return 1;
+    return 0;
 }

@@ -82,7 +82,7 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
     if(gapped_left->length() != gapped_right->length())
     {
         cout<<"Error: gapped sequences of different length. Exiting.\n\n";
-        exit(-1);
+        exit(1);
     }
 
 
@@ -114,7 +114,7 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
               )
             {
                cout<<"Reading frame error in a codon refrence alignment. Exiting.\n";
-               exit(-1);
+               exit(1);
             }
         }
 
@@ -682,7 +682,7 @@ void Reference_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,P
         else
         {
             cout<<"incorrect backward pointer: "<<vit_mat<<endl;
-            exit(-1);
+            exit(1);
         }
 
         if(k<1)
