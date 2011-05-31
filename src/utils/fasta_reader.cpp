@@ -385,6 +385,8 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
         // If first character is >
         if(temp[0] == '#')
         {
+            temp.erase(temp.begin());  // Character > deletion
+            temp = Text_utils::remove_first_whitespaces(temp);
             temp = Text_utils::remove_last_whitespaces(temp);
 
             // If a name and a sequence were found
@@ -421,7 +423,6 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
                 }
                 delete st;
             }
-            name.erase(name.begin());  // Character > deletion
         }
         else
         {
@@ -519,6 +520,7 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
             }
         }
     }
+
 
     // Addition of the last sequence in file
     if((name != "") && (sequence != ""))
