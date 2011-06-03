@@ -1050,72 +1050,116 @@ public:
             entry.name = "consensus_"+this->find_first_nonread_left_parent();
             entry.comment = this->find_first_nonread_left_parent();
 
-            string alpha = Model_factory::get_dna_full_char_alphabet();
-
-            for(int j=1;j<seq_length-1;j++)
+            if(seq->get_data_type() == Model_factory::dna)
             {
-                Site *site = seq->get_site_at(j);
-                int sA = site->get_sumA();
-                int sC = site->get_sumC();
-                int sG = site->get_sumG();
-                int sT = site->get_sumT();
 
-                bool included_in_reference = this->site_in_reference(j);
+                string alpha = Model_factory::get_dna_full_char_alphabet();
 
-                if(included_in_reference && sA+sC+sG+sT==0)
+                for(int j=1;j<seq_length-1;j++)
                 {
-                    int state = site->get_state();
-                    int path_state = site->get_path_state();
+                    Site *site = seq->get_site_at(j);
+                    int sA = site->get_sumA();
+                    int sC = site->get_sumC();
+                    int sG = site->get_sumG();
+                    int sT = site->get_sumT();
 
-                    if(path_state != Site::xskipped && path_state != Site::yskipped)
+                    bool included_in_reference = this->site_in_reference(j);
+
+                    if(included_in_reference && sA+sC+sG+sT==0)
                     {
-                        if(Settings_handle::st.is("show-contig-ancestor") && state>=0 && state < (int)alpha.length())
+                        int state = site->get_state();
+                        int path_state = site->get_path_state();
+
+                        if(path_state != Site::xskipped && path_state != Site::yskipped)
                         {
-                            char c = alpha.at(site->get_state());
-                            entry.sequence.append(1,tolower(c));
-                        }
-                        else
-                        {
-                            entry.sequence.append("n");
+                            if(Settings_handle::st.is("show-contig-ancestor") && state>=0 && state < (int)alpha.length())
+                            {
+                                char c = alpha.at(site->get_state());
+                                entry.sequence.append(1,tolower(c));
+                            }
+                            else
+                            {
+                                entry.sequence.append("n");
+                            }
                         }
                     }
+                    else if(!included_in_reference && sA+sC+sG+sT<Settings_handle::st.get("consensus-minimum").as<int>())
+                    {
+                        entry.sequence.append("-");
+                    }
+                    else
+                    {
+                        if(sA>sC && sA>sG && sA>sT)
+                            entry.sequence.append("A");
+                        else if(sC>sA && sC>sG && sC>sT)
+                            entry.sequence.append("C");
+                        else if(sG>sA && sG>sC && sG>sT)
+                            entry.sequence.append("G");
+                        else if(sT>sA && sT>sC && sT>sG)
+                            entry.sequence.append("T");
+                        else if(sA>sC && sA==sG && sA>sT)
+                            entry.sequence.append("R");
+                        else if(sC>sA && sC>sG && sC==sT)
+                            entry.sequence.append("Y");
+                        else if(sA==sC && sA>sG && sA>sT)
+                            entry.sequence.append("M");
+                        else if(sG>sA && sG>sC && sG==sT)
+                            entry.sequence.append("K");
+                        else if(sA>sC && sA>sG && sA==sT)
+                            entry.sequence.append("W");
+                        else if(sC>sA && sC==sG && sC>sT)
+                            entry.sequence.append("S");
+                        else if(sC>sA && sC==sG && sC==sT)
+                            entry.sequence.append("B");
+                        else if(sA>sC && sA==sG && sA==sT)
+                            entry.sequence.append("D");
+                        else if(sA==sC && sA>sG && sA==sT)
+                            entry.sequence.append("H");
+                        else if(sA==sC && sA==sG && sA>sT)
+                            entry.sequence.append("V");
+                        else if(sA==sC && sA==sG && sA==sT)
+                            entry.sequence.append("N");
+                    }
                 }
-                else if(!included_in_reference && sA+sC+sG+sT<Settings_handle::st.get("consensus-minimum").as<int>())
+            }
+            else if(seq->get_data_type() == Model_factory::protein)
+            {
+                string alpha = Model_factory::get_protein_full_char_alphabet();
+
+                for(int j=1;j<seq_length-1;j++)
                 {
-                    entry.sequence.append("-");
-                }
-                else
-                {
-                    if(sA>sC && sA>sG && sA>sT)
-                        entry.sequence.append("A");
-                    else if(sC>sA && sC>sG && sC>sT)
-                        entry.sequence.append("C");
-                    else if(sG>sA && sG>sC && sG>sT)
-                        entry.sequence.append("G");
-                    else if(sT>sA && sT>sC && sT>sG)
-                        entry.sequence.append("T");
-                    else if(sA>sC && sA==sG && sA>sT)
-                        entry.sequence.append("R");
-                    else if(sC>sA && sC>sG && sC==sT)
-                        entry.sequence.append("Y");
-                    else if(sA==sC && sA>sG && sA>sT)
-                        entry.sequence.append("M");
-                    else if(sG>sA && sG>sC && sG==sT)
-                        entry.sequence.append("K");
-                    else if(sA>sC && sA>sG && sA==sT)
-                        entry.sequence.append("W");
-                    else if(sC>sA && sC==sG && sC>sT)
-                        entry.sequence.append("S");
-                    else if(sC>sA && sC==sG && sC==sT)
-                        entry.sequence.append("B");
-                    else if(sA>sC && sA==sG && sA==sT)
-                        entry.sequence.append("D");
-                    else if(sA==sC && sA>sG && sA==sT)
-                        entry.sequence.append("H");
-                    else if(sA==sC && sA==sG && sA>sT)
-                        entry.sequence.append("V");
-                    else if(sA==sC && sA==sG && sA==sT)
-                        entry.sequence.append("N");
+                    Site *site = seq->get_site_at(j);
+                    int sAmino = site->get_sumAmino();
+
+                    bool included_in_reference = this->site_in_reference(j);
+
+                    if(included_in_reference && sAmino==0)
+                    {
+                        int state = site->get_state();
+                        int path_state = site->get_path_state();
+
+                        if(path_state != Site::xskipped && path_state != Site::yskipped)
+                        {
+                            if(Settings_handle::st.is("show-contig-ancestor") && state>=0 && state < (int)alpha.length())
+                            {
+                                char c = alpha.at(site->get_state());
+                                entry.sequence.append(1,tolower(c));
+                            }
+                            else
+                            {
+                                entry.sequence.append("x");
+                            }
+                        }
+                    }
+                    else if(!included_in_reference && sAmino<Settings_handle::st.get("consensus-minimum").as<int>())
+                    {
+                        entry.sequence.append("-");
+                    }
+                    else
+                    {
+                        char c = alpha.at(site->get_state());
+                        entry.sequence.append(1,c);
+                    }
                 }
             }
 

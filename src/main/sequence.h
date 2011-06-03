@@ -241,12 +241,12 @@ struct Site
     int branch_count_since_last_used;
     float branch_distance_since_last_used;
 
-    int sumA, sumC, sumG, sumT;
+    int sumA, sumC, sumG, sumT,sumAmino;
 public:
     Site(vector<Edge> *e,int type=Site::real_site,int p_state=Site::terminal):index(-1),character_state(-1),character_symbol("0"),
             site_type(type),path_state(p_state),edges(e),first_fwd_edge_index(-1),current_fwd_edge_index(-1),
             first_bwd_edge_index(-1),current_bwd_edge_index(-1),posterior_support(1),
-            branch_count_since_last_used(0),branch_distance_since_last_used(0),sumA(0),sumC(0),sumG(0),sumT(0) {}
+            branch_count_since_last_used(0),branch_distance_since_last_used(0),sumA(0),sumC(0),sumG(0),sumT(0),sumAmino(0) {}
 
     int get_branch_count_since_last_used() { return branch_count_since_last_used; }
     float get_branch_distance_since_last_used() { return branch_distance_since_last_used; }
@@ -286,6 +286,9 @@ public:
     void set_sumC(int i) { sumC += i; }
     void set_sumG(int i) { sumG += i; }
     void set_sumT(int i) { sumT += i; }
+
+    int get_sumAmino() { return sumAmino; }
+    void set_sumAmino(int i) { sumAmino += i; }
 
     /**************************************/
 
@@ -632,6 +635,8 @@ public:
     void set_gap_symbol(char c) {  gap_symbol = string(1,c); }
     void set_gap_symbol(string c) {  gap_symbol = c; }
     string get_gap_symbol() {  return gap_symbol; }
+
+    int get_data_type() { return data_type; }
 
     int get_new_site_index() {curr_site_index++; return curr_site_index; }
     int get_new_edge_index() {curr_edge_index++; return curr_edge_index; }

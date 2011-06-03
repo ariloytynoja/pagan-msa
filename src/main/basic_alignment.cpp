@@ -80,6 +80,8 @@ void Basic_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path_
     int l_pos = 1;
     int r_pos = 1;
 
+    bool is_dna = sequence->get_data_type() == Model_factory::dna;
+
     for(unsigned int i=0;i<path->size();i++)
     {
 
@@ -98,8 +100,8 @@ void Basic_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path_
             int lc = left->get_site_at(l_pos)->get_state();
             site.set_state( lc );
 
-            if(is_reads_sequence && (Settings_handle::st.is("use-consensus") || Settings_handle::st.is("build-contigs")))
-                this->compute_site_consensus(&site,left,l_pos,right,-1);
+            if(is_reads_sequence && (Settings_handle::st.is("use-consensus") || Settings_handle::st.is("build-contigs")  ))
+                this->compute_site_consensus(&site,left,l_pos,right,-1,is_dna);
 
             if(path->at(i).real_site)
                 site.set_path_state( Site::xgapped );
@@ -120,8 +122,8 @@ void Basic_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path_
             int rc = right->get_site_at(r_pos)->get_state();
             site.set_state( rc );
 
-            if(is_reads_sequence && (Settings_handle::st.is("use-consensus") || Settings_handle::st.is("build-contigs")))
-                this->compute_site_consensus(&site,left,-1,right,r_pos);
+            if(is_reads_sequence && (Settings_handle::st.is("use-consensus") || Settings_handle::st.is("build-contigs") ))
+                this->compute_site_consensus(&site,left,-1,right,r_pos, is_dna);
 
             if(path->at(i).real_site)
                 site.set_path_state( Site::ygapped );
@@ -143,8 +145,8 @@ void Basic_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path_
             int rc = right->get_site_at(r_pos)->get_state();
             site.set_state( model->parsimony_state(lc,rc) );
 
-            if(is_reads_sequence && (Settings_handle::st.is("use-consensus") || Settings_handle::st.is("build-contigs")))
-                this->compute_site_consensus(&site,left,l_pos,right,r_pos);
+            if(is_reads_sequence && (Settings_handle::st.is("use-consensus") || Settings_handle::st.is("build-contigs") ))
+                this->compute_site_consensus(&site,left,l_pos,right,r_pos, is_dna);
 
             site.set_path_state( Site::matched );
 

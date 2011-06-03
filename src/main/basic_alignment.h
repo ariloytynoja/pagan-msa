@@ -157,8 +157,15 @@ protected:
 
     /*********************************/
 
-    void compute_site_consensus(Site *site,Sequence *left,int l_pos,Sequence *right,int r_pos)
+    void compute_site_consensus(Site *site,Sequence *left,int l_pos,Sequence *right,int r_pos,bool is_dna)
     {
+        if(!is_dna)
+        {
+            if(r_pos>=0 && l_pos>=0)
+                site->set_sumAmino(1);
+            return;
+        }
+
         int lsA = 0; int lsC = 0; int lsG = 0; int lsT = 0;
         int rsA = 0; int rsC = 0; int rsG = 0; int rsT = 0;
 
