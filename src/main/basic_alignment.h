@@ -161,8 +161,21 @@ protected:
     {
         if(!is_dna)
         {
-            if(r_pos>=0 && l_pos>=0)
-                site->set_sumAmino(1);
+            if(l_pos>=0)
+            {
+                if(!left->is_terminal_sequence())
+                    site->set_sumAmino(left->get_site_at(l_pos)->get_sumAmino());
+                else if(left->is_read_sequence())
+                    site->set_sumAmino(1);
+            }
+            if(r_pos>=0)
+            {
+                if(!right->is_terminal_sequence())
+                    site->set_sumAmino(right->get_site_at(r_pos)->get_sumAmino());
+                else if(right->is_read_sequence())
+                    site->set_sumAmino(1);
+            }
+
             return;
         }
 
