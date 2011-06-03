@@ -237,7 +237,7 @@ void Node::add_root_consensus(vector<Fasta_entry> *aligned_sequences)
     entry.name = "consensus";
     entry.comment = "";
 
-    for(int j=1;j<root_length;j++)
+    for(int j=1;j<root_length-1;j++)
     {
         Site *site = root->get_site_at(j);
         int sA = site->get_sumA();

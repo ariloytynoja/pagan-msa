@@ -36,8 +36,8 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.30;
-    date = "17 May, 2011";
+    version = 0.31;
+    date = "3 June, 2011";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -78,6 +78,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description reads_alignment2("Additional reads alignment options",100);
     reads_alignment2.add_options()
+        ("show-contig-ancestor", "fill contig gaps with ancestral sequence")
         ("consensus-minimum", po::value<int>()->default_value(5), "threshold for inclusion in contig")
         ("test-every-internal-node","test every internal node for each read")
         ("placement-only", "compute read placement only")
@@ -136,6 +137,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("reads-pileup","pileup reads")
         ("pileup-reads-ordered","pileup reads are ordered")
         ("pileup-offset", po::value<int>()->default_value(5), "offset for alignment start site")
+        ("pacbio","PacBio reads")
     ;
 
     boost::program_options::options_description graph("Graph options",100);

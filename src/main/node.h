@@ -1069,7 +1069,7 @@ public:
 
                     if(path_state != Site::xskipped && path_state != Site::yskipped)
                     {
-                        if(state>=0 && state < (int)alpha.length())
+                        if(Settings_handle::st.is("show-contig-ancestor") && state>=0 && state < (int)alpha.length())
                         {
                             char c = alpha.at(site->get_state());
                             entry.sequence.append(1,tolower(c));

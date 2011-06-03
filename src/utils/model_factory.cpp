@@ -1234,6 +1234,13 @@ void Model_factory::dna_model(float *char_pi,Settings *st)
     float end_gap_ext = 0.95;
     float break_gap_ext = 0.99;
 
+    if(st->is("pacbio"))
+    {
+        ins_rate = 1;
+        del_rate = 1;
+        gap_ext = 0.1;
+    }
+
     if(st->is("char-kappa"))
         char_kappa =  st->get("char-kappa").as<float>();
 
