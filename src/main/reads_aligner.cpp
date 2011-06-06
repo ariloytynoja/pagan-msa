@@ -907,7 +907,6 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
         if( ignore_tid_tags )
             tid = "<empty>";
 
-
         // Call Exonerate to reduce the search space
 
         map<string,hit> exonerate_hits;
@@ -970,9 +969,6 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                     er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false);
             }
         }
-
-
-
 
         // Discarded by Exonerate
 
@@ -1055,22 +1051,25 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                 root->get_all_nodes(&nodes);
 
                 multimap<string,string>::iterator tit;
+                int matching_nodes = 0;
 
                 if( ignore_tid_tags )
                 {
                     tit = tid_nodes.begin();
+                    matching_nodes = tid_nodes.size();
                 }
                 else
                 {
                     tit = tid_nodes.find(tid);
+                    matching_nodes = tid_nodes.count(tid);
                 }
 
                 if(tit != tid_nodes.end())
                 {
                     if(!Settings_handle::st.is("silent"))
-                        cout<<"Read "<<reads->at(i).name<<" with TID "<<tid<<" matches "<<tid_nodes.size()<<" nodes.\n";
+                        cout<<"Read "<<reads->at(i).name<<" with TID "<<tid<<" matches "<<matching_nodes<<" nodes.\n";
 
-                    while(tit != tid_nodes.end())
+                    while(tit != tid_nodes.end() && matching_nodes>0)
                     {
                         map<string,Node*>::iterator nit = nodes.find(tit->second);
                         double score = this->read_match_score( nit->second, &reads->at(i), mf, best_score);
@@ -1083,6 +1082,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                             best_node = tit->second;
                         }
                         tit++;
+                        matching_nodes--;
                     }
                 }
                 if(best_score<0.05)
