@@ -142,7 +142,10 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
     map<string,string> names;
     multimap<string,string>::iterator it = tid_nodes->begin();
     for(;it!=tid_nodes->end();it++)
-        names.insert(pair<string,string>(it->second,it->first));
+    {
+        if(it->first==read->tid)
+            names.insert(pair<string,string>(it->second,it->first));
+    }
 
     this->write_exonerate_input(root,read,&names,r);
 
@@ -189,14 +192,18 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
                         iter->second.t_start = h.t_start;
                     if(iter->second.t_end < h.t_end)
                         iter->second.t_end = h.t_end;
+//                    cout<<"i "<<h.query<<" "<<h.node<<" "<<h.score<<" "<<h.q_start<<" "<<h.q_end<<" "<<h.q_strand<<" "<<h.t_start<<" "<<h.t_end<<" "<<h.t_strand<<"\n";
                 }
                 else if(iter->second.score < h.score)
                 {
                     iter->second = h;
+//                    cout<<"b "<<h.query<<" "<<h.node<<" "<<h.score<<" "<<h.q_start<<" "<<h.q_end<<" "<<h.q_strand<<" "<<h.t_start<<" "<<h.t_end<<" "<<h.t_strand<<"\n";
                 }
             }
             else
             {
+//                cout<<"n "<<h.query<<" "<<h.node<<" "<<h.score<<" "<<h.q_start<<" "<<h.q_end<<" "<<h.q_strand<<" "<<h.t_start<<" "<<h.t_end<<" "<<h.t_strand<<"\n";
+
                 all_hits.insert( make_pair(h.node, h) );
                 hit_names.push_back(h.node);
             }
