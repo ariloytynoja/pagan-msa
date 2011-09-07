@@ -1,3 +1,7 @@
+v.0.32
+- option '--454' works also with FASTA-formatted seqeunces
+
+
 v.0.31
 - option for contig build to show ancestral sequence across gaps
 - option to use more appropriate default settings for PacBio pileup

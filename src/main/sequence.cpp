@@ -92,6 +92,10 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
     first_site.set_empty_children();
     this->push_back_site(first_site);
 
+    int in_row = 1;
+    int prev_row = 1;
+    int prev_state = -1;
+
     Edge first_edge( -1,this->get_current_site_index() );
     this->push_back_edge(first_edge);
 
@@ -112,11 +116,79 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
         site.set_empty_children();
         this->push_back_site(site);
 
-        Edge edge( this->get_previous_site_index(),this->get_current_site_index() );
-        this->push_back_edge(edge);
+//        Edge edge( this->get_previous_site_index(),this->get_current_site_index() );
+//        this->push_back_edge(edge);
 
-        this->get_previous_site()->set_first_fwd_edge_index( this->get_current_edge_index() );
-        this->get_current_site()->set_first_bwd_edge_index( this->get_current_edge_index() );
+//        this->get_previous_site()->set_first_fwd_edge_index( this->get_current_edge_index() );
+//        this->get_current_site()->set_first_bwd_edge_index( this->get_current_edge_index() );
+
+        // Check for homopolymers
+        if( site.get_state() == prev_state)
+        {
+            in_row++;
+            prev_row = 1;
+        }
+        else
+        {
+            prev_row = in_row;
+            in_row = 1;
+            prev_state = site.get_state();
+        }
+
+        // If 454 data, correct for homopolymer error
+        //
+        if(Settings_handle::st.is("454") &&  prev_row > 2  )
+        {
+            // first edge
+            float weight = 0.9;
+
+            Edge edge( this->get_previous_site_index(),this->get_current_site_index(), weight );
+            this->push_back_edge(edge);
+
+            this->get_previous_site()->set_first_fwd_edge_index( this->get_current_edge_index() );
+            this->get_current_site()->set_first_bwd_edge_index( this->get_current_edge_index() );
+
+            if( prev_row < 5 )
+            {
+                // second edge
+                int prev_ind = this->get_previous_site()->get_first_bwd_edge()->get_start_site_index();
+                Edge edge_2( prev_ind ,this->get_current_site_index(), 1.0-weight );
+                this->push_back_edge(edge_2);
+
+                this->get_site_at(prev_ind)->add_new_fwd_edge_index( this->get_current_edge_index() );
+                this->get_current_site()->add_new_bwd_edge_index( this->get_current_edge_index() );
+
+            }
+            else
+            {
+                // second edge
+                int prev_ind = this->get_previous_site()->get_first_bwd_edge()->get_start_site_index();
+                Edge edge_2( prev_ind ,this->get_current_site_index(), 1.0-weight-0.02 );
+                this->push_back_edge(edge_2);
+
+                this->get_site_at(prev_ind)->add_new_fwd_edge_index( this->get_current_edge_index() );
+                this->get_current_site()->add_new_bwd_edge_index( this->get_current_edge_index() );
+
+                // third edge
+                int prev_prev_ind = get_site_at(prev_ind)->get_first_bwd_edge()->get_start_site_index();
+                Edge edge_3( prev_prev_ind ,this->get_current_site_index(), 0.02 );
+                this->push_back_edge(edge_3);
+
+                this->get_site_at(prev_prev_ind)->add_new_fwd_edge_index( this->get_current_edge_index() );
+                this->get_current_site()->add_new_bwd_edge_index( this->get_current_edge_index() );
+
+            }
+        }
+        else
+        {
+            Edge edge( this->get_previous_site_index(),this->get_current_site_index() );
+            this->push_back_edge(edge);
+
+            this->get_previous_site()->set_first_fwd_edge_index( this->get_current_edge_index() );
+            this->get_current_site()->set_first_bwd_edge_index( this->get_current_edge_index() );
+        }
+
+
     }
 
     Site last_site( &edges, Site::stop_site, Site::ends_site );
