@@ -1825,6 +1825,7 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
     Evol_model model(sequence_data_type, distance);
 
+
     if(is_local_alignment)
     {
         // these are for reads alignment
@@ -1838,6 +1839,7 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
         model.ext_prob = ext;
 
         float rate = 0.005;
+
         if(Settings_handle::st.is("indel-rate"))
             rate =  Settings_handle::st.get("indel-rate").as<float>();
 
@@ -1857,8 +1859,15 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
     }
     else
     {
+
         model.log_ext_prob = log(char_ext_prob);
         model.ext_prob = char_ext_prob;
+
+        if(Settings_handle::st.is("454") && Settings_handle::st.is("reads-pileup"))
+        {
+            char_ins_rate = 0.25;
+            char_del_rate = 0.25;
+        }
 
         model.ins_rate = char_ins_rate;
         model.del_rate = char_del_rate;
