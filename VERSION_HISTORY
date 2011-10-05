@@ -1,5 +1,11 @@
+v.0.33
+- query sequence matching equally well to several targets is placed to multiple locations
+- alternative scores for choosing the target: default self-normalised substitution score
+- the source code now at http://code.google.com/p/pagan-msa/
+
+
 v.0.32
-- option '--454' works also with FASTA-formatted seqeunces
+- option '--454' works also with FASTA-formatted sequences
 
 
 v.0.31

@@ -17,13 +17,13 @@ using namespace ppa;
 Check_version::Check_version(float version)
 {
 
-    cout<<"\nThis is PAGAN v."<<version<<".\nChecking if updates are available at http://www.ebi.ac.uk/~ari/pagan.\n";
+    cout<<"\nThis is PAGAN v."<<version<<".\nChecking if updates are available at http://http://code.google.com/p/pagan-msa.\n";
 
     struct sockaddr_in *remote;
     char buf[BUFSIZ+1];
 
     int sock = create_tcp_socket();
-    char *ip = get_ip("www.ebi.ac.uk");
+    char *ip = get_ip("pagan-msa.googlecode.com");
 
     remote = (struct sockaddr_in *)malloc(sizeof(struct sockaddr_in *));
     remote->sin_family = AF_INET;
@@ -45,7 +45,7 @@ Check_version::Check_version(float version)
         exit(1);
     }
 
-    char get[] = "GET /~ari/pagan/VERSION_HISTORY HTTP/1.0\r\nHost: www.ebi.ac.uk\r\nUser-Agent: HTMLGET 1.0\r\n\r\n";
+    char get[] = "GET /git/VERSION_HISTORY HTTP/1.0\r\nHost: pagan-msa.googlecode.com\r\nUser-Agent: HTMLGET 1.0\r\n\r\n";
 
     //Send the query to the server
     int sent = 0;

@@ -126,6 +126,8 @@ public:
 
     /**************************************/
 
+    void reset_alignment_number() { alignment_number = 1; }
+
     void set_name(string nm)
     {
         name = nm;
@@ -451,7 +453,10 @@ public:
     {
 
         if(!Settings_handle::st.is("silent"))
-            cout<<"aligning node "<<this->get_name()<<" ("<<alignment_number++<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
+            if(is_reads_sequence)
+                cout<<"  aligning to node: "<<left_child->get_name()<<"."<<endl;
+            else
+                cout<<"aligning node "<<this->get_name()<<" ("<<alignment_number++<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
 
         clock_t t_start=clock();
 

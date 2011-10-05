@@ -205,7 +205,13 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
         set<string> unique_nodeset;
         for(int i=0;i<(int)reads.size();i++)
         {
-            unique_nodeset.insert(reads.at(i).node_to_align);
+            stringstream nodestream;
+            nodestream << reads.at(i).node_to_align;
+            string val;
+            while(nodestream >> val)
+            {
+                unique_nodeset.insert(val);
+            }
         }
 
         if(unique_nodeset.find("discarded_read") != unique_nodeset.end())
@@ -228,8 +234,16 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
             vector<Fasta_entry> reads_for_this;
 
             for(int i=0;i<(int)reads.size();i++)
-                if(reads.at(i).node_to_align == *sit)
-                    reads_for_this.push_back(reads.at(i));
+            {
+                stringstream nodestream;
+                nodestream << reads.at(i).node_to_align;
+                string val;
+                while(nodestream >> val)
+                {
+                    if(val == *sit)
+                        reads_for_this.push_back(reads.at(i));
+                }
+            }
 
             this->sort_reads_vector(&reads_for_this);
 
@@ -1076,7 +1090,12 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
                         if(Settings::noise>0)
                             cout<<"   "<<tit->second<<" with score "<<score<<" (simple p-distance)\n";
-                        if(score>best_score)
+                        if(score==best_score)
+                        {
+                            best_score = score;
+                            best_node.append(" "+tit->second);
+                        }
+                        else if(score>best_score)
                         {
                             best_score = score;
                             best_node = tit->second;
@@ -1168,8 +1187,14 @@ double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_fact
 
     node->set_distance_to_parent(org_dist);
 
+    Evol_model model = mf->alignment_model(r_dist+0.001,false);
+
     int matching = 0;
     int aligned = 0;
+
+    float subst_score = 0;
+    float max_subst_score_l = 0;
+    float max_subst_score_r = 0;
 
     int node_start_pos1 = -1;
     int node_end_pos1 = -1;
@@ -1205,15 +1230,37 @@ double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_fact
             if(site1->get_state() == site2->get_state())
                 matching++;
 
+            subst_score += model.score(site1->get_state(),site2->get_state());
+            max_subst_score_l += model.score(site2->get_state(),site2->get_state());
+
             aligned++;
         }
+
+        if(site->get_children()->right_index>=0)
+        {
+            Site *site1 = tmpnode->get_right_child()->get_sequence()->get_site_at(site->get_children()->right_index);
+            max_subst_score_r += model.score(site1->get_state(),site1->get_state());
+        }
+
     }
 
-    double score = (double) matching/ (double) reads_node1->get_sequence()->sites_length();
-//    cout<<"  "<<score<<" : "<<matching<<" "<<aligned<<" "<<node->get_sequence()->sites_length()<<" "<<reads_node1->get_sequence()->sites_length()<<endl;
+    double score_s = (double) matching/ (double) reads_node1->get_sequence()->sites_length();
+    double score_l = (double) subst_score/ (double) max_subst_score_l;
+    double score_r = (double) subst_score/ (double) max_subst_score_r;
+
+//    cout<<"  "<<score_s<<" : "<<matching<<" "<<aligned<<" "<<node->get_sequence()->sites_length()<<" "<<reads_node1->get_sequence()->sites_length()<<endl;
+//    cout<<"  "<<score_l<<" : "<<subst_score<<" "<<max_subst_score_l<<endl;
+//    cout<<"  "<<score_r<<" : "<<subst_score<<" "<<max_subst_score_r<<endl<<endl;
 
     tmpnode->has_left_child(false);
     delete tmpnode;
+
+    double score = score_r;
+
+    if(Settings_handle::st.is("use-identity-score"))
+        score = score_s;
+    else if(Settings_handle::st.is("use-target-normalised-score"))
+        score = score_l;
 
     if(score>best_score)
     {
