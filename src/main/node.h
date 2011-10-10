@@ -453,10 +453,12 @@ public:
     {
 
         if(!Settings_handle::st.is("silent"))
-            if(is_reads_sequence)
+        {
+            if(is_reads_sequence && !Settings_handle::st.is("reads-pileup"))
                 cout<<"  aligning to node: "<<left_child->get_name()<<"."<<endl;
-            else
+            else if(!is_reads_sequence)
                 cout<<"aligning node "<<this->get_name()<<" ("<<alignment_number++<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
+        }
 
         clock_t t_start=clock();
 

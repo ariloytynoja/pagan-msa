@@ -338,10 +338,10 @@ int main(int argc, char *argv[])
         outfile =  Settings_handle::st.get("outfile").as<string>();
 
 
-    if(Settings_handle::st.is("no-xml"))
-        cout<<"Alignment files: "<<outfile<<".fas"<<endl;
-    else
+    if(Settings_handle::st.is("xml"))
         cout<<"Alignment files: "<<outfile<<".fas, "<<outfile<<".xml"<<endl;
+    else
+        cout<<"Alignment files: "<<outfile<<".fas"<<endl;
 
     fr.set_chars_by_line(70);
     fr.write(outfile, aligned_sequences, true);
@@ -349,7 +349,7 @@ int main(int argc, char *argv[])
     count = 1;
     root->set_name_ids(&count);
 
-    if(!Settings_handle::st.is("no-xml"))
+    if(Settings_handle::st.is("xml"))
     {
         Xml_writer xw;
         xw.write(outfile, root, aligned_sequences, true);

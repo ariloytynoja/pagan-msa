@@ -55,7 +55,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("no-terminal-edges", "assume terminal gaps as missing data")
         ("silent","minimal output")
         ("noise", po::value<int>(), "output noise level")
-        ("no-xml","write FASTA alignment only")
+        ("xml","output also XML alignment")
     ;
     boost::program_options::options_description help_update("Help and updates",100);
     help_update.add_options()

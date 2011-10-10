@@ -42,17 +42,19 @@ paralogs than between distant ones.
 PILEUP ALIGNMENT
 ================
 
-PAGAN can make so-called pileup alignments by adding the sequences in the order their
-appear in the input file. This is not recommended for distantly-related sequences but 
-can be useful for highly similar sequences that require alignment. This may be relevant
-e.g. in the analysis of overlapping NGS reads from the same locus; if the reads have
-been generated on Roche 454 or Ion Torrent platform, PAGAN's ability to model the 
-homopolymer errors is especially useful. 
+PAGAN can make "pileup" alignments by adding the sequences in the order their appear 
+in the input file. This is not recommended for distantly-related sequences but can be 
+useful for highly similar sequences that require alignment. This may be relevante.g. 
+in the analysis of overlapping noisy reads from the same locus; if the reads have been 
+generated on Roche 454 or Ion Torrent platform, PAGAN's ability to model the 
+homopolymer errors is especially useful.
 
-On pileup alignment the consenus sequence (the alignment of sequences included so far)
-and the next sequence to be added should overlap. PAGAN can include sequences that do
-not overlap but the region in between has to be bridged by other sequences and thus the
-order of adding the sequences can be important.
+Like in any alignment also in a pileup alignment the consenus sequence (the alignment 
+of sequences included so far) and the next sequence to be added should overlap. PAGAN 
+can include sequences that do not overlap but the region in between has to be bridged 
+by other sequences and thus the order of adding the sequences can be important. If the
+sequences are from the same species, the option to reconstruct the consensus sequence
+(see below) can also be useful.
 
 
 
@@ -75,8 +77,7 @@ pagan --ref-seqfile reference_aa.fas --ref-treefile reference_tree.nhx \
 pagan --ref-seqfile reference_aa.fas --ref-treefile reference_tree.nhx \
  --readsfile input_aa_frags.fas --outfile aa_frags_alignment
 
-The resulting alignments will be written to files aa_[full|frags]_alignment.fas and 
-aa_[full|frags]_alignment.xml in FASTA and HSAML formats.
+The resulting alignments will be written to files aa_[full|frags]_alignment.fas.
 
 
 
@@ -96,8 +97,7 @@ The data can be analysed using the following command:
 pagan --ref-seqfile reference_codon.fas --ref-treefile reference_tree.nhx \
  --readsfile input_ngs.fastq --outfile read_alignment
 
-The resulting alignments will be written to files read_alignment.fas and 
-read_alignment.xml in FASTA and HSAML formats.
+The resulting alignments will be written to file read_alignment.fas.
 
 If we add the option '--config-log-file':
 
@@ -142,10 +142,10 @@ The data can be analysed using the following command:
 pagan --reads-pileup --use-consensus --454 --readsfile 454_reads.fas \
 --outfile 454_reads_pagan --config-log-file 454.cfg
 
-The resulting alignments will be written to files 454_reads_pagan.fas and 
-454_reads_pagan.xml, and the the arguments used to '454.cfg'.
+The resulting alignment will be written to file 454_reads_pagan.fas and the the 
+arguments used to '454.cfg'.
 
-A similar analysis can now be repeated for another input file with the command:
+A similar analysis could now be repeated for another input file with the command:
 
 pagan 454.cfg --readsfile more_reads.fas --outfile another_output_pagan
 

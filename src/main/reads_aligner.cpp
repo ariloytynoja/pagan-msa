@@ -146,7 +146,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
             node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
 
             if(!Settings_handle::st.is("silent"))
-                cout<<"aligning read: "<<reads.at(i).name<<": "<<reads.at(i).comment<<endl;
+                cout<<"aligning read: "<<reads.at(i).name<<" "<<reads.at(i).comment<<endl;
 
 
             int start_offset = -1;
@@ -335,7 +335,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
                 node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
 
                 if(!Settings_handle::st.is("silent"))
-                    cout<<"aligning read: "<<reads_for_this.at(i).name<<": "<<reads_for_this.at(i).comment<<endl;
+                    cout<<"aligning read: "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).comment<<endl;
 
                 int start_offset = -1;
                 int end_offset = -1;
@@ -756,7 +756,7 @@ bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, strin
         }
     }
 
-    if(!Settings_handle::st.is("silent"))
+    if(!Settings_handle::st.is("silent") && !Settings_handle::st.is("reads-pileup"))
         cout<<"  aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"];"<<
             " identical positions "<<(float)matched/(float)aligned<<" ["<<matched<<"/"<<aligned<<"]"<<endl;
 
