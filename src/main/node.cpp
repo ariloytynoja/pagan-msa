@@ -90,7 +90,7 @@ void Node::get_alignment_for_nodes(vector<Fasta_entry> *aligned_sequences,bool i
             }
         }
 
-        if(Settings_handle::st.is("reads-pileup")/* && Settings_handle::st.is("use-consensus")*/)
+        if(Settings_handle::st.is("reads-pileup") && Settings_handle::st.is("use-consensus"))
             this->add_root_consensus(aligned_sequences);
     }
     else

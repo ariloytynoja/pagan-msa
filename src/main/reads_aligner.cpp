@@ -117,8 +117,12 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
         string ref_root_name = root->get_name();
 
+        int start_i = 0;
+        if(Settings_handle::st.is("reads-pileup") && Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
+            start_i = 1;
+
         global_root = root;
-        for(int i=0;i<(int)reads.size();i++)
+        for(int i=start_i;i<(int)reads.size();i++)
         {
 
             Node * node = new Node();
@@ -443,10 +447,12 @@ void Reads_aligner::add_trimming_comment(vector<Fasta_entry> *reads)
 
     for(;fit1 != reads->end();fit1++)
     {
-        stringstream trimming;
-        trimming << "P1ST"<<fit1->trim_start<<":P1ET"<<fit1->trim_end;
-        fit1->comment += trimming.str();
-//        cout<<"s: "<<trimming.str()<<endl;
+        if(Settings_handle::st.is("trim-read-ends"))
+        {
+            stringstream trimming;
+            trimming << "P1ST"<<fit1->trim_start<<":P1ET"<<fit1->trim_end;
+            fit1->comment += trimming.str();
+        }
     }
 }
 
@@ -658,9 +664,12 @@ void Reads_aligner::find_paired_reads(vector<Fasta_entry> *reads)
                 if(fit1->quality!="")
                     fit1->quality += "0"+fit2->quality;
 
-                stringstream trimming;
-                trimming << "P1ST"<<fit1->trim_start<<":P1ET"<<fit1->trim_end<<":P2ST"<<fit2->trim_start<<":P2ET"<<fit2->trim_end;
-                fit1->comment += trimming.str();
+                if(Settings_handle::st.is("trim-read-ends"))
+                {
+                    stringstream trimming;
+                    trimming << "P1ST"<<fit1->trim_start<<":P1ET"<<fit1->trim_end<<":P2ST"<<fit2->trim_start<<":P2ET"<<fit2->trim_end;
+                    fit1->comment += trimming.str();
+                }
 
                 reads->erase(fit2);
 
@@ -672,13 +681,16 @@ void Reads_aligner::find_paired_reads(vector<Fasta_entry> *reads)
     }
 
 
-    for(fit1 = reads->begin();fit1 != reads->end();fit1++)
+    if(Settings_handle::st.is("trim-read-ends"))
     {
-        if(fit1->comment.find("P1ST")==string::npos)
+        for(fit1 = reads->begin();fit1 != reads->end();fit1++)
         {
-            stringstream trimming;
-            trimming << "P1ST"<<fit1->trim_start<<":P1ET"<<fit1->trim_end;
-            fit1->comment += trimming.str();
+            if(fit1->comment.find("P1ST")==string::npos)
+            {
+                stringstream trimming;
+                trimming << "P1ST"<<fit1->trim_start<<":P1ET"<<fit1->trim_end;
+                fit1->comment += trimming.str();
+            }
         }
     }
 }
