@@ -1,6 +1,8 @@
-= PAGAN graph aligner =
+== PAGAN graph aligner ==
 
 v. 0.33
+
+<wiki:toc max_depth="4" />
 
 == Introduction ==
 
@@ -382,6 +384,4 @@ rm -r ./tmp_boost
 }}}
 
 Note that you need to replace `$PATH_TO_PAGAN_DIR` with the appropriate file path. You also need to copy the line `export LD_LIBRARY_PATH=...` in your `~/.bashrc` or similar such that it will automatically be set for future sessions.
-
-
 
