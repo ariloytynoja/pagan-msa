@@ -65,6 +65,7 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL license and that you accept its terms.
 */
 
+
 #include <algorithm>
 #include <iostream>
 #include <set>
@@ -546,12 +547,40 @@ void Fasta_reader::write(ostream & output, const vector<Fasta_entry> & seqs) con
 
     string seq, temp = "";  // Initialization
 
+    multimap<string,int> copy_num;
+    vector<Fasta_entry>::const_iterator vi1 = seqs.begin();
+    for (; vi1 != seqs.end(); vi1++)
+    {
+        vector<Fasta_entry>::const_iterator vi2 = vi1;
+        vi2++;
+
+        int copy = 1;
+        for (; vi2 != seqs.end(); vi2++)
+        {
+            if(vi1->name == vi2->name)
+            {
+                if(copy==1)
+                    copy_num.insert( pair<string,int>(vi1->name,copy) );
+
+                copy++;
+                copy_num.insert( pair<string,int>(vi2->name,copy) );
+            }
+        }
+    }
+
     vector<Fasta_entry>::const_iterator vi = seqs.begin();
 
     // Main loop : for all sequences in vector container
     for (; vi != seqs.end(); vi++)
     {
         output << ">" << vi->name;
+
+        multimap<string,int>::iterator cit = copy_num.find(vi->name);
+        if(cit!=copy_num.end())
+        {
+            output<<"/"<<cit->second;
+            copy_num.erase(cit);
+        }
         if(vi->comment != "")
             output << " " << vi->comment;
 
