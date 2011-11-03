@@ -129,7 +129,7 @@ void Exonerate_reads::write_exonerate_input(Node *root, Fasta_entry *read, map<s
     return;
 }
 
-void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<string,string> *tid_nodes, map<string,hit> *hits, bool is_local)
+void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<string,string> *tid_nodes, map<string,hit> *hits, bool is_local, bool all_nodes)
 {
 
     int r = rand();
@@ -143,8 +143,17 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
     multimap<string,string>::iterator it = tid_nodes->begin();
     for(;it!=tid_nodes->end();it++)
     {
-        if(it->first==read->tid)
-            names.insert(pair<string,string>(it->second,it->first));
+        if(all_nodes)
+        {
+            names.insert(pair<string,string>(it->second,"empty"));
+        }
+        else
+        {
+            if(it->first==read->tid)
+            {
+                names.insert(pair<string,string>(it->second,it->first));
+            }
+        }
     }
 
     this->write_exonerate_input(root,read,&names,r);

@@ -962,10 +962,10 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
 
                 if(tid_nodes.size()>0)
-                    er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits, true);
+                    er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits, true,ignore_tid_tags);
 
                 if(Settings_handle::st.is("use-exonerate-reads-gapped") || Settings_handle::st.is("fast-placement"))
-                    er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false);
+                    er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
             }
         }
         else if(Settings_handle::st.is("use-exonerate-reads-gapped"))
@@ -992,7 +992,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                 }
 
                 if(tid_nodes.size()>0)
-                    er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false);
+                    er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
             }
         }
 
@@ -1000,6 +1000,8 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
         if(reads->at(i).node_to_align == "discarded_read")
         {
+            if(!Settings_handle::st.is("silent"))
+                cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" was discarded by Exonerate.\n";
             continue;
         }
 
