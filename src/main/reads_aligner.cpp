@@ -903,13 +903,13 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
     multimap<string,string> tid_nodes;
     bool ignore_tid_tags = true;
 
-    if(Settings_handle::st.is("test-every-node"))
-    {
-        root->get_node_names(&tid_nodes);
-    }
-    else if(Settings_handle::st.is("test-every-internal-node"))
+    if(Settings_handle::st.is("test-every-internal-node"))
     {
         root->get_internal_node_names(&tid_nodes);
+    }
+    else if(Settings_handle::st.is("test-every-node"))
+    {
+        root->get_node_names(&tid_nodes);
     }
     else
     {
@@ -1055,7 +1055,8 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                         reads->at(i).local_qend = h.q_end;
                         reads->at(i).local_tstart = h.t_start;
                         reads->at(i).local_tend = h.t_end;
-                        if(Settings_handle::st.is("fast-placement") || Settings_handle::st.is("use-exonerate-anchors"))
+//                        if(Settings_handle::st.is("fast-placement") || Settings_handle::st.is("use-exonerate-anchors"))
+                        if(Settings_handle::st.is("use-exonerate-anchors"))
                           reads->at(i).use_local  = true;
                     }
 
