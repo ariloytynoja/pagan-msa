@@ -1105,7 +1105,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
                         if(Settings::noise>0)
                             cout<<"   "<<tit->second<<" with score "<<score<<" (simple p-distance)\n";
-                        if(score==best_score)
+                        if(score==best_score && !Settings_handle::st.is("one-placement-only"))
                         {
                             best_score = score;
                             best_node.append(" "+tit->second);
