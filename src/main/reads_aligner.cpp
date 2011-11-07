@@ -965,7 +965,27 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                     er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits, true,ignore_tid_tags);
 
                 if(Settings_handle::st.is("use-exonerate-reads-gapped") || Settings_handle::st.is("fast-placement"))
+                {
+                    if(Settings_handle::st.is("fast-placement") && tid_nodes.size()==0)
+                    {
+                        tid_nodes.clear();
+                        reads->at(i).node_to_align="";
+
+                        if(Settings_handle::st.is("test-every-internal-node"))
+                        {
+                            root->get_internal_node_names(&tid_nodes);
+                        }
+                        else if(Settings_handle::st.is("test-every-node"))
+                        {
+                            root->get_node_names(&tid_nodes);
+                        }
+                        else
+                        {
+                            root->get_node_names_with_tid_tag(&tid_nodes);
+                        }
+                    }
                     er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
+                }
             }
         }
         else if(Settings_handle::st.is("use-exonerate-reads-gapped"))
