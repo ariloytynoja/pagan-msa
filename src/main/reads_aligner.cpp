@@ -1020,13 +1020,35 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
         if(reads->at(i).node_to_align == "discarded_read")
         {
-            if(!Settings_handle::st.is("silent"))
-                cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" was discarded by Exonerate.\n";
-            continue;
+            if(Settings_handle::st.is("exhaustive-placement"))
+            {
+                reads->at(i).node_to_align == "";
+                tid_nodes.clear();
+
+                if(Settings_handle::st.is("test-every-node"))
+                {
+                    root->get_node_names(&tid_nodes);
+                }
+                else if(Settings_handle::st.is("test-every-internal-node"))
+                {
+                    root->get_internal_node_names(&tid_nodes);
+                }
+                else
+                {
+                    root->get_node_names_with_tid_tag(&tid_nodes);
+                    ignore_tid_tags = false;
+                }
+            }
+            else
+            {
+                if(!Settings_handle::st.is("silent"))
+                    cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" was discarded by Exonerate.\n";
+                continue;
+            }
         }
 
         // Has TID or exhaustive search
-        else if(tid != "")
+        if(tid != "")
         {
 
             int matches = tid_nodes.count(tid);
@@ -1125,7 +1147,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
                         if(Settings::noise>0)
                             cout<<"   "<<tit->second<<" with score "<<score<<" (simple p-distance)\n";
-                        if(score==best_score && !Settings_handle::st.is("one-placement-only"))
+                        if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
                         {
                             best_score = score;
                             best_node.append(" "+tit->second);

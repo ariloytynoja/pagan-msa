@@ -133,6 +133,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("use-exonerate-anchors","use Exonerate to anchor the exact alignment")
         ("exonerate-anchor-offset",po::value<int>()->default_value(15),"offset for the Exonerate anchor alignment")
         ("exonerate-anchor-query-offset",po::value<float>()->default_value(2.0),"offset multiplier for the query ends")
+        ("exhaustive-placement","if Exonrate fails, use PAGAN to place the read")
     ;
 
     boost::program_options::options_description pileup("Read pileup options",100);
@@ -177,6 +178,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("branch-length-confirm-insertion", po::value<float>(), "total branch length skipped to confirm as insertion")
         ("branch-skip-weight-per-distance", po::value<float>(), "weighted (by branch length unit) probability for site(s) being skipped over and later matched (>default<)")
         ("branch-skip-penalty-per-branch", po::value<float>(), "fixed probability for site(s) being skipped over and later matched")
+        ("keep-all-edges","nothing of those -- keep everything forever")
     ;
 
     boost::program_options::options_description output("Graph output options",100);

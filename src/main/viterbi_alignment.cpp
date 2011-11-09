@@ -53,7 +53,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     //
     this->set_basic_settings();
 
-    if(is_reads_sequence)
+    if(is_reads_sequence || Settings_handle::st.is("keep-all-edges"))
         this->set_reads_alignment_settings();
 
     // mark sites where no gap open/close penalty. Important for paired reads
