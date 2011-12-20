@@ -191,6 +191,123 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
         }
     }
 
+    // alignment of sga cluster; can be reverse
+    else if(Settings_handle::st.is("compare-reverse"))
+    {
+
+        string ref_root_name = root->get_name();
+
+        int start_i = 0;
+        if(Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
+            start_i = 1;
+
+        sort(reads.begin(),reads.end(),Reads_aligner::longer_sequence);
+
+        int max_attempts = Settings_handle::st.get("read-cluster-attempts").as<int>();
+        global_root = root;
+
+        for(int j=0; j < max_attempts; j++)
+        {
+
+            for(int i=start_i;i<(int)reads.size();i++)
+            {
+
+                if(reads.at(i).cluster_attempts >= max_attempts)
+                    continue;
+
+                Node * node = new Node();
+
+                stringstream ss;
+                ss<<"#"<<count<<"#";
+                node->set_name(ss.str());
+
+                global_root->set_distance_to_parent(0.001);
+                node->add_left_child(global_root);
+
+                if(!Settings_handle::st.is("silent"))
+                    cout<<"("<<i+1<<"/"<<reads.size()<<") ";
+
+                Node * reads_node = new Node();
+                this->copy_node_details(reads_node,&reads.at(i));
+
+                node->add_right_child(reads_node);
+
+                node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+                node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+
+                if(!Settings_handle::st.is("silent"))
+                    cout<<"aligning read: "<<reads.at(i).name<<" "<<reads.at(i).comment<<endl;
+
+                node->align_sequences_this_node(mf,true,false);
+
+                float read_overlap = this->read_alignment_overlap(node, reads.at(i).name, ref_root_name);
+
+
+
+                Node * node_rc = new Node();
+
+                node_rc->set_name(ss.str());
+
+                node_rc->add_left_child(global_root);
+
+                if(!Settings_handle::st.is("silent"))
+                    cout<<"("<<i+1<<"/"<<reads.size()<<") ";
+
+                Node * reads_node_rc = new Node();
+                this->copy_node_details(reads_node_rc,&reads.at(i),true);
+
+                node_rc->add_right_child(reads_node_rc);
+
+                node_rc->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+                node_rc->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+
+                if(!Settings_handle::st.is("silent"))
+                    cout<<"aligning (rc) read: "<<reads.at(i).name<<" "<<reads.at(i).comment<<endl;
+
+                node_rc->align_sequences_this_node(mf,true,false);
+
+                float read_overlap_rc = this->read_alignment_overlap(node_rc, reads.at(i).name, ref_root_name);
+
+                if(!Settings_handle::st.is("silent"))
+                cout<<"forward overlap: "<<read_overlap<<"; backward overlap: "<<read_overlap_rc<<endl;
+
+                float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
+                if(read_overlap<min_overlap && read_overlap_rc<min_overlap)
+                {
+                    reads.at(i).cluster_attempts++;
+
+                    node->has_left_child(false);
+                    delete node;
+
+                    node_rc->has_left_child(false);
+                    delete node_rc;
+                } else {
+
+                    reads.at(i).cluster_attempts = max_attempts;
+
+                    if(read_overlap > read_overlap_rc)
+                    {
+                        count++;
+                        global_root = node;
+
+                        node_rc->has_left_child(false);
+                        delete node_rc;
+                    }
+
+                    else
+                    {
+                        count++;
+                        global_root = node_rc;
+
+                        node->has_left_child(false);
+                        delete node;
+                    }
+
+                }
+            }
+        }
+    }
+
     // Proper placement
     //
     else
@@ -695,14 +812,14 @@ void Reads_aligner::find_paired_reads(vector<Fasta_entry> *reads)
     }
 }
 
-void Reads_aligner::copy_node_details(Node *reads_node,Fasta_entry *read)
+void Reads_aligner::copy_node_details(Node *reads_node,Fasta_entry *read,bool turn_revcomp)
 {
     double r_dist = Settings_handle::st.get("reads-distance").as<float>();
 
     reads_node->set_distance_to_parent(r_dist);
     reads_node->set_name(read->name);
     reads_node->add_name_comment(read->comment);
-    reads_node->add_sequence( *read, read->data_type, false, true);
+    reads_node->add_sequence( *read, read->data_type, false, true, turn_revcomp);
     reads_node->get_sequence()->is_read_sequence(true);
 
 }
@@ -718,7 +835,7 @@ bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, strin
     int read_length = 0;
     int matched = 0;
 
-    if(Settings_handle::st.is("reads-pileup"))
+    if(Settings_handle::st.is("reads-pileup") && !Settings_handle::st.is("overlap-with-reference"))
     {
         for( int j=0; j < node_sequence->sites_length(); j++ )
         {
@@ -756,11 +873,11 @@ bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, strin
         }
     }
 
-    if(!Settings_handle::st.is("silent") && !Settings_handle::st.is("reads-pileup"))
+    if(Settings::noise>0 || !Settings_handle::st.is("silent") && !Settings_handle::st.is("reads-pileup"))
         cout<<"  aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"];"<<
             " identical positions "<<(float)matched/(float)aligned<<" ["<<matched<<"/"<<aligned<<"]"<<endl;
 
-    if(Settings_handle::st.is("reads-pileup"))
+    if(Settings_handle::st.is("reads-pileup") && !Settings_handle::st.is("overlap-with-reference"))
     {
         if( (float)aligned/(float)read_length >= min_overlap )
             return true;
@@ -796,6 +913,34 @@ bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, strin
     }
 
     return false;
+}
+
+float Reads_aligner::read_alignment_overlap(Node * node, string read_name, string ref_node_name)
+{
+    Sequence *node_sequence = node->get_sequence();
+
+    int aligned = 0;
+    int read_length = 0;
+    int matched = 0;
+
+    for( int j=0; j < node_sequence->sites_length(); j++ )
+    {
+        bool read_has_site = node->has_site_at_alignment_column(j,read_name);
+        bool any_other_has_site = node->any_other_has_site_at_alignment_column(j,read_name);
+
+        if(read_has_site)
+            read_length++;
+
+        if(read_has_site && any_other_has_site)
+        {
+            aligned++;
+        }
+    }
+
+    if(Settings::noise>0)
+        cout<<"  aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"]"<<endl;
+
+    return (float)aligned/(float)read_length;
 }
 
 

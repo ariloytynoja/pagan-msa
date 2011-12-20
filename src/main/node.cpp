@@ -43,12 +43,12 @@ Node::~Node()
 int Node::number_of_nodes = 0;
 int Node::alignment_number = 0;
 
-void Node::add_sequence( Fasta_entry seq_entry, int data_type, bool gapped, bool no_trimming)
+void Node::add_sequence( Fasta_entry seq_entry, int data_type, bool gapped, bool no_trimming, bool turn_revcomp)
 {
     if(Settings::noise>4)
         cout<<"Node::add_sequence "<<name<<"\n";
 
-    sequence = new Sequence(seq_entry, data_type, gapped, no_trimming);
+    sequence = new Sequence(seq_entry, data_type, gapped, no_trimming, turn_revcomp);
     this->node_has_sequence_object= true;
 }
 

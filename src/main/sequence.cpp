@@ -29,7 +29,7 @@
 using namespace std;
 using namespace ppa;
 
-Sequence::Sequence(Fasta_entry &seq_entry,const int data_t,bool gapped, bool no_trimming)
+Sequence::Sequence(Fasta_entry &seq_entry,const int data_t,bool gapped, bool no_trimming, bool turn_revcomp)
 {
     data_type = data_t;
 
@@ -50,6 +50,31 @@ Sequence::Sequence(Fasta_entry &seq_entry,const int data_t,bool gapped, bool no_
     else
     {
         gapped_seq = "";
+    }
+
+    if(turn_revcomp)
+    {
+        string revcomp = "";
+        string warning = "";
+
+        for(int i=seq_entry.sequence.size()-1; i>=0 ;i--)
+        {
+            if(seq_entry.sequence.at(i) == 'A' || seq_entry.sequence.at(i) == 'a')
+                revcomp.push_back('T');
+            else if(seq_entry.sequence.at(i) == 'C' || seq_entry.sequence.at(i) == 'c')
+                revcomp.push_back('G');
+            else if(seq_entry.sequence.at(i) == 'G' || seq_entry.sequence.at(i) == 'g')
+                revcomp.push_back('C');
+            else if(seq_entry.sequence.at(i) == 'T' || seq_entry.sequence.at(i) == 't')
+                revcomp.push_back('A');
+            else
+                warning = "Unexpected characters found. Reverse-complement failed.\n";
+        }
+        if(warning.length()>0)
+            cout<<warning;
+        else
+            seq_entry.sequence = revcomp;
+
     }
 
     this->initialise_indeces();

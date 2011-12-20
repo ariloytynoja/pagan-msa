@@ -153,6 +153,7 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
                 fe.trim_start = 0;
                 fe.trim_end = 0;
                 fe.tid = tmp_tid;
+                fe.cluster_attempts = 0;
 
                 seqs.push_back(fe);
                 name = "";
@@ -203,6 +204,8 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
         fe.trim_start = 0;
         fe.trim_end = 0;
         fe.tid = tmp_tid;
+        fe.cluster_attempts = 0;
+
         seqs.push_back(fe);
     }
 
@@ -268,6 +271,7 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
             fe.first_read_length = -1;
             fe.trim_start = 0;
             fe.trim_end = 0;
+            fe.cluster_attempts = 0;
 
             seqs.push_back(fe);
         }

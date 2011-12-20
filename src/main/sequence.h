@@ -619,7 +619,7 @@ class Sequence
     string gapped_seq;
 public:
 
-    Sequence(Fasta_entry &seq_entry,const int data_type,bool gapped = false, bool no_trimming=false);
+    Sequence(Fasta_entry &seq_entry,const int data_type,bool gapped = false, bool no_trimming=false, bool turn_revcomp=false);
     Sequence(const int length,const int data_type, string gapped_s="");
 
     bool is_terminal_sequence() { return terminal_sequence; }

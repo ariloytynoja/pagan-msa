@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 
         reference_alignment = true;
     }
-    else if(Settings_handle::st.is("reads-pileup") && Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
+    else if( /*( Settings_handle::st.is("reads-pileup") || Settings_handle::st.is("sga-cluster") ) &&*/ Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
     {
         string seqfile =  Settings_handle::st.get("readsfile").as<string>();
         cout<<"Reference sequence from: "<<seqfile<<endl;

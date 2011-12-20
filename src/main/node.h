@@ -454,7 +454,7 @@ public:
 
         if(!Settings_handle::st.is("silent"))
         {
-            if(is_reads_sequence && !Settings_handle::st.is("reads-pileup"))
+            if(is_reads_sequence && !Settings_handle::st.is("reads-pileup") && !Settings_handle::st.is("compare-reverse"))
                 cout<<"  aligning to node: "<<left_child->get_name()<<"."<<endl;
             else if(!is_reads_sequence)
                 cout<<"aligning node "<<this->get_name()<<" ("<<alignment_number++<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
@@ -605,12 +605,7 @@ public:
 
     bool any_other_has_site_at_alignment_column(int j,string node_name)
     {
-
-        if(this->get_name() != node_name)
-        {
-            return true;
-        }
-        else if(leaf)
+        if(leaf && this->get_name() != node_name)
         {
             return true;
         }
@@ -1289,7 +1284,7 @@ public:
         return color;
     }
 
-    void add_sequence( Fasta_entry seq_entry, int data_type, bool gapped = false, bool no_trimming = false);
+    void add_sequence( Fasta_entry seq_entry, int data_type, bool gapped = false, bool no_trimming = false, bool turn_revcomp = false);
 
     void add_ancestral_sequence( Sequence* s ) { sequence = s;  node_has_sequence_object = true;}
 

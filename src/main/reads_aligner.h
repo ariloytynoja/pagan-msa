@@ -48,10 +48,11 @@ class Reads_aligner
 
     double read_match_score(Node *node, Fasta_entry *read, Model_factory *mf, float best_score);
     bool read_alignment_overlaps(Node * node, string read_name, string ref_node_name);
+    float read_alignment_overlap(Node * node, string read_name, string ref_node_name);
     void add_trimming_comment(vector<Fasta_entry> *reads);
     void merge_paired_reads(vector<Fasta_entry> *reads, Model_factory *mf);
     void find_paired_reads(vector<Fasta_entry> *reads);
-    void copy_node_details(Node *reads_node,Fasta_entry *read);
+    void copy_node_details(Node *reads_node,Fasta_entry *read,bool turn_revcomp = false);
     bool correct_sites_index(Node *current_root, string ref_node_name, int alignments_done, map<string,Node*> *nodes_map);
 
     static bool better_score(const Fasta_entry& a,const Fasta_entry& b)
@@ -63,7 +64,17 @@ class Reads_aligner
     {
         stable_sort(reads->begin(),reads->end(),Reads_aligner::better_score);
     }
-    
+
+    static bool longer_sequence(const Fasta_entry& a,const Fasta_entry& b)
+    {
+        return  (a.sequence.length()>b.sequence.length());
+    }
+
+    void sort_reads_vector_by_length(vector<Fasta_entry> *reads)
+    {
+        stable_sort(reads->begin(),reads->end(),Reads_aligner::longer_sequence);
+    }
+
     static bool nodeIsSmaller(const string& l,const string& r)
     {   char a,b;
         int vl,vr;

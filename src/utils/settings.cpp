@@ -36,8 +36,8 @@ Settings::Settings()
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.33;
-    date = "5 October, 2011";
+    version = 0.34;
+    date = "20 December, 2011";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -142,6 +142,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("pileup-reads-ordered","pileup reads are ordered")
         ("pileup-offset", po::value<int>()->default_value(5), "offset for alignment start site")
         ("pacbio","PacBio reads")
+        ("compare-reverse","test also reverse-complement and keep better")
+        ("read-cluster-attempts", po::value<int>()->default_value(3),"attempts to find overlap")
     ;
 
     boost::program_options::options_description graph("Graph options",100);
@@ -203,6 +205,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("no-log-odds", "do not use log-odds substitutions scores")
         ("time", "track time (debugging)")
         ("keep-exonerate-files","keep exonerate files")
+        ("overlap-with-reference","force read-pileup to overlap with reference")
     ;
 
     boost::program_options::options_description broken("Broken options",100);
