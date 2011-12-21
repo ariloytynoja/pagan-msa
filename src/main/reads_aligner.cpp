@@ -873,7 +873,7 @@ bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, strin
         }
     }
 
-    if(Settings::noise>0 || !Settings_handle::st.is("silent") && !Settings_handle::st.is("reads-pileup"))
+    if(Settings::noise>0 || ( !Settings_handle::st.is("silent") && !Settings_handle::st.is("reads-pileup") ) )
         cout<<"  aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"];"<<
             " identical positions "<<(float)matched/(float)aligned<<" ["<<matched<<"/"<<aligned<<"]"<<endl;
 
