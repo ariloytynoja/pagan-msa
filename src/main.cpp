@@ -28,6 +28,7 @@
 #include "utils/xml_writer.h"
 #include "utils/model_factory.h"
 #include "utils/evol_model.h"
+#include "utils/optimal_reference.h"
 #include "main/node.h"
 #include "main/reads_aligner.h"
 
@@ -116,7 +117,27 @@ int main(int argc, char *argv[])
 
         reference_alignment = true;
     }
-    else if( /*( Settings_handle::st.is("reads-pileup") || Settings_handle::st.is("sga-cluster") ) &&*/ Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
+    else if(Settings_handle::st.is("readsfile") && Settings_handle::st.is("find-cluster-reference") && !Settings_handle::st.is("ref-seqfile"))
+    {
+        string seqfile =  Settings_handle::st.get("readsfile").as<string>();
+        cout<<"Optimal reference sequence from: "<<seqfile<<endl;
+
+        try
+        {
+            fr.read(seqfile, sequences, true);
+        }
+        catch (ppa::IOException& e) {
+            cout<<"Error reading the reference alignment file '"<<seqfile<<"'.\nExiting.\n\n";
+            exit(1);
+        }
+
+        Optimal_reference ore;
+        ore.find_optimal_reference(&sequences);
+
+        reference_alignment = true;
+
+    }
+    else if(Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
     {
         string seqfile =  Settings_handle::st.get("readsfile").as<string>();
         cout<<"Reference sequence from: "<<seqfile<<endl;
@@ -308,7 +329,17 @@ int main(int argc, char *argv[])
 
     // If reads sequences, add them to the alignment
 
-    if( Settings_handle::st.is("readsfile") )
+    if( Settings_handle::st.is("cluster-pileup") )
+    {
+        Optimal_reference ore;
+        ore.align(root,&mf,count);
+
+        root = ore.get_global_root();
+
+        if(Settings_handle::st.is("time"))
+            cout <<"Time main::reads_align: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
+    }
+    else if( Settings_handle::st.is("readsfile") )
     {
         Reads_aligner ra;
         ra.align(root,&mf,count);

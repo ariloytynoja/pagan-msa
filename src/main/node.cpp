@@ -52,6 +52,28 @@ void Node::add_sequence( Fasta_entry seq_entry, int data_type, bool gapped, bool
     this->node_has_sequence_object= true;
 }
 
+void Node::get_node_sequence(Fasta_entry *seq)
+{
+    Sequence *root = this->get_sequence();
+    int root_length = root->sites_length();
+
+    seq->name = this->get_name();
+
+    for(int j=1;j<root_length-1;j++)
+    {
+
+        string c = Model_factory::get_ancestral_character_alphabet_at( sequence->get_site_at(j)->get_state() );
+
+        int pstate = sequence->get_site_at(j)->get_path_state();
+        int ptype  = sequence->get_site_at(j)->get_site_type();
+
+        if( pstate == Site::xskipped || pstate == Site::yskipped || ptype == Site::non_real)
+            c = "";//sequence->get_gap_symbol();
+
+        seq->sequence.append(c);
+    }
+}
+
 void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_internal_nodes)
 {
     vector<Node*> nodes;

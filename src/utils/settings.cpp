@@ -144,6 +144,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("pacbio","PacBio reads")
         ("compare-reverse","test also reverse-complement and keep better")
         ("read-cluster-attempts", po::value<int>()->default_value(3),"attempts to find overlap")
+        ("find-cluster-reference","find optimal cluster reference")
+        ("cluster-pileup","pileup clustered reads")
     ;
 
     boost::program_options::options_description graph("Graph options",100);

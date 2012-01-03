@@ -60,6 +60,7 @@ struct Fasta_entry
     int local_tend;        // local alignment target end
     bool use_local;
     int cluster_attempts;
+    bool reversed;
 };
 
 }

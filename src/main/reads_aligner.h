@@ -47,6 +47,7 @@ class Reads_aligner
     int reads_pairwise_matching_sites(Node *node);
 
     double read_match_score(Node *node, Fasta_entry *read, Model_factory *mf, float best_score);
+    void read_alignment_scores(Node * node, string read_name, string ref_node_name, float *overlap, float *identity);
     bool read_alignment_overlaps(Node * node, string read_name, string ref_node_name);
     float read_alignment_overlap(Node * node, string read_name, string ref_node_name);
     void add_trimming_comment(vector<Fasta_entry> *reads);

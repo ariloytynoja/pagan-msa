@@ -240,7 +240,9 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
                 node->align_sequences_this_node(mf,true,false);
 
-                float read_overlap = this->read_alignment_overlap(node, reads.at(i).name, ref_root_name);
+                float read_overlap;
+                float read_identity;
+                this->read_alignment_scores(node, reads.at(i).name,global_root->get_name(),&read_overlap,&read_identity);
 
 
 
@@ -266,12 +268,16 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
                 node_rc->align_sequences_this_node(mf,true,false);
 
-                float read_overlap_rc = this->read_alignment_overlap(node_rc, reads.at(i).name, ref_root_name);
+                float read_overlap_rc;
+                float read_identity_rc;
+                this->read_alignment_scores(node_rc, reads.at(i).name,global_root->get_name(),&read_overlap_rc,&read_identity_rc);
 
                 if(!Settings_handle::st.is("silent"))
                 cout<<"forward overlap: "<<read_overlap<<"; backward overlap: "<<read_overlap_rc<<endl;
 
                 float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
+                float min_identity = Settings_handle::st.get("min-reads-identity").as<float>();
+
                 if(read_overlap<min_overlap && read_overlap_rc<min_overlap)
                 {
                     reads.at(i).cluster_attempts++;
@@ -285,7 +291,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
                     reads.at(i).cluster_attempts = max_attempts;
 
-                    if(read_overlap > read_overlap_rc)
+                    if(read_overlap > read_overlap_rc && read_identity > min_identity)
                     {
                         count++;
                         global_root = node;
@@ -294,7 +300,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
                         delete node_rc;
                     }
 
-                    else
+                    else if( read_identity_rc > min_identity )
                     {
                         count++;
                         global_root = node_rc;
@@ -943,6 +949,45 @@ float Reads_aligner::read_alignment_overlap(Node * node, string read_name, strin
     return (float)aligned/(float)read_length;
 }
 
+void Reads_aligner::read_alignment_scores(Node * node, string read_name, string ref_node_name, float *overlap, float *identity)
+{
+    Sequence *node_sequence = node->get_sequence();
+
+    int aligned = 0;
+    int read_length = 0;
+    int matched = 0;
+
+    for( int j=0; j < node_sequence->sites_length(); j++ )
+    {
+        bool read_has_site = node->has_site_at_alignment_column(j,read_name);
+        bool any_other_has_site = node->any_other_has_site_at_alignment_column(j,read_name);
+
+        if(read_has_site)
+            read_length++;
+
+        if(read_has_site && any_other_has_site)
+        {
+            aligned++;
+
+            int state_read = node->get_state_at_alignment_column(j,read_name);
+            int state_ref  = node->get_state_at_alignment_column(j,ref_node_name);
+            if(state_read == state_ref)
+                matched++;
+        }
+
+
+    }
+
+    if(Settings::noise>0)
+    {
+        cout<<"  aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"]"<<endl;
+        cout<<"  matched positions "<<(float)matched/(float)aligned<<" ["<<matched<<"/"<<aligned<<"]"<<endl;
+    }
+
+    *overlap  = (float)aligned/(float)read_length;
+    *identity = (float)matched/(float)aligned;
+
+}
 
 bool Reads_aligner::correct_sites_index(Node *current_root, string ref_node_name, int alignments_done, map<string,Node*> *nodes_map)
 {
@@ -1242,7 +1287,6 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                         reads->at(i).local_qend = h.q_end;
                         reads->at(i).local_tstart = h.t_start;
                         reads->at(i).local_tend = h.t_end;
-//                        if(Settings_handle::st.is("fast-placement") || Settings_handle::st.is("use-exonerate-anchors"))
                         if(Settings_handle::st.is("use-exonerate-anchors"))
                           reads->at(i).use_local  = true;
                     }

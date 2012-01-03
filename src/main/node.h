@@ -839,6 +839,7 @@ public:
             get_right_child()->show_seqs();
     }
 
+    void get_node_sequence(Fasta_entry *seq);
     void get_alignment(vector<Fasta_entry> *aligned_sequences, bool include_internal_nodes=false);
     void get_alignment_for_nodes(vector<Fasta_entry> *aligned_sequences,bool include_internal_nodes);
     void add_root_consensus(vector<Fasta_entry> *aligned_sequences);
