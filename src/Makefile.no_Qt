@@ -336,6 +336,23 @@ reads_aligner.o: main/reads_aligner.cpp main/reads_aligner.h \
 		main/reference_alignment.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o reads_aligner.o main/reads_aligner.cpp
 
+optimal_reference.o: utils/optimal_reference.cpp utils/optimal_reference.h \
+		utils/fasta_entry.h \
+		main/node.h \
+		utils/exceptions.h \
+		utils/settings.h \
+		utils/settings_handle.h \
+		main/sequence.h \
+		main/viterbi_alignment.h \
+		utils/evol_model.h \
+		utils/db_matrix.h \
+		utils/int_matrix.h \
+		main/basic_alignment.h \
+		utils/model_factory.h \
+		main/reference_alignment.h \
+		utils/fasta_reader.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o optimal_reference.o utils/optimal_reference.cpp
+
 ####### Install
 
 install: all 
