@@ -291,7 +291,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
                     reads.at(i).cluster_attempts = max_attempts;
 
-                    if(read_overlap > read_overlap_rc && read_identity > min_identity)
+                    if(read_overlap > read_overlap_rc && read_overlap > min_overlap && read_identity > min_identity)
                     {
                         count++;
                         global_root = node;
@@ -300,7 +300,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
                         delete node_rc;
                     }
 
-                    else if( read_identity_rc > min_identity )
+                    else if( read_overlap_rc > min_overlap && read_identity_rc > min_identity )
                     {
                         count++;
                         global_root = node_rc;
