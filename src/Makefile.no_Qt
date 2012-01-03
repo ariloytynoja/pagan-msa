@@ -48,6 +48,7 @@ HEADERS       = utils/text_utils.h \
 		utils/xml_writer.h \
 		utils/evol_model.h \
                 utils/check_version.h \
+		utils/optimal_reference.h \
                 main/node.h \
 		main/sequence.h \
 		main/basic_alignment.h \
@@ -66,9 +67,10 @@ SOURCES       = main.cpp \
 		utils/settings_handle.cpp \
 		utils/xml_writer.cpp \
 		utils/evol_model.cpp \
-                utils/check_version.cpp \
-                utils/exonerate_reads.cpp \
-                main/node.cpp \
+		utils/check_version.cpp \
+		utils/exonerate_reads.cpp \
+		utils/optimal_reference.cpp \
+		main/node.cpp \
 		main/sequence.cpp \
 		main/basic_alignment.cpp \
 		main/viterbi_alignment.cpp \
@@ -87,9 +89,10 @@ OBJECTS       = main.o \
 		settings_handle.o \
 		xml_writer.o \
 		evol_model.o \
-                check_version.o \
-                exonerate_reads.o \
-                node.o \
+		check_version.o \
+		exonerate_reads.o \
+		optimal_reference.o \
+		node.o \
 		reference_alignment.o \
 		viterbi_alignment.o \
 		basic_alignment.o \
