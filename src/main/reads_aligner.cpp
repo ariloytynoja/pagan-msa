@@ -957,26 +957,48 @@ void Reads_aligner::read_alignment_scores(Node * node, string read_name, string 
     int read_length = 0;
     int matched = 0;
 
-    for( int j=0; j < node_sequence->sites_length(); j++ )
+    if(Settings_handle::st.is("overlap-with-reference"))
     {
-        bool read_has_site = node->has_site_at_alignment_column(j,read_name);
-        bool any_other_has_site = node->any_other_has_site_at_alignment_column(j,read_name);
-
-        if(read_has_site)
-            read_length++;
-
-        if(read_has_site && any_other_has_site)
+        for( int j=0; j < node_sequence->sites_length(); j++ )
         {
-            aligned++;
+            bool read_has_site = node->has_site_at_alignment_column(j,read_name);
+            bool ref_root_has_site = node->has_site_at_alignment_column(j,ref_node_name);
 
-            int state_read = node->get_state_at_alignment_column(j,read_name);
-            int state_ref  = node->get_state_at_alignment_column(j,ref_node_name);
-            if(state_read == state_ref)
-                matched++;
+            if(read_has_site)
+                read_length++;
+
+            if(read_has_site && ref_root_has_site)
+            {
+                aligned++;
+
+                int state_read = node->get_state_at_alignment_column(j,read_name);
+                int state_ref  = node->get_state_at_alignment_column(j,ref_node_name);
+                if(state_read == state_ref)
+                    matched++;
+            }
         }
-
-
     }
+    else
+    {
+        for( int j=0; j < node_sequence->sites_length(); j++ )
+        {
+            bool read_has_site = node->has_site_at_alignment_column(j,read_name);
+            bool any_other_has_site = node->any_other_has_site_at_alignment_column(j,read_name);
+
+            if(read_has_site)
+                read_length++;
+
+            if(read_has_site && any_other_has_site)
+            {
+                aligned++;
+
+                int state_read = node->get_state_at_alignment_column(j,read_name);
+                int state_ref  = node->get_state_at_alignment_column(j,ref_node_name);
+                if(state_read == state_ref)
+                    matched++;
+            }
+        }
+     }
 
     if(Settings::noise>0)
     {
