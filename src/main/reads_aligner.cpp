@@ -242,7 +242,10 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
                 float read_overlap;
                 float read_identity;
-                this->read_alignment_scores(node, reads.at(i).name,global_root->get_name(),&read_overlap,&read_identity);
+                if(Settings_handle::st.is("overlap-with-reference"))
+                    this->read_alignment_scores(node, reads.at(i).name,ref_root_name,&read_overlap,&read_identity);
+                else
+                    this->read_alignment_scores(node, reads.at(i).name,global_root->get_name(),&read_overlap,&read_identity);
 
 
 
@@ -270,7 +273,10 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
                 float read_overlap_rc;
                 float read_identity_rc;
-                this->read_alignment_scores(node_rc, reads.at(i).name,global_root->get_name(),&read_overlap_rc,&read_identity_rc);
+                if(Settings_handle::st.is("overlap-with-reference"))
+                    this->read_alignment_scores(node_rc, reads.at(i).name,ref_root_name,&read_overlap_rc,&read_identity_rc);
+                else
+                    this->read_alignment_scores(node_rc, reads.at(i).name,global_root->get_name(),&read_overlap_rc,&read_identity_rc);
 
                 if(!Settings_handle::st.is("silent"))
                 cout<<"forward overlap: "<<read_overlap<<"; backward overlap: "<<read_overlap_rc<<endl;
