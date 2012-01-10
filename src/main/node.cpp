@@ -169,7 +169,7 @@ void Node::get_alignment_for_nodes(vector<Fasta_entry> *aligned_sequences,bool i
     }
 }
 
-void Node::get_alignment_for_reads(vector<Fasta_entry> *aligned_sequences)
+void Node::get_alignment_for_reads(vector<Fasta_entry> *aligned_sequences, bool show_ref_insertions)
 {
     vector<Node*> nodes;
     this->get_read_nodes_below(&nodes);
@@ -181,10 +181,10 @@ void Node::get_alignment_for_reads(vector<Fasta_entry> *aligned_sequences)
         aligned_sequences->push_back(entry);
     }
 
-    get_alignment_for_read_nodes(aligned_sequences);
+    get_alignment_for_read_nodes(aligned_sequences, show_ref_insertions);
 }
 
-void Node::get_alignment_for_read_nodes(vector<Fasta_entry> *aligned_sequences)
+void Node::get_alignment_for_read_nodes(vector<Fasta_entry> *aligned_sequences, bool show_ref_insertions)
 {
     Sequence *seq = this->get_sequence();
     int seq_length = seq->sites_length();
@@ -205,6 +205,14 @@ void Node::get_alignment_for_read_nodes(vector<Fasta_entry> *aligned_sequences)
                 aligned_sequences->at(i).sequence.append(column.at(i));
             }
         }
+        else if(show_ref_insertions)
+        {
+            for(unsigned int i=0;i<aligned_sequences->size();i++)
+            {
+                aligned_sequences->at(i).sequence.append("-");
+            }
+        }
+
     }
 }
 

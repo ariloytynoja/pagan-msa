@@ -998,8 +998,8 @@ public:
     /************************************/
 
 
-    void get_alignment_for_reads(vector<Fasta_entry> *aligned_sequences);
-    void get_alignment_for_read_nodes(vector<Fasta_entry> *aligned_sequences);
+    void get_alignment_for_reads(vector<Fasta_entry> *aligned_sequences, bool show_ref_insertions);
+    void get_alignment_for_read_nodes(vector<Fasta_entry> *aligned_sequences, bool show_ref_insertions);
     void get_alignment_column_for_reads_at(int j,vector<string> *column, bool *has_characters);
 
     bool site_in_reference(int i)
@@ -1046,6 +1046,7 @@ public:
     {
 
         bool this_is_read_sequence = this->get_sequence()->is_read_sequence();
+        bool show_ref_insertions = false;
         if(!parent_is_read_sequence && this_is_read_sequence)
         {
 
@@ -1073,6 +1074,7 @@ public:
                     }
 
                     contigs->push_back(ref);
+                    show_ref_insertions = true;
                 }
             }
 
@@ -1113,6 +1115,10 @@ public:
                             {
                                 entry.sequence.append("n");
                             }
+                        }
+                        else if(show_ref_insertions)
+                        {
+                            entry.sequence.append("-");
                         }
                     }
                     else if(!included_in_reference && sA+sC+sG+sT<Settings_handle::st.get("consensus-minimum").as<int>())
@@ -1182,6 +1188,10 @@ public:
                                 entry.sequence.append("x");
                             }
                         }
+                        else if(show_ref_insertions)
+                        {
+                            entry.sequence.append("-");
+                        }
                     }
                     else if(!included_in_reference && sAmino<Settings_handle::st.get("consensus-minimum").as<int>())
                     {
@@ -1198,7 +1208,7 @@ public:
             contigs->push_back(entry);
 
             vector<Fasta_entry> reads;
-            this->get_alignment_for_reads(&reads);
+            this->get_alignment_for_reads(&reads, show_ref_insertions);
 
             for(int i=0;i<(int)reads.size();i++)
                 contigs->push_back(reads.at(i));
