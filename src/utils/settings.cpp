@@ -146,6 +146,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("read-cluster-attempts", po::value<int>()->default_value(3),"attempts to find overlap")
         ("find-cluster-reference","find optimal cluster reference")
         ("cluster-pileup","pileup clustered reads")
+        ("inlude-parent-in-contig", "include also parent in contigs")
     ;
 
     boost::program_options::options_description graph("Graph options",100);

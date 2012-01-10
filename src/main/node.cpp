@@ -173,13 +173,11 @@ void Node::get_alignment_for_reads(vector<Fasta_entry> *aligned_sequences)
 {
     vector<Node*> nodes;
     this->get_read_nodes_below(&nodes);
-
     for(unsigned int i=0;i<nodes.size();i++)
     {
         Fasta_entry entry;
         entry.name = nodes.at(i)->get_name();
         entry.comment = nodes.at(i)->get_name_comment();
-
         aligned_sequences->push_back(entry);
     }
 
@@ -212,6 +210,7 @@ void Node::get_alignment_for_read_nodes(vector<Fasta_entry> *aligned_sequences)
 
 void Node::get_alignment_column_for_reads_at(int j,vector<string> *column, bool *has_characters)
 {
+
     if(!this->get_sequence()->is_read_sequence())
         return;
 
@@ -234,6 +233,7 @@ void Node::get_alignment_column_for_reads_at(int j,vector<string> *column, bool 
 
             for(int i=0;i<nl;i++)
                 column->push_back(this->get_sequence()->get_gap_symbol());
+
         }
 
         int rj = offspring->right_index;

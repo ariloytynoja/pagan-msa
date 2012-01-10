@@ -1044,9 +1044,38 @@ public:
 
     void reconstruct_contigs(vector<Fasta_entry> *contigs,bool parent_is_read_sequence)
     {
+
         bool this_is_read_sequence = this->get_sequence()->is_read_sequence();
         if(!parent_is_read_sequence && this_is_read_sequence)
         {
+
+            if(Settings_handle::st.is("inlude-parent-in-contig"))
+            {
+                if(this->get_number_of_leaves() == this->get_number_of_read_leaves()+1)
+                {
+                    int seq_length = this->get_sequence()->sites_length();
+                    string parent_name = this->find_first_nonread_left_parent();
+
+                    Fasta_entry ref;
+                    ref.name = parent_name;
+
+                    string alpha = Model_factory::get_dna_full_char_alphabet();
+                    if(this->get_sequence()->get_data_type() == Model_factory::protein)
+                        alpha = Model_factory::get_protein_full_char_alphabet();
+
+                    for(int j=1;j<seq_length-1;j++)
+                    {
+                        int st = this->get_state_at_alignment_column(j,parent_name);
+                        if(st>=0)
+                            ref.sequence.append(alpha.substr(st,1));
+                        else
+                            ref.sequence.append("-");
+                    }
+
+                    contigs->push_back(ref);
+                }
+            }
+
             Sequence *seq = this->get_sequence();
             int seq_length = seq->sites_length();
             Fasta_entry entry;
