@@ -360,6 +360,31 @@ class Text_utils
     * @return The number of occurences of 'pattern' in 's'.
     */
     static unsigned int count(const string & s, const string & pattern);
+
+    string &replace_all(string& context, const string& from, const string& to)
+    {
+        size_t look = 0;
+        size_t found;
+
+        while( (found = context.find(from, look)) != string::npos) {
+            context.replace(found, from.size(), to);
+            look = found + to.size();
+        }
+        return context;
+    }
+
+    string &replace_all(string& context, char from, char to)
+    {
+        size_t look = 0;
+        size_t found;
+
+        while( (found = context.find(from, look)) != string::npos) {
+            context.replace(found, 1, 1, to);
+            look = found ++;
+        }
+        return context;
+    }
+
 };
 
 

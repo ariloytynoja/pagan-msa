@@ -36,9 +36,29 @@ using namespace std;
 namespace ppa
 {
 
+struct Orf
+{
+    string translation;
+    int frame;
+    int start;
+    int end;
+};
+
 class Reads_aligner
 {
     Node *global_root;
+    map<string,string> codon_to_aa;
+    map<string,string> aa_to_codon;
+
+    void loop_default_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void loop_simple_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void loop_two_strand_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void loop_translated_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+
+    void find_orfs(Fasta_entry *read,vector<Orf> *open_frames);
+    void define_translation_tables();
+    string reverse_complement(string dna);
+
     void find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
     void remove_overlapping_reads(vector<Fasta_entry> *reads, Model_factory *mf);
     void remove_target_overlapping_identical_reads(vector<Fasta_entry> *reads_for_this, Model_factory *mf);
@@ -54,6 +74,7 @@ class Reads_aligner
     void merge_paired_reads(vector<Fasta_entry> *reads, Model_factory *mf);
     void find_paired_reads(vector<Fasta_entry> *reads);
     void copy_node_details(Node *reads_node,Fasta_entry *read,bool turn_revcomp = false);
+    //void copy_orf_details(Node *reads_node,Fasta_entry *read,Orf *orf,bool turn_revcomp);
     bool correct_sites_index(Node *current_root, string ref_node_name, int alignments_done, map<string,Node*> *nodes_map);
 
     static bool better_score(const Fasta_entry& a,const Fasta_entry& b)

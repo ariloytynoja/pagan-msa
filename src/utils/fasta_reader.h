@@ -23,6 +23,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include <fstream>
 #include "utils/exceptions.h"
 #include "main/node.h"
@@ -38,10 +39,18 @@ class Fasta_reader
     unsigned int chars_by_line;
     float dna_pi[4];
 
+    std::map<std::string,std::string> codon_to_aa;
+    std::map<std::string,std::string> aa_to_codon;
+
     void rna_to_DNA(string *sequence) const;
+    void define_translation_tables();
+    string DNA_to_protein(string *sequence) const;
+    string protein_to_DNA(string *sequence) const;
 
 public:
-    Fasta_reader() : chars_by_line(60) {}
+    Fasta_reader() : chars_by_line(60) {
+        this->define_translation_tables();
+    }
 
     void set_chars_by_line(int n) { chars_by_line = n; }
 
@@ -63,6 +72,14 @@ public:
     {
         ofstream output( (path+".fas").c_str(), overwrite ? (ios::out) : (ios::out|ios::app));
         write(output, seqs);
+        output.close();
+    }
+
+    void write_dna(ostream & output, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs) const throw (Exception);
+    void write_dna(const string & path, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, bool overwrite=true) const throw (Exception)
+    {
+        ofstream output( (path+".dna.fas").c_str(), overwrite ? (ios::out) : (ios::out|ios::app) );
+        write_dna(output, seqs, org_seqs);
         output.close();
     }
 
@@ -96,7 +113,7 @@ public:
     bool check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes) const;
 
     float* base_frequencies() { return dna_pi; }
-    int check_sequence_data_type(const vector<Fasta_entry> * sequences);
+    int check_sequence_data_type(const vector<Fasta_entry> * sequences) const;
 
     void place_sequences_to_nodes(const vector<Fasta_entry> *sequences,vector<Node*> *leaf_nodes, bool gapped = false, int data_type = -1);
 };

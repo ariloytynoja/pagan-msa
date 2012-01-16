@@ -41,6 +41,7 @@ struct Fasta_entry
     string name;
     string comment;
     string sequence;
+    string dna_sequence;
     string quality;
     vector<Seq_edge> edges;
     int data_type;

@@ -209,6 +209,27 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
         seqs.push_back(fe);
     }
 
+    if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate"))
+    {
+        if(this->check_sequence_data_type(&seqs) == Model_factory::dna)
+        {
+            vector<Fasta_entry>::iterator it = seqs.begin();
+            for(;it != seqs.end(); it++)
+            {
+                it->dna_sequence = it->sequence;
+
+                string dna = it->sequence;
+                this->rna_to_DNA(&dna);
+
+                it->sequence = this->DNA_to_protein(&dna);
+            }
+        }
+        else
+        {
+            if(!Settings_handle::st.is("silent"))
+                cout<<"Data do not appear to be DNA. Translation not performed."<<endl;
+        }
+    }
 }
 
 void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const throw (Exception)
@@ -611,6 +632,86 @@ void Fasta_reader::write(ostream & output, const vector<Fasta_entry> & seqs) con
 
 /****************************************************************************************/
 
+void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs) const throw (Exception)
+{
+    // Checking the existence of specified file, and possibility to open it in write mode
+    if (! output) { throw IOException ("Fasta_reader::write. Failed to open file"); }
+
+    bool dna_seq_missing = false;
+    vector<Fasta_entry>::const_iterator it = org_seqs.begin();
+    for (; it != org_seqs.end(); it++)
+    {
+        if( it->dna_sequence.length() == 0 )
+            dna_seq_missing = true;
+    }
+
+    if(dna_seq_missing)
+        return;
+
+    string seq, temp = "";  // Initialization
+
+    multimap<string,int> copy_num;
+    vector<Fasta_entry>::const_iterator vi1 = seqs.begin();
+    for (; vi1 != seqs.end(); vi1++)
+    {
+        vector<Fasta_entry>::const_iterator vi2 = vi1;
+        vi2++;
+
+        int copy = 1;
+        for (; vi2 != seqs.end(); vi2++)
+        {
+            if(vi1->name == vi2->name)
+            {
+                if(copy==1)
+                    copy_num.insert( pair<string,int>(vi1->name,copy) );
+
+                copy++;
+                copy_num.insert( pair<string,int>(vi2->name,copy) );
+            }
+        }
+    }
+
+    vector<Fasta_entry>::const_iterator vi = seqs.begin();
+
+    // Main loop : for all sequences in vector container
+    for (; vi != seqs.end(); vi++)
+    {
+        output << ">" << vi->name;
+
+        multimap<string,int>::iterator cit = copy_num.find(vi->name);
+        if(cit!=copy_num.end())
+        {
+            output<<"/"<<cit->second;
+            copy_num.erase(cit);
+        }
+        if(vi->comment != "")
+            output << " " << vi->comment;
+
+        output << endl;
+
+        // Sequence cutting to specified characters number per line
+        seq = vi->sequence;
+        while (seq != "")
+        {
+            if (seq.size() > chars_by_line)
+            {
+                temp = string(seq.begin(), seq.begin() + chars_by_line);
+                output << this->protein_to_DNA(&temp) << endl;
+//                output << temp  << endl;
+                seq.erase(seq.begin(), seq.begin() + chars_by_line);
+            }
+            else
+            {
+                output << this->protein_to_DNA(&seq) << endl;
+//                output << seq << endl;
+                seq = "";
+            }
+        }
+    }
+}
+
+/****************************************************************************************/
+
 void Fasta_reader::write_fastq(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception)
 {
     // Checking the existence of specified file, and possibility to open it in write mode
@@ -794,7 +895,7 @@ bool Fasta_reader::check_alphabet(vector<Fasta_entry> * sequences,int data_type)
 
 /****************************************************************************************/
 
-int Fasta_reader::check_sequence_data_type(const vector<Fasta_entry> *sequences)
+int Fasta_reader::check_sequence_data_type(const vector<Fasta_entry> *sequences) const
 {
 
     vector<Fasta_entry>::const_iterator vi = sequences->begin();
@@ -828,6 +929,7 @@ int Fasta_reader::check_sequence_data_type(const vector<Fasta_entry> *sequences)
         return Model_factory::protein;
 }
 
+
 /****************************************************************************************/
 
 void Fasta_reader::rna_to_DNA(string *sequence) const
@@ -839,6 +941,90 @@ void Fasta_reader::rna_to_DNA(string *sequence) const
         sequence->replace(si,1,1,'T');
         si=sequence->find('U',si);
     }
+}
+
+void Fasta_reader::define_translation_tables()
+{
+    string codon[66] = {"TTT", "TTC", "TTA", "TTG", "CTT", "CTC", "CTA", "CTG",
+                        "ATT", "ATC", "ATA", "ATG", "GTT", "GTC", "GTA", "GTG",
+                        "TCT", "TCC", "TCA", "TCG", "CCT", "CCC", "CCA", "CCG",
+                        "ACT", "ACC", "ACA", "ACG", "GCT", "GCC", "GCA", "GCG",
+                        "TAT", "TAC", "TAA", "TAG", "CAT", "CAC", "CAA", "CAG",
+                        "AAT", "AAC", "AAA", "AAG", "GAT", "GAC", "GAA", "GAG",
+                        "TGT", "TGC", "TGA", "TGG", "CGT", "CGC", "CGA", "CGG",
+                        "AGT", "AGC", "AGA", "AGG", "GGT", "GGC", "GGA", "GGG",
+                        "NNN", "---"
+                       };
+    string unaa[66] = {"F", "F", "L", "L", "L", "L", "L", "L", "I", "I", "I", "M", "V", "V", "V", "V",
+                       "S", "S", "S", "S", "P", "P", "P", "P", "T", "T", "T", "T", "A", "A", "A", "A",
+                       "Y", "Y", "X", "X", "H", "H", "Q", "Q", "N", "N", "K", "K", "D", "D", "E", "E",
+                       "C", "C", "X", "W", "R", "R", "R", "R", "S", "S", "R", "R", "G", "G", "G", "G",
+                       "X", "-"
+                      };
+    string mtaa[66] = {"F", "F", "L", "L", "L", "L", "L", "L", "I", "I", "M", "M", "V", "V", "V", "V",
+                       "S", "S", "S", "S", "P", "P", "P", "P", "T", "T", "T", "T", "A", "A", "A", "A",
+                       "Y", "Y", "X", "X", "H", "H", "Q", "Q", "N", "N", "K", "K", "D", "D", "E", "E",
+                       "C", "C", "W", "W", "R", "R", "R", "R", "S", "S", "X", "X", "G", "G", "G", "G",
+                       "X", "-"
+                      };
+
+    if(Settings_handle::st.is("mt-translate"))
+    {
+        for (int i=0; i<66; i++)
+        {
+            codon_to_aa.insert(make_pair(codon[i],mtaa[i]));
+            aa_to_codon.insert(make_pair(mtaa[i],codon[i]));
+        }
+    }
+    else
+    {
+        for (int i=0; i<66; i++)
+        {
+            codon_to_aa.insert(make_pair(codon[i],unaa[i]));
+            aa_to_codon.insert(make_pair(unaa[i],codon[i]));
+        }
+    }
+}
+
+string Fasta_reader::DNA_to_protein(string *sequence) const
+{
+    string prot;
+
+    for (unsigned int j=0; j<sequence->length(); j+=3)
+    {
+        string codon = sequence->substr(j,3);
+        if (codon_to_aa.find(codon) == codon_to_aa.end())
+        {
+            sequence->replace(j,3,"NNN");
+            prot += "X";
+        }
+        else
+        {
+            prot += codon_to_aa.find(codon)->second;
+        }
+    }
+
+    return prot;
+}
+
+string Fasta_reader::protein_to_DNA(string *sequence) const
+{
+    string dna;
+
+    for (unsigned int j=0; j<sequence->length(); j++)
+    {
+        string aa = sequence->substr(j,1);
+        if (aa_to_codon.find(aa) == aa_to_codon.end())
+        {
+            dna += "NNN";
+        }
+        else
+        {
+            dna += aa_to_codon.find(aa)->second;
+        }
+    }
+
+    return dna;
 }
 
 /****************************************************************************************/

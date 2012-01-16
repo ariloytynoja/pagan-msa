@@ -20,6 +20,7 @@
 
 #include "main/reads_aligner.h"
 #include "utils/exonerate_reads.h"
+#include "utils/text_utils.h"
 #include <sstream>
 #include <fstream>
 #include <algorithm>
@@ -31,7 +32,6 @@ Reads_aligner::Reads_aligner(){}
 
 void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 {
-
     string file = Settings_handle::st.get("readsfile").as<string>();
 
     Fasta_reader fr;
@@ -54,10 +54,6 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
         if(!Settings_handle::st.is("silent"))
             cout<<"\nWarning: Illegal characters in input reads sequences removed!"<<endl;
     }
-
-    bool single_ref_sequence = false;
-    if(root->get_number_of_leaves()==1)
-        single_ref_sequence = true;
 
     // Merge overlapping reads
     //
@@ -110,20 +106,133 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     //
     if(Settings_handle::st.is("align-reads-at-root") || Settings_handle::st.is("reads-pileup"))
     {
-        if(Settings_handle::st.is("discard-pairwise-overlapping-reads"))
+        this->loop_simple_placement(root,&reads,mf,count);
+    }
+
+    // alignment of sga cluster; can be reverse
+    else if(Settings_handle::st.is("compare-reverse"))
+    {
+        this->loop_two_strand_placement(root,&reads,mf,count);
+    }
+
+    // alignment of translated sga cluster; can be reverse
+    else if(Settings_handle::st.is("translate-reads"))
+    {
+        this->loop_translated_placement(root,&reads,mf,count);
+    }
+
+    // Proper placement
+    //
+    else
+    {
+        this->loop_default_placement(root,&reads,mf,count);
+    }
+}
+
+void Reads_aligner::loop_simple_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
+{
+
+    if(Settings_handle::st.is("discard-pairwise-overlapping-reads"))
+    {
+        this->remove_overlapping_reads(reads, mf);
+    }
+
+    string ref_root_name = root->get_name();
+
+    int start_i = 0;
+    if(Settings_handle::st.is("reads-pileup") && Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
+        start_i = 1;
+
+    global_root = root;
+    for(int i=start_i;i<(int)reads->size();i++)
+    {
+
+        Node * node = new Node();
+
+        stringstream ss;
+        ss<<"#"<<count<<"#";
+        node->set_name(ss.str());
+
+        global_root->set_distance_to_parent(0.001);
+        node->add_left_child(global_root);
+
+        if(!Settings_handle::st.is("silent"))
+            cout<<"("<<i+1<<"/"<<reads->size()<<") ";
+
+        Node * reads_node = new Node();
+        this->copy_node_details(reads_node,&reads->at(i));
+
+        node->add_right_child(reads_node);
+
+        node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+        node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+
+        if(!Settings_handle::st.is("silent"))
+            cout<<"aligning read: "<<reads->at(i).name<<" "<<reads->at(i).comment<<endl;
+
+
+        int start_offset = -1;
+        int end_offset = -1;
+
+        if(Settings_handle::st.is("pileup-reads-ordered") && !global_root->is_leaf())
         {
-            this->remove_overlapping_reads(&reads, mf);
+            Sequence *tmp_seq = global_root->get_sequence();
+            int i=1;
+            for(;i<tmp_seq->sites_length();i++)
+            {
+                Site_children *offspring = tmp_seq->get_site_at(i)->get_children();
+                if(offspring->right_index>=0)
+                    break;
+            }
+
+            start_offset = i - Settings_handle::st.get("pileup-offset").as<int>();
+            if(start_offset<0 || start_offset>tmp_seq->sites_length())
+                start_offset = -1;
+
+            cout<<"start "<<start_offset<<endl;
         }
 
-        string ref_root_name = root->get_name();
+        node->align_sequences_this_node(mf,true,false,start_offset,end_offset);
 
-        int start_i = 0;
-        if(Settings_handle::st.is("reads-pileup") && Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
-            start_i = 1;
+        // check if the alignment significantly overlaps with the reference alignment
+        //
+        bool read_overlaps = this->read_alignment_overlaps(node, reads->at(i).name, ref_root_name);
 
-        global_root = root;
-        for(int i=start_i;i<(int)reads.size();i++)
+        if(read_overlaps)
         {
+            count++;
+            global_root = node;
+        }
+        // else delete the node; do not use the read
+        else
+        {
+            node->has_left_child(false);
+            delete node;
+        }
+
+    }
+
+}
+
+void Reads_aligner::loop_two_strand_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
+{
+    string ref_root_name = root->get_name();
+
+    int start_i = 0;
+    if(Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
+        start_i = 1;
+
+    int max_attempts = Settings_handle::st.get("read-cluster-attempts").as<int>();
+    global_root = root;
+
+    for(int j=0; j < max_attempts; j++)
+    {
+
+        for(int i=start_i;i<(int)reads->size();i++)
+        {
+
+            if(reads->at(i).cluster_attempts >= max_attempts)
+                continue;
 
             Node * node = new Node();
 
@@ -135,10 +244,10 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
             node->add_left_child(global_root);
 
             if(!Settings_handle::st.is("silent"))
-                cout<<"("<<i+1<<"/"<<reads.size()<<") ";
+                cout<<"("<<i+1<<"/"<<reads->size()<<") ";
 
             Node * reads_node = new Node();
-            this->copy_node_details(reads_node,&reads.at(i));
+            this->copy_node_details(reads_node,&reads->at(i));
 
             node->add_right_child(reads_node);
 
@@ -146,40 +255,575 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
             node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
 
             if(!Settings_handle::st.is("silent"))
-                cout<<"aligning read: "<<reads.at(i).name<<" "<<reads.at(i).comment<<endl;
+                cout<<"aligning read: "<<reads->at(i).name<<" "<<reads->at(i).comment<<endl;
 
+            node->align_sequences_this_node(mf,true,false);
+
+            float read_overlap;
+            float read_identity;
+            if(Settings_handle::st.is("overlap-with-reference"))
+                this->read_alignment_scores(node, reads->at(i).name,ref_root_name,&read_overlap,&read_identity);
+            else
+                this->read_alignment_scores(node, reads->at(i).name,global_root->get_name(),&read_overlap,&read_identity);
+
+
+
+            Node * node_rc = new Node();
+
+            node_rc->set_name(ss.str());
+
+            node_rc->add_left_child(global_root);
+
+            if(!Settings_handle::st.is("silent"))
+                cout<<"("<<i+1<<"/"<<reads->size()<<") ";
+
+            Node * reads_node_rc = new Node();
+            this->copy_node_details(reads_node_rc,&reads->at(i),true);
+
+            node_rc->add_right_child(reads_node_rc);
+
+            node_rc->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+            node_rc->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+
+            if(!Settings_handle::st.is("silent"))
+                cout<<"aligning (rc) read: "<<reads->at(i).name<<" "<<reads->at(i).comment<<endl;
+
+            node_rc->align_sequences_this_node(mf,true,false);
+
+            float read_overlap_rc;
+            float read_identity_rc;
+            if(Settings_handle::st.is("overlap-with-reference"))
+                this->read_alignment_scores(node_rc, reads->at(i).name,ref_root_name,&read_overlap_rc,&read_identity_rc);
+            else
+                this->read_alignment_scores(node_rc, reads->at(i).name,global_root->get_name(),&read_overlap_rc,&read_identity_rc);
+
+            if(!Settings_handle::st.is("silent"))
+            cout<<"forward overlap: "<<read_overlap<<"; backward overlap: "<<read_overlap_rc<<endl;
+
+            float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
+            float min_identity = Settings_handle::st.get("min-reads-identity").as<float>();
+
+            if(read_overlap<min_overlap && read_overlap_rc<min_overlap)
+            {
+                reads->at(i).cluster_attempts++;
+
+                node->has_left_child(false);
+                delete node;
+
+                node_rc->has_left_child(false);
+                delete node_rc;
+            } else {
+
+                reads->at(i).cluster_attempts = max_attempts;
+
+                if(read_overlap > read_overlap_rc && read_overlap > min_overlap && read_identity > min_identity)
+                {
+                    count++;
+                    global_root = node;
+
+                    node_rc->has_left_child(false);
+                    delete node_rc;
+                }
+
+                else if( read_overlap_rc > min_overlap && read_identity_rc > min_identity )
+                {
+                    count++;
+                    global_root = node_rc;
+
+                    node->has_left_child(false);
+                    delete node;
+                }
+
+            }
+        }
+    }
+}
+
+void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
+{
+    string ref_root_name = root->get_name();
+
+    this->define_translation_tables();
+
+    int start_i = 0;
+    if(Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
+        start_i = 1;
+
+    int max_attempts = Settings_handle::st.get("read-cluster-attempts").as<int>();
+    global_root = root;
+
+    for(int j=0; j < max_attempts; j++)
+    {
+
+        for(int i=start_i;i<(int)reads->size();i++)
+        {
+
+            if(reads->at(i).cluster_attempts >= max_attempts)
+                continue;
+
+            Node * best_node;
+
+            vector<Orf> open_frames;
+            this->find_orfs(&reads->at(i),&open_frames);
+
+            if(!Settings_handle::st.is("silent"))
+                cout<<"("<<i+1<<"/"<<reads->size()<<") ["<<open_frames.size()<<"] ";
+
+            if(open_frames.size() > 0)
+            {
+                float best_overlap = -1;
+                float best_identity = -1;
+
+                for(int h=0;h<open_frames.size();h++)
+                {
+                    Node * node = new Node();
+                    node->set_name("#orf#");
+
+                    global_root->set_distance_to_parent(0.001);
+                    node->add_left_child(global_root);
+
+
+                    Node * reads_node = new Node();
+
+                    Fasta_entry orf;
+                    orf.name = reads->at(i).name;
+                    orf.comment = reads->at(i).comment;
+                    orf.sequence = open_frames.at(h).translation;
+                    orf.quality = "";
+                    orf.first_read_length = -1;
+                    orf.trim_start = 0;
+                    orf.trim_end = 0;
+                    orf.tid = reads->at(i).tid;
+                    orf.cluster_attempts = 0;
+                    orf.data_type = Model_factory::protein;
+
+                    this->copy_node_details(reads_node,&orf);
+
+                    node->add_right_child(reads_node);
+
+
+                    if(!Settings_handle::st.is("silent"))
+                        cout<<"aligning read: "<<reads->at(i).name<<" "<<reads->at(i).comment<<endl;
+
+                    node->align_sequences_this_node(mf,true,false);
+
+                    float read_overlap;
+                    float read_identity;
+
+                    if(Settings_handle::st.is("overlap-with-reference"))
+                        this->read_alignment_scores(node, reads->at(i).name,ref_root_name,&read_overlap,&read_identity);
+                    else
+                        this->read_alignment_scores(node, reads->at(i).name,global_root->get_name(),&read_overlap,&read_identity);
+
+                    if(!Settings_handle::st.is("silent"))
+                    cout<<"orf overlap: "<<read_overlap<<", identity: "<<read_identity<<endl;
+
+                    if(read_overlap > best_overlap || (read_overlap == best_overlap && read_overlap > read_identity) )
+                    {
+                        best_node = node;
+                        best_overlap = read_overlap;
+                        best_identity = read_identity;
+                    }
+                    else
+                    {
+                        node->has_left_child(false);
+                        delete node;
+                    }
+                }
+
+                float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
+                float min_identity = Settings_handle::st.get("min-reads-identity").as<float>();
+
+                if(best_overlap > min_overlap && best_identity > min_identity)
+                {
+                    reads->at(i).cluster_attempts = max_attempts;
+
+                    best_node->set_nhx_tid(best_node->get_left_child()->get_nhx_tid());
+                    best_node->get_right_child()->set_nhx_tid(best_node->get_left_child()->get_nhx_tid());
+
+                    stringstream ss;
+                    ss<<"#"<<count<<"#";
+                    best_node->set_name(ss.str());
+
+                    count++;
+                    global_root = best_node;
+
+                }
+                else
+                {
+                    reads->at(i).cluster_attempts++;
+
+                    best_node->has_left_child(false);
+                    delete best_node;
+                }
+            }
+        }
+    }
+}
+
+void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
+{
+
+    int min_orf_length = Settings_handle::st.get("min-orf-coverage").as<float>() * read->sequence.length();
+
+    string dna = read->dna_sequence;
+    int length = dna.length()-1;
+
+    for(int i=0;i<3;i++)
+    {
+        string prot;
+        string sequence = dna.substr(i);
+        int start_site = i;
+        int end_site = i;
+
+        for (unsigned int j=0; j<sequence.length(); j+=3)
+        {
+            end_site = j;
+            string codon = sequence.substr(j,3);
+            if (codon_to_aa.find(codon) == codon_to_aa.end())
+            {
+//                cout<<"stop ("<<codon<<") "<<prot<<endl;
+
+                if(prot.length() >= min_orf_length)
+                {
+                    Orf o;
+                    o.translation = prot;
+                    o.frame = i;
+                    o.start = start_site;
+                    o.end = end_site;
+
+                    open_frames->push_back(o);
+                }
+
+                prot = "";
+                start_site = j+1;
+            }
+            else
+            {
+                prot += codon_to_aa.find(codon)->second;
+            }
+        }
+
+//        cout<<"end "<<prot<<endl;
+
+        if(prot.length() >= min_orf_length)
+        {
+            Orf o;
+            o.translation = prot;
+            o.frame = i;
+            o.start = start_site;
+            o.end = end_site;
+
+            open_frames->push_back(o);
+        }
+    }
+
+    dna = this->reverse_complement(read->dna_sequence);
+    for(int i=0;i<3;i++)
+    {
+        string prot;
+        string sequence = dna.substr(i);
+        int start_site = i;
+        int end_site = i;
+
+//        cout<<i<<" dna "<<sequence<<endl;
+
+        for (unsigned int j=0; j<sequence.length(); j+=3)
+        {
+            end_site = j;
+            string codon = sequence.substr(j,3);
+            if (codon_to_aa.find(codon) == codon_to_aa.end())
+            {
+//                cout<<"Stop ("<<codon<<") "<<prot<<endl;
+                if(prot.length() >= min_orf_length)
+                {
+                    Orf o;
+                    o.translation = prot;
+                    o.frame = -1*i;
+                    o.start = length - end_site;
+                    o.end = length - start_site;
+
+                    open_frames->push_back(o);
+                }
+
+                prot = "";
+                start_site = j+1;
+            }
+            else
+            {
+                prot += codon_to_aa.find(codon)->second;
+            }
+        }
+
+//        cout<<"End "<<prot<<endl;
+        if(prot.length() >= min_orf_length)
+        {
+            Orf o;
+            o.translation = prot;
+            o.frame = -1*i;
+            o.start = length - end_site;
+            o.end = length - start_site;
+
+            open_frames->push_back(o);
+        }
+    }
+}
+
+string Reads_aligner::reverse_complement(string dna)
+{
+    string rev = dna;
+    reverse(rev.begin(), rev.end());
+
+    Text_utils tu;
+
+    tu.replace_all(rev,'A','Z');
+    tu.replace_all(rev,'T','A');
+    tu.replace_all(rev,'Z','T');
+    tu.replace_all(rev,'C','Z');
+    tu.replace_all(rev,'G','C');
+    tu.replace_all(rev,'Z','G');
+    tu.replace_all(rev,'R','Z');
+    tu.replace_all(rev,'Y','R');
+    tu.replace_all(rev,'Z','Y');
+    tu.replace_all(rev,'K','Z');
+    tu.replace_all(rev,'M','K');
+    tu.replace_all(rev,'Z','M');
+    tu.replace_all(rev,'B','Z');
+    tu.replace_all(rev,'V','B');
+    tu.replace_all(rev,'Z','V');
+    tu.replace_all(rev,'D','Z');
+    tu.replace_all(rev,'H','D');
+    tu.replace_all(rev,'Z','H');
+
+    return rev;
+}
+
+void Reads_aligner::define_translation_tables()
+{
+    string codon[66] = {"TTT", "TTC", "TTA", "TTG", "CTT", "CTC", "CTA", "CTG",
+                        "ATT", "ATC", "ATA", "ATG", "GTT", "GTC", "GTA", "GTG",
+                        "TCT", "TCC", "TCA", "TCG", "CCT", "CCC", "CCA", "CCG",
+                        "ACT", "ACC", "ACA", "ACG", "GCT", "GCC", "GCA", "GCG",
+                        "TAT", "TAC", "TAA", "TAG", "CAT", "CAC", "CAA", "CAG",
+                        "AAT", "AAC", "AAA", "AAG", "GAT", "GAC", "GAA", "GAG",
+                        "TGT", "TGC", "TGA", "TGG", "CGT", "CGC", "CGA", "CGG",
+                        "AGT", "AGC", "AGA", "AGG", "GGT", "GGC", "GGA", "GGG",
+                        "NNN", "---"
+                       };
+    string unaa[66] = {"F", "F", "L", "L", "L", "L", "L", "L", "I", "I", "I", "M", "V", "V", "V", "V",
+                       "S", "S", "S", "S", "P", "P", "P", "P", "T", "T", "T", "T", "A", "A", "A", "A",
+                       "Y", "Y", "X", "X", "H", "H", "Q", "Q", "N", "N", "K", "K", "D", "D", "E", "E",
+                       "C", "C", "X", "W", "R", "R", "R", "R", "S", "S", "R", "R", "G", "G", "G", "G",
+                       "X", "-"
+                      };
+    string mtaa[66] = {"F", "F", "L", "L", "L", "L", "L", "L", "I", "I", "M", "M", "V", "V", "V", "V",
+                       "S", "S", "S", "S", "P", "P", "P", "P", "T", "T", "T", "T", "A", "A", "A", "A",
+                       "Y", "Y", "X", "X", "H", "H", "Q", "Q", "N", "N", "K", "K", "D", "D", "E", "E",
+                       "C", "C", "W", "W", "R", "R", "R", "R", "S", "S", "X", "X", "G", "G", "G", "G",
+                       "X", "-"
+                      };
+
+    if(Settings_handle::st.is("mt-translate"))
+    {
+        for (int i=0; i<66; i++)
+        {
+            codon_to_aa.insert(make_pair(codon[i],mtaa[i]));
+            aa_to_codon.insert(make_pair(mtaa[i],codon[i]));
+        }
+    }
+    else
+    {
+        for (int i=0; i<66; i++)
+        {
+            codon_to_aa.insert(make_pair(codon[i],unaa[i]));
+            aa_to_codon.insert(make_pair(unaa[i],codon[i]));
+        }
+    }
+}
+void Reads_aligner::loop_default_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
+{
+    bool single_ref_sequence = false;
+    if(root->get_number_of_leaves()==1)
+        single_ref_sequence = true;
+
+    global_root = root;
+
+    // vector of node names giving the best node for each read
+    //
+    this->find_nodes_for_reads(root, reads, mf);
+
+    if(Settings_handle::st.is("placement-only"))
+        exit(0);
+
+
+    set<string> unique_nodeset;
+    for(int i=0;i<(int)reads->size();i++)
+    {
+        stringstream nodestream;
+        nodestream << reads->at(i).node_to_align;
+        string val;
+        while(nodestream >> val)
+        {
+            unique_nodeset.insert(val);
+        }
+    }
+
+    if(unique_nodeset.find("discarded_read") != unique_nodeset.end())
+        unique_nodeset.erase(unique_nodeset.find("discarded_read"));
+
+    vector<string> unique_nodes;
+    for(set<string>::iterator sit = unique_nodeset.begin(); sit != unique_nodeset.end(); sit++)
+    {
+        unique_nodes.push_back(*sit);
+    }
+    sort(unique_nodes.begin(),unique_nodes.end(),Reads_aligner::nodeIsSmaller);
+
+    map<string,Node*> nodes_map;
+    root->get_all_nodes(&nodes_map);
+
+    // do one tagged node at time
+    //
+    for(vector<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
+    {
+        vector<Fasta_entry> reads_for_this;
+
+        for(int i=0;i<(int)reads->size();i++)
+        {
+            stringstream nodestream;
+            nodestream << reads->at(i).node_to_align;
+            string val;
+            while(nodestream >> val)
+            {
+                if(val == *sit)
+                    reads_for_this.push_back(reads->at(i));
+            }
+        }
+
+        this->sort_reads_vector(&reads_for_this);
+
+        // remove fully overlapping reads that are mapped to this node
+        //
+        if(Settings_handle::st.is("rank-reads-for-nodes"))
+        {
+            if(Settings_handle::st.is("discard-overlapping-identical-reads"))
+            {
+                this->remove_target_overlapping_identical_reads(&reads_for_this,mf);
+
+                if(!Settings_handle::st.is("silent"))
+                {
+                    cout<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
+                    for(int i=0;i<(int)reads_for_this.size();i++)
+                        cout<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
+                    cout<<endl;
+                }
+            }
+            else if(Settings_handle::st.is("discard-overlapping-reads"))
+            {
+                this->remove_target_overlapping_reads(&reads_for_this);
+
+                if(!Settings_handle::st.is("silent"))
+                {
+                    cout<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
+                    for(int i=0;i<(int)reads_for_this.size();i++)
+                        cout<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
+                    cout<<endl;
+                }
+            }
+            else if(Settings_handle::st.is("discard-pairwise-overlapping-reads"))
+            {
+                this->remove_overlapping_reads(&reads_for_this,mf);
+
+                if(!Settings_handle::st.is("silent"))
+                {
+                    cout<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
+                    for(int i=0;i<(int)reads_for_this.size();i++)
+                        cout<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
+                    cout<<endl;
+                }
+            }
+        }
+        else
+        {
+            if( Settings_handle::st.is("discard-overlapping-identical-reads") ||
+                     Settings_handle::st.is("discard-overlapping-reads") )
+            {
+                cout<<"\nWarning: without ranking the reads for nodes, one cannot resolve overlap between reads. The flag has no effect!\n\n";
+            }
+        }
+
+        string ref_node_name = *sit;
+
+        Node *current_root = nodes_map.find(ref_node_name)->second;
+        double orig_dist = current_root->get_distance_to_parent();
+
+        bool alignment_done = false;
+        int alignments_done = 0;
+
+        // align the remaining reads to this node
+        //
+        for(int i=0;i<(int)reads_for_this.size();i++)
+        {
+            Node * node = new Node();
+
+            stringstream ss;
+            ss<<"#"<<count<<"#";
+            node->set_name(ss.str());
+
+            current_root->set_distance_to_parent(0.001);
+            node->add_left_child(current_root);
+
+            if(!Settings_handle::st.is("silent"))
+                cout<<"("<<i+1<<"/"<<reads_for_this.size()<<") ";
+
+            Node * reads_node = new Node();
+            this->copy_node_details(reads_node,&reads_for_this.at(i));
+
+
+            node->add_right_child(reads_node);
+
+            node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+            node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+
+            if(!Settings_handle::st.is("silent"))
+                cout<<"aligning read: "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).comment<<endl;
 
             int start_offset = -1;
             int end_offset = -1;
 
-            if(Settings_handle::st.is("pileup-reads-ordered") && !global_root->is_leaf())
+            if(reads_for_this.at(i).use_local)
             {
-                Sequence *tmp_seq = global_root->get_sequence();
-                int i=1;
-                for(;i<tmp_seq->sites_length();i++)
-                {
-                    Site_children *offspring = tmp_seq->get_site_at(i)->get_children();
-                    if(offspring->right_index>=0)
-                        break;
-                }
+                int offset = 20;
+                int offset_multiplier = 2;
 
-                start_offset = i - Settings_handle::st.get("pileup-offset").as<int>();
-                if(start_offset<0 || start_offset>tmp_seq->sites_length())
+                start_offset = reads_for_this.at(i).local_tstart - offset - reads_for_this.at(i).local_qstart * offset_multiplier;
+                end_offset = reads_for_this.at(i).local_tend + offset +
+                        ( reads_node->get_sequence()->sites_length() - reads_for_this.at(i).local_qend ) * offset_multiplier;
+
+                if(start_offset < 0)
                     start_offset = -1;
 
-                cout<<"start "<<start_offset<<endl;
+                if(end_offset > current_root->get_sequence()->sites_length())
+                    end_offset = -1;
+
             }
 
             node->align_sequences_this_node(mf,true,false,start_offset,end_offset);
 
+
             // check if the alignment significantly overlaps with the reference alignment
             //
-            bool read_overlaps = this->read_alignment_overlaps(node, reads.at(i).name, ref_root_name);
+            bool read_overlaps = this->read_alignment_overlaps(node, reads_for_this.at(i).name, ref_node_name);
 
             if(read_overlaps)
             {
                 count++;
-                global_root = node;
+                current_root = node;
+
+                if( orig_dist > current_root->get_distance_to_parent() )
+                    orig_dist -= current_root->get_distance_to_parent();
+
+                alignment_done = true;
+                alignments_done++;
             }
             // else delete the node; do not use the read
             else
@@ -189,347 +833,23 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
             }
 
         }
-    }
 
-    // alignment of sga cluster; can be reverse
-    else if(Settings_handle::st.is("compare-reverse"))
-    {
+        current_root->set_distance_to_parent(orig_dist);
 
-        string ref_root_name = root->get_name();
 
-        int start_i = 0;
-        if(Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
-            start_i = 1;
-
-        sort(reads.begin(),reads.end(),Reads_aligner::longer_sequence);
-
-        int max_attempts = Settings_handle::st.get("read-cluster-attempts").as<int>();
-        global_root = root;
-
-        for(int j=0; j < max_attempts; j++)
+        if(alignment_done)
         {
-
-            for(int i=start_i;i<(int)reads.size();i++)
+            if(single_ref_sequence)
             {
-
-                if(reads.at(i).cluster_attempts >= max_attempts)
-                    continue;
-
-                Node * node = new Node();
-
-                stringstream ss;
-                ss<<"#"<<count<<"#";
-                node->set_name(ss.str());
-
-                global_root->set_distance_to_parent(0.001);
-                node->add_left_child(global_root);
-
-                if(!Settings_handle::st.is("silent"))
-                    cout<<"("<<i+1<<"/"<<reads.size()<<") ";
-
-                Node * reads_node = new Node();
-                this->copy_node_details(reads_node,&reads.at(i));
-
-                node->add_right_child(reads_node);
-
-                node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
-                node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
-
-                if(!Settings_handle::st.is("silent"))
-                    cout<<"aligning read: "<<reads.at(i).name<<" "<<reads.at(i).comment<<endl;
-
-                node->align_sequences_this_node(mf,true,false);
-
-                float read_overlap;
-                float read_identity;
-                if(Settings_handle::st.is("overlap-with-reference"))
-                    this->read_alignment_scores(node, reads.at(i).name,ref_root_name,&read_overlap,&read_identity);
-                else
-                    this->read_alignment_scores(node, reads.at(i).name,global_root->get_name(),&read_overlap,&read_identity);
-
-
-
-                Node * node_rc = new Node();
-
-                node_rc->set_name(ss.str());
-
-                node_rc->add_left_child(global_root);
-
-                if(!Settings_handle::st.is("silent"))
-                    cout<<"("<<i+1<<"/"<<reads.size()<<") ";
-
-                Node * reads_node_rc = new Node();
-                this->copy_node_details(reads_node_rc,&reads.at(i),true);
-
-                node_rc->add_right_child(reads_node_rc);
-
-                node_rc->set_nhx_tid(node->get_left_child()->get_nhx_tid());
-                node_rc->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
-
-                if(!Settings_handle::st.is("silent"))
-                    cout<<"aligning (rc) read: "<<reads.at(i).name<<" "<<reads.at(i).comment<<endl;
-
-                node_rc->align_sequences_this_node(mf,true,false);
-
-                float read_overlap_rc;
-                float read_identity_rc;
-                if(Settings_handle::st.is("overlap-with-reference"))
-                    this->read_alignment_scores(node_rc, reads.at(i).name,ref_root_name,&read_overlap_rc,&read_identity_rc);
-                else
-                    this->read_alignment_scores(node_rc, reads.at(i).name,global_root->get_name(),&read_overlap_rc,&read_identity_rc);
-
-                if(!Settings_handle::st.is("silent"))
-                cout<<"forward overlap: "<<read_overlap<<"; backward overlap: "<<read_overlap_rc<<endl;
-
-                float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
-                float min_identity = Settings_handle::st.get("min-reads-identity").as<float>();
-
-                if(read_overlap<min_overlap && read_overlap_rc<min_overlap)
-                {
-                    reads.at(i).cluster_attempts++;
-
-                    node->has_left_child(false);
-                    delete node;
-
-                    node_rc->has_left_child(false);
-                    delete node_rc;
-                } else {
-
-                    reads.at(i).cluster_attempts = max_attempts;
-
-                    if(read_overlap > read_overlap_rc && read_overlap > min_overlap && read_identity > min_identity)
-                    {
-                        count++;
-                        global_root = node;
-
-                        node_rc->has_left_child(false);
-                        delete node_rc;
-                    }
-
-                    else if( read_overlap_rc > min_overlap && read_identity_rc > min_identity )
-                    {
-                        count++;
-                        global_root = node_rc;
-
-                        node->has_left_child(false);
-                        delete node;
-                    }
-
-                }
-            }
-        }
-    }
-
-    // Proper placement
-    //
-    else
-    {
-
-        global_root = root;
-
-        // vector of node names giving the best node for each read
-        //
-        this->find_nodes_for_reads(root, &reads, mf);
-
-        if(Settings_handle::st.is("placement-only"))
-            exit(0);
-
-
-        set<string> unique_nodeset;
-        for(int i=0;i<(int)reads.size();i++)
-        {
-            stringstream nodestream;
-            nodestream << reads.at(i).node_to_align;
-            string val;
-            while(nodestream >> val)
-            {
-                unique_nodeset.insert(val);
-            }
-        }
-
-        if(unique_nodeset.find("discarded_read") != unique_nodeset.end())
-            unique_nodeset.erase(unique_nodeset.find("discarded_read"));
-
-        vector<string> unique_nodes;
-        for(set<string>::iterator sit = unique_nodeset.begin(); sit != unique_nodeset.end(); sit++)
-        {
-            unique_nodes.push_back(*sit);
-        }
-        sort(unique_nodes.begin(),unique_nodes.end(),Reads_aligner::nodeIsSmaller);
-
-        map<string,Node*> nodes_map;
-        root->get_all_nodes(&nodes_map);
-
-        // do one tagged node at time
-        //
-        for(vector<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
-        {
-            vector<Fasta_entry> reads_for_this;
-
-            for(int i=0;i<(int)reads.size();i++)
-            {
-                stringstream nodestream;
-                nodestream << reads.at(i).node_to_align;
-                string val;
-                while(nodestream >> val)
-                {
-                    if(val == *sit)
-                        reads_for_this.push_back(reads.at(i));
-                }
-            }
-
-            this->sort_reads_vector(&reads_for_this);
-
-            // remove fully overlapping reads that are mapped to this node
-            //
-            if(Settings_handle::st.is("rank-reads-for-nodes"))
-            {
-                if(Settings_handle::st.is("discard-overlapping-identical-reads"))
-                {
-                    this->remove_target_overlapping_identical_reads(&reads_for_this,mf);
-
-                    if(!Settings_handle::st.is("silent"))
-                    {
-                        cout<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
-                        for(int i=0;i<(int)reads_for_this.size();i++)
-                            cout<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
-                        cout<<endl;
-                    }
-                }
-                else if(Settings_handle::st.is("discard-overlapping-reads"))
-                {
-                    this->remove_target_overlapping_reads(&reads_for_this);
-
-                    if(!Settings_handle::st.is("silent"))
-                    {
-                        cout<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
-                        for(int i=0;i<(int)reads_for_this.size();i++)
-                            cout<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
-                        cout<<endl;
-                    }
-                }
-                else if(Settings_handle::st.is("discard-pairwise-overlapping-reads"))
-                {
-                    this->remove_overlapping_reads(&reads_for_this,mf);
-
-                    if(!Settings_handle::st.is("silent"))
-                    {
-                        cout<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
-                        for(int i=0;i<(int)reads_for_this.size();i++)
-                            cout<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
-                        cout<<endl;
-                    }
-                }
+                global_root = current_root;
             }
             else
             {
-                if( Settings_handle::st.is("discard-overlapping-identical-reads") ||
-                         Settings_handle::st.is("discard-overlapping-reads") )
-                {
-                    cout<<"\nWarning: without ranking the reads for nodes, one cannot resolve overlap between reads. The flag has no effect!\n\n";
-                }
-            }
+                bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
 
-            string ref_node_name = *sit;
-
-            Node *current_root = nodes_map.find(ref_node_name)->second;
-            double orig_dist = current_root->get_distance_to_parent();
-
-            bool alignment_done = false;
-            int alignments_done = 0;
-
-            // align the remaining reads to this node
-            //
-            for(int i=0;i<(int)reads_for_this.size();i++)
-            {
-                Node * node = new Node();
-
-                stringstream ss;
-                ss<<"#"<<count<<"#";
-                node->set_name(ss.str());
-
-                current_root->set_distance_to_parent(0.001);
-                node->add_left_child(current_root);
-
-                if(!Settings_handle::st.is("silent"))
-                    cout<<"("<<i+1<<"/"<<reads_for_this.size()<<") ";
-
-                Node * reads_node = new Node();
-                this->copy_node_details(reads_node,&reads_for_this.at(i));
-
-
-                node->add_right_child(reads_node);
-
-                node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
-                node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
-
-                if(!Settings_handle::st.is("silent"))
-                    cout<<"aligning read: "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).comment<<endl;
-
-                int start_offset = -1;
-                int end_offset = -1;
-
-                if(reads_for_this.at(i).use_local)
-                {
-                    int offset = 20;
-                    int offset_multiplier = 2;
-
-                    start_offset = reads_for_this.at(i).local_tstart - offset - reads_for_this.at(i).local_qstart * offset_multiplier;
-                    end_offset = reads_for_this.at(i).local_tend + offset +
-                            ( reads_node->get_sequence()->sites_length() - reads_for_this.at(i).local_qend ) * offset_multiplier;
-
-                    if(start_offset < 0)
-                        start_offset = -1;
-
-                    if(end_offset > current_root->get_sequence()->sites_length())
-                        end_offset = -1;
-
-                }
-
-                node->align_sequences_this_node(mf,true,false,start_offset,end_offset);
-
-
-                // check if the alignment significantly overlaps with the reference alignment
-                //
-                bool read_overlaps = this->read_alignment_overlaps(node, reads_for_this.at(i).name, ref_node_name);
-
-                if(read_overlaps)
-                {
-                    count++;
-                    current_root = node;
-
-                    if( orig_dist > current_root->get_distance_to_parent() )
-                        orig_dist -= current_root->get_distance_to_parent();
-
-                    alignment_done = true;
-                    alignments_done++;
-                }
-                // else delete the node; do not use the read
-                else
-                {
-                    node->has_left_child(false);
-                    delete node;
-                }
-
-            }
-
-            current_root->set_distance_to_parent(orig_dist);
-
-
-            if(alignment_done)
-            {
-                if(single_ref_sequence)
+                if(!parent_found)
                 {
                     global_root = current_root;
-                }
-                else
-                {
-                    bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
-
-                    if(!parent_found)
-                    {
-                        global_root = current_root;
-                    }
                 }
             }
         }
@@ -835,6 +1155,18 @@ void Reads_aligner::copy_node_details(Node *reads_node,Fasta_entry *read,bool tu
     reads_node->get_sequence()->is_read_sequence(true);
 
 }
+
+//void Reads_aligner::copy_orf_details(Node *reads_node,Fasta_entry *read,Orf *orf,bool turn_revcomp)
+//{
+//    double r_dist = Settings_handle::st.get("reads-distance").as<float>();
+
+//    reads_node->set_distance_to_parent(r_dist);
+//    reads_node->set_name(read->name);
+//    reads_node->add_name_comment(read->comment);
+//    reads_node->add_sequence( *orf, read->data_type, false, true, turn_revcomp);
+//    reads_node->get_sequence()->is_read_sequence(true);
+
+//}
 
 bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, string ref_node_name)
 {
@@ -1461,6 +1793,7 @@ double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_fact
 
     node->set_distance_to_parent(org_dist);
 
+    // For scoring (below)
     Evol_model model = mf->alignment_model(r_dist+0.001,false);
 
     int matching = 0;
