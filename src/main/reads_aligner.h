@@ -36,13 +36,6 @@ using namespace std;
 namespace ppa
 {
 
-struct Orf
-{
-    string translation;
-    int frame;
-    int start;
-    int end;
-};
 
 class Reads_aligner
 {

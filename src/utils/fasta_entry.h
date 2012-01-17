@@ -62,6 +62,9 @@ struct Fasta_entry
     bool use_local;
     int cluster_attempts;
     bool reversed;
+//    int translation_frame;
+//    int translation_start;
+//    int translation_end;
 };
 
 }

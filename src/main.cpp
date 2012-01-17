@@ -405,8 +405,9 @@ int main(int argc, char *argv[])
 
     if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate"))
     {
-        fr.set_chars_by_line(25);
-        fr.write_dna(outfile, aligned_sequences, sequences,true);
+
+        fr.set_chars_by_line(70);
+        fr.write_dna(outfile, aligned_sequences, sequences,root,true);
     }
 
     if(Settings_handle::st.is("output-ancestors"))

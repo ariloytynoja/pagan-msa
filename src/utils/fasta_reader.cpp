@@ -109,17 +109,29 @@ void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_
         exit(1);
     }
 
-    set<string> names;
+    map<string,int> copy_num;
     for(int i=0;i<(int)seqs.size();i++)
     {
         string name = seqs.at(i).name;
-        while(names.find(name) != names.end())
+
+        map<string,int>::iterator it = copy_num.find(name);
+        if(it != copy_num.end())
         {
-            cout<<"Sequence name "<<name<<" is defined more than once! Adding suffix '.1'.\n";
-            seqs.at(i).name += ".1";
-            name += ".1";
+            it->second++;
+
+            stringstream ss;
+            ss<<"."<<it->second;
+            name.append(ss.str());
+
+            if(!Settings_handle::st.is("silent"))
+                cout<<"Warning: duplicate names found. '"<<seqs.at(i).name<<"' is renamed '"<<name<<"'."<<endl;
+
+            seqs.at(i).name = name;
         }
-        names.insert(name);
+        else
+        {
+            copy_num.insert( pair<string,int>(name,0) );
+        }
     }
 
 }
@@ -144,7 +156,7 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
             {
                 transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
 
-                Fasta_entry fe;
+                Fasta_entry fe;                               
                 fe.name = name;
                 fe.comment = comment;
                 fe.sequence = sequence;
@@ -222,6 +234,10 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
                 this->rna_to_DNA(&dna);
 
                 it->sequence = this->DNA_to_protein(&dna);
+//                it->translation_frame = 1;
+//                it->translation_start = 0;
+//                it->translation_end = dna.length();
+
             }
         }
         else
@@ -632,23 +648,41 @@ void Fasta_reader::write(ostream & output, const vector<Fasta_entry> & seqs) con
 
 /****************************************************************************************/
 
-void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs) const throw (Exception)
+void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, Node *root) const throw (Exception)
 {
     // Checking the existence of specified file, and possibility to open it in write mode
-    if (! output) { throw IOException ("Fasta_reader::write. Failed to open file"); }
+    if (! output) { throw IOException ("Fasta_reader::write_dna. Failed to open file"); }
 
     bool dna_seq_missing = false;
     vector<Fasta_entry>::const_iterator it = org_seqs.begin();
+    map<string,string> dna_seqs;
+
+    Text_utils tu;
+
     for (; it != org_seqs.end(); it++)
     {
         if( it->dna_sequence.length() == 0 )
             dna_seq_missing = true;
+
+        string seq = it->dna_sequence;
+        tu.replace_all(seq,"-","");
+
+        dna_seqs.insert(pair<string,string>(it->name,seq));
     }
 
     if(dna_seq_missing)
-        return;
+    {
+        cout<<"No DNA for all sequences. Back-translation failed."<<endl;
+    }
 
-    string seq, temp = "";  // Initialization
+
+    if(Settings_handle::st.is("find-best-orf"))
+    {
+        root->get_read_dna_sequences(&dna_seqs);
+    }
+
+//    for(map<string,string>::iterator i=dna_seqs.begin();i!=dna_seqs.end();i++)
+//        cout<<i->first<<" "<<i->second<<endl;
 
     multimap<string,int> copy_num;
     vector<Fasta_entry>::const_iterator vi1 = seqs.begin();
@@ -671,41 +705,156 @@ void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs,
         }
     }
 
-    vector<Fasta_entry>::const_iterator vi = seqs.begin();
+    vector<Fasta_entry> outseqs;
+
+    vector<Fasta_entry>::const_iterator vi;
 
     // Main loop : for all sequences in vector container
-    for (; vi != seqs.end(); vi++)
+    for (vi = seqs.begin(); vi != seqs.end(); vi++)
     {
-        output << ">" << vi->name;
+        Fasta_entry os;
+        os.name = vi->name;
 
         multimap<string,int>::iterator cit = copy_num.find(vi->name);
         if(cit!=copy_num.end())
         {
-            output<<"/"<<cit->second;
+            os.name += "/"+cit->second;
             copy_num.erase(cit);
         }
         if(vi->comment != "")
-            output << " " << vi->comment;
+            os.comment = vi->comment;
 
-        output << endl;
 
-        // Sequence cutting to specified characters number per line
-        seq = vi->sequence;
-        while (seq != "")
+        map<string,string>::iterator it2 = dna_seqs.find(vi->name);
+        if(it2 == dna_seqs.end())
         {
-            if (seq.size() > chars_by_line)
+            cout<<"No matching DNA sequence for "<<vi->name<<". Back-translation failed."<<endl;
+        }
+        else
+        {
+            string dna = it2->second;
+            string prot = vi->sequence;
+
+            os.sequence = protein_to_DNA(&dna,&prot);
+        }
+
+        outseqs.push_back(os);
+    }
+
+    set<string> read_names;
+    root->get_read_node_names(&read_names);
+
+    for(set<string>::iterator i=read_names.begin();i!=read_names.end();i++)
+        cout<<*i<<endl;
+
+    Fasta_entry entry;
+    entry.name = "consensus";
+    entry.sequence = "";
+    for(int i=0;i<outseqs.at(0).sequence.length();i++)
+    {
+        int sA=0; int sC=0; int sG=0; int sT=0;
+        bool included_in_reference = false;
+        for (vi = outseqs.begin(); vi != outseqs.end(); vi++)
+        {
+            char x = vi->sequence.at(i);
+
+            if(read_names.find(vi->name) != read_names.end())
             {
-                temp = string(seq.begin(), seq.begin() + chars_by_line);
-                output << this->protein_to_DNA(&temp) << endl;
-//                output << temp  << endl;
-                seq.erase(seq.begin(), seq.begin() + chars_by_line);
+                if(x == 'A')
+                    sA++;
+                else if(x == 'C')
+                    sC++;
+                else if(x == 'G')
+                    sG++;
+                else if(x == 'T')
+                    sT++;
             }
             else
             {
-                output << this->protein_to_DNA(&seq) << endl;
-//                output << seq << endl;
-                seq = "";
+                if(x != '-')
+                    included_in_reference = true;
             }
+        }
+
+        if(!included_in_reference && sA+sC+sG+sT<Settings_handle::st.get("consensus-minimum").as<int>())
+        {
+            entry.sequence.append("-");
+        }
+        else
+        {
+            if(sA==0 && sC==0 && sG==0 && sT==0)
+                entry.sequence.append("-");
+            else if(sA>sC && sA>sG && sA>sT)
+                entry.sequence.append("A");
+            else if(sC>sA && sC>sG && sC>sT)
+                entry.sequence.append("C");
+            else if(sG>sA && sG>sC && sG>sT)
+                entry.sequence.append("G");
+            else if(sT>sA && sT>sC && sT>sG)
+                entry.sequence.append("T");
+            else if(sA>sC && sA==sG && sA>sT)
+                entry.sequence.append("R");
+            else if(sC>sA && sC>sG && sC==sT)
+                entry.sequence.append("Y");
+            else if(sA==sC && sA>sG && sA>sT)
+                entry.sequence.append("M");
+            else if(sG>sA && sG>sC && sG==sT)
+                entry.sequence.append("K");
+            else if(sA>sC && sA>sG && sA==sT)
+                entry.sequence.append("W");
+            else if(sC>sA && sC==sG && sC>sT)
+                entry.sequence.append("S");
+            else if(sC>sA && sC==sG && sC==sT)
+                entry.sequence.append("B");
+            else if(sA>sC && sA==sG && sA==sT)
+                entry.sequence.append("D");
+            else if(sA==sC && sA>sG && sA==sT)
+                entry.sequence.append("H");
+            else if(sA==sC && sA==sG && sA>sT)
+                entry.sequence.append("V");
+            else if(sA==sC && sA==sG && sA==sT)
+                entry.sequence.append("N");
+        }
+    }
+
+    for (vi = outseqs.begin(); vi != outseqs.end(); vi++)
+    {
+        if(read_names.find(vi->name) == read_names.end())
+        {
+            this->print_fast_entry(output,&(*vi));
+        }
+    }
+
+    this->print_fast_entry(output,&entry);
+
+    for (vi = outseqs.begin(); vi != outseqs.end(); vi++)
+    {
+        if(read_names.find(vi->name) != read_names.end())
+        {
+            this->print_fast_entry(output,&(*vi));
+        }
+    }
+
+}
+
+void Fasta_reader::print_fast_entry(ostream & output, const Fasta_entry *entry) const
+{
+    output << ">" << entry->name << " " <<entry->comment<< endl;
+    string seq = entry->sequence;
+
+    string temp = "";  // Initialization
+    while (seq != "")
+    {
+        if (seq.size() > chars_by_line)
+        {
+            temp = string(seq.begin(), seq.begin() + chars_by_line);
+            output << temp << endl;
+            seq.erase(seq.begin(), seq.begin() + chars_by_line);
+        }
+        else
+        {
+            output << seq << endl;
+            seq = "";
         }
     }
 }
@@ -1007,24 +1156,26 @@ string Fasta_reader::DNA_to_protein(string *sequence) const
     return prot;
 }
 
-string Fasta_reader::protein_to_DNA(string *sequence) const
+string Fasta_reader::protein_to_DNA(string *dna,string *prot) const
 {
-    string dna;
-
-    for (unsigned int j=0; j<sequence->length(); j++)
+    string out;
+    int pos = 0;
+    for (unsigned int j=0; j<prot->length(); j++)
     {
-        string aa = sequence->substr(j,1);
-        if (aa_to_codon.find(aa) == aa_to_codon.end())
-        {
-            dna += "NNN";
-        }
+        string aa = prot->substr(j,1);
+        if(aa=="-")
+            out += "---";
         else
         {
-            dna += aa_to_codon.find(aa)->second;
+//            if (codon_to_aa.find(dna->substr(pos,3))->second != aa)
+//                cout<<"mismatch: "<<aa<<" != "<<dna->substr(pos,3)<<endl;
+
+            out += dna->substr(pos,3);
+            pos += 3;
         }
     }
 
-    return dna;
+    return out;
 }
 
 /****************************************************************************************/

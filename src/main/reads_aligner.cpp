@@ -116,7 +116,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     }
 
     // alignment of translated sga cluster; can be reverse
-    else if(Settings_handle::st.is("translate-reads"))
+    else if(Settings_handle::st.is("find-best-orf"))
     {
         this->loop_translated_placement(root,&reads,mf,count);
     }
@@ -362,6 +362,7 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
                 continue;
 
             Node * best_node;
+            Orf *best_orf;
 
             vector<Orf> open_frames;
             this->find_orfs(&reads->at(i),&open_frames);
@@ -389,6 +390,7 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
                     orf.name = reads->at(i).name;
                     orf.comment = reads->at(i).comment;
                     orf.sequence = open_frames.at(h).translation;
+                    orf.dna_sequence = reads->at(i).dna_sequence;
                     orf.quality = "";
                     orf.first_read_length = -1;
                     orf.trim_start = 0;
@@ -396,16 +398,17 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
                     orf.tid = reads->at(i).tid;
                     orf.cluster_attempts = 0;
                     orf.data_type = Model_factory::protein;
+//                    orf.translation_frame = open_frames.at(h).frame;
+//                    orf.translation_start = open_frames.at(h).start;
+//                    orf.translation_end = open_frames.at(h).end;
 
                     this->copy_node_details(reads_node,&orf);
 
                     node->add_right_child(reads_node);
 
 
-                    if(!Settings_handle::st.is("silent"))
-                        cout<<"aligning read: "<<reads->at(i).name<<" "<<reads->at(i).comment<<endl;
-
                     node->align_sequences_this_node(mf,true,false);
+
 
                     float read_overlap;
                     float read_identity;
@@ -415,12 +418,11 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
                     else
                         this->read_alignment_scores(node, reads->at(i).name,global_root->get_name(),&read_overlap,&read_identity);
 
-                    if(!Settings_handle::st.is("silent"))
-                    cout<<"orf overlap: "<<read_overlap<<", identity: "<<read_identity<<endl;
 
                     if(read_overlap > best_overlap || (read_overlap == best_overlap && read_overlap > read_identity) )
                     {
                         best_node = node;
+                        best_orf = &open_frames.at(h);
                         best_overlap = read_overlap;
                         best_identity = read_identity;
                     }
@@ -437,9 +439,14 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
                 if(best_overlap > min_overlap && best_identity > min_identity)
                 {
                     reads->at(i).cluster_attempts = max_attempts;
+                    stringstream cs;
+                    cs<<"["<<best_orf->frame<<" "<<best_orf->start+1<<"-"<<best_orf->end+1<<"]";
+                    best_node->get_right_child()->add_name_comment(best_node->get_right_child()->get_name_comment()+cs.str());
 
                     best_node->set_nhx_tid(best_node->get_left_child()->get_nhx_tid());
                     best_node->get_right_child()->set_nhx_tid(best_node->get_left_child()->get_nhx_tid());
+
+                    best_node->get_right_child()->set_orf(best_orf);
 
                     stringstream ss;
                     ss<<"#"<<count<<"#";
@@ -447,6 +454,10 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
 
                     count++;
                     global_root = best_node;
+
+                    cout.precision(2);
+                    if(!Settings_handle::st.is("silent"))
+                        cout<<"orf "<<best_orf->frame<<" ("<<best_orf->start<<"-"<<best_orf->end<<"): overlap: "<<best_overlap<<", identity: "<<best_identity<<endl;
 
                 }
                 else
@@ -474,11 +485,10 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
         string prot;
         string sequence = dna.substr(i);
         int start_site = i;
-        int end_site = i;
+        int end_site = i+2;
 
         for (unsigned int j=0; j<sequence.length(); j+=3)
         {
-            end_site = j;
             string codon = sequence.substr(j,3);
             if (codon_to_aa.find(codon) == codon_to_aa.end())
             {
@@ -488,20 +498,22 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
                 {
                     Orf o;
                     o.translation = prot;
-                    o.frame = i;
+                    o.frame = i+1;
                     o.start = start_site;
                     o.end = end_site;
+                    o.dna_sequence = dna.substr(start_site,end_site-start_site+1);
 
                     open_frames->push_back(o);
                 }
 
                 prot = "";
-                start_site = j+1;
+                start_site = j+i+3;
             }
             else
             {
                 prot += codon_to_aa.find(codon)->second;
             }
+            end_site = j+i+2;
         }
 
 //        cout<<"end "<<prot<<endl;
@@ -510,9 +522,10 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
         {
             Orf o;
             o.translation = prot;
-            o.frame = i;
+            o.frame = i+1;
             o.start = start_site;
             o.end = end_site;
+            o.dna_sequence = dna.substr(start_site,end_site-start_site+1);
 
             open_frames->push_back(o);
         }
@@ -524,13 +537,10 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
         string prot;
         string sequence = dna.substr(i);
         int start_site = i;
-        int end_site = i;
-
-//        cout<<i<<" dna "<<sequence<<endl;
+        int end_site = i+2;
 
         for (unsigned int j=0; j<sequence.length(); j+=3)
         {
-            end_site = j;
             string codon = sequence.substr(j,3);
             if (codon_to_aa.find(codon) == codon_to_aa.end())
             {
@@ -539,20 +549,22 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
                 {
                     Orf o;
                     o.translation = prot;
-                    o.frame = -1*i;
+                    o.frame = -1*(i+1);
                     o.start = length - end_site;
                     o.end = length - start_site;
+                    o.dna_sequence = dna.substr(start_site,end_site-start_site+1);
 
                     open_frames->push_back(o);
                 }
 
                 prot = "";
-                start_site = j+1;
+                start_site = j+i+3;
             }
             else
             {
                 prot += codon_to_aa.find(codon)->second;
             }
+            end_site = j+i+2;
         }
 
 //        cout<<"End "<<prot<<endl;
@@ -560,9 +572,10 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
         {
             Orf o;
             o.translation = prot;
-            o.frame = -1*i;
+            o.frame = -1*(i+1);
             o.start = length - end_site;
             o.end = length - start_site;
+            o.dna_sequence = dna.substr(start_site,end_site-start_site+1);
 
             open_frames->push_back(o);
         }

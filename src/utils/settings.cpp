@@ -70,7 +70,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("ref-seqfile", po::value<string>(), "reference alignment file (FASTA)")
         ("ref-treefile", po::value<string>(), "reference tree file (NH/NHX)")
         ("readsfile", po::value<string>(), "reads file (FASTA/FASTQ)")
-        ("translate-reads", "use best ORF in reads")
+        ("find-best-orf", "use best ORF in reads")
         ("pair-end","connect paired reads")
         ("454", "correct homopolymer error")
         ("use-consensus", "use consensus for read ancestors")
@@ -91,8 +91,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("output-nhx-tree", "output tree with NHX TID tags")
         ("min-orf-coverage", po::value<float>()->default_value(0.95),"minimum ORF coverage to be considered")
         ("reads-distance", po::value<float>()->default_value(0.1), "evolutionary distance from pseudo-root")
-        ("min-reads-overlap", po::value<float>()->default_value(0.1), "overlap threshold for read and reference")
-        ("min-reads-identity", po::value<float>()->default_value(0.3), "identity threshold for aligned sites")
+        ("min-reads-overlap", po::value<float>()->default_value(0.5), "overlap threshold for read and reference")
+        ("overlap-with-reference","require overlap with reference")
+        ("min-reads-identity", po::value<float>()->default_value(0.5), "identity threshold for aligned sites")
         ("pair-read-gap-extension", po::value<float>(), "read spacer extension probability")
         ("rank-reads-for-nodes","rank reads within nodes for alignment")
         ("discard-overlapping-identical-reads", "discard embedded identical reads")
@@ -213,7 +214,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("no-log-odds", "do not use log-odds substitutions scores")
         ("time", "track time (debugging)")
         ("keep-exonerate-files","keep exonerate files")
-        ("overlap-with-reference","force read-pileup to overlap with reference")
     ;
 
     boost::program_options::options_description broken("Broken options",100);
@@ -240,6 +240,10 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         cout << endl<< "Reading command line options from file '" << Settings::get("config-file").as<string>()<<"'."<<endl;
 
         ifstream cfg(Settings::get("config-file").as<string>().c_str());
+
+        if (!cfg) { cout<<"No such file. Exiting.\n\n"; exit(1);}
+
+
         po::store(po::parse_config_file(cfg, full_desc), vm);
     }
 

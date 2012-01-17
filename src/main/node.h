@@ -48,6 +48,16 @@ struct Insertion_at_node
     bool left_child_wanted;
 };
 
+
+struct Orf
+{
+    string dna_sequence;
+    string translation;
+    int frame;
+    int start;
+    int end;
+};
+
 class Node
 {
     Node *left_child;
@@ -71,12 +81,14 @@ class Node
     static int number_of_nodes;
     static int alignment_number;
 
+    Orf orf;
+    bool has_orf;
 public:
     Node() : leaf(true), dist_to_parent(0), name("undefined"), nhx_tid(""),
                     node_has_sequence(false), node_has_sequence_object(false),
                     node_has_left_child(false), node_has_right_child(false),
                     adjust_left_node_site_index(false),
-                    adjust_right_node_site_index(false){}
+                    adjust_right_node_site_index(false), has_orf(false){}
     ~Node();
 
     /**************************************/
@@ -158,6 +170,10 @@ public:
     {
         nhx_tid = nm;
     }
+
+    void set_orf(Orf *o) { orf = *o; has_orf = true; ;}
+    Orf get_orf() { return orf; }
+    bool has_ORF() { return has_orf; }
 
     string get_name() const { return name; }
 
@@ -372,6 +388,38 @@ public:
 
     }
 
+    void get_read_node_names(set<string> *read_names)
+    {
+        if(this->is_leaf())
+        {
+            if(this->get_sequence()->is_read_sequence())
+            {
+                read_names->insert(this->get_name());
+            }
+        }
+        else
+        {
+            left_child->get_read_node_names(read_names);
+            right_child->get_read_node_names(read_names);
+        }
+    }
+
+    void get_read_dna_sequences(map<string,string> *dna_seqs)
+    {
+        if(this->is_leaf())
+        {
+            if(this->get_sequence()->is_read_sequence())
+            {
+                dna_seqs->insert(pair<string,string>(this->get_name(),this->get_orf().dna_sequence));
+            }
+        }
+        else
+        {
+            left_child->get_read_dna_sequences(dna_seqs);
+            right_child->get_read_dna_sequences(dna_seqs);
+        }
+    }
+
     bool sequence_site_index_needs_correcting()
     {
         if(this->is_leaf())
@@ -454,7 +502,7 @@ public:
 
         if(!Settings_handle::st.is("silent"))
         {
-            if(is_reads_sequence && !Settings_handle::st.is("reads-pileup") && !Settings_handle::st.is("compare-reverse"))
+            if(is_reads_sequence && !Settings_handle::st.is("reads-pileup") && !Settings_handle::st.is("compare-reverse") && !Settings_handle::st.is("find-best-orf"))
                 cout<<"  aligning to node: "<<left_child->get_name()<<"."<<endl;
             else if(!is_reads_sequence)
                 cout<<"aligning node "<<this->get_name()<<" ("<<alignment_number++<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;

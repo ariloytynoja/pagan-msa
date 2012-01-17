@@ -45,7 +45,7 @@ class Fasta_reader
     void rna_to_DNA(string *sequence) const;
     void define_translation_tables();
     string DNA_to_protein(string *sequence) const;
-    string protein_to_DNA(string *sequence) const;
+    string protein_to_DNA(string *dna,string *prot) const;
 
 public:
     Fasta_reader() : chars_by_line(60) {
@@ -75,13 +75,15 @@ public:
         output.close();
     }
 
-    void write_dna(ostream & output, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs) const throw (Exception);
-    void write_dna(const string & path, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, bool overwrite=true) const throw (Exception)
+    void write_dna(ostream & output, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, Node *root) const throw (Exception);
+    void write_dna(const string & path, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, Node *root, bool overwrite=true) const throw (Exception)
     {
         ofstream output( (path+".dna.fas").c_str(), overwrite ? (ios::out) : (ios::out|ios::app) );
-        write_dna(output, seqs, org_seqs);
+        write_dna(output, seqs, org_seqs, root);
         output.close();
     }
+
+    void print_fast_entry(ostream & output, const Fasta_entry *entry) const;
 
     void write_fastq(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception);
     void write_fastq(const string & path, const vector<Fasta_entry> & seqs, bool overwrite=true) const throw (Exception)
