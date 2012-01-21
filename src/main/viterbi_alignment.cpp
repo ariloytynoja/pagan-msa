@@ -35,8 +35,8 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
                              bool is_reads_sequence,int start_offset,int end_offset)
 {
 
-    if(Settings::noise>1)
-        cout<<"Viterbi_alignment::align: start_offset "<<start_offset<<", end_offset "<<end_offset<<endl;
+    Log_output::write_out("Viterbi_alignment::align: start_offset "+Log_output::itos(start_offset)+
+                          ", end_offset "+Log_output::itos(end_offset)+"\n",3);
 
     left = left_sequence;
     right = right_sequence;
@@ -46,7 +46,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     right_branch_length = r_branch_length;
 
 
-    this->debug_print_input_sequences(2);
+    this->debug_print_input_sequences(3);
 
 
     // set the basic parameters (copy from Settings)
@@ -76,14 +76,14 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
 
     int left_length = left->sites_length();    int right_length = right->sites_length();
 
-    this->debug_msg("Viterbi_alignment: lengths: "+this->itos(left_length)+" "+this->itos(right_length),1);
+    Log_output::write_out("Viterbi_alignment: lengths: "+this->itos(left_length)+" "+this->itos(right_length),3);
 
     align_array M(boost::extents[left_length-1][right_length-1]);
     align_array X(boost::extents[left_length-1][right_length-1]);
     align_array Y(boost::extents[left_length-1][right_length-1]);
     match = &M;    xgap = &X;    ygap = &Y;
 
-    this->debug_msg("Viterbi_alignment: matrix created",1);
+    Log_output::write_out("Viterbi_alignment: matrix created",3);
 
     // Dynamic programming loop
     // Note that fwd full probability is integrated in
@@ -126,7 +126,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
         for(;i<i_max;i++)
             this->compute_fwd_scores(i,j_max-1);
     }
-    this->debug_msg("Viterbi_alignment: matrix filled",1);
+    Log_output::write_out("Viterbi_alignment: matrix filled",3);
 
 
 
@@ -141,14 +141,10 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     max_end.full_score = 1.0;
 
     if(max_end.score==-HUGE_VAL) {
-        cout<<"left\n";
-        this->left->print_sequence();
-        cout<<"right\n";
-        this->right->print_sequence();
-        cout<<"matrix\n";
-        this->print_matrices();
+        Log_output::write_out("\nViterbi_alignment: max_end.score==-HUGE_VAL\nleft\n"+this->left->print_sequence()+
+        "\nright\n"+this->right->print_sequence()+"\nmatrix\n"+this->print_matrices(),1);
     }
-    this->debug_msg("Viterbi_alignment: corner found",1);
+    Log_output::write_out("Viterbi_alignment: corner found",3);
 
 
     // If needed, compute the bwd posterior probabilities
@@ -172,14 +168,14 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
         //
         Matrix_pointer max_start = (*match)[0][0];
 
-        this->debug_msg(" bwd full probability: "+this->ftos(log(max_start.bwd_score))
-                        +" ["+this->ftos(max_start.bwd_score)+"]",1);
+        Log_output::write_out(" bwd full probability: "+this->ftos(log(max_start.bwd_score))
+                        +" ["+this->ftos(max_start.bwd_score)+"]",3);
 
         double ratio = max_end.fwd_score/max_start.bwd_score;
 
         if(ratio<0.99 || ratio>1.01)
-            this->debug_msg("Problem in computation? fwd: "+this->ftos(max_end.fwd_score)
-                            +", bwd: "+this->ftos(max_start.bwd_score),0);
+            Log_output::write_out("Problem in computation? fwd: "+this->ftos(max_end.fwd_score)
+                            +", bwd: "+this->ftos(max_start.bwd_score),1);
 
 
         // Compute psoterior probbailities
@@ -193,7 +189,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
         }
 
         if(Settings::noise>5)
-            this->print_matrices();
+            Log_output::write_out(this->print_matrices(),5);
 
     }
 
@@ -208,7 +204,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
         Path_pointer pp(max_end,true);
         this->backtrack_new_path(&path,pp);
 
-        this->debug_msg("Viterbi_alignment: path found",1);
+        Log_output::write_out("Viterbi_alignment: path found",3);
 
 
         // Now build the sequence forward following the path saved in a vector;
@@ -216,7 +212,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
         ancestral_sequence = new Sequence(path.size(),model->get_data_type());
         this->build_ancestral_sequence(ancestral_sequence,&path,is_reads_sequence);
 
-        this->debug_msg("Viterbi_alignment: sequence built",1);
+        Log_output::write_out("Viterbi_alignment: sequence built",3);
     }
 
     // Instead of Viterbi path, sample a path from the posterior probabilities
@@ -232,7 +228,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
 
         this->sample_new_path(&sample_path,sp);
 
-        this->debug_msg("Viterbi_alignment: path sampled",1);
+        Log_output::write_out("Viterbi_alignment: path sampled",3);
 
 
         // Now build the sequence forward following the path saved in a vector;
@@ -240,7 +236,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
         ancestral_sequence = new Sequence(sample_path.size(),model->get_data_type());
         this->build_ancestral_sequence(ancestral_sequence,&sample_path,is_reads_sequence);
 
-        this->debug_msg("Viterbi_alignment: sequence sampled and built",1);
+        Log_output::write_out("Viterbi_alignment: sequence sampled and built",3);
     }
 
 
@@ -261,16 +257,15 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
 
             this->sample_new_path(&sample_path,sp);
 
-            this->debug_msg("Viterbi_alignment: additional path sampled",1);
+            Log_output::write_out("Viterbi_alignment: additional path sampled",3);
 
             // Now build the sequence forward following the path saved in a vector;
             //
             Sequence *sampled_sequence = new Sequence(sample_path.size(),model->get_data_type());
             this->build_ancestral_sequence(sampled_sequence,&sample_path,is_reads_sequence);
 
-            this->debug_msg("Viterbi_alignment: additional sequence sampled and built",1);
-            this->debug_msg("Viterbi_alignment: sampled alignment",1);
-//            this->debug_msg(this->print_pairwise_alignment(sampled_sequence->get_sites()),1);
+            Log_output::write_out("Viterbi_alignment: additional sequence sampled and built",3);
+            Log_output::write_out("Viterbi_alignment: sampled alignment",3);
 
             this->merge_sampled_sequence(ancestral_sequence, sampled_sequence);
 
@@ -302,14 +297,12 @@ void Viterbi_alignment::merge_sampled_sequence(Sequence *ancestral_sequence, Seq
 
     if(Settings::noise>4)
     {
-        cout<<"\nancestral\n";
-        ancestral_sequence->print_path();
-        cout<<"\nsampled\n";
-        sampled_sequence->print_path();
-        cout<<"\nancestral\n";
-        ancestral_sequence->print_sequence();
-        cout<<"\nsampled\n";
-        sampled_sequence->print_sequence();
+        stringstream ss;
+        ss<<"\nancestral\n"<<ancestral_sequence->print_path();
+        ss<<"\nsampled\n"<<sampled_sequence->print_path();
+        ss<<"\nancestral\n"<<ancestral_sequence->print_sequence();
+        ss<<"\nsampled\n"<<sampled_sequence->print_sequence();
+        Log_output::write_out(ss.str(),5);
     }
 
     vector<int> sample_index_for_added;
@@ -443,8 +436,7 @@ if( sample_index_for_added.size()>0 )
 
         if(Settings::noise>4)
         {
-            cout<<"\nmerged ancestral\n";
-            ancestral_sequence->print_sequence();
+            Log_output::write_out("\nmerged ancestral\n"+ancestral_sequence->print_sequence(),5);
         }
     }
 }
@@ -835,7 +827,7 @@ void Viterbi_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_point
             }
             else
             {
-                cout<<"incorrect backward pointer: "<<vit_mat<<endl;
+                Log_output::write_out("Viterbi_alignment: incorrect backward pointer: "+Log_output::itos(vit_mat)+"\n",0);
                 exit(1);
             }
 
@@ -848,16 +840,6 @@ void Viterbi_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_point
             break;
 
     }
-
-    /*DEBUG*/
-    if(Settings::noise>4)
-    {
-        cout<<"\npath"<<endl;
-        for(unsigned int i=0;i<path->size();i++)
-            cout<<path->at(i).mp.matrix;
-        cout<<endl;
-    }
-    /*DEBUG*/
 
 }
 
@@ -892,7 +874,6 @@ void Viterbi_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer 
     {
         while(i>=0)
         {
-//            cout<<i<<" "<<j<<": "<<x_ind<<" "<<y_ind<<" "<<vit_mat<<endl;
 
             if(vit_mat == Viterbi_alignment::m_mat)
             {
@@ -971,7 +952,7 @@ void Viterbi_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer 
             }
             else
             {
-                cout<<"incorrect backward pointer: "<<vit_mat<<endl;
+                Log_output::write_out("Viterbi_alignment: incorrect backward pointer: "+Log_output::itos(vit_mat)+"\n",0);
                 exit(1);
             }
 
@@ -984,23 +965,6 @@ void Viterbi_alignment::sample_new_path(vector<Path_pointer> *path,Path_pointer 
             break;
 
     }
-
-    /*DEBUG*/
-    if(Settings::noise>4)
-    {
-        cout<<"\npath"<<endl;
-        for(unsigned int i=0;i<path->size();i++)
-            cout<<path->at(i).mp.matrix;
-        cout<<endl;
-    }
-    /*DEBUG*/
-
-//    cout<<"\npath s"<<endl;
-//    for(unsigned int i=0;i<path->size();i++)
-////        cout<<path->at(i).mp.matrix<<" "<<log(path->at(i).mp.fwd_score)<<" "<<log(path->at(i).mp.bwd_score)<<" "<<log(path->at(i).mp.full_score)<<endl;
-//          cout<<path->at(i).mp.matrix<<" "<<path->at(i).mp.fwd_score<<" "<<path->at(i).mp.bwd_score<<" "<<path->at(i).mp.full_score<<endl;
-//  cout<<endl;
-
 }
 
 /********************************************/
@@ -1229,15 +1193,17 @@ void Viterbi_alignment::iterate_bwd_edges_for_end_corner(Site * left_site,Site *
     }
 
     if(!compute_full_score && Settings::noise>5)
-        this->print_matrices();
+        Log_output::write_out(this->print_matrices(),5);
 
 
     if(Settings::noise>1)
     {
-        cout<<"viterbi score: "<<setprecision(8)<<max->score<<" ["<<exp(max->score)<<"] ("<<max->matrix<<")";
+        stringstream ss;
+        ss<<"viterbi score: "<<setprecision(8)<<max->score<<" ["<<exp(max->score)<<"] ("<<max->matrix<<")";
         if(compute_full_score)
-            cout<<", full probability: "<<log(max->fwd_score)<<" ["<<max->fwd_score<<"]";
-        cout<<setprecision(4)<<endl; /*DEBUG*/
+            ss<<", full probability: "<<log(max->fwd_score)<<" ["<<max->fwd_score<<"]";
+        ss<<endl;
+        Log_output::write_out(ss.str(),1);
     }
 }
 
@@ -2568,186 +2534,187 @@ void Viterbi_alignment::plot_posterior_probabilities_up()
 
 /********************************************/
 
-void Viterbi_alignment::print_matrices()
+string Viterbi_alignment::print_matrices()
 {
-    cout << fixed << noshowpos << setprecision (4);
+    stringstream ss;
+    ss << fixed << noshowpos << setprecision (4);
 
-    cout<<"m"<<endl;
+    ss<<"m"<<endl;
     for(unsigned int j=0;j<match->shape()[1];j++)
     {
         for(unsigned int i=0;i<match->shape()[0];i++)
         {
-            cout<<(*match)[i][j].matrix<<" ";
+            ss<<(*match)[i][j].matrix<<" ";
         }
-        cout<<endl;
+        ss<<endl;
     }
-    cout<<endl;
+    ss<<endl;
 
-    cout<<"m"<<endl;
+    ss<<"m"<<endl;
     for(unsigned int j=0;j<match->shape()[1];j++)
     {
         for(unsigned int i=0;i<match->shape()[0];i++)
         {
-            cout<<setw(8)<<fixed<<(*match)[i][j].score<<" ";
+            ss<<setw(8)<<fixed<<(*match)[i][j].score<<" ";
         }
-        cout<<endl;
+        ss<<endl;
     }
-    cout<<endl;
+    ss<<endl;
 
     if(compute_full_score)
     {
-        cout<<"m"<<endl;
+        ss<<"m"<<endl;
         for(unsigned int j=0;j<match->shape()[1];j++)
         {
             for(unsigned int i=0;i<match->shape()[0];i++)
             {
-                cout<<setw(8)<<log((*match)[i][j].fwd_score)<<" ";
+                ss<<setw(8)<<log((*match)[i][j].fwd_score)<<" ";
             }
-            cout<<endl;
+            ss<<endl;
         }
-        cout<<endl;
+        ss<<endl;
 
-        cout<<"m"<<endl;
+        ss<<"m"<<endl;
         for(unsigned int j=0;j<match->shape()[1];j++)
         {
             for(unsigned int i=0;i<match->shape()[0];i++)
             {
-                cout<<setw(8)<<log((*match)[i][j].bwd_score)<<" ";
+                ss<<setw(8)<<log((*match)[i][j].bwd_score)<<" ";
             }
-            cout<<endl;
+            ss<<endl;
         }
-        cout<<endl;
+        ss<<endl;
 
-        cout<<"m"<<endl;
+        ss<<"m"<<endl;
         for(unsigned int j=0;j<match->shape()[1];j++)
         {
             for(unsigned int i=0;i<match->shape()[0];i++)
             {
-                cout<<setw(8)<<log((*match)[i][j].full_score)<<" ";
+                ss<<setw(8)<<log((*match)[i][j].full_score)<<" ";
             }
-            cout<<endl;
+            ss<<endl;
         }
-        cout<<endl;
+        ss<<endl;
     }
 
-    cout<<"x"<<endl;
+    ss<<"x"<<endl;
     for(unsigned int j=0;j<match->shape()[1];j++)
     {
         for(unsigned int i=0;i<match->shape()[0];i++)
         {
-            cout<<(*xgap)[i][j].matrix<<" ";
+            ss<<(*xgap)[i][j].matrix<<" ";
         }
-        cout<<endl;
+        ss<<endl;
     }
-    cout<<endl;
+    ss<<endl;
 
 
-    cout<<"x"<<endl;
+    ss<<"x"<<endl;
     for(unsigned int j=0;j<match->shape()[1];j++)
     {
         for(unsigned int i=0;i<match->shape()[0];i++)
         {
-            cout<<setw(8)<<fixed<<(*xgap)[i][j].score<<" ";
+            ss<<setw(8)<<fixed<<(*xgap)[i][j].score<<" ";
         }
-        cout<<endl;
+        ss<<endl;
     }
-    cout<<endl;
+    ss<<endl;
 
     if(compute_full_score)
     {
-        cout<<"x"<<endl;
+        ss<<"x"<<endl;
         for(unsigned int j=0;j<match->shape()[1];j++)
         {
             for(unsigned int i=0;i<match->shape()[0];i++)
             {
-                cout<<setw(8)<<log((*xgap)[i][j].fwd_score)<<" ";
+                ss<<setw(8)<<log((*xgap)[i][j].fwd_score)<<" ";
             }
-            cout<<endl;
+            ss<<endl;
         }
-        cout<<endl;
+        ss<<endl;
 
-        cout<<"x"<<endl;
+        ss<<"x"<<endl;
         for(unsigned int j=0;j<match->shape()[1];j++)
         {
             for(unsigned int i=0;i<match->shape()[0];i++)
             {
-                cout<<setw(8)<<log((*xgap)[i][j].bwd_score)<<" ";
+                ss<<setw(8)<<log((*xgap)[i][j].bwd_score)<<" ";
             }
-            cout<<endl;
+            ss<<endl;
         }
-        cout<<endl;
+        ss<<endl;
 
-        cout<<"x"<<endl;
+        ss<<"x"<<endl;
         for(unsigned int j=0;j<match->shape()[1];j++)
         {
             for(unsigned int i=0;i<match->shape()[0];i++)
             {
-                cout<<setw(8)<<log((*xgap)[i][j].full_score)<<" ";
+                ss<<setw(8)<<log((*xgap)[i][j].full_score)<<" ";
             }
-            cout<<endl;
+            ss<<endl;
         }
-        cout<<endl;
+        ss<<endl;
     }
 
 
-    cout<<"y"<<endl;
+    ss<<"y"<<endl;
     for(unsigned int j=0;j<match->shape()[1];j++)
     {
         for(unsigned int i=0;i<match->shape()[0];i++)
         {
-            cout<<(*ygap)[i][j].matrix<<" ";
+            ss<<(*ygap)[i][j].matrix<<" ";
         }
-        cout<<endl;
+        ss<<endl;
     }
-    cout<<endl;
+    ss<<endl;
 
 
 
-    cout<<"y"<<endl;
+    ss<<"y"<<endl;
     for(unsigned int j=0;j<match->shape()[1];j++)
     {
         for(unsigned int i=0;i<match->shape()[0];i++)
         {
-            cout<<setw(8)<<fixed<<(*ygap)[i][j].score<<" ";
+            ss<<setw(8)<<fixed<<(*ygap)[i][j].score<<" ";
         }
-        cout<<endl;
+        ss<<endl;
     }
-    cout<<endl;
+    ss<<endl;
 
     if(compute_full_score)
     {
-        cout<<"y"<<endl;
+        ss<<"y"<<endl;
         for(unsigned int j=0;j<match->shape()[1];j++)
         {
             for(unsigned int i=0;i<match->shape()[0];i++)
             {
-                cout<<setw(8)<<log((*ygap)[i][j].fwd_score)<<" ";
+                ss<<setw(8)<<log((*ygap)[i][j].fwd_score)<<" ";
             }
-            cout<<endl;
+            ss<<endl;
         }
-        cout<<endl;
+        ss<<endl;
 
-        cout<<"y"<<endl;
+        ss<<"y"<<endl;
         for(unsigned int j=0;j<match->shape()[1];j++)
         {
             for(unsigned int i=0;i<match->shape()[0];i++)
             {
-                cout<<setw(8)<<log((*ygap)[i][j].bwd_score)<<" ";
+                ss<<setw(8)<<log((*ygap)[i][j].bwd_score)<<" ";
             }
-            cout<<endl;
+            ss<<endl;
         }
-        cout<<endl;
+        ss<<endl;
 
-        cout<<"y"<<endl;
+        ss<<"y"<<endl;
         for(unsigned int j=0;j<match->shape()[1];j++)
         {
             for(unsigned int i=0;i<match->shape()[0];i++)
             {
-                cout<<setw(8)<<log((*ygap)[i][j].full_score)<<" ";
+                ss<<setw(8)<<log((*ygap)[i][j].full_score)<<" ";
             }
-            cout<<endl;
+            ss<<endl;
         }
-        cout<<endl;
+        ss<<endl;
     }
-
+    return ss.str();
 }

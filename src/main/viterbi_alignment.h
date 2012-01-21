@@ -143,9 +143,6 @@ class Viterbi_alignment: public Basic_alignment
             if(ind>=0)
                 left->get_edges()->at(ind).is_used(true);
 
-            if(Settings::noise>6) /*DEBUG*/
-                cout<<"x skip ("<<*i<<","<<*j<<") ["<<x_ind<<","<<y_ind<<"] "<<endl;
-
             this->insert_gap_path_pointer(path,*i-1,*j,Viterbi_alignment::x_mat,left_branch_length);
             --*i;
 
@@ -169,9 +166,6 @@ class Viterbi_alignment: public Basic_alignment
             if(ind>=0)
                 right->get_edges()->at(ind).is_used(true);
 
-            if(Settings::noise>6) /*DEBUG*/
-                cout<<"y skip ("<<*i<<","<<*j<<") ["<<x_ind<<","<<y_ind<<"] "<<endl;
-
             this->insert_gap_path_pointer(path,*i,*j-1,Viterbi_alignment::y_mat,right_branch_length);
             --*j;
             add_one_more = true;
@@ -189,9 +183,6 @@ class Viterbi_alignment: public Basic_alignment
 
     void insert_new_path_pointer(vector<Path_pointer> *path,int *i, int *j,Path_pointer pp)
     {
-        if(Settings::noise>6) /*DEBUG*/
-            cout<<pp.mp.matrix<<" ("<<*i<<","<<*j<<") ["<<pp.mp.x_ind<<","<<pp.mp.y_ind<<"] "<<pp.mp.score<<endl;;
-
         if( *i>0 || *j>0 )
             path->insert(path->begin(),pp);
     }
@@ -204,13 +195,7 @@ class Viterbi_alignment: public Basic_alignment
     void plot_posterior_probabilities_up();
     void plot_posterior_probabilities_down();
 
-    void debug_print_matrices(int noise_level)
-    {
-        if(Settings::noise>noise_level)
-            print_matrices();
-    }
-
-    void print_matrices();
+    string print_matrices();
 
     /********************************************/
 

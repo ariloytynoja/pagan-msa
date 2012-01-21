@@ -105,7 +105,7 @@ void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_
     }
     else
     {
-        cout<<"Input file format unrecognized. Only FASTA and FASTQ formats supported. Exiting.\n\n";
+        Log_output::write_out("Input file format unrecognized. Only FASTA and FASTQ formats supported. Exiting.\n\n",0);
         exit(1);
     }
 
@@ -123,8 +123,7 @@ void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_
             ss<<"."<<it->second;
             name.append(ss.str());
 
-            if(!Settings_handle::st.is("silent"))
-                cout<<"Warning: duplicate names found. '"<<seqs.at(i).name<<"' is renamed '"<<name<<"'."<<endl;
+            Log_output::write_out("Warning: duplicate names found. '"+seqs.at(i).name+"' is renamed '"+name+"'.\n",2);
 
             seqs.at(i).name = name;
         }
@@ -221,7 +220,9 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
         seqs.push_back(fe);
     }
 
-    if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate"))
+    if(Settings_handle::st.is("translate")
+            || Settings_handle::st.is("mt-translate")
+                || Settings_handle::st.is("find-best-orf"))
     {
         if(this->check_sequence_data_type(&seqs) == Model_factory::dna)
         {
@@ -242,8 +243,7 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
         }
         else
         {
-            if(!Settings_handle::st.is("silent"))
-                cout<<"Data do not appear to be DNA. Translation not performed."<<endl;
+            Log_output::write_out("Data do not appear to be DNA. Translation not performed.\n",2);
         }
     }
 }
@@ -289,7 +289,7 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
             temp = Text_utils::remove_last_whitespaces(temp);
             if(temp[0] != '+')
             {
-                cout<<"Error in FASTQ comment:"<<temp<<"\nExiting.\n\n";
+                Log_output::write_out("Error in FASTQ comment:"+temp+"\nExiting.\n\n",0);
                 exit(1);
             }
 
@@ -314,7 +314,7 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
         }
         else if(temp != "")
         {
-            cout<<"FASTQ file parse error. Expecting a line starting with '@':  \n"<<temp<<endl<<endl<<"Exiting\n\n.";
+            Log_output::write_out("FASTQ file parse error. Expecting a line starting with '@':  \n"+temp+".\n\nExiting.\n\n",0);
             exit(1);
         }
     }
@@ -323,8 +323,7 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
 
 void Fasta_reader::trim_fastq_reads(vector<Fasta_entry> * seqs) const throw (Exception)
 {
-    if(!Settings_handle::st.is("silent"))
-        cout<<"Trimming read ends.\n";
+    Log_output::write_out("Trimming read ends.\n",2);
 
     int mean_score = Settings_handle::st.get("trim-mean-qscore").as<int>();
     int window_width = Settings_handle::st.get("trim-window-width").as<int>();
@@ -402,9 +401,8 @@ void Fasta_reader::trim_fastq_reads(vector<Fasta_entry> * seqs) const throw (Exc
 
         if((int)fit->sequence.length()<minimum_length)
         {
-            if(!Settings_handle::st.is("silent"))
-            cout<<"After trimming, sequence "<<fit->name<<" is below the minimum length of "
-                    <<minimum_length<<"; the read is discarded.\n";
+            Log_output::write_out("After trimming, sequence "+fit->name+" is below the minimum length of "
+                    +Log_output::itos(minimum_length)+"; the read is discarded.\n",2);
             seqs->erase(fit);
         }
         else
@@ -472,7 +470,6 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
             if(temp.size()==0)
                 continue;
 
-//            cout<<temp<<endl;
             String_tokenizer * st = new String_tokenizer(temp, ";", true, false);
             block = st->next_token();
 
@@ -484,11 +481,12 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
             {
                 if(prev_site == -2)
                 {
-                    cout<<"Error reading the graph input: 'end' site is not the last site.\nExiting.\n\n";
+                    Log_output::write_out("Error reading the graph input: 'end' site is not the last site.\nExiting.\n\n",0);
                 }
                 else
                 {
-                    cout<<"Error reading the graph input: previous site "<<prev_site<<" and this site "<<site<<".\nExiting.\n\n";
+                    Log_output::write_out("Error reading the graph input: previous site "+Log_output::itos(prev_site)+
+                                          " and this site "+Log_output::itos(site)+".\nExiting.\n\n",0);
                 }
                 exit(1);
             }
@@ -500,7 +498,7 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
             {
                 if(site != 0)
                 {
-                    cout<<"Error reading the graph input: 'start' is not the site 0.\nExiting.\n\n";
+                    Log_output::write_out("Error reading the graph input: 'start' is not the site 0.\nExiting.\n\n",0);
                     exit(1);
                 }
             }
@@ -532,18 +530,18 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
 
                 if(start_site < 0 || end_site < start_site || end_site > site)
                 {
-                    cout<<"Error reading the graph input: edge coordinates at site "<<site<<" appear incorrect.\nExiting.\n\n";
+                    Log_output::write_out("Error reading the graph input: edge coordinates at site "+Log_output::itos(site)+" appear incorrect.\nExiting.\n\n",0);
                     exit(1);
                 }
 
                 if(weight < 0 || weight > 1 || weight + sum_weight > 1)
                 {
-                    cout<<"Warning reading the graph input: edge weight at site "<<site<<" appear incorrect.\n\n";
+                    Log_output::write_out("Warning reading the graph input: edge weight at site "+Log_output::itos(site)+" appear incorrect.\n\n",2);
                 }
 
                 if(weight + sum_weight > 1)
                 {
-                    cout<<"Warning reading the graph input: edge weight at site "<<site<<" appear incorrect.\n\n";
+                    Log_output::write_out("Warning reading the graph input: edge weight at site "+Log_output::itos(site)+" appear incorrect.\n\n",2);
                     weight = 1.0-sum_weight;
                     sum_weight = 1.0;
                 }
@@ -672,17 +670,13 @@ void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs,
 
     if(dna_seq_missing)
     {
-        cout<<"No DNA for all sequences. Back-translation failed."<<endl;
+        Log_output::write_out("No DNA for all sequences. Back-translation failed.\n",2);
     }
-
 
     if(Settings_handle::st.is("find-best-orf"))
     {
         root->get_read_dna_sequences(&dna_seqs);
     }
-
-//    for(map<string,string>::iterator i=dna_seqs.begin();i!=dna_seqs.end();i++)
-//        cout<<i->first<<" "<<i->second<<endl;
 
     multimap<string,int> copy_num;
     vector<Fasta_entry>::const_iterator vi1 = seqs.begin();
@@ -728,7 +722,7 @@ void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs,
         map<string,string>::iterator it2 = dna_seqs.find(vi->name);
         if(it2 == dna_seqs.end())
         {
-            cout<<"No matching DNA sequence for "<<vi->name<<". Back-translation failed."<<endl;
+            Log_output::write_out("No matching DNA sequence for "+vi->name+". Back-translation failed.\n",2);
         }
         else
         {
@@ -743,9 +737,6 @@ void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs,
 
     set<string> read_names;
     root->get_read_node_names(&read_names);
-
-    for(set<string>::iterator i=read_names.begin();i!=read_names.end();i++)
-        cout<<*i<<endl;
 
     Fasta_entry entry;
     entry.name = "consensus";
@@ -1167,9 +1158,6 @@ string Fasta_reader::protein_to_DNA(string *dna,string *prot) const
             out += "---";
         else
         {
-//            if (codon_to_aa.find(dna->substr(pos,3))->second != aa)
-//                cout<<"mismatch: "<<aa<<" != "<<dna->substr(pos,3)<<endl;
-
             out += dna->substr(pos,3);
             pos += 3;
         }
@@ -1203,13 +1191,13 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
     {
         if(Settings_handle::st.is("ref-seqfile") && Settings_handle::st.is("ref-treefile"))
         {
-            cout<<"\nAll leaf node names in the guidetree file '"<<Settings_handle::st.get("ref-treefile").as<string>()<<"' do not match\n"<<
-                " with a sequence name in the sequence file '"<<Settings_handle::st.get("ref-seqfile").as<string>()<<"'."<<endl;
+            Log_output::write_out("\nAll leaf node names in the guidetree file '"+Settings_handle::st.get("ref-treefile").as<string>()+"' do not match\n"+
+                " with a sequence name in the sequence file '"+Settings_handle::st.get("ref-seqfile").as<string>()+"'.\n",2);
         }
         else
         {
-            cout<<"\nAll leaf node names in the guidetree file '"<<Settings_handle::st.get("treefile").as<string>()<<"' do not match\n"<<
-                " with a sequence name in the sequence file '"<<Settings_handle::st.get("seqfile").as<string>()<<"'."<<endl;
+            Log_output::write_out("\nAll leaf node names in the guidetree file '"+Settings_handle::st.get("treefile").as<string>()+"' do not match\n"+
+                " with a sequence name in the sequence file '"+Settings_handle::st.get("seqfile").as<string>()+"'.\n",2);
         }
 
         set<string> snames;
@@ -1225,12 +1213,13 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
         }
 
 
-        cout<<endl<<"Leaf names not in the sequences:"<<endl;
+        stringstream ss;
+        ss<<endl<<"Leaf names not in the sequences:"<<endl;
         for (vector<Node*>::const_iterator ni = leaf_nodes->begin(); ni != leaf_nodes->end(); ni++)
         {
             if(snames.find((*ni)->get_name()) == snames.end() )
             {
-                cout<<" "<<(*ni)->get_name()<<endl;
+                ss<<" "<<(*ni)->get_name()<<endl;
                 (*ni)->has_sequence(false);
             }
             else
@@ -1239,6 +1228,7 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
                 overlap++;
             }
         }
+        Log_output::write_out(ss.str(),2);
     }
     else
     {
@@ -1248,18 +1238,20 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
     // Not all sequences need to be in the tree but give a warning that names don't match.
     if(names_match < 1)
     {
-        cout<<"\nNo sequences to align! Exiting.\n\n";
+        Log_output::write_out("\nNo sequences to align! Exiting.\n\n",0);
         exit(1);
     }
 
     if((int)sequences->size() > overlap && overlap == (int)leaf_nodes->size())
     {
-        cout<<"\nWarning: "<<leaf_nodes->size()<<" leaf nodes but "<<sequences->size()<<" sequences! Excess sequences will be removed.\n\n";
+        Log_output::write_out("\nWarning: "+Log_output::itos(leaf_nodes->size())+" leaf nodes but "+
+                              Log_output::itos(sequences->size())+" sequences! Excess sequences will be removed.\n\n",1);
         return true;
     }
     if(overlap < (int)leaf_nodes->size())
     {
-        cout<<"\nWarning: "<<leaf_nodes->size()<<" leaf nodes but "<<overlap<<" matching sequences! Excess branches will be removed.\n\n";
+        Log_output::write_out("\nWarning: "+Log_output::itos(leaf_nodes->size())+" leaf nodes but "+
+                              Log_output::itos(overlap)+" matching sequences! Excess branches will be removed.\n\n",1);
         return false;
     }
     return true;

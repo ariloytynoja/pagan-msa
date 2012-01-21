@@ -23,6 +23,7 @@
 #include "utils/settings.h"
 #include "utils/model_factory.h"
 #include "utils/settings_handle.h"
+#include "utils/log_output.h"
 #include "main/sequence.h"
 #include <iomanip>
 
@@ -71,7 +72,7 @@ Sequence::Sequence(Fasta_entry &seq_entry,const int data_t,bool gapped, bool no_
                 warning = "Unexpected characters found. Reverse-complement failed.\n";
         }
         if(warning.length()>0)
-            cout<<warning;
+            Log_output::write_out(warning,1);
         else
             seq_entry.sequence = revcomp;
 
@@ -101,6 +102,7 @@ Sequence::Sequence(Fasta_entry &seq_entry,const int data_t,bool gapped, bool no_
 
     terminal_sequence = true;
     read_sequence = false;
+    has_read_descendants = false;
 
     if(Settings::noise>5)
     {
@@ -476,8 +478,6 @@ void Sequence::create_graph_sequence(Fasta_entry &seq_entry)
     Edge first_edge( -1,this->get_current_site_index() );
     this->push_back_edge(first_edge);
 
-//    cout<<"#edges "<<seq_entry.edges.size()<<endl;
-
     string::iterator si = seq_entry.sequence.begin();
     string::iterator qi = seq_entry.quality.begin();
 
@@ -539,11 +539,13 @@ Sequence::Sequence(const int length,const int data_t, string gapped_s)
 
     read_sequence = false;
     terminal_sequence = false;
+    has_read_descendants = false;
+
 }
 
 
 
-void Sequence::print_sequence(vector<Site> *sites)
+string Sequence::print_sequence(vector<Site> *sites)
 {
 
     vector<string> *alphabet = 0;
@@ -552,101 +554,103 @@ void Sequence::print_sequence(vector<Site> *sites)
     else if(data_type == Model_factory::protein)
         alphabet = Model_factory::get_protein_full_character_alphabet();
 
-
-    cout<<endl;
+    stringstream ss;
+    ss<<endl;
     for(unsigned int i=0;i<sites->size();i++)
     {
         Site *tsite =  &sites->at(i);
 
-        cout<<i<<": ";
+        ss<<i<<": ";
         if(tsite->get_site_type()==Site::real_site)
-            cout<<tsite->get_index()<<" "<<setw(2)<<alphabet->at(tsite->get_state());
+            ss<<tsite->get_index()<<" "<<setw(2)<<alphabet->at(tsite->get_state());
         else
-            cout<<tsite->get_index()<<" +";
+            ss<<tsite->get_index()<<" +";
 
-        cout<<"("<<tsite->get_unique_index()->left_index<<","<<tsite->get_unique_index()->right_index<<") ";
-        cout<<"["<<tsite->get_path_state()<<"] ";
-        cout<<"\t";
-        cout << setprecision (2);
+        ss<<"("<<tsite->get_unique_index()->left_index<<","<<tsite->get_unique_index()->right_index<<") ";
+        ss<<"["<<tsite->get_path_state()<<"] ";
+        ss<<"\t";
+        ss << setprecision (2);
 
         if(true)
         {
             if(tsite->has_fwd_edge())
             {
                 Edge *tedge = tsite->get_first_fwd_edge();
-                cout<<" F "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
+                ss<<" F "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
                         <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "
                         <<tedge->get_branch_distance_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<"]";
                 while(tsite->has_next_fwd_edge())
                 {
                     tedge = tsite->get_next_fwd_edge();
-                    cout<<"; f "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
+                    ss<<"; f "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
                         <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "
                         <<tedge->get_branch_distance_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<"]";
                 }
             }
-            cout<<"; \t";
+            ss<<"; \t";
         }
         if(tsite->has_bwd_edge())
         {
             Edge *tedge = tsite->get_first_bwd_edge();
-            cout<<"B "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
+            ss<<"B "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
                     <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "
                     <<tedge->get_branch_distance_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<"]";
             while(tsite->has_next_bwd_edge())
             {
                 tedge = tsite->get_next_bwd_edge();
-                cout<<"; b "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
+                ss<<"; b "<<tedge->get_start_site_index()<<" "<<tedge->get_end_site_index()<<" ["<<tedge->get_log_posterior_weight()
                     <<" "<<scientific<<tedge->get_posterior_weight()<<fixed<<" "<<tedge->get_branch_count_since_last_used()<<" "
                     <<tedge->get_branch_distance_since_last_used()<<" "<<tedge->get_branch_count_as_skipped_edge()<<"]";
             }
         }
-        cout << setprecision (4);
+        ss << setprecision (4);
         
-        cout<<"\n";
-
+        ss<<"\n";
     }
+
+    return ss.str();
 }
 
-void Sequence::print_path(vector<Site> *sites)
+string Sequence::print_path(vector<Site> *sites)
 {
-    cout<<endl;
+    stringstream ss;
+    ss<<endl;
 
    for(unsigned int i=0;i<sites->size();i++)
     {
         Site *tsite =  &sites->at(i);
 
-        cout<<i<<" "<<tsite->get_state()<<" "<<endl;
+        ss<<i<<" "<<tsite->get_state()<<" "<<endl;
 
         int ps = tsite->path_state;
         switch(ps)
         {
             case Site::matched:
-                cout<<"M";
+                ss<<"M";
                 continue;
             case Site::xgapped:
-                cout<<"X";
+                ss<<"X";
                 continue;
             case Site::ygapped:
-                cout<<"Y";
+                ss<<"Y";
                 continue;
             case Site::xskipped:
-                cout<<"x";
+                ss<<"x";
                 continue;
             case Site::yskipped:
-                cout<<"y";
+                ss<<"y";
                 continue;
             default:
-                cout<<"o";
+                ss<<"o";
                 continue;
         }
-        cout<<": ";
+        ss<<": ";
 
         if(tsite->get_site_type()==Site::real_site)
-            cout<<tsite->get_index()<<" "<<full_char_alphabet.at(tsite->get_state());
+            ss<<tsite->get_index()<<" "<<full_char_alphabet.at(tsite->get_state());
         else
-            cout<<tsite->get_index()<<" +";
+            ss<<tsite->get_index()<<" +";
 
-//        cout<<tsite->
     }
+    return ss.str();
 }

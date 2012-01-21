@@ -29,6 +29,7 @@
 #include "utils/model_factory.h"
 #include "utils/evol_model.h"
 #include "utils/optimal_reference.h"
+#include "utils/log_output.h"
 #include "main/node.h"
 #include "main/reads_aligner.h"
 
@@ -51,9 +52,12 @@ int main(int argc, char *argv[])
     }
     catch ( const boost::program_options::error& e ) {
             Settings_handle::st.info_noexit();
-            cout<<"Error in command line arguments: "<<e.what()<<"."<<endl<<endl;
+            Log_output::write_out("Error in command line arguments: "+string(e.what())+".\n\n",0);
             exit(1);
     }
+
+    Log_output::open_stream();
+
 
     srand(time(0));
 
@@ -68,7 +72,7 @@ int main(int argc, char *argv[])
 
         if(!Settings_handle::st.is("readsfile"))
         {
-            cout<<"No reads file given. Exiting.\n\n";
+            Log_output::write_out("No reads file given. Exiting.\n\n",0);
             exit(1);
         }
 
@@ -90,28 +94,28 @@ int main(int argc, char *argv[])
     if(Settings_handle::st.is("seqfile"))
     {
         string seqfile =  Settings_handle::st.get("seqfile").as<string>();
-        cout<<"Data file: "<<seqfile<<endl;
+        Log_output::write_out("Sequence file: "+seqfile+"\n",1);
 
         try
         {
             fr.read(seqfile, sequences, true);
         }
         catch (ppa::IOException& e) {
-            cout<<"Error reading the sequence file '"<<seqfile<<"'.\nExiting.\n\n";
+            Log_output::write_out("Error reading the sequence file '"+seqfile+"'.\nExiting.\n\n",0);
             exit(1);
         }
     }
     else if(Settings_handle::st.is("ref-seqfile"))
     {
         string seqfile =  Settings_handle::st.get("ref-seqfile").as<string>();
-        cout<<"Reference alignment file: "<<seqfile<<endl;
+        Log_output::write_out("Reference alignment file: "+seqfile+"\n",1);
 
         try
         {
             fr.read(seqfile, sequences, true);
         }
         catch (ppa::IOException& e) {
-            cout<<"Error reading the reference alignment file '"<<seqfile<<"'.\nExiting.\n\n";
+            Log_output::write_out("Error reading the reference alignment  file '"+seqfile+"'.\nExiting.\n\n",0);
             exit(1);
         }
 
@@ -120,14 +124,14 @@ int main(int argc, char *argv[])
     else if(Settings_handle::st.is("readsfile") && Settings_handle::st.is("find-cluster-reference") && !Settings_handle::st.is("ref-seqfile"))
     {
         string seqfile =  Settings_handle::st.get("readsfile").as<string>();
-        cout<<"Optimal reference sequence from: "<<seqfile<<endl;
+        Log_output::write_out("Optimal reference sequence from: "+seqfile+"\n",1);
 
         try
         {
             fr.read(seqfile, sequences, true);
         }
         catch (ppa::IOException& e) {
-            cout<<"Error reading the reference alignment file '"<<seqfile<<"'.\nExiting.\n\n";
+            Log_output::write_out("Error reading the readsfile '"+seqfile+"'.\nExiting.\n\n",0);
             exit(1);
         }
 
@@ -140,14 +144,14 @@ int main(int argc, char *argv[])
     else if(Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
     {
         string seqfile =  Settings_handle::st.get("readsfile").as<string>();
-        cout<<"Reference sequence from: "<<seqfile<<endl;
+        Log_output::write_out("Reference sequence from: "+seqfile+"\n",1);
 
         try
         {
             fr.read(seqfile, sequences, true);
         }
         catch (ppa::IOException& e) {
-            cout<<"Error reading the reference alignment file '"<<seqfile<<"'.\nExiting.\n\n";
+            Log_output::write_out("Error reading the readsfile '"+seqfile+"'.\nExiting.\n\n",0);
             exit(1);
         }
 
@@ -160,7 +164,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        cout<<endl<<"Error: No sequence file defined."<<endl;
+        Log_output::write_out("\nError: No sequence file defined.\n",0);
         Settings_handle::st.info();
 
         exit(1);
@@ -178,7 +182,7 @@ int main(int argc, char *argv[])
     if(Settings_handle::st.is("treefile"))
     {
         string treefile =  Settings_handle::st.get("treefile").as<string>();
-        cout<<"Tree file: "<<treefile<<endl;
+        Log_output::write_out("Tree file: "+treefile+"\n",1);
 
         Newick_reader nr;
         string tree;
@@ -187,7 +191,7 @@ int main(int argc, char *argv[])
             tree = nr.read_tree(treefile);
         }
         catch (ppa::IOException& e) {
-            cout<<"Error reading the guide tree file '"<<treefile<<"'.\nExiting.\n\n";
+            Log_output::write_out("Error reading the guide tree file '"+treefile+"'.\nExiting.\n\n",0);
             exit(1);
         }
 
@@ -198,7 +202,7 @@ int main(int argc, char *argv[])
     else if(Settings_handle::st.is("ref-treefile"))
     {
         string treefile =  Settings_handle::st.get("ref-treefile").as<string>();
-        cout<<"Reference tree file: "<<treefile<<endl;
+        Log_output::write_out("Reference tree file: "+treefile+"\n",1);
 
         Newick_reader nr;
         string tree;
@@ -207,7 +211,7 @@ int main(int argc, char *argv[])
             tree = nr.read_tree(treefile);
         }
         catch (ppa::IOException& e) {
-            cout<<"Error reading the reference tree file '"<<treefile<<"'.\nExiting.\n\n";
+            Log_output::write_out("Error reading the reference tree file '"+treefile+"'.\nExiting.\n\n",0);
             exit(1);
         }
 
@@ -230,7 +234,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        cout<<endl<<"Error: No tree file defined."<<endl;
+        Log_output::write_out("\nError: No tree file defined.\n",0);
         Settings_handle::st.info();
 
         exit(1);
@@ -241,7 +245,7 @@ int main(int argc, char *argv[])
         Settings_handle::st.print_msg();
         time_t s_time;
         time( &s_time );
-        cout <<endl<< "The analysis started: " << asctime( localtime( &s_time ) )<<endl;
+        Log_output::write_out("\nThe analysis started: " +string( asctime( localtime( &s_time ) ) )+"\n",0);
     }
 
 
@@ -257,15 +261,12 @@ int main(int argc, char *argv[])
     bool tree_branches_ok = fr.check_sequence_names(&sequences,&leaf_nodes);
     if(!tree_branches_ok)
     {
-        cout<<"Attempting to prune the tree: "<<flush;
+        Log_output::write_out("Attempting to prune the tree: ",2);
+        Log_output::flush();
+
         root->prune_tree();
-        if(!Settings_handle::st.is("silent"))
-        {
-            cout<<"pruning done. New tree:"<<endl;
-            cout<<root->print_tree()<<"\n\n";
-        } else {
-            cout<<"done.\n";
-        }
+        Log_output::write_out("pruning done.\n",2);
+        Log_output::write_out("New tree:\n"+root->print_tree()+"\n\n",3);
     }
 
 
@@ -276,41 +277,40 @@ int main(int argc, char *argv[])
 
     int data_type = fr.check_sequence_data_type(&sequences);
 
-    if(Settings_handle::st.is("time"))
-        cout <<"Time main::input: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
+    stringstream ss;
+    ss << "Time main::input: "<<double(clock()-t_start)/CLOCKS_PER_SEC<<"\n";
+    Log_output::write_out(ss.str(),"time");
 
 
     Model_factory mf(data_type);
 
     if(!fr.check_alphabet(&sequences,data_type))
-        cout<<"\nWarning: Illegal characters in input sequences removed!"<<endl;
+        Log_output::write_out(" Warning: Illegal characters in input sequences removed!\n",2);
 
     if(data_type==Model_factory::dna && Settings_handle::st.is("codons"))
     {
         // Create a codon alignment model using K&G.
-        if(Settings::noise>2)
-            cout<<"creating a codon model\n";
+        Log_output::write_out("Model_factory: creating a codon model\n",3);
         mf.codon_model(&Settings_handle::st); // does it need the handle????
     }
     else if(data_type==Model_factory::dna)
     {
         // Create a DNA alignment model using empirical base frequencies.
-        if(Settings::noise>2)
-            cout<<"creating a DNA model\n";
+        Log_output::write_out("Model_factory: creating a DNA model\n",3);
         float *dna_pi = fr.base_frequencies();
         mf.dna_model(dna_pi,&Settings_handle::st);
     }
     else if(data_type==Model_factory::protein)
     {
         // Create a protein alignment model using WAG.
-        if(Settings::noise>2)
-            cout<<"creating a protein model\n";
+        Log_output::write_out("Model_factory: creating a protein model\n",3);
         mf.protein_model(&Settings_handle::st); // does it need the handle????
     }
 
 
-    if(Settings_handle::st.is("time"))
-        cout <<"Time main::model: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
+    ss.str(string());
+    ss << "Time main::model: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
+    Log_output::write_out(ss.str(),"time");
 
 
     /***********************************************************************/
@@ -324,8 +324,10 @@ int main(int argc, char *argv[])
 
     root->start_alignment(&mf);
 
-    if(Settings_handle::st.is("time"))
-        cout <<"Time main::align: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
+    ss.str(string());
+    ss << "Time main::align: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
+    Log_output::write_out(ss.str(),"time");
+
 
     // If reads sequences, add them to the alignment
 
@@ -336,8 +338,10 @@ int main(int argc, char *argv[])
 
         root = ore.get_global_root();
 
-        if(Settings_handle::st.is("time"))
-            cout <<"Time main::reads_align: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
+        ss.str(string());
+        ss << "Time main::cluster_pileup: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
+        Log_output::write_out(ss.str(),"time");
+
     }
     else if( Settings_handle::st.is("readsfile") )
     {
@@ -346,8 +350,9 @@ int main(int argc, char *argv[])
 
         root = ra.get_global_root();
 
-        if(Settings_handle::st.is("time"))
-            cout <<"Time main::reads_align: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
+        ss.str(string());
+        ss << "Time main::reads_align: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
+        Log_output::write_out(ss.str(),"time");
     }
 
 
@@ -361,6 +366,8 @@ int main(int argc, char *argv[])
     vector<Fasta_entry> aligned_sequences;
     root->get_alignment(&aligned_sequences,Settings_handle::st.is("output-ancestors"));
 
+    Log_output::clean_output();
+
     // Save results in output file
     //
     string outfile =  "outfile";
@@ -368,11 +375,10 @@ int main(int argc, char *argv[])
     if(Settings_handle::st.is("outfile"))
         outfile =  Settings_handle::st.get("outfile").as<string>();
 
-
     if(Settings_handle::st.is("xml"))
-        cout<<"Alignment files: "<<outfile<<".fas, "<<outfile<<".xml"<<endl;
+        Log_output::write_out("Alignment files: "+outfile+".fas, "+outfile+".xml\n",0);
     else
-        cout<<"Alignment files: "<<outfile<<".fas"<<endl;
+        Log_output::write_out("Alignment file: "+outfile+".fas\n",0);
 
     fr.set_chars_by_line(70);
     fr.write(outfile, aligned_sequences, true);
@@ -396,8 +402,7 @@ int main(int argc, char *argv[])
             outfile =  Settings_handle::st.get("outfile").as<string>();
 
         outfile.append("_contigs");
-
-        cout<<"Contig file: "<<outfile<<".fas"<<endl;
+        Log_output::write_out("Contig file: "+outfile+".fas\n",1);
 
         fr.set_chars_by_line(70);
         fr.write(outfile, contigs, true);
@@ -405,7 +410,6 @@ int main(int argc, char *argv[])
 
     if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate"))
     {
-
         fr.set_chars_by_line(70);
         fr.write_dna(outfile, aligned_sequences, sequences,root,true);
     }
@@ -420,14 +424,11 @@ int main(int argc, char *argv[])
         root->write_nhx_tree(outfile);
     }
 
-    if(Settings::noise>1 )
+    if( Settings_handle::st.is("scale-branches") ||
+         Settings_handle::st.is("truncate-branches") ||
+          Settings_handle::st.is("fixed-branches") )
     {
-        if( Settings_handle::st.is("scale-branches") ||
-            Settings_handle::st.is("truncate-branches") ||
-            Settings_handle::st.is("fixed-branches") )
-        {
-            cout << "modified guide tree: " << root->print_tree()<<endl;
-        }
+        Log_output::write_out("Modified guide tree: " +root->print_tree()+"\n",2);
     }
 
     if(Settings_handle::st.is("output-graph"))
@@ -439,16 +440,17 @@ int main(int argc, char *argv[])
         root->write_sequence_graphs();
     }
 
-    if(Settings_handle::st.is("time"))
-        cout <<"Time main::exit: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
+    ss.str(string());
+    ss << "Time main::main_exit: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
+    Log_output::write_out(ss.str(),"time");
 
-    if(!Settings_handle::st.is("silent"))
-    {
-        time_t s_time;
-        time( &s_time );
-        cout <<endl<< "The analysis finished: " << asctime( localtime( &s_time ) );
-        cout<<"Total time used: "<<double_t(clock()-analysis_start_time)/CLOCKS_PER_SEC<<" sec."<<endl<<endl;
-    }
+
+    time_t s_time;
+    time( &s_time );
+    ss.str(string());
+    ss << "\nThe analysis finished: " << asctime( localtime( &s_time ) );
+    ss<<"Total time used: "<<double_t(clock()-analysis_start_time)/CLOCKS_PER_SEC<<" sec.\n\n";
+    Log_output::write_out(ss.str(),0);
 
     delete root;
 

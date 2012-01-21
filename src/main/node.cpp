@@ -27,9 +27,6 @@ using namespace ppa;
 
 Node::~Node()
 {
-    if(Settings::noise>4)
-        cout<<"deleting node "<<this->get_name()<<endl;
-
     if(this->has_left_child())
         delete left_child;
 
@@ -45,9 +42,6 @@ int Node::alignment_number = 0;
 
 void Node::add_sequence( Fasta_entry seq_entry, int data_type, bool gapped, bool no_trimming, bool turn_revcomp)
 {
-    if(Settings::noise>4)
-        cout<<"Node::add_sequence "<<name<<"\n";
-
     sequence = new Sequence(seq_entry, data_type, gapped, no_trimming, turn_revcomp);
     this->node_has_sequence_object= true;
 }
@@ -315,241 +309,7 @@ void Node::add_root_consensus(vector<Fasta_entry> *aligned_sequences)
     aligned_sequences->push_back(entry);
 }
 
-/*
-void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_internal_nodes)
-{
-    vector<Node*> nodes;
-    if(include_internal_nodes)
-        this->get_all_nodes(&nodes);
-    else
-        this->get_leaf_nodes(&nodes);
 
-    for(unsigned int i=0;i<nodes.size();i++)
-    {
-        Fasta_entry entry;
-        entry.name = nodes.at(i)->get_name();
-        entry.comment = nodes.at(i)->get_name_comment();
-
-        aligned_sequences->push_back(entry);
-    }
-
-//    if(Settings_handle::st.get("sample-additional-paths").as<int>()==0)
-    if(true)
-    {
-        if(!this->sequence_site_index_needs_correcting())
-        {
-            Sequence *root = this->get_sequence();
-            int root_length = root->sites_length();
-
-            for(int j=1;j<root_length-1;j++)
-            {
-                vector<string> column;
-                this->get_alignment_column_at(j,&column,include_internal_nodes);
-
-                for(unsigned int i=0;i<aligned_sequences->size();i++)
-                {
-                    aligned_sequences->at(i).sequence.append(column.at(i));
-                }
-            }
-
-            if(Settings_handle::st.is("reads-pileup") && Settings_handle::st.is("use-consensus"))
-            {
-                Sequence *root = this->get_sequence();
-                int root_length = root->sites_length();
-                Fasta_entry entry;
-                entry.name = "consensus";
-                entry.comment = "";
-
-                for(int j=1;j<root_length;j++)
-                {
-                    Site *site = root->get_site_at(j);
-                    int sA = site->get_sumA();
-                    int sC = site->get_sumC();
-                    int sG = site->get_sumG();
-                    int sT = site->get_sumT();
-
-                    if(sA+sC+sG+sT<Settings_handle::st.get("consensus-minimum").as<int>())
-                    {
-                        entry.sequence.append("-");
-                    }
-                    else{
-                        if(sA>sC && sA>sG && sA>sT)
-                            entry.sequence.append("A");
-                        else if(sC>sA && sC>sG && sC>sT)
-                            entry.sequence.append("C");
-                        else if(sG>sA && sG>sC && sG>sT)
-                            entry.sequence.append("G");
-                        else if(sT>sA && sT>sC && sT>sG)
-                            entry.sequence.append("T");
-                        else if(sA>sC && sA==sG && sA>sT)
-                            entry.sequence.append("R");
-                        else if(sC>sA && sC>sG && sC==sT)
-                            entry.sequence.append("Y");
-                        else if(sA==sC && sA>sG && sA>sT)
-                            entry.sequence.append("M");
-                        else if(sG>sA && sG>sC && sG==sT)
-                            entry.sequence.append("K");
-                        else if(sA>sC && sA>sG && sA==sT)
-                            entry.sequence.append("W");
-                        else if(sC>sA && sC==sG && sC>sT)
-                            entry.sequence.append("S");
-                        else if(sC>sA && sC==sG && sC==sT)
-                            entry.sequence.append("B");
-                        else if(sA>sC && sA==sG && sA==sT)
-                            entry.sequence.append("D");
-                        else if(sA==sC && sA>sG && sA==sT)
-                            entry.sequence.append("H");
-                        else if(sA==sC && sA==sG && sA>sT)
-                            entry.sequence.append("V");
-                        else if(sA==sC && sA==sG && sA==sT)
-                            entry.sequence.append("N");
-                    }
-                }
-                aligned_sequences->push_back(entry);
-            }
-
-        }
-        else
-        {
-
-            Sequence *root = this->get_sequence();
-            int root_length = root->sites_length();
-
-            for(int j=1;j<root_length;j++)
-            {
-
-                vector<Insertion_at_node> addition;
-                this->additional_sites_before_alignment_column(j,&addition);
-
-                if(addition.size()>0)
-                {
-
-                    for(int l=0;l<(int)addition.size();l++)
-                    {
-                        vector< vector<string> > columns;
-
-                        for(int i=0; i<(int)addition.at(l).length; i++)
-                        {
-                            vector<string> column;
-                            columns.push_back( column );
-                        }
-
-//                        cout<<j<<" add "<<addition.at(l).node_name_wanted<<" "<<addition.at(l).length<<endl;
-                        this->get_multiple_alignment_columns_before(j,&columns,addition.at(l).node_name_wanted,
-                                                                    addition.at(l).left_child_wanted,include_internal_nodes);
-
-//                        cout<<"as "<<aligned_sequences->size()<<"; co "<<columns.at(0).size()<<endl;
-                        for(int i=0; i<(int)addition.at(l).length; i++)
-                        {
-                            for(unsigned int k=0;k<aligned_sequences->size();k++)
-                            {
-                                aligned_sequences->at(k).sequence.append(columns.at(i).at(k));
-                            }
-                        }
-
-                    }
-                }
-
-                if(j<root_length-1)
-                {
-                    vector<string> column;
-
-                    this->get_alignment_column_at(j,&column,include_internal_nodes);
-
-                    for(unsigned int i=0;i<aligned_sequences->size();i++)
-                    {
-                        aligned_sequences->at(i).sequence.append(column.at(i));
-                    }
-                }
-            }
-
-        }
-
-    }
-    else
-    {
-        Sequence *root = this->get_sequence();
-        int root_length = root->sites_length();
-
-        cout<<"root length: "<<root_length<<endl;
-
-        vector<int> sampled_sites;
-
-        int site_index=0;
-        sampled_sites.push_back(site_index);
-
-        int l_index = 0;
-        int r_index = 0;
-
-        while(site_index < root_length-1)
-        {
-            cout<<"current: "<<site_index<<" ("<<l_index<<","<<r_index<<")"<<endl;
-
-            Site *tsite = root->get_site_at( site_index );
-
-            vector<int> next_sites;
-
-            Edge *fwd_edge = tsite->get_first_fwd_edge();
-
-            Site *nsite = root->get_site_at( fwd_edge->get_end_site_index() );
-cout<<"next? "<<nsite->children.left_index<<" "<<nsite->children.right_index<<endl;
-            if( ( l_index+1 == nsite->children.left_index && r_index+1 == nsite->children.right_index ) ||
-                ( l_index+1 == nsite->children.left_index && nsite->children.right_index == -1 ) ||
-                ( nsite->children.left_index == -1 && r_index+1 == nsite->children.right_index ) )
-            {
-                next_sites.push_back(fwd_edge->get_end_site_index());
-            }
-
-            while(tsite->has_next_fwd_edge())
-            {
-                fwd_edge = tsite->get_next_fwd_edge();
-
-                nsite = root->get_site_at( fwd_edge->get_end_site_index() );
-cout<<"next? "<<nsite->children.left_index<<" "<<nsite->children.right_index<<endl;
-
-                if( ( l_index+1 == nsite->children.left_index && r_index+1 == nsite->children.right_index ) ||
-                    ( l_index+1 == nsite->children.left_index && nsite->children.right_index == -1 ) ||
-                    ( nsite->children.left_index == -1 && r_index+1 == nsite->children.right_index ) )
-                {
-                    next_sites.push_back(fwd_edge->get_end_site_index());
-                }
-            }
-
-            cout<<"choices: ";
-            for(int i=0;i<(int)next_sites.size();i++)
-                cout<<next_sites.at(i)<<" ";
-            cout<<endl;
-            site_index = (int) ( next_sites.size() * (double)rand() / ((double)(RAND_MAX)+(double)(1)) );
-            site_index = next_sites.at(site_index);
-            sampled_sites.push_back( site_index );
-cout<<"site_index: "<<site_index<<endl;
-
-            nsite = root->get_site_at( site_index );
-
-            if(nsite->children.left_index > 0)
-                l_index = nsite->children.left_index;
-            if(nsite->children.right_index > 0)
-                r_index = nsite->children.right_index;
-
-        }
-
-        cout<<"path sampled\n";
-        for(int k=1;k<(int)sampled_sites.size()-1;k++)
-        {
-            int j = sampled_sites.at(k);
-cout<<"picking site "<<j<<endl;
-            vector<string> column;
-            this->get_alignment_column_at(j,&column,include_internal_nodes);
-
-            for(unsigned int i=0;i<aligned_sequences->size();i++)
-            {
-                aligned_sequences->at(i).sequence.append(column.at(i));
-            }
-        }
-
-    }
-}
-*/
 
 void Node::get_alignment_column_at(int j,vector<string> *column, bool include_internal_nodes)
 {
@@ -628,12 +388,12 @@ void Node::get_multiple_alignment_columns_before(int j,vector< vector<string> > 
     if(this->get_name() == node_name_wanted)
     {
         if(j<0)
-            cout<<"Error: wanted node "<<node_name_wanted<<" but index is "<<j<<endl;
+            Log_output::write_out("Node: error: wanted node "+node_name_wanted+" but index is "+Log_output::itos(j)+"\n",1);
 
         if(left_child_wanted)
         {
             if(lj<0)
-                cout<<"Error: wanted left node at "<<node_name_wanted<<" but index is "<<lj<<endl;
+                Log_output::write_out("Node: error: wanted node "+node_name_wanted+" but index is "+Log_output::itos(lj)+"\n",1);
 
             int k = 0;
             for(int i = lj-columns->size(); i < lj; i++,k++)
@@ -654,7 +414,7 @@ void Node::get_multiple_alignment_columns_before(int j,vector< vector<string> > 
         else
         {
             if(rj<0)
-                cout<<"Error: wanted right node at "<<node_name_wanted<<" but index is "<<rj<<endl;
+                Log_output::write_out("Node: error: wanted node "+node_name_wanted+" but index is "+Log_output::itos(rj)+"\n",1);
 
             this->get_left_child()->get_multiple_alignment_columns_before(lj,columns,node_name_wanted,left_child_wanted,include_internal_nodes);
 
@@ -1118,8 +878,8 @@ void Node::check_valid_graph() const
 
             if(!esite->contains_bwd_edge(edge,true))
             {
-                cout<<"site "<<i<<" has fwd edge from "<<edge->get_start_site_index()<<" to "
-                        <<edge->get_end_site_index()<<" but no return\n";
+                Log_output::write_out("Node: site "+Log_output::itos(i)+" has fwd edge from "+Log_output::itos(edge->get_start_site_index())+
+                                      " to "+Log_output::itos(edge->get_end_site_index())+" but no return\n",1);
             }
 
             while( ssite->has_next_fwd_edge() )
@@ -1129,8 +889,8 @@ void Node::check_valid_graph() const
 
                 if(!esite->contains_bwd_edge(edge,true))
                 {
-                    cout<<"site "<<i<<" has fwd edge from "<<edge->get_start_site_index()<<" to "
-                            <<edge->get_end_site_index()<<" but no return\n";
+                    Log_output::write_out("Node: site "+Log_output::itos(i)+" has fwd edge from "+Log_output::itos(edge->get_start_site_index())+
+                                          " to "+Log_output::itos(edge->get_end_site_index())+" but no return\n",1);
                 }
             }
         }
@@ -1142,8 +902,8 @@ void Node::check_valid_graph() const
 
             if(!esite->contains_fwd_edge(edge,true))
             {
-                cout<<"site "<<i<<" has bwd edge from "<<edge->get_start_site_index()<<" to "
-                        <<edge->get_end_site_index()<<" but no return\n";
+                Log_output::write_out("Node: site "+Log_output::itos(i)+" has bwd edge from "+Log_output::itos(edge->get_start_site_index())+
+                                      " to "+Log_output::itos(edge->get_end_site_index())+" but no return\n",1);
             }
 
             while( ssite->has_next_bwd_edge() )
@@ -1153,8 +913,8 @@ void Node::check_valid_graph() const
 
                 if(!esite->contains_fwd_edge(edge,true))
                 {
-                    cout<<"site "<<i<<" has bwd edge from "<<edge->get_start_site_index()<<" to "
-                            <<edge->get_end_site_index()<<" but no return\n";
+                    Log_output::write_out("Node: site "+Log_output::itos(i)+" has bwd edge from "+Log_output::itos(edge->get_start_site_index())+
+                                          " to "+Log_output::itos(edge->get_end_site_index())+" but no return\n",1);
                 }
             }
         }
@@ -1165,8 +925,6 @@ void Node::check_valid_graph() const
 
 void Node::prune_down()
 {
-//    cout<<"prune down in "<<this->get_name()<<endl;
-
     if(this->is_leaf())
         return;
 
@@ -1238,18 +996,10 @@ void Node::prune_down()
 
     if(this->has_right_child() && right_child->has_sequence())
         this->has_sequence(true);
-
-//    cout<<"prune down out "<<this->get_name()<<endl;
-//    if(has_left_child())
-//        cout<<" left "<<left_child->get_name()<<endl;
-//    if(has_right_child())
-//        cout<<" right "<<right_child->get_name()<<endl;
 }
 
 void Node::prune_up()
 {
-//    cout<<"prune up in "<<this->get_name()<<endl;
-
     if(!this->is_leaf() && !this->has_left_child() && this->has_right_child())
     {
         Node* tmp_child = right_child;
@@ -1269,5 +1019,4 @@ void Node::prune_up()
         tmp_child->has_right_child(false);
         delete tmp_child;
     }
-//    cout<<"prune up out "<<this->get_name()<<endl;
 }

@@ -28,7 +28,8 @@ SOURCES += main.cpp \
     main/reads_aligner.cpp \
     utils/check_version.cpp \
     utils/exonerate_reads.cpp \
-    utils/optimal_reference.cpp
+    utils/optimal_reference.cpp \
+    utils/log_output.cpp
 HEADERS += utils/text_utils.h \
     utils/settings.h \
     utils/newick_reader.h \
@@ -50,11 +51,14 @@ HEADERS += utils/text_utils.h \
     main/reads_aligner.h \
     utils/check_version.h \
     utils/exonerate_reads.h \
-    utils/optimal_reference.h
+    utils/optimal_reference.h \
+    utils/log_output.h
 LIBS += -lboost_program_options-mt -lboost_regex-mt
 INCLUDEPATH += /usr/include
 OTHER_FILES += missing_things.txt \
     ../VERSION_HISTORY \
     Makefile.no_Qt
+
+
 
 

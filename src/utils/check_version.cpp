@@ -1,4 +1,5 @@
 #include "utils/check_version.h"
+#include "utils/log_output.h"
 
 #include <stdio.h>
 #include <sys/socket.h>
@@ -17,7 +18,9 @@ using namespace ppa;
 Check_version::Check_version(float version)
 {
 
-    cout<<"\nThis is PAGAN v."<<version<<".\nChecking if updates are available at http://http://code.google.com/p/pagan-msa.\n";
+    stringstream ss;
+    ss<<"\nThis is PAGAN v."<<version<<".\nChecking if updates are available at http://http://code.google.com/p/pagan-msa.\n";
+    Log_output::write_out(ss.str(),0);
 
     struct sockaddr_in *remote;
     char buf[BUFSIZ+1];
@@ -30,18 +33,21 @@ Check_version::Check_version(float version)
     int tmpres = inet_pton(AF_INET, ip, (void *)(&(remote->sin_addr.s_addr)));
     if( tmpres < 0)
     {
-        perror("Can't set remote->sin_addr.s_addr");
+        Log_output::write_out("Can't set remote->sin_addr.s_addr",0);
         exit(1);
     }
     else if(tmpres == 0)
     {
-        fprintf(stderr, "%s is not a valid IP address\n", ip);
+        stringstream ss;
+        ss<<ip<<" is not a valid IP address\n";
+        Log_output::write_out(ss.str(),0);
+
         exit(1);
     }
     remote->sin_port = htons(PORT);
 
     if(connect(sock, (struct sockaddr *)remote, sizeof(struct sockaddr)) < 0){
-        perror("Could not connect");
+        Log_output::write_out("Could not connect",0);
         exit(1);
     }
 
@@ -54,7 +60,7 @@ Check_version::Check_version(float version)
         tmpres = send(sock, get+sent, strlen(get)-sent, 0);
         if(tmpres == -1)
         {
-            perror("Can't send query");
+            Log_output::write_out("Can't send query",0);
             exit(1);
         }
         sent += tmpres;
@@ -94,7 +100,7 @@ Check_version::Check_version(float version)
     }
     if(tmpres < 0)
     {
-      perror("Error receiving data");
+      Log_output::write_out("Error receiving data",0);
     }
 
     bool print_this = true;
@@ -117,10 +123,10 @@ Check_version::Check_version(float version)
         if(print_this)
         {
             if(!has_printed)
-                cout<<"\nFound updates. Changes in the more recent versions:\n\n";
+                Log_output::write_out("\nFound updates. Changes in the more recent versions:\n\n",0);
 
             has_printed = true;
-            cout<<s<<endl;
+            Log_output::write_out(s+"\n",0);
         }
         else
         {
@@ -129,7 +135,7 @@ Check_version::Check_version(float version)
     }
 
     if(!has_printed)
-        cout<<"\nNo updates are available.\n\n";
+        Log_output::write_out("\nNo updates are available.\n\n",0);
 
     free(remote);
     free(ip);
@@ -140,7 +146,7 @@ int Check_version::create_tcp_socket()
 {
   int sock;
   if((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0){
-    perror("Can't create TCP socket");
+    Log_output::write_out("Can't create TCP socket",0);
     exit(1);
   }
   return sock;
@@ -155,12 +161,12 @@ char *Check_version::get_ip(const char *host)
   memset(ip, 0, iplen+1);
   if((hent = gethostbyname(host)) == NULL)
   {
-    herror("Can't get IP");
+    Log_output::write_out("Can't get IP",0);
     exit(1);
   }
   if(inet_ntop(AF_INET, (void *)hent->h_addr_list[0], ip, iplen) == NULL)
   {
-    perror("Can't resolve host");
+    Log_output::write_out("Can't resolve host",0);
     exit(1);
   }
   return ip;

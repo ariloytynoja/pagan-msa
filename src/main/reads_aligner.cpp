@@ -21,6 +21,7 @@
 #include "main/reads_aligner.h"
 #include "utils/exonerate_reads.h"
 #include "utils/text_utils.h"
+#include "utils/log_output.h"
 #include <sstream>
 #include <fstream>
 #include <algorithm>
@@ -34,26 +35,25 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 {
     string file = Settings_handle::st.get("readsfile").as<string>();
 
+    Log_output::write_header("Aligning reads ",0);
+
     Fasta_reader fr;
     vector<Fasta_entry> reads;
-    cout<<"Reads data file: "<<file<<endl;
+    Log_output::write_out("Reads data file: "+file+"\n",1);
 
     try
     {
         fr.read(file, reads, true);
     }
     catch (ppa::IOException& e) {
-        cout<<"Error reading the reads file '"<<file<<"'.\nExiting.\n\n";
+        Log_output::write_out("Error reading the reads file '"+file+"'.\nExiting.\n\n",0);
         exit(1);
     }
 
     int data_type = fr.check_sequence_data_type(&reads);
 
     if(!fr.check_alphabet(&reads,data_type))
-    {
-        if(!Settings_handle::st.is("silent"))
-            cout<<"\nWarning: Illegal characters in input reads sequences removed!"<<endl;
-    }
+        Log_output::write_out(" Warning: Illegal characters in input reads sequences removed!\n",2);
 
     // Merge overlapping reads
     //
@@ -71,14 +71,14 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
             string path = Settings_handle::st.get("overlap-merge-file").as<string>();
 
-            cout<<"Reads output file: "<<path<<".fastq"<<endl;
+            Log_output::write_out("Reads output file: "+path+".fastq\n",1);
 
             fr.write_fastq(path,reads);
         }
         if( Settings_handle::st.is("pair-end") )
         {
-            cout<<"\nWarning: both '--overlap-pair-end' and '--pair-end' options defined.\n"<<
-                    "Pairing of overlapping reads may cause duplicated sequence regions.\n\n";
+            Log_output::write_out(" Warning: both '--overlap-pair-end' and '--pair-end' options defined.\n"
+                    " Pairing of overlapping reads may cause duplicated sequence regions.\n\n",2);
         }
     }
 
@@ -86,6 +86,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     //
     if(Settings_handle::st.is("trim-read-ends"))
     {
+        Log_output::write_header("Aligning reads: trim read ends",0);
         fr.trim_fastq_reads(&reads);
     }
 
@@ -93,6 +94,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     //
     if( Settings_handle::st.is("pair-end") )
     {
+        Log_output::write_header("Aligning reads: find read pairs",0);
         this->find_paired_reads( &reads );
     }
 
@@ -106,18 +108,21 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     //
     if(Settings_handle::st.is("align-reads-at-root") || Settings_handle::st.is("reads-pileup"))
     {
+        Log_output::write_header("Aligning reads: simple placement",0);
         this->loop_simple_placement(root,&reads,mf,count);
     }
 
     // alignment of sga cluster; can be reverse
     else if(Settings_handle::st.is("compare-reverse"))
     {
+        Log_output::write_header("Aligning reads: placement with reverse comparison",0);
         this->loop_two_strand_placement(root,&reads,mf,count);
     }
 
     // alignment of translated sga cluster; can be reverse
     else if(Settings_handle::st.is("find-best-orf"))
     {
+        Log_output::write_header("Aligning reads: placement with ORF search",0);
         this->loop_translated_placement(root,&reads,mf,count);
     }
 
@@ -125,6 +130,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     //
     else
     {
+        Log_output::write_header("Aligning reads: default placement",0);
         this->loop_default_placement(root,&reads,mf,count);
     }
 }
@@ -156,8 +162,6 @@ void Reads_aligner::loop_simple_placement(Node *root, vector<Fasta_entry> *reads
         global_root->set_distance_to_parent(0.001);
         node->add_left_child(global_root);
 
-        if(!Settings_handle::st.is("silent"))
-            cout<<"("<<i+1<<"/"<<reads->size()<<") ";
 
         Node * reads_node = new Node();
         this->copy_node_details(reads_node,&reads->at(i));
@@ -167,8 +171,9 @@ void Reads_aligner::loop_simple_placement(Node *root, vector<Fasta_entry> *reads
         node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
         node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
 
-        if(!Settings_handle::st.is("silent"))
-            cout<<"aligning read: "<<reads->at(i).name<<" "<<reads->at(i).comment<<endl;
+        ss.str(string());
+        ss<<"("<<i+1<<"/"<<reads->size()<<") aligning read: "<<reads->at(i).name<<" "<<reads->at(i).comment<<".";
+        Log_output::write_msg(ss.str(),0);
 
 
         int start_offset = -1;
@@ -189,7 +194,6 @@ void Reads_aligner::loop_simple_placement(Node *root, vector<Fasta_entry> *reads
             if(start_offset<0 || start_offset>tmp_seq->sites_length())
                 start_offset = -1;
 
-            cout<<"start "<<start_offset<<endl;
         }
 
         node->align_sequences_this_node(mf,true,false,start_offset,end_offset);
@@ -243,8 +247,6 @@ void Reads_aligner::loop_two_strand_placement(Node *root, vector<Fasta_entry> *r
             global_root->set_distance_to_parent(0.001);
             node->add_left_child(global_root);
 
-            if(!Settings_handle::st.is("silent"))
-                cout<<"("<<i+1<<"/"<<reads->size()<<") ";
 
             Node * reads_node = new Node();
             this->copy_node_details(reads_node,&reads->at(i));
@@ -254,8 +256,7 @@ void Reads_aligner::loop_two_strand_placement(Node *root, vector<Fasta_entry> *r
             node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
             node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
 
-            if(!Settings_handle::st.is("silent"))
-                cout<<"aligning read: "<<reads->at(i).name<<" "<<reads->at(i).comment<<endl;
+            Log_output::write_msg("aligning read: "+reads->at(i).name+" "+reads->at(i).comment+".",0);
 
             node->align_sequences_this_node(mf,true,false);
 
@@ -274,8 +275,6 @@ void Reads_aligner::loop_two_strand_placement(Node *root, vector<Fasta_entry> *r
 
             node_rc->add_left_child(global_root);
 
-            if(!Settings_handle::st.is("silent"))
-                cout<<"("<<i+1<<"/"<<reads->size()<<") ";
 
             Node * reads_node_rc = new Node();
             this->copy_node_details(reads_node_rc,&reads->at(i),true);
@@ -285,8 +284,7 @@ void Reads_aligner::loop_two_strand_placement(Node *root, vector<Fasta_entry> *r
             node_rc->set_nhx_tid(node->get_left_child()->get_nhx_tid());
             node_rc->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
 
-            if(!Settings_handle::st.is("silent"))
-                cout<<"aligning (rc) read: "<<reads->at(i).name<<" "<<reads->at(i).comment<<endl;
+            Log_output::write_msg("aligning read (rc): "+reads->at(i).name+" "+reads->at(i).comment+".",0);
 
             node_rc->align_sequences_this_node(mf,true,false);
 
@@ -297,8 +295,7 @@ void Reads_aligner::loop_two_strand_placement(Node *root, vector<Fasta_entry> *r
             else
                 this->read_alignment_scores(node_rc, reads->at(i).name,global_root->get_name(),&read_overlap_rc,&read_identity_rc);
 
-            if(!Settings_handle::st.is("silent"))
-            cout<<"forward overlap: "<<read_overlap<<"; backward overlap: "<<read_overlap_rc<<endl;
+            Log_output::write_out("forward overlap: "+Log_output::itos(read_overlap)+"; backward overlap: "+Log_output::itos(read_overlap_rc)+"\n",2);
 
             float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
             float min_identity = Settings_handle::st.get("min-reads-identity").as<float>();
@@ -367,8 +364,7 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
             vector<Orf> open_frames;
             this->find_orfs(&reads->at(i),&open_frames);
 
-            if(!Settings_handle::st.is("silent"))
-                cout<<"("<<i+1<<"/"<<reads->size()<<") ["<<open_frames.size()<<"] ";
+            Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") aligning read: '"+reads->at(i).name+"'",0);
 
             if(open_frames.size() > 0)
             {
@@ -406,9 +402,7 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
 
                     node->add_right_child(reads_node);
 
-
                     node->align_sequences_this_node(mf,true,false);
-
 
                     float read_overlap;
                     float read_identity;
@@ -455,10 +449,10 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
                     count++;
                     global_root = best_node;
 
-                    cout.precision(2);
-                    if(!Settings_handle::st.is("silent"))
-                        cout<<"orf "<<best_orf->frame<<" ("<<best_orf->start<<"-"<<best_orf->end<<"): overlap: "<<best_overlap<<", identity: "<<best_identity<<endl;
-
+                    ss.str(string());
+                    ss.precision(2);
+                    ss<<"orf "<<best_orf->frame<<" ("<<best_orf->start<<"-"<<best_orf->end<<"): overlap: "<<best_overlap<<", identity: "<<best_identity<<endl;
+                    Log_output::write_out(ss.str(),2);
                 }
                 else
                 {
@@ -492,7 +486,6 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
             string codon = sequence.substr(j,3);
             if (codon_to_aa.find(codon) == codon_to_aa.end())
             {
-//                cout<<"stop ("<<codon<<") "<<prot<<endl;
 
                 if(prot.length() >= min_orf_length)
                 {
@@ -516,7 +509,6 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
             end_site = j+i+2;
         }
 
-//        cout<<"end "<<prot<<endl;
 
         if(prot.length() >= min_orf_length)
         {
@@ -544,7 +536,6 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
             string codon = sequence.substr(j,3);
             if (codon_to_aa.find(codon) == codon_to_aa.end())
             {
-//                cout<<"Stop ("<<codon<<") "<<prot<<endl;
                 if(prot.length() >= min_orf_length)
                 {
                     Orf o;
@@ -567,7 +558,6 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
             end_site = j+i+2;
         }
 
-//        cout<<"End "<<prot<<endl;
         if(prot.length() >= min_orf_length)
         {
             Orf o;
@@ -718,49 +708,41 @@ void Reads_aligner::loop_default_placement(Node *root, vector<Fasta_entry> *read
         //
         if(Settings_handle::st.is("rank-reads-for-nodes"))
         {
+            bool print_log = false;
+
             if(Settings_handle::st.is("discard-overlapping-identical-reads"))
             {
                 this->remove_target_overlapping_identical_reads(&reads_for_this,mf);
-
-                if(!Settings_handle::st.is("silent"))
-                {
-                    cout<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
-                    for(int i=0;i<(int)reads_for_this.size();i++)
-                        cout<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
-                    cout<<endl;
-                }
+                print_log = true;
             }
             else if(Settings_handle::st.is("discard-overlapping-reads"))
             {
                 this->remove_target_overlapping_reads(&reads_for_this);
-
-                if(!Settings_handle::st.is("silent"))
-                {
-                    cout<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
-                    for(int i=0;i<(int)reads_for_this.size();i++)
-                        cout<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
-                    cout<<endl;
-                }
+                print_log = true;
             }
             else if(Settings_handle::st.is("discard-pairwise-overlapping-reads"))
             {
                 this->remove_overlapping_reads(&reads_for_this,mf);
-
-                if(!Settings_handle::st.is("silent"))
-                {
-                    cout<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
-                    for(int i=0;i<(int)reads_for_this.size();i++)
-                        cout<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
-                    cout<<endl;
-                }
+                print_log = true;
             }
+
+            if(print_log && Settings::noise>1)
+            {
+                stringstream ss;
+                ss<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
+                for(int i=0;i<(int)reads_for_this.size();i++)
+                    ss<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
+                ss<<endl;
+                Log_output::write_out(ss.str(),2);
+            }
+
         }
         else
         {
             if( Settings_handle::st.is("discard-overlapping-identical-reads") ||
                      Settings_handle::st.is("discard-overlapping-reads") )
             {
-                cout<<"\nWarning: without ranking the reads for nodes, one cannot resolve overlap between reads. The flag has no effect!\n\n";
+                Log_output::write_out("\nWarning: without ranking the reads for nodes, one cannot resolve overlap between reads. The flag has no effect!\n\n",2);
             }
         }
 
@@ -785,9 +767,6 @@ void Reads_aligner::loop_default_placement(Node *root, vector<Fasta_entry> *read
             current_root->set_distance_to_parent(0.001);
             node->add_left_child(current_root);
 
-            if(!Settings_handle::st.is("silent"))
-                cout<<"("<<i+1<<"/"<<reads_for_this.size()<<") ";
-
             Node * reads_node = new Node();
             this->copy_node_details(reads_node,&reads_for_this.at(i));
 
@@ -797,8 +776,7 @@ void Reads_aligner::loop_default_placement(Node *root, vector<Fasta_entry> *read
             node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
             node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
 
-            if(!Settings_handle::st.is("silent"))
-                cout<<"aligning read: "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).comment<<endl;
+            Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
 
             int start_offset = -1;
             int end_offset = -1;
@@ -876,7 +854,7 @@ void Reads_aligner::merge_reads_only()
 
     Fasta_reader fr;
     vector<Fasta_entry> reads;
-    cout<<"Reads data file: "<<file<<endl;
+    Log_output::write_out("Reads data file: "+file+"\n",1);
 
     fr.read(file, reads, true);
 
@@ -884,7 +862,7 @@ void Reads_aligner::merge_reads_only()
     Model_factory mf(data_type);
 
     if(!fr.check_alphabet(&reads,Model_factory::dna))
-        cout<<"\nWarning: Illegal characters in input sequences removed!"<<endl;
+        Log_output::write_out("\n Warning: Illegal characters in input sequences removed!\n",2);
 
     float *dna_pi = fr.base_frequencies();
 
@@ -898,7 +876,7 @@ void Reads_aligner::merge_reads_only()
         path = Settings_handle::st.get("overlap-merge-file").as<string>();
     }
 
-    cout<<"Reads output file: "<<path<<".fastq"<<endl;
+    Log_output::write_out("Reads output file: "+path+".fastq\n",1);
 
     fr.write_fastq(path,reads);
 }
@@ -923,6 +901,8 @@ void Reads_aligner::merge_paired_reads(vector<Fasta_entry> *reads, Model_factory
 {
 
     vector<Fasta_entry>::iterator fit1 = reads->begin();
+
+    Log_output::write_header("Aligning reads: finding read pairs",0);
 
     for(;fit1 != reads->end();fit1++)
     {
@@ -961,8 +941,7 @@ void Reads_aligner::merge_paired_reads(vector<Fasta_entry> *reads, Model_factory
 
                 node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
 
-                if(Settings::noise>1)
-                    cout<<"aligning paired reads: "<<fit1->name<<" and "<<fit2->name<<endl;
+                Log_output::write_msg("aligning paired reads: "+fit1->name+" and "+fit2->name+"\n",0);
 
                 node->align_sequences_this_node(mf,true,true);
 
@@ -1000,15 +979,18 @@ void Reads_aligner::merge_paired_reads(vector<Fasta_entry> *reads, Model_factory
                     }
                     else
                     {
-                        cout<<"Error in pair-end merge alignment\n";
+                        Log_output::write_out("Reads_aligner::merge_paired_reads: Error in pair-end merge alignment\n",2);
                     }
                 }
 
+
                 if(Settings::noise>2)
                 {
-                    cout<<"Alignment read pair "<<fit1->name<<" and "<<fit2->name<<".\n";
-                    cout<<l_seq.str()<<endl<<r_seq.str()<<endl<<endl;
-                    cout<<"overlap "<<overlap<<", identical "<<identical<<endl;
+                    stringstream ss;
+                    ss<<"Alignment read pair "<<fit1->name<<" and "<<fit2->name<<".\n";
+                    ss<<l_seq.str()<<endl<<r_seq.str()<<endl<<endl;
+                    ss<<"overlap "<<overlap<<", identical "<<identical<<endl;
+                    Log_output::write_out(ss.str(),3);
                 }
 
                 if( ( overlap >= Settings_handle::st.get("overlap-minimum").as<int>() &&
@@ -1017,14 +999,12 @@ void Reads_aligner::merge_paired_reads(vector<Fasta_entry> *reads, Model_factory
                     )
                 {
 
-                    if(!Settings_handle::st.is("silent"))
-                        cout<<"Merging "<<fit1->name<<" and "<<fit2->name<<": new name ";
+                    Log_output::write_out("Merging "+fit1->name+" and "+fit2->name+": new name ",2);
 
                     fit1->name = name1.substr(0,name1.length()-1)+"m12";
                     fit1->comment = fit2->comment;
 
-                    if(!Settings_handle::st.is("silent"))
-                        cout<<fit1->name<<".\n";
+                    Log_output::write_out(fit1->name+".\n",2);
 
                     string seq = "";
                     string qsc = "";
@@ -1112,13 +1092,11 @@ void Reads_aligner::find_paired_reads(vector<Fasta_entry> *reads)
 
             if(name1.substr(0,name1.length()-2)==name2.substr(0,name2.length()-2))
             {
-                if(!Settings_handle::st.is("silent"))
-                    cout<<"Pairing "<<fit1->name<<" and "<<fit2->name<<": new name ";
+                Log_output::write_out("Pairing "+fit1->name+" and "+fit2->name+": new name ",2);
 
                 fit1->name = name1.substr(0,name1.length()-1)+"p12";
 
-                if(!Settings_handle::st.is("silent"))
-                    cout<<fit1->name<<".\n";
+                Log_output::write_out(fit1->name+".\n",2);
 
                 fit1->comment = fit2->comment;
                 fit1->first_read_length = fit1->sequence.length();
@@ -1230,9 +1208,13 @@ bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, strin
         }
     }
 
-    if(Settings::noise>0 || ( !Settings_handle::st.is("silent") && !Settings_handle::st.is("reads-pileup") ) )
-        cout<<"  aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"];"<<
+    if( !Settings_handle::st.is("reads-pileup") )
+    {
+        stringstream ss;
+        ss<<"aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"];"<<
             " identical positions "<<(float)matched/(float)aligned<<" ["<<matched<<"/"<<aligned<<"]"<<endl;
+        Log_output::write_out(ss.str(),2);
+    }
 
     if(Settings_handle::st.is("reads-pileup") && !Settings_handle::st.is("overlap-with-reference"))
     {
@@ -1248,23 +1230,28 @@ bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, strin
     }
     else if( (float)aligned/(float)read_length < min_overlap && (float)matched/(float)aligned < min_identity )
     {
-
-        cout<<"Warning: read "<<read_name<<" dropped using the minimum overlap cut-off of "<<min_overlap<<
+        stringstream ss;
+        ss<<"Warning: read "<<read_name<<" dropped using the minimum overlap cut-off of "<<min_overlap<<
                 " and the minimum identity cut-off of "<<min_identity<<"."<<endl;
+        Log_output::write_out(ss.str(),2);
 
         return false;
     }
     else if( (float)aligned/(float)read_length < min_overlap)
     {
 
-        cout<<"Warning: read "<<read_name<<" dropped using the minimum overlap cut-off of "<<min_overlap<<"."<<endl;
+        stringstream ss;
+        ss<<"Warning: read "<<read_name<<" dropped using the minimum overlap cut-off of "<<min_overlap<<"."<<endl;
+        Log_output::write_out(ss.str(),2);
 
         return false;
     }
     else if( (float)matched/(float)aligned < min_identity)
     {
 
-        cout<<"Warning: read "<<read_name<<" dropped using the minimum identity cut-off of "<<min_identity<<"."<<endl;
+        stringstream ss;
+        ss<<" Warning: read "<<read_name<<" dropped using the minimum identity cut-off of "<<min_identity<<"."<<endl;
+        Log_output::write_out(ss.str(),2);
 
         return false;
     }
@@ -1294,8 +1281,9 @@ float Reads_aligner::read_alignment_overlap(Node * node, string read_name, strin
         }
     }
 
-    if(Settings::noise>0)
-        cout<<"  aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"]"<<endl;
+    stringstream ss;
+    ss<<"aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"]"<<endl;
+    Log_output::write_out(ss.str(),2);
 
     return (float)aligned/(float)read_length;
 }
@@ -1351,11 +1339,10 @@ void Reads_aligner::read_alignment_scores(Node * node, string read_name, string 
         }
      }
 
-    if(Settings::noise>0)
-    {
-        cout<<"  aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"]"<<endl;
-        cout<<"  matched positions "<<(float)matched/(float)aligned<<" ["<<matched<<"/"<<aligned<<"]"<<endl;
-    }
+    stringstream ss;
+    ss<<"aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"]"<<endl;
+    ss<<"matched positions "<<(float)matched/(float)aligned<<" ["<<matched<<"/"<<aligned<<"]"<<endl;
+    Log_output::write_out(ss.str(),2);
 
     *overlap  = (float)aligned/(float)read_length;
     *identity = (float)matched/(float)aligned;
@@ -1407,9 +1394,10 @@ bool Reads_aligner::correct_sites_index(Node *current_root, string ref_node_name
 
     if(parent_found)
     {
-        if(Settings::noise>1)
-            cout<<" Parent of "<<ref_node_name<<" is "<<current_parent->get_name()<<"; "
-            <<alignments_done<<" alignments done.";//<<endl;
+        stringstream ss;
+        ss<<"Parent of "<<ref_node_name<<" is "<<current_parent->get_name()<<"; "
+          <<alignments_done<<" alignments done.";
+        Log_output::write_out(ss.str(),3);
 
         Sequence *parent_sequence = current_parent->get_sequence();
 
@@ -1431,13 +1419,11 @@ bool Reads_aligner::correct_sites_index(Node *current_root, string ref_node_name
             }
         }
 
-        if(Settings::noise>2)
-        {
-            if(index_delta>0)
-                cout<<" Site index needs correcting.\n";
-            else
-                cout<<" Site index not changed.\n";
-        }
+        if(index_delta>0)
+            Log_output::write_out("Site index needs correcting.\n",3);
+        else
+            Log_output::write_out("Site index not changed.\n",3);
+
 
         if(index_delta>0)
         {
@@ -1451,9 +1437,8 @@ bool Reads_aligner::correct_sites_index(Node *current_root, string ref_node_name
 
     } // if(parent_found)
     else
-    {
-        if(Settings::noise>1)
-            cout<<" No parent for "<<ref_node_name<<" found. Assuming that this is root.\n";
+    {        
+        Log_output::write_out("No parent for "+ref_node_name+" found. Assuming that this is root.\n",2);
 
         return false;
     }
@@ -1496,6 +1481,8 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
         if( ignore_tid_tags )
             tid = "<empty>";
 
+        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping read: '"+reads->at(i).name+"'",0);
+
         // Call Exonerate to reduce the search space
 
         map<string,hit> exonerate_hits;
@@ -1504,7 +1491,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
         {
             Exonerate_reads er;
             if(!er.test_executable())
-                cout<<"The executable for exonerate not found! The fast placement search not used!";
+                Log_output::write_out("The executable for exonerate not found! The fast placement search not used!",0);
             else
             {
                 tid_nodes.clear();
@@ -1555,7 +1542,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
         {
             Exonerate_reads er;
             if(!er.test_executable())
-                cout<<"The executable for exonerate not found! The option '--exonerate-reads-gapped' not used!";
+                Log_output::write_out("The executable for exonerate not found! The option '--exonerate-reads-gapped' not used!",0);
             else
             {
                 tid_nodes.clear();
@@ -1604,8 +1591,10 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
             }
             else
             {
-                if(!Settings_handle::st.is("silent"))
-                    cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" was discarded by Exonerate.\n";
+                stringstream ss;
+                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" was discarded by Exonerate.\n";
+                Log_output::write_out(ss.str(),2);
+
                 continue;
             }
         }
@@ -1624,8 +1613,10 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
             if(matches == 0)
             {
-                if(!Settings_handle::st.is("silent"))
-                    cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" has no matching node. Aligned to root.\n";
+                stringstream ss;
+                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" has no matching node. Aligned to root.\n";
+                Log_output::write_out(ss.str(),2);
+
                 reads->at(i).node_to_align = root->get_name();
 
                 if(Settings_handle::st.is("placement-file"))
@@ -1647,8 +1638,10 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
                 if(tit != tid_nodes.end())
                 {
-                    if(!Settings_handle::st.is("silent"))
-                        cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" only matches the node "<<tit->second<<"."<<endl;
+                    stringstream ss;
+                    ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" only matches the node "<<tit->second<<"."<<endl;
+                    Log_output::write_out(ss.str(),2);
+
                     reads->at(i).node_to_align = tit->second;
 
                     multimap<string,hit>::iterator ith = exonerate_hits.find(tit->second);
@@ -1699,16 +1692,20 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
                 if(tit != tid_nodes.end())
                 {
-                    if(!Settings_handle::st.is("silent"))
-                        cout<<"Read "<<reads->at(i).name<<" with TID "<<tid<<" matches "<<matching_nodes<<" nodes.\n";
+
+                    stringstream ss;
+                    ss<<"Read "<<reads->at(i).name<<" with TID "<<tid<<" matches "<<matching_nodes<<" nodes.\n";
+                    Log_output::write_out(ss.str(),2);
 
                     while(tit != tid_nodes.end() && matching_nodes>0)
                     {
                         map<string,Node*>::iterator nit = nodes.find(tit->second);
                         double score = this->read_match_score( nit->second, &reads->at(i), mf, best_score);
 
-                        if(Settings::noise>0)
-                            cout<<"   "<<tit->second<<" with score "<<score<<" (simple p-distance)\n";
+                        stringstream ss;
+                        ss<<tit->second<<" with score "<<score<<" (simple p-distance)\n";
+                        Log_output::write_out(ss.str(),2);
+
                         if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
                         {
                             best_score = score;
@@ -1727,8 +1724,8 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                 {
                     if(Settings_handle::st.is("align-bad-reads-at-root"))
                     {
-                        if(!Settings_handle::st.is("silent"))
-                            cout<<"Best node aligns with less than 5% of identical sites. Aligning to root instead.\n";
+                        Log_output::write_out("Best node aligns with less than 5% of identical sites. Aligning to root instead.\n",2);
+
                         reads->at(i).node_to_align = root->get_name();
 
                         if(Settings_handle::st.is("placement-file"))
@@ -1738,15 +1735,17 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                     }
                     else
                     {
-                        if(!Settings_handle::st.is("silent"))
-                            cout<<"Best node aligns with less than 5% of identical sites. Read is discarded.\n";
+                        Log_output::write_out("Best node aligns with less than 5% of identical sites. Read is discarded.\n",2);
+
                         reads->at(i).node_to_align = "discarded_read";
                     }
                 }
                 else
                 {
-                    if(!Settings_handle::st.is("silent"))
-                        cout<<"  best node "<<best_node<<" (score "<<best_score<<").\n";
+                    stringstream ss;
+                    ss<<"best node "<<best_node<<" (score "<<best_score<<").\n";
+                    Log_output::write_out(ss.str(),2);
+
                     reads->at(i).node_score = best_score;
                     reads->at(i).node_to_align = best_node;
 
@@ -1764,9 +1763,10 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
         else
         {
-//            cout<<"failed "<<reads->at(i).node_to_align<<endl;
-            if(!Settings_handle::st.is("silent"))
-                cout<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") has no tid. Aligned to root.\n";
+            stringstream ss;
+            ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") has no tid. Aligned to root.\n";
+            Log_output::write_out(ss.str(),2);
+
             reads->at(i).node_to_align = root->get_name();
 
             if(Settings_handle::st.is("placement-file"))
@@ -1868,9 +1868,6 @@ double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_fact
     double score_l = (double) subst_score/ (double) max_subst_score_l;
     double score_r = (double) subst_score/ (double) max_subst_score_r;
 
-//    cout<<"  "<<score_s<<" : "<<matching<<" "<<aligned<<" "<<node->get_sequence()->sites_length()<<" "<<reads_node1->get_sequence()->sites_length()<<endl;
-//    cout<<"  "<<score_l<<" : "<<subst_score<<" "<<max_subst_score_l<<endl;
-//    cout<<"  "<<score_r<<" : "<<subst_score<<" "<<max_subst_score_r<<endl<<endl;
 
     tmpnode->has_left_child(false);
     delete tmpnode;
@@ -1895,8 +1892,7 @@ double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_fact
 
 void Reads_aligner::remove_target_overlapping_identical_reads(vector<Fasta_entry> *reads, Model_factory *mf)
 {
-    if(!Settings_handle::st.is("silent"))
-        cout<<"Removing identical reads mapped at overlapping positions.\n";
+    Log_output::write_header("Aligning reads: remove reads mapped at overlapping positions",0);
 
     vector<Fasta_entry>::iterator ri1 = reads->begin();
 
@@ -1941,7 +1937,6 @@ void Reads_aligner::remove_target_overlapping_identical_reads(vector<Fasta_entry
                 int r1_length = (int)ri1->sequence.length();
                 int r2_length = (int)ri2->sequence.length();
 
-//                cout<<"identical? "<<matching<<" "<<r1_length<<" "<<r2_length<<endl;
                 if(Settings_handle::st.is("pair-end")) // remove the midpoint marker
                 {
                     r1_length--;
@@ -1950,14 +1945,12 @@ void Reads_aligner::remove_target_overlapping_identical_reads(vector<Fasta_entry
 
                 if( matching == r2_length )
                 {
-                    if(!Settings_handle::st.is("silent"))
-                        cout<<"Read "<<ri2->name<<" is fully embedded in read "<<ri1->name<<" and overlapping sites are identical.  Read "<<ri2->name<<" is deleted.\n";
+                    Log_output::write_out("Read "+ri2->name+" is fully embedded in read "+ri1->name+" and overlapping sites are identical.  Read "+ri2->name+" is deleted.\n",2);
                     reads->erase(ri2);
                 }
                 else if( matching == r1_length )
                 {
-                    if(!Settings_handle::st.is("silent"))
-                        cout<<"Read "<<ri1->name<<" is fully embedded in read "<<ri2->name<<" and overlapping sites are identical.  Read "<<ri1->name<<" is deleted.\n";
+                    Log_output::write_out("Read "+ri1->name+" is fully embedded in read "+ri2->name+" and overlapping sites are identical.  Read "+ri1->name+" is deleted.\n",2);
                     reads->erase(ri1);
                     ri1--;
                     ri2 = reads->end();
@@ -1980,8 +1973,7 @@ void Reads_aligner::remove_target_overlapping_identical_reads(vector<Fasta_entry
 
 void Reads_aligner::remove_target_overlapping_reads(vector<Fasta_entry> *reads)
 {
-    if(!Settings_handle::st.is("silent"))
-        cout<<"Removing reads mapped at overlapping positions.\n";
+    Log_output::write_header("Aligning reads: remove reads mapped at overlapping positions",0);
 
     vector<Fasta_entry>::iterator ri1 = reads->begin();
 
@@ -1996,8 +1988,7 @@ void Reads_aligner::remove_target_overlapping_reads(vector<Fasta_entry> *reads)
                 if( ri2->node_start_pos1 >= ri1->node_start_pos1 && ri2->node_end_pos1 <= ri1->node_end_pos1 &&
                     ri2->node_start_pos2 >= ri1->node_start_pos2 && ri2->node_end_pos2 <= ri1->node_end_pos2 )
                 {
-                    if(!Settings_handle::st.is("silent"))
-                        cout<<"Read "<<ri2->name<<" is fully embedded in read "<<ri1->name<<".  Read "<<ri2->name<<" is deleted.\n";
+                    Log_output::write_out("Read "+ri2->name+" is fully embedded in read "+ri1->name+".  Read "+ri2->name+" is deleted.\n",2);
                     reads->erase(ri2);
                 }
                 else
@@ -2010,8 +2001,7 @@ void Reads_aligner::remove_target_overlapping_reads(vector<Fasta_entry> *reads)
             {
                 if( ri2->node_start_pos1 >= ri1->node_start_pos1 && ri2->node_end_pos2 <= ri1->node_end_pos2 )
                 {
-                    if(!Settings_handle::st.is("silent"))
-                        cout<<"Read "<<ri2->name<<" is fully embedded in read "<<ri1->name<<".  Read "<<ri2->name<<" is deleted.\n";
+                    Log_output::write_out("Read "+ri2->name+" is fully embedded in read "+ri1->name+".  Read "+ri2->name+" is deleted.\n",2);
                     reads->erase(ri2);
                 }
                 else
@@ -2072,8 +2062,7 @@ int Reads_aligner::reads_pairwise_matching_sites(Node *node)
 void Reads_aligner::remove_overlapping_reads(vector<Fasta_entry> *reads, Model_factory *mf)
 {
 
-    if(!Settings_handle::st.is("silent"))
-        cout<<"Removing pairwise overlapping reads.\n";
+    Log_output::write_header("Aligning reads: remove overlapping reads",0);
 
     vector<Fasta_entry>::iterator ri1 = reads->begin();
 
@@ -2103,22 +2092,19 @@ void Reads_aligner::remove_overlapping_reads(vector<Fasta_entry> *reads, Model_f
             if( matching == r1_length
                 && matching == r2_length )
             {
-                if(!Settings_handle::st.is("silent"))
-                    cout<<"Reads "<<ri1->name<<" and "<<ri2->name<<" are identical. Read "<<ri2->name<<" is deleted.\n";
+                Log_output::write_out("Reads "+ri1->name+" and "+ri2->name+" are identical.  Read "+ri2->name+" is deleted.\n",2);
                 reads->erase(ri2);
             }
             else if(matching == r1_length)
             {
-                if(!Settings_handle::st.is("silent"))
-                    cout<<"Read "<<ri1->name<<" is fully embedded in read "<<ri2->name<<". Read "<<ri1->name<<" is deleted.\n";
+                Log_output::write_out("Read "+ri1->name+" is fully embedded in read "+ri2->name+".  Read "+ri1->name+" is deleted.\n",2);
                 reads->erase(ri1);
                 ri1--;
                 ri2 = reads->end();
             }
             else if(matching == r2_length)
             {
-                if(!Settings_handle::st.is("silent"))
-                    cout<<"Read "<<ri2->name<<" is fully embedded in read "<<ri1->name<<".  Read "<<ri2->name<<" is deleted.\n";
+                Log_output::write_out("Read "+ri2->name+" is fully embedded in read "+ri1->name+".  Read "+ri2->name+" is deleted.\n",2);
                 reads->erase(ri2);
             }
             else

@@ -23,16 +23,14 @@
 #include <fstream>
 #include "utils/settings.h"
 #include "utils/check_version.h"
+#include "utils/log_output.h"
 
 namespace po = boost::program_options;
 
 using namespace std;
 using namespace ppa;
 
-Settings::Settings()
-{
-
-}
+Settings::Settings(){}
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
@@ -57,6 +55,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("no-terminal-edges", "assume terminal gaps as missing data")
         ("silent","minimal output")
         ("noise", po::value<int>(), "output noise level")
+        ("log-output-file",po::value<string>(),"output to file instead of stdout")
         ("xml","output also XML alignment")
     ;
     boost::program_options::options_description help_update("Help and updates",100);
@@ -75,7 +74,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("454", "correct homopolymer error")
         ("use-consensus", "use consensus for read ancestors")
         ("build-contigs", "build contigs of read clusters")
-        ("output-consensus", "output contig consensus")
         ("test-every-node","test every node for each read")
         ("fast-placement","use Exonerate to quickly assign reads to nodes")
     ;
@@ -83,7 +81,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     boost::program_options::options_description reads_alignment2("Additional reads alignment options",100);
     reads_alignment2.add_options()
         ("show-contig-ancestor", "fill contig gaps with ancestral sequence")
+        ("inlude-parent-in-contig", "include also ancestral parent in contigs")
         ("consensus-minimum", po::value<int>()->default_value(5), "threshold for inclusion in contig")
+        ("output-consensus", "output contig consensus alone")
         ("test-every-internal-node","test every internal node for each read")
         ("one-placement-only", "place only once despite equally good hits")
         ("placement-only", "compute read placement only")
@@ -152,7 +152,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("read-cluster-attempts", po::value<int>()->default_value(1),"attempts to find overlap")
         ("find-cluster-reference","find optimal cluster reference")
         ("cluster-pileup","pileup clustered reads")
-        ("inlude-parent-in-contig", "include also parent in contigs")
     ;
 
     boost::program_options::options_description graph("Graph options",100);
@@ -237,11 +236,22 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     if(Settings::is("config-file"))
     {
-        cout << endl<< "Reading command line options from file '" << Settings::get("config-file").as<string>()<<"'."<<endl;
+        stringstream ss;
+        ss<<"\nReading command line options from file '" << Settings::get("config-file").as<string>()<<"'.\n";
+        Log_output::write_out(ss.str(),0);
 
         ifstream cfg(Settings::get("config-file").as<string>().c_str());
 
-        if (!cfg) { cout<<"No such file. Exiting.\n\n"; exit(1);}
+        if (!cfg)
+        {
+            Settings::info_noexit();
+
+            stringstream ss;
+            ss<<"Config file '" << Settings::get("config-file").as<string>()<<"' not found. Exiting.\n\n";
+            Log_output::write_out(ss.str(),0);
+
+            exit(1);
+        }
 
 
         po::store(po::parse_config_file(cfg, full_desc), vm);
@@ -249,8 +259,13 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     if(Settings::is("cds-seqfile") || Settings::is("cds-treefile"))
     {
-        cout<<"\nThe program options '--cds-seqfile' and '--cds-treefile' have been renamed as '--ref-seqfile' and '--ref-treefile'.\n"
+        Settings::info_noexit();
+
+        stringstream ss;
+        ss<<"\nThe program options '--cds-seqfile' and '--cds-treefile' have been renamed as '--ref-seqfile' and '--ref-treefile'.\n"
                 "Please edit your command argument line accordingly. Exiting.\n\n";
+        Log_output::write_out(ss.str(),0);
+
         exit(1);
 
     }
@@ -259,6 +274,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     if(is("noise"))
         noise = get("noise").as<int>();
 
+    if(is("silent"))
+        noise = -1;
 
     if (vm.count("help")) {
         this->help();
@@ -279,7 +296,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     if(Settings::is("config-log-file"))
     {
-        cout << endl<< "Writing command line options to file '" << Settings::get("config-log-file").as<string>()<<"'."<<endl;
+        stringstream ss;
+        ss << endl<< "Writing command line options to file '" << Settings::get("config-log-file").as<string>()<<"'."<<endl;
+        Log_output::write_out(ss.str(),1);
 
         ofstream log_out(Settings::get("config-log-file").as<string>().c_str());
         time_t s_time;
@@ -346,14 +365,16 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
 void Settings::print_msg()
 {
-    cout<<"\nPAGAN v."<<version<<" ("<<date<<"). (C) 2010-2011 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
-    cout<<" This program is provided \"as-is\", with NO WARRANTY whatsoever; this is a development version\n and may contain bugs. Contact the author before using the program for any serious analysis.\n";
+    stringstream ss;
+    ss<<"\nPAGAN v."<<version<<" ("<<date<<"). (C) 2010-2012 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
+    ss<<" This program is provided \"as-is\", with NO WARRANTY whatsoever; this is a development version\n and may contain bugs. Contact the author before using the program for any serious analysis.\n";
+    Log_output::write_out(ss.str(),0);
 }
 
 string Settings::print_log_msg()
 {
     stringstream tmp;
-    tmp<<"\n# PAGAN v."<<version<<" ("<<date<<"). (C) 2010-2011 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
+    tmp<<"\n# PAGAN v."<<version<<" ("<<date<<"). (C) 2010-2012 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
     tmp<<"# This program is provided \"as-is\", with NO WARRANTY whatsoever; this is a development version\n# and may contain bugs. Contact the author before using the program for any serious analysis.\n";
     return tmp.str();
 }
@@ -361,28 +382,36 @@ string Settings::print_log_msg()
 void Settings::help()
 {
     this->print_msg();
-    cout<< desc << "\n";
+    stringstream ss;
+    ss<< desc << "\n";
+    Log_output::write_out(ss.str(),0);
     exit(0);
 }
 
 void Settings::help_all()
 {
     this->print_msg();
-    cout<< max_desc << "\n";
+    stringstream ss;
+    ss<< max_desc << "\n";
+    Log_output::write_out(ss.str(),0);
     exit(0);
 }
 
 void Settings::info()
 {
     this->print_msg();
-    cout << min_desc << "\n\n";
+    stringstream ss;
+    ss<< min_desc << "\n";
+    Log_output::write_out(ss.str(),0);
     exit(0);
 }
 
 void Settings::info_noexit()
 {
     this->print_msg();
-    cout << min_desc << "\n\n";
+    stringstream ss;
+    ss<< min_desc << "\n\n";
+    Log_output::write_out(ss.str(),0);
 }
 
 void Settings::check_version()

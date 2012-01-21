@@ -33,6 +33,7 @@
 #include "main/reference_alignment.h"
 #include "utils/model_factory.h"
 #include "utils/fasta_entry.h"
+#include "utils/log_output.h"
 
 extern bool DEBUG;
 
@@ -130,8 +131,6 @@ public:
         {
             dist_to_parent = Settings_handle::st.get("fixed-branches").as<float>();
         }
-
-        if(Settings::noise>4) cout<<"node.set_distance_to_parent("<<dist_to_parent<<")\n";
     }
 
     double get_distance_to_parent() { return dist_to_parent; }
@@ -143,7 +142,6 @@ public:
     void set_name(string nm)
     {
         name = nm;
-        if(Settings::noise>5) cout<<"node.set_name("<<name<<")\n";
     }
 
     void set_name_ids(int *count)
@@ -230,13 +228,11 @@ public:
     void add_left_child(Node *child)
     {
         left_child = child; leaf = false; this->has_left_child(true);
-        if(Settings::noise>5) cout<<"node.add_left_child(Node *)\n";
     }
 
     void add_right_child(Node *child)
     {
         right_child = child; leaf = false; this->has_right_child(true);
-        if(Settings::noise>5) cout<<"node.add_right_child(Node *)\n";
     }
     Node * get_left_child() { return left_child; }
 
@@ -454,6 +450,8 @@ public:
     {
         if( Settings_handle::st.is("seqfile") )
         {
+            Log_output::write_header("Performing multiple alignment ",0);
+
             if(Settings_handle::st.is("mpost-posterior-plot-file"))
             {
                 this->start_mpost_plot_file();
@@ -477,11 +475,10 @@ public:
         }
         else if( Settings_handle::st.is("ref-seqfile") )
         {
-            cout<<"Reading the reference alignment: "<<flush;
+            Log_output::write_header("Reading reference alignment ",0);
             this->read_alignment(mf);
 
             this->reconstruct_parsimony_ancestor(mf);
-            cout<<"done.\n";
         }
     }
 
@@ -502,10 +499,15 @@ public:
 
         if(!Settings_handle::st.is("silent"))
         {
-            if(is_reads_sequence && !Settings_handle::st.is("reads-pileup") && !Settings_handle::st.is("compare-reverse") && !Settings_handle::st.is("find-best-orf"))
-                cout<<"  aligning to node: "<<left_child->get_name()<<"."<<endl;
-            else if(!is_reads_sequence)
-                cout<<"aligning node "<<this->get_name()<<" ("<<alignment_number++<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
+            if(!is_reads_sequence)
+            {
+                stringstream ss;
+                ss<<" aligning node "<<this->get_name()<<" ("<<alignment_number<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<".";
+                Log_output::write_msg(ss.str(),0);
+            }
+            else
+                Log_output::append_msg(" to node '"+left_child->get_name()+"'.",0);
+            alignment_number++;
         }
 
         clock_t t_start=clock();
@@ -513,17 +515,22 @@ public:
         double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
         Evol_model model = mf->alignment_model(dist,is_overlap_alignment);
 
-        if(Settings_handle::st.is("time"))
-            cout <<"Time node::model: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
+        stringstream ss;
+        ss << "Time node::model: "<<double(clock()-t_start)/CLOCKS_PER_SEC<<"\n";
+        Log_output::write_out(ss.str(),"time");
 
         Viterbi_alignment va;
         va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
                  left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence, start_offset, end_offset);
 
-        if(Settings_handle::st.is("time"))
-            cout <<"Time node::viterbi: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
+        ss.str(string());
+        ss << "Time node::viterbi: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
+        Log_output::write_out(ss.str(),"time");
 
         this->add_ancestral_sequence( va.get_simple_sequence() );
+
+        if(is_reads_sequence)
+            this->get_sequence()->is_read_descendants(true);
 
         if(Settings::noise>2)
             this->print_alignment();
@@ -531,8 +538,10 @@ public:
         if( Settings_handle::st.is("check-valid-graphs") )
             this->check_valid_graph();
 
-        if(Settings_handle::st.is("time"))
-            cout <<"Time node::exit: "<<double(clock()-t_start)/CLOCKS_PER_SEC << endl;
+        ss.str(string());
+        ss << "Time node::exit: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
+        Log_output::write_out(ss.str(),"time");
+
     }
 
     void print_alignment()
@@ -540,7 +549,7 @@ public:
         vector<Fasta_entry> alignment;
         this->get_alignment(&alignment);
         for(int i=0;i<(int)alignment.size();i++)
-            cout<<">"<<alignment.at(i).name<<endl<<alignment.at(i).sequence<<endl;
+            Log_output::write_out(">"+alignment.at(i).name+"\n"+alignment.at(i).sequence+"\n",1);
     }
 
     void read_alignment(Model_factory *mf)
@@ -557,8 +566,7 @@ public:
     void read_alignment_this_node(Model_factory *mf)
     {
 
-        if(Settings::noise>0)
-            cout<<"reading alignment node "<<this->get_name()<<": "<<left_child->get_name()<<" - "<<right_child->get_name()<<"."<<endl;
+        Log_output::write_msg("reading alignment node "+this->get_name()+": "+left_child->get_name()+" - "+right_child->get_name()+".",0);
 
         double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
         Evol_model model = mf->alignment_model(dist);
@@ -589,7 +597,6 @@ public:
         Site *site = this->get_sequence()->get_site_at(pos);
 
         int pstate = site->get_path_state();
-//        cout<<pos<<": "<<this->get_name()<<" "<<parent_state<<" "<<site->get_state()<<" - ("<<pstate<<") "<<is_matched<<endl;
 
         if( pstate == Site::matched )
         {
@@ -598,8 +605,6 @@ public:
             site->set_state(new_state);
 
             is_matched = true;
-
-//            cout<<pos<<": "<<this->get_name()<<" "<<parent_state<<" "<<site->get_state()<<" "<<new_state<<" ("<<pstate<<") "<<is_matched<<endl;
         }
 
         if( !is_matched )
@@ -844,7 +849,7 @@ public:
     void finish_mpost_plot_file()
     {
         string file = Settings_handle::st.get("mpost-posterior-plot-file").as<string>();
-        cout<<"Plot file: "<<file<<endl;
+        Log_output::write_out("Plot file: "+file+"\n",1);
 
         string path = file;
         path.append(".mp");
@@ -864,10 +869,10 @@ public:
         output.close();
         output2.close();
 
-        cout<<"\nThe posterior probability plot files can generated using following commands:\n"
-              "  mpost "<<file<<".mp\n"
-              "  latex "<<file<<".tex\n"
-              "  dvipdf "<<file<<".dvi\n\n";
+        Log_output::write_out("\nThe posterior probability plot files can generated using following commands:\n"
+              "  mpost "+file+".mp\n"
+              "  latex "+file+".tex\n"
+              "  dvipdf "+file+".dvi\n\n",1);
 
     }
 
@@ -875,10 +880,12 @@ public:
 
     void show_seqs()
     {
-        cout<<"node "<<get_name();
+        stringstream ss;
+        ss<<"node "<<get_name();
         for(int i=0;i<sequence->sites_length();i++)
-            cout<<"; ["<<i<<"] "<<sequence->get_site_at(i)->get_state();
-        cout<<endl<<endl;
+            ss<<"; ["<<i<<"] "<<sequence->get_site_at(i)->get_state();
+        ss<<endl<<endl;
+        Log_output::write_out(ss.str(),1);
 
         if(!is_leaf())
             get_left_child()->show_seqs();
@@ -929,14 +936,6 @@ public:
 
     /************************************/
 
-    void print_node_info()
-    {
-        if(!leaf)
-            left_child->print_node_info();
-        cout<<name<<":"<<dist_to_parent<<"\n";
-        if(!leaf)
-            right_child->print_node_info();
-    }
 
     /************************************/
 
@@ -957,7 +956,6 @@ public:
     /************************************/
 
     string print_subtree(bool int_names=false) {
-//        cout<<"print_subtree: "<<get_name()<<endl;
         if(!leaf)
         {
             stringstream ss;
@@ -1275,7 +1273,7 @@ public:
     {
 
         string file = Settings_handle::st.get("mpost-graph-file").as<string>();
-        cout<<"Graph file: "<<file<<endl;
+        Log_output::write_out("Graph file: "+file+"\n",1);
 
         string path = file;
         path.append(".mp");
@@ -1318,10 +1316,10 @@ public:
         output2.close();
 
 
-        cout<<"\nThe sequence graph files can generated using following commands:\n"
-              "  mpost "<<file<<".mp\n"
-              "  latex "<<file<<".tex\n"
-              "  dvipdf "<<file<<".dvi\n\n";
+        Log_output::write_out("\nThe sequence graph files can generated using following commands:\n"
+              "  mpost "+file+".mp\n"
+              "  latex "+file+".tex\n"
+              "  dvipdf "+file+".dvi\n\n",1);
 
     }
 

@@ -46,7 +46,7 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
     right_branch_length = r_branch_length;
 
 
-    this->debug_print_input_sequences(2);
+    this->debug_print_input_sequences(3);
 
 
     // set the basic parameters (copy from Settings)
@@ -71,7 +71,7 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
 
     int left_length = left->sites_length();    int right_length = right->sites_length();
 
-    this->debug_msg("Reference_alignment: lengths: "+this->itos(left_length)+" "+this->itos(right_length),1);
+    Log_output::write_out("Reference_alignment: lengths: "+this->itos(left_length)+" "+this->itos(right_length),3);
 
     string gapped_anc = "";
 
@@ -81,7 +81,7 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
 
     if(gapped_left->length() != gapped_right->length())
     {
-        cout<<"Error: gapped sequences of different length. Exiting.\n\n";
+        Log_output::write_out("Error: gapped sequences of different length. Exiting.\n\n",0);
         exit(1);
     }
 
@@ -113,7 +113,7 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
                    ( (rgap && rgap2 && rgap3) || (!rgap && !rgap2 && !rgap3) ) )
               )
             {
-               cout<<"Reading frame error in a codon refrence alignment. Exiting.\n";
+               Log_output::write_out("Reading frame error in a codon refrence alignment. Exiting.\n",0);
                exit(1);
             }
         }
@@ -180,7 +180,7 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
     this->make_alignment_path(&simple_path);
 
 
-    this->debug_msg("Reference_alignment: sequence built",1);
+    Log_output::write_out("Reference_alignment: sequence built",3);
 
 }
 
@@ -189,7 +189,7 @@ void Reference_alignment::make_alignment_path(vector<Matrix_pointer> *simple_pat
 
     int left_length = left->sites_length();    int right_length = right->sites_length();
 
-    this->debug_msg("Reference_alignment::make_alignment_path lengths: "+this->itos(left_length)+" "+this->itos(right_length),1);
+    Log_output::write_out("Reference_alignment::make_alignment_path lengths: "+this->itos(left_length)+" "+this->itos(right_length),3);
 
     vector<Matrix_pointer> mvect;
     vector<Matrix_pointer> xvect;
@@ -253,15 +253,6 @@ void Reference_alignment::make_alignment_path(vector<Matrix_pointer> *simple_pat
     bool i_seq_start = true;
     bool j_seq_start = true;
 
-    bool debug = false;
-//    debug = true;
-    if(debug)
-    {
-        cout<<"Left:\n";
-        left->print_sequence();
-        cout<<"Right:\n";
-        right->print_sequence();
-    }
 
     for(int i=0;i<(int) simple_path->size();i++)
     {
@@ -290,7 +281,6 @@ void Reference_alignment::make_alignment_path(vector<Matrix_pointer> *simple_pat
 
         mp = simple_path->at(i);
 
-//        cout<<"pointer "<<mp.matrix<<" "<<i_ind<<" "<<j_ind<<endl;
 
         if(mp.matrix == Reference_alignment::x_mat)
         {
@@ -305,8 +295,6 @@ void Reference_alignment::make_alignment_path(vector<Matrix_pointer> *simple_pat
 
             this->iterate_bwd_edges_for_known_gap(left_site,right_site,&xvect,&yvect,&mvect,max_x,true,j_gap_type,j_seq_start);
 
-            if(debug)
-                cout<<"X1: "<<max_x->x_ind<<" "<<max_x->y_ind<<": "<<max_x->matrix<<" "<<max_x->path_index<<endl;
 
             if(max_x->y_ind<0)
                 max_x->y_ind = path_to_right_child_site_index_p->at(left_child_site_to_path_index_p->at(max_x->x_ind));
@@ -314,8 +302,6 @@ void Reference_alignment::make_alignment_path(vector<Matrix_pointer> *simple_pat
             if(max_x->matrix == Reference_alignment::y_mat)
                 max_x->y_ind = path_to_right_child_site_index_p->at(left_child_site_to_last_path_index_p->at(max_x->x_ind));
 
-            if(debug)
-                cout<<"X2: "<<max_x->x_ind<<" "<<max_x->y_ind<<": "<<max_x->matrix<<" "<<max_x->path_index<<endl;
 
 
             i_seq_start = false;
@@ -337,8 +323,6 @@ void Reference_alignment::make_alignment_path(vector<Matrix_pointer> *simple_pat
 
             this->iterate_bwd_edges_for_known_gap(left_site,right_site,&yvect,&xvect,&mvect,max_y,false,i_gap_type,i_seq_start);
 
-            if(debug)
-                cout<<"Y1: "<<max_y->x_ind<<" "<<max_y->y_ind<<": "<<max_y->matrix<<" "<<max_y->path_index<<endl;
 
             if(max_y->x_ind<0)
                 max_y->x_ind = path_to_left_child_site_index_p->at(right_child_site_to_path_index_p->at(max_y->y_ind));
@@ -346,8 +330,6 @@ void Reference_alignment::make_alignment_path(vector<Matrix_pointer> *simple_pat
             if(max_y->matrix == Reference_alignment::x_mat)
                 max_y->x_ind = path_to_left_child_site_index_p->at(right_child_site_to_last_path_index_p->at(max_y->y_ind));
 
-            if(debug)
-                cout<<"Y2: "<<max_y->x_ind<<" "<<max_y->y_ind<<": "<<max_y->matrix<<" "<<max_y->path_index<<endl;
 
 
             j_seq_start = false;
@@ -369,9 +351,6 @@ void Reference_alignment::make_alignment_path(vector<Matrix_pointer> *simple_pat
             right_site = right->get_site_at(j_ind);
 
             this->iterate_bwd_edges_for_known_match(left_site,right_site,max_m,last_m_path_index);
-
-            if(debug)
-                cout<<"M: "<<max_m->x_ind<<" "<<max_m->y_ind<<": "<<max_m->matrix<<" "<<max_m->path_index<<endl;
 
 
             i_seq_start = false;
@@ -406,7 +385,7 @@ void Reference_alignment::make_alignment_path(vector<Matrix_pointer> *simple_pat
     right_child_site_to_last_path_index.push_back(simple_path->size());
 
 
-    this->debug_msg("Reference_alignment::make_alignment_path vector filled",1);
+    Log_output::write_out("Reference_alignment::make_alignment_path vector filled",3);
 
     path.clear();
 
@@ -419,45 +398,28 @@ void Reference_alignment::make_alignment_path(vector<Matrix_pointer> *simple_pat
     Matrix_pointer max_end;
     this->iterate_bwd_edges_for_vector_end(left_site,right_site,&max_end,mp.matrix);
 
-    if(debug)
-    {
-        cout<<"m\n";
-        for(int i=0;i<(int) mvectp->size();i++)
-        {
-            cout<<i<<": "<<mvectp->at(i).matrix<<" ["<<mvectp->at(i).x_ind<<" "<<mvectp->at(i).y_ind<<"] ["<<mvectp->at(i).path_index<<"] ["<<
-                   mvectp->at(i).x_edge_ind<<" "<<mvectp->at(i).y_edge_ind<<"] "<<mvectp->at(i).score<<"\t| ";
-            cout<<xvectp->at(i).matrix<<" ["<<xvectp->at(i).x_ind<<" "<<xvectp->at(i).y_ind<<"] ["<<xvectp->at(i).path_index<<"] ["<<
-                   xvectp->at(i).x_edge_ind<<" "<<xvectp->at(i).y_edge_ind<<"] "<<xvectp->at(i).score<<"\t| ";
-            cout<<yvectp->at(i).matrix<<" ["<<yvectp->at(i).x_ind<<" "<<yvectp->at(i).y_ind<<"] ["<<yvectp->at(i).path_index<<"] ["<<
-                   yvectp->at(i).x_edge_ind<<" "<<yvectp->at(i).y_edge_ind<<"] "<<yvectp->at(i).score<<endl;
-        }
-
-        cout<<"end\n";
-            cout<<max_end.matrix<<"; x "<<max_end.x_ind<<", y "<<max_end.y_ind<<", pi "<<max_end.path_index<<"; xe "<<
-                   max_end.x_edge_ind<<", ye "<<max_end.y_edge_ind<<"; "<<max_end.score<<endl;
-    }
 
     if(max_end.score==-HUGE_VAL) {
-        cout<<"left\n";
-        this->left->print_sequence();
-        cout<<"right\n";
-        this->right->print_sequence();
+        stringstream ss;
+        ss<<"Reference_alignment: ax_end.score==-HUGE_VAL\n;";
+        ss<<"left\n"<<this->left->print_sequence();
+        ss<<"right\n"<<this->right->print_sequence();
     }
 
-    this->debug_msg("Reference_alignment::make_alignment_path end found",1);
+    Log_output::write_out("Reference_alignment::make_alignment_path end found",3);
 
     // Backtrack the Viterbi path
     Path_pointer pp(max_end,true);
     this->backtrack_new_vector_path(&path,pp,simple_path);
 
 
-    this->debug_msg("Reference_alignment::make_alignment_path path found",1);
+    Log_output::write_out("Reference_alignment::make_alignment_path path found",3);
 
     // Now build the sequence forward following the path saved in a vector;
     //
     this->build_ancestral_sequence(ancestral_sequence,&path);
 
-    this->debug_msg("Reference_alignment::make_alignment_path sequence built",1);
+    Log_output::write_out("Reference_alignment::make_alignment_path sequence built",3);
 
 }
 
@@ -489,25 +451,6 @@ void Reference_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,P
     //
     int k = path_length;
 
-    if(0 && debug)
-    {
-        cout<<"left; s-to-p; s-to-lp; p-to-s; \n";
-        for(int i=0;i<(int)left_child_site_to_path_index_p->size();i++)
-        {
-            cout<<i<<"; "<<left_child_site_to_path_index_p->at(i)<<"; "<<left_child_site_to_last_path_index_p->at(i)<<"; "<<path_to_left_child_site_index_p->at(i)<<endl;
-        }
-        cout<<"right; s-to-p; s-to-lp; p-to-s; \n";
-        for(int i=0;i<(int)right_child_site_to_path_index_p->size();i++)
-        {
-            cout<<i<<"; "<<right_child_site_to_path_index_p->at(i)<<"; "<<right_child_site_to_last_path_index_p->at(i)<<"; "<<path_to_right_child_site_index_p->at(i)<<endl;
-        }
-        cout<<endl;
-        cout<<endl<<"P "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
-
-    }
-    if(debug)
-        cout<<endl<<"P "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
-
 
     if(vit_mat==Reference_alignment::x_mat)
     {
@@ -523,8 +466,6 @@ void Reference_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,P
     //
     while(k>=0)
     {
-        if(debug)
-            cout<<endl<<"p "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
 
         if(vit_mat == Reference_alignment::m_mat)
         {
@@ -537,8 +478,6 @@ void Reference_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,P
                 Path_pointer pp( mp, false );
                 path->insert(path->begin(),pp);
 
-                if(debug)
-                    cout<<"mi "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
                 k--;
             }
             if(k<1)
@@ -548,8 +487,6 @@ void Reference_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,P
             Path_pointer pp( mp, true );
             path->insert(path->begin(),pp);
 
-            if(debug)
-                cout<<"im "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
 
             vit_mat = (*mvectp)[k].matrix;
             x_ind = (*mvectp)[k].x_ind;
@@ -572,9 +509,6 @@ void Reference_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,P
 
             k--;
 
-            if(debug)
-                cout<<"m "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
-
         }
         else if(vit_mat == Reference_alignment::x_mat)
         {
@@ -587,8 +521,6 @@ void Reference_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,P
                 Path_pointer pp( mp, false );
                 path->insert(path->begin(),pp);
 
-                if(debug)
-                    cout<<"mi "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
                 k--;
             }
             if(k<1)
@@ -598,16 +530,12 @@ void Reference_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,P
             Path_pointer pp( mp, true );
             path->insert(path->begin(),pp);
 
-            if(debug)
-                cout<<"ix "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
 
             vit_mat = (*xvectp)[k].matrix;
             x_ind = (*xvectp)[k].x_ind;
             y_ind = (*xvectp)[k].y_ind;
             next_path_index = (*xvectp)[k].path_index;
 
-            if(debug)
-                cout<<"xb "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
 
             if((*xvectp)[k].x_edge_ind>=0)
                 left_edges->at((*xvectp)[k].x_edge_ind).is_used(true);
@@ -623,8 +551,6 @@ void Reference_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,P
 
             k--;
 
-            if(debug)
-                cout<<"x "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
 
         }
         else if(vit_mat == Reference_alignment::y_mat)
@@ -638,8 +564,6 @@ void Reference_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,P
                 Path_pointer pp( mp, false );
                 path->insert(path->begin(),pp);
 
-                if(debug)
-                    cout<<"mi "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
                 k--;
             }
 
@@ -650,16 +574,12 @@ void Reference_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,P
             Path_pointer pp( mp, true );
             path->insert(path->begin(),pp);
 
-            if(debug)
-                cout<<"iy "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
 
             vit_mat = (*yvectp)[k].matrix;
             x_ind = (*yvectp)[k].x_ind;
             y_ind = (*yvectp)[k].y_ind;
             next_path_index = (*yvectp)[k].path_index;
 
-            if(debug)
-                cout<<"yb "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<endl;
 
             if((*yvectp)[k].y_edge_ind>=0)
                 right_edges->at((*yvectp)[k].y_edge_ind).is_used(true);
@@ -675,13 +595,11 @@ void Reference_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,P
 
             k--;
 
-            if(debug)
-                cout<<"y "<<x_ind<<" "<<y_ind<<"; npi "<<next_path_index<<" k "<<k<<" "<<vit_mat<<endl;
 
         }
         else
         {
-            cout<<"incorrect backward pointer: "<<vit_mat<<endl;
+            Log_output::write_out("Refrence_alignment::incorrect backward pointer: "+this->itos(vit_mat)+".\n",0);
             exit(1);
         }
 
@@ -976,11 +894,9 @@ void Reference_alignment::iterate_bwd_edges_for_vector_end(Site * left_site,Site
             }
         }
 
-        if(Settings::noise>1)
-        {
-            cout<<"viterbi score: "<<setprecision(8)<<max->score<<" ["<<exp(max->score)<<"] ("<<max->matrix<<")";
-            cout<<setprecision(4)<<endl; /*DEBUG*/
-        }
+        stringstream ss;
+        ss<<"viterbi score: "<<setprecision(8)<<max->score<<" ["<<exp(max->score)<<"] ("<<max->matrix<<")\n";
+        Log_output::write_out(ss.str(),3);
 
     }
 }

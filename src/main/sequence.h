@@ -242,6 +242,7 @@ struct Site
     float branch_distance_since_last_used;
 
     int sumA, sumC, sumG, sumT,sumAmino;
+    int sumAA[20];
 public:
     Site(vector<Edge> *e,int type=Site::real_site,int p_state=Site::terminal):index(-1),character_state(-1),character_symbol("0"),
             site_type(type),path_state(p_state),edges(e),first_fwd_edge_index(-1),current_fwd_edge_index(-1),
@@ -282,13 +283,17 @@ public:
     int get_sumG() { return sumG; }
     int get_sumT() { return sumT; }
 
-    void set_sumA(int i) { sumA += i; }
-    void set_sumC(int i) { sumC += i; }
-    void set_sumG(int i) { sumG += i; }
-    void set_sumT(int i) { sumT += i; }
+    void add_sumA(int i) { sumA += i; }
+    void add_sumC(int i) { sumC += i; }
+    void add_sumG(int i) { sumG += i; }
+    void add_sumT(int i) { sumT += i; }
 
     int get_sumAmino() { return sumAmino; }
-    void set_sumAmino(int i) { sumAmino += i; }
+    void add_sumAmino(int i) { sumAmino += i; }
+
+    int get_sumAA(int j) { return sumAA[j]; }
+    void set_sumAA(int j,int i) { sumAA[j] = i; }
+    void add_sumAA(int j,int i) { sumAA[j] += i; }
 
     /**************************************/
 
@@ -615,6 +620,7 @@ class Sequence
     vector<Unique_index> unique_index;
 
     bool read_sequence;
+    bool has_read_descendants;
     bool terminal_sequence;
     string gapped_seq;
 public:
@@ -627,6 +633,9 @@ public:
 
     bool is_read_sequence() { return read_sequence; }
     void is_read_sequence(bool t) { read_sequence = t; }
+
+    bool is_read_descendants() { return has_read_descendants; }
+    void is_read_descendants(bool t) { has_read_descendants = t; }
 
     void initialise_indeces() {
         curr_site_index = prev_site_index = curr_edge_index = 0;
@@ -735,10 +744,10 @@ public:
         return true;
     }
 
-    void print_sequence(vector<Site> *sites);
-    void print_sequence() { this->print_sequence(this->get_sites()); }
-    void print_path(vector<Site> *sites);
-    void print_path(){ this->print_path(this->get_sites()); }
+    string print_sequence(vector<Site> *sites);
+    string print_sequence() { return this->print_sequence(this->get_sites()); }
+    string print_path(vector<Site> *sites);
+    string print_path(){ return this->print_path(this->get_sites()); }
 
     string *get_gapped_sequence() { return &gapped_seq; }
 

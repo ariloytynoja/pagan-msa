@@ -34,6 +34,7 @@
 #include <iostream>
 #include <cassert>
 #include <cmath>
+#include "utils/log_output.h"
 
 namespace ppa {
 
@@ -43,12 +44,12 @@ private:
     int y;
     int z;
     int w;
-	bool xar;
-	bool yar;
-	bool zar;
-	bool war;
+    bool xar;
+    bool yar;
+    bool zar;
+    bool war;
 
-	std::string name;
+    std::string name;
     double* data;
     int i,j,k,l;
 public:
@@ -111,13 +112,11 @@ public:
         data[xa + ya*x + za*x*y + wa*x*y*z] *= v;
     }
 
-//    void alog(double v, int xa, int ya=0, int za = 0, int wa = 0) { assert(xa>=0); assert(xa<x); assert(ya>=0); assert(ya<y); assert(za>=0); assert(za<z);  assert(wa>=0); assert(wa<w); data[xa + ya*x + za*x*y + wa*x*y*z] = sumLogs(data[xa + ya*x + za*x*y + wa*x*y*z], v); }
-//    void clog(int xa, int ya=0, int za = 0, int wa = 0) { assert(xa>=0); assert(xa<x); assert(ya>=0); assert(ya<y); assert(za>=0); assert(za<z); assert(wa>=0); assert(wa<w); data[xa + ya*x + za*x*y + wa*x*y*z] = log(data[xa + ya*x + za*x*y + wa*x*y*z]); }
-//    double sumLogs(double a, double b);
-
     void printName()
     {
-        std::cout<<"Name "<<name<<": x = "<<x<<", y = "<<y<<", z = "<<z<<", w = "<<w<<std::endl;
+        stringstream ss;
+        ss<<"Name "<<name<<": x = "<<x<<", y = "<<y<<", z = "<<z<<", w = "<<w<<std::endl;
+        Log_output::write_out(ss.str(),0);
     }
 
     void print();

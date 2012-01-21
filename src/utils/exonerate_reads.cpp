@@ -69,23 +69,6 @@ bool Exonerate_reads::split_vulgar_string(const string& row,hit *h)
 
         h->score    = atoi( string(result[9]).c_str() );
 
-//        string match = result[10];
-
-//        std::string::const_iterator start, end;
-//        start = match.begin();
-//        end = match.end();
-
-//        const boost::regex triple_pattern("([MG])\\s+(\\d+)\\s+(\\d+)");
-//        boost::match_results<std::string::const_iterator> what;
-//        boost::match_flag_type flags = boost::match_default;
-//        while(regex_search(start, end, what, triple_pattern, flags))
-//        {
-//            cout<<what[0]<<endl;
-//            start = what[0].second;
-//            // update flags:
-//            flags |= boost::match_prev_avail;
-//            flags |= boost::match_not_bob;
-//        }
     }
 
 
@@ -169,7 +152,7 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
     {
-        perror("Problems with exonerate pipe.\nExiting.\n");
+        Log_output::write_out("Problems with exonerate pipe.\nExiting.\n",0);
         exit(1);
     }
 
@@ -201,18 +184,14 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
                         iter->second.t_start = h.t_start;
                     if(iter->second.t_end < h.t_end)
                         iter->second.t_end = h.t_end;
-//                    cout<<"i "<<h.query<<" "<<h.node<<" "<<h.score<<" "<<h.q_start<<" "<<h.q_end<<" "<<h.q_strand<<" "<<h.t_start<<" "<<h.t_end<<" "<<h.t_strand<<"\n";
                 }
                 else if(iter->second.score < h.score)
                 {
                     iter->second = h;
-//                    cout<<"b "<<h.query<<" "<<h.node<<" "<<h.score<<" "<<h.q_start<<" "<<h.q_end<<" "<<h.q_strand<<" "<<h.t_start<<" "<<h.t_end<<" "<<h.t_strand<<"\n";
                 }
             }
             else
             {
-//                cout<<"n "<<h.query<<" "<<h.node<<" "<<h.score<<" "<<h.q_start<<" "<<h.q_end<<" "<<h.q_strand<<" "<<h.t_start<<" "<<h.t_end<<" "<<h.t_strand<<"\n";
-
                 all_hits.insert( make_pair(h.node, h) );
                 hit_names.push_back(h.node);
             }
@@ -221,8 +200,7 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
     pclose(fpipe);
 
 
-    if(Settings::noise>1)
-        cout<<"\nExonerate_reads: "<<read->name<<" has "<<hit_names.size()<<" hits\n";
+    Log_output::write_out("Exonerate_reads: "+read->name+" has "+Log_output::itos(hit_names.size())+" hits\n",2);
 
     if(hit_names.size()>0)
     {
@@ -267,8 +245,7 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
                     tid_nodes->insert(pair<string,string>(tid,best_hits.at(i).node));
                     hits->insert(pair<string,hit>(best_hits.at(i).node,best_hits.at(i)));
 
-                    if(Settings::noise>2)
-                        cout<<"adding "<<best_hits.at(i).node<<" "<<best_hits.at(i).score<<endl;
+                    Log_output::write_out("Exonerate_reads: adding "+best_hits.at(i).node+" "+Log_output::itos(best_hits.at(i).score)+"\n",3);
                 }
             }
         }
@@ -293,8 +270,7 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
                 tid_nodes->insert(pair<string,string>(tid,best_hits.at(i).node));
                 hits->insert(pair<string,hit>(best_hits.at(i).node,best_hits.at(i)));
 
-                if(Settings::noise>2)
-                    cout<<"adding "<<best_hits.at(i).node<<" "<<best_hits.at(i).score<<endl;
+                Log_output::write_out("Exonerate_reads: adding "+best_hits.at(i).node+" "+Log_output::itos(best_hits.at(i).score)+"\n",3);
             }
         }
     }
@@ -317,7 +293,7 @@ void Exonerate_reads::delete_files(int r)
     t_name <<"t"<<r<<".fas";
 
     if( remove( q_name.str().c_str() ) != 0 )
-       perror( "Error deleting file" );
+       Log_output::write_out( "Error deleting file", 1);
     if( remove( t_name.str().c_str() ) != 0 )
-       perror( "Error deleting file" );
+       Log_output::write_out( "Error deleting file", 1 );
 }

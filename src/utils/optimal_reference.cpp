@@ -9,6 +9,7 @@
 #include <vector>
 #include <algorithm>
 #include <boost/regex.hpp>
+#include "utils/log_output.h"
 
 using namespace std;
 using namespace ppa;
@@ -24,7 +25,7 @@ void Optimal_reference::find_optimal_reference(vector<Fasta_entry> *sequences)
     int status = system("exonerate  >/dev/null");
     if( WEXITSTATUS(status) != 1 )
     {
-        cout<<"The executable for exonerate not found! Using the first read as the reference!";
+        Log_output::write_out("The executable for exonerate not found! Using the first read as the reference!",1);
 
         vector<Fasta_entry>::iterator it = sequences->begin();
         it++;
@@ -56,7 +57,7 @@ void Optimal_reference::find_optimal_reference(vector<Fasta_entry> *sequences)
         FILE *fpipe;
         if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
         {
-            perror("Problems with exonerate pipe.\nExiting.\n");
+            Log_output::write_out("Problems with exonerate pipe.\nExiting.\n",3);
             exit(1);
         }
 
@@ -97,10 +98,6 @@ void Optimal_reference::find_optimal_reference(vector<Fasta_entry> *sequences)
         sequences->erase(fit);
 
     sequences->push_back(best_read);
-//    sequences->push_back(most_read);
-
-//    cout<<endl<<best_read.name<<" "<<best_score<<endl;
-//    cout<<most_read.name<<" "<<most_hits<<endl;
 
 }
 
@@ -115,14 +112,13 @@ bool Optimal_reference::find_best_exonerate_hit(Fasta_entry *q, vector<Fasta_ent
 
     this->write_exonerate_input(q,sequences,r);
 
-//    cout<<"query: "<<q->name<<" "<<q->sequence<<endl;
     stringstream command;
     command << "exonerate -q q"<<r<<".fas -t t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -Q dna -T dna -m affine:local -E 2>&1";
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
     {
-        perror("Problems with exonerate pipe.\nExiting.\n");
+        Log_output::write_out("Problems with exonerate pipe.\nExiting.\n",3);
         exit(1);
     }
 
@@ -134,15 +130,11 @@ bool Optimal_reference::find_best_exonerate_hit(Fasta_entry *q, vector<Fasta_ent
 
         if(valid)
         {
-//            cout<<"hit: "<<h.target<<" "<<h.score<<endl;
             if(h.score > best_score)
             {
                 best_score = h.score;
                 best_name  = h.target;
                 best_reversed = (h.q_strand != h.t_strand);
-
-//                cout<<line<<endl;
-//                cout<<"new best: best_name "<<best_name<<endl;
             }
         }
     }
@@ -156,15 +148,12 @@ bool Optimal_reference::find_best_exonerate_hit(Fasta_entry *q, vector<Fasta_ent
     vector<Fasta_entry>::iterator fit = sequences->begin();
     for(;fit!=sequences->end();fit++)
     {
-//        cout<<"search: fit "<<fit->name<<", best "<<best_name<<endl;
         if(fit->name == best_name)
         {
             *best_read = *fit;
             best_read->reversed = best_reversed;
 
-            cout<<"Best "<<best_read->name<<" ("<<best_read->reversed<<") "<<"\n";
-
-//           sequences->erase(fit);
+            Log_output::write_out("Optimal_reference: Best "+best_read->name+" ("+Log_output::itos(best_read->reversed)+") \n",3);
 
             break;
         }
@@ -218,9 +207,6 @@ void Optimal_reference::find_best_hit(Fasta_entry *query, vector<Fasta_entry> *s
 
         float read_identity_rc = this->read_alignment_identity(&node_rc, sequences->at(i).name, root_node.get_name());
 
-//        if(!Settings_handle::st.is("silent"))
-//            cout<<sequences->at(i).name<<": forward identity: "<<read_identity<<"; backward identity: "<<read_identity_rc<<endl;
-
 
         if(read_identity > read_identity_rc && read_identity > best_score)
         {
@@ -242,22 +228,7 @@ void Optimal_reference::find_best_hit(Fasta_entry *query, vector<Fasta_entry> *s
         node_rc.has_right_child(false);
     }
 
-    cout<<best_read->name<<" "<<best_score<<" ("<<best_read->reversed<<")"<<endl;
-
-
-//    vector<Fasta_entry>::iterator fit = sequences->begin();
-//    for(;fit!=sequences->end();fit++)
-//    {
-////        cout<<"search: fit "<<fit->name<<", best "<<best_read->name<<endl;
-//        if(fit->name == best_read->name)
-//        {
-////            cout<<"delete "<<best_read->name<<"\n";
-//            sequences->erase(fit);
-
-//            break;
-//        }
-//    }
-
+    Log_output::write_out(best_read->name+" "+Log_output::itos(best_score)+" ("+Log_output::itos(best_read->reversed)+")\n",3);
 }
 
 void Optimal_reference::align(Node *root, Model_factory *mf, int count)
@@ -266,8 +237,8 @@ void Optimal_reference::align(Node *root, Model_factory *mf, int count)
     int status = system("exonerate  >/dev/null");
     if( WEXITSTATUS(status) != 1 )
     {
-        cout<<"The executable for exonerate not found! Exiting!";
-        exit(0);
+        Log_output::write_out("The executable for exonerate not found! Exiting!",0);
+        exit(1);
     }
 
 
@@ -275,14 +246,14 @@ void Optimal_reference::align(Node *root, Model_factory *mf, int count)
 
     Fasta_reader fr;
     vector<Fasta_entry> reads;
-    cout<<"Reads data file: "<<file<<endl;
+    Log_output::write_out("Reads data file: "+file+"\n",1);
 
     try
     {
         fr.read(file, reads, true);
     }
     catch (ppa::IOException& e) {
-        cout<<"Error reading the reads file '"<<file<<"'.\nExiting.\n\n";
+        Log_output::write_out("Error reading the reads file '"+file+"'.\nExiting.\n\n",0);
         exit(1);
     }
 
@@ -290,8 +261,7 @@ void Optimal_reference::align(Node *root, Model_factory *mf, int count)
     int data_type = fr.check_sequence_data_type(&reads);
 
     if(!fr.check_alphabet(&reads,data_type))
-        if(!Settings_handle::st.is("silent"))
-            cout<<"\nWarning: Illegal characters in input reads sequences removed!"<<endl;
+        Log_output::write_out("Warning: Illegal characters in input reads sequences removed!\n",2);
 
 
     bool single_ref_sequence = false;
@@ -326,8 +296,6 @@ void Optimal_reference::align(Node *root, Model_factory *mf, int count)
     while(remaining>0)
     {
 
-        cout<<"remaining: "<<remaining<<endl;
-
         Fasta_entry best_read;
 
         Fasta_entry root_sequence;
@@ -339,11 +307,12 @@ void Optimal_reference::align(Node *root, Model_factory *mf, int count)
             exonarate_hit = this->find_best_exonerate_hit(&root_sequence,&reads,&best_read);
 
         if( exonarate_hit )
-            cout<<"exonerate hit: "<<best_read.name<<endl;
+            Log_output::write_out("Optimal_reference: exonerate hit: "+best_read.name+"\n",3);
         else
         {
             this->find_best_hit(&root_sequence,&reads,mf,&best_read);
-            cout<<"pagan hit: "<<best_read.name<<endl;
+            Log_output::write_out("Optimal_reference: pagan hit: "+best_read.name+"\n",3);
+
             use_exonerate = true;
         }
 
@@ -368,8 +337,7 @@ void Optimal_reference::align(Node *root, Model_factory *mf, int count)
         float read_identity;
         this->read_alignment_scores(node, best_read.name, global_root->get_name(), &read_overlap, &read_identity);
 
-        if(!Settings_handle::st.is("silent"))
-            cout<<"overlap: "<<read_overlap<<", identity "<<read_identity<<endl;
+        Log_output::write_out("Optimal_reference: overlap: "+Log_output::itos(read_overlap)+", identity "+Log_output::itos(read_identity)+"\n",2);
 
         float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
         float min_identity = Settings_handle::st.get("min-reads-identity").as<float>();
@@ -392,7 +360,7 @@ void Optimal_reference::align(Node *root, Model_factory *mf, int count)
         {
             if(fit->name == best_read.name)
             {
-                cout<<"delete "<<best_read.name<<"\n";
+                Log_output::write_out("Optimal_reference: delete "+best_read.name+"\n",2);
                 reads.erase(fit);
 
                 break;
@@ -438,8 +406,9 @@ float Optimal_reference::read_alignment_overlap(Node * node, string read_name, s
 
     }
 
-    if(Settings::noise>0)
-        cout<<"  aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"]"<<endl;
+    stringstream ss;
+    ss<<"Optimal_reference: aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"]"<<endl;
+    Log_output::write_out(ss.str(),2);
 
     return (float)aligned/(float)read_length;
 }
@@ -473,8 +442,9 @@ float Optimal_reference::read_alignment_identity(Node * node, string read_name, 
 
     }
 
-    if(Settings::noise>0)
-        cout<<"  matched positions "<<(float)matched/(float)read_length<<" ["<<matched<<"/"<<read_length<<"]"<<endl;
+    stringstream ss;
+    ss<<"Optimal_reference: matched positions "<<(float)matched/(float)read_length<<" ["<<matched<<"/"<<read_length<<"]"<<endl;
+    Log_output::write_out(ss.str(),2);
 
     return (float)matched/(float)read_length;
 }
@@ -508,11 +478,10 @@ void Optimal_reference::read_alignment_scores(Node * node, string read_name, str
 
     }
 
-    if(Settings::noise>0)
-    {
-        cout<<"  aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"]"<<endl;
-        cout<<"  matched positions "<<(float)matched/(float)aligned<<" ["<<matched<<"/"<<aligned<<"]"<<endl;
-    }
+    stringstream ss;
+    ss<<"Optimal_reference: aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"]"<<endl;
+    ss<<"Optimal_reference: matched positions "<<(float)matched/(float)aligned<<" ["<<matched<<"/"<<aligned<<"]"<<endl;
+    Log_output::write_out(ss.str(),2);
 
     *overlap  = (float)aligned/(float)read_length;
     *identity = (float)matched/(float)aligned;
@@ -605,7 +574,7 @@ void Optimal_reference::delete_files(int r)
     t_name <<"t"<<r<<".fas";
 
     if( remove( q_name.str().c_str() ) != 0 )
-       perror( "Error deleting file" );
+       Log_output::write_out( "Error deleting file" , 1);
     if( remove( t_name.str().c_str() ) != 0 )
-       perror( "Error deleting file" );
+       Log_output::write_out( "Error deleting file" , 1);
 }

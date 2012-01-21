@@ -102,7 +102,6 @@ string Newick_reader::read_tree(const string & filename) throw (IOException)
 
 Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exception)
 {
-//    cout << "NODE: " << description << endl;
     Newick_reader::Element elt = Newick_reader::get_element(description);
 
     //New node:
@@ -110,7 +109,6 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
     if(!Text_utils::is_empty(elt.length))
     {
         node->set_distance_to_parent(Text_utils::to_double(elt.length));
-//        cout << "NODE: LENGTH: " << elt.length << endl;
     }
 
     if(!Text_utils::is_empty(elt.nhx))
@@ -143,7 +141,6 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
     if(elements.size() == 1)
     {
         //This is a leaf:
-//        cout << "NODE: LEAF: " << elements[0] << endl;
         string name = Text_utils::remove_surrounding_whitespaces(elements[0]);
         node->set_name(name);
 
@@ -159,8 +156,6 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
     {
 
         //This is a node: 
-//        cout << "NODE: SUBNODE: 0, " << elements[0] << endl;
-//        cout << "NODE: SUBNODE: 1, " << elements[1] << endl;
         try
         {
             Node * child_0 = parenthesis_to_node(elements[0]);
@@ -202,7 +197,7 @@ Node * Newick_reader::parenthesis_to_tree(const string & description) throw (Exc
 
     string content = description.substr(firstP + 1, lastP - firstP - 1);
     string element = semi == string::npos ? description.substr(lastP + 1) : description.substr(lastP + 1, semi - lastP - 1);
-//    cout << "TREE: " << content << endl;
+
     //New root node:
     Node * node = new Node();
 
@@ -212,7 +207,6 @@ Node * Newick_reader::parenthesis_to_tree(const string & description) throw (Exc
     if(!Text_utils::is_empty(elt.length))
     {
         node->set_distance_to_parent(Text_utils::to_double(elt.length));
-//        cout << "NODE: LENGTH: " << elt.length << endl;
     }
 
     if(!Text_utils::is_empty(elt.nhx))
@@ -251,8 +245,6 @@ Node * Newick_reader::parenthesis_to_tree(const string & description) throw (Exc
     else
     {
         //This is a node:
-        //cout << "NODE: SUBNODE: 0, " << elements[0] << endl;
-        //cout << "NODE: SUBNODE: 1, " << elements[1] << endl;
         try
         {
             Node * child_0 = parenthesis_to_node(elements[0]);
@@ -262,7 +254,6 @@ Node * Newick_reader::parenthesis_to_tree(const string & description) throw (Exc
             node->add_right_child(child_1);
 
             node->set_name("root");
-//            cout<<"root "<<node->get_name()<<" "<<node->get_nhx_tid()<<" "<<node->get_distance_to_parent()<<endl;
         }
         catch(exception e)
         {
@@ -297,8 +288,6 @@ Newick_reader::Element Newick_reader::get_element(const string & elt) throw (Exc
             {
                 element.nhx = elt.substr(openNHX+1,closeNHX-openNHX-1);
                 eltt = elt.substr(0,openNHX);
-//                cout<<"nhx: "<<element.nhx<<endl;
-//                cout<<"elt: "<<eltt<<endl;
             }
         }
 
@@ -312,7 +301,6 @@ Newick_reader::Element Newick_reader::get_element(const string & elt) throw (Exc
                 //this is an element with length:
                 elt2 = eltt.substr(0, colon);
                 element.length = eltt.substr(colon + 1);
-//                cout<<"len: "<<element.length<<endl;
             }
             else
             {

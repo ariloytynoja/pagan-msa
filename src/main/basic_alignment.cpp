@@ -48,19 +48,10 @@ void Basic_alignment::build_ancestral_sequence(Sequence *sequence, vector<Path_p
     //   and record them on the edges. If they are above a limit, the edges (and all between them) are deleted. "
     this->check_skipped_boundaries(sequence);
 
-//    cout<<"ANCESTRAL SEQUENCE:\n";
-//    sequence->print_sequence();
 
-    if(Settings::noise>4)
-    {
-        cout<<"ANCESTRAL SEQUENCE:\n";
-        sequence->print_sequence();
-    }
+    Log_output::write_out("ANCESTRAL SEQUENCE:\n"+sequence->print_sequence(),4);
 
-    if(Settings::noise>6)
-    {
-        this->print_path(path);
-    }
+    Log_output::write_out(this->print_path(path),6);
 
     sequence->is_read_sequence(is_reads_sequence);
 }
@@ -154,18 +145,9 @@ void Basic_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path_
 
             l_pos++; r_pos++;
         }
-//        if(is_reads_sequence && Settings_handle::st.is("use-consensus"))
-//            cout<<l_pos<<" "<<r_pos<<": "<<site.get_sumA()<<" "<<site.get_sumC()<<" "<<site.get_sumG()<<" "<<site.get_sumT()<<endl;
-
-//cout<<site.get_state()<<endl;
 
 
         sequence->push_back_site(site);
-
-        /*DEBUG*/
-        if(Settings::noise>6)
-            cout<<i<<": m "<<path->at(i).mp.matrix<<" si "<<sequence->get_current_site_index()<<": l "<<l_pos<<", r "<<r_pos<<" (st "<<site.get_state()<<")"<<endl;
-        /*DEBUG*/
 
     }
 
@@ -206,17 +188,19 @@ void Basic_alignment::create_ancestral_edges(Sequence *sequence)
         }
     }
 
-    // print the index
-    if(Settings::noise>2)//5)
+    if(Settings::noise>4)
     {
-        cout<<"Child sequence site indeces:"<<endl;
+        stringstream ss;
+        ss<<"Child sequence site indeces:"<<endl;
         for(unsigned int i=0;i<left_child_index.size();i++)
-            cout<<left_child_index.at(i)<<" ";
+            ss<<left_child_index.at(i)<<" ";
 
-        cout<<endl;
+        ss<<endl;
         for(unsigned int i=0;i<right_child_index.size();i++)
-            cout<<right_child_index.at(i)<<" ";
-        cout<<endl;
+            ss<<right_child_index.at(i)<<" ";
+        ss<<endl;
+
+        Log_output::write_out(ss.str(),5);
     }
 
     // Then copy the edges of child sequences in their parent.
@@ -471,7 +455,7 @@ void Basic_alignment::check_skipped_boundaries(Sequence *sequence)
 
             if(edge_ind>=0)
             {
-                if(Settings::noise>2) cout<<"delete: "<<edge_ind<<" "<<skip_start<<" "<<i<<endl;
+                Log_output::write_out("Basic_alignemnmt: delete range: "+Log_output::itos(edge_ind)+" "+Log_output::itos(skip_start)+" "+Log_output::itos(i)+"\n",4);
                 this->delete_edge_range(sequence,edge_ind,skip_start);
             }
 
@@ -518,10 +502,6 @@ void Basic_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vector
 
         edge_weight =  weight1 * weight2;
 
-        cout<<child_index->at( child->get_start_site_index() )<<"["<<child->get_start_site_index()<<"] "<<weight1;
-        cout<<"; "<<child_index->at( child->get_end_site_index() )<<"["<<child->get_end_site_index()<<"] "<<weight2;
-        cout<<"; "<<edge_weight<<"\n";
-
     }
     Edge edge( child_index->at( child->get_start_site_index() ), child_index->at( child->get_end_site_index() ), edge_weight );
 
@@ -566,11 +546,6 @@ void Basic_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vector
             return;
         }
     }
-
-//    cout<< edge.get_start_site_index()<<" "<<edge.get_end_site_index()<<"; ";
-//  if(edge.get_start_site_index()>0 && edge.get_end_site_index()>0 && edge.get_start_site_index()<child_index->size() && edge.get_end_site_index()<child_index->size())
-//    cout<<child_index->at( edge.get_start_site_index() )<<" "<< child_index->at( edge.get_end_site_index() )<<"; ";
-//    cout<<sequence->get_site_at( edge.get_start_site_index() )->get_site_type()<<" "<<sequence->get_site_at( edge.get_start_site_index() )->get_path_state()<<endl;
 
 
     this->transfer_child_edge(sequence, edge, child, branch_length, connects_neighbour_site, adjust_posterior_weight, branch_weight);

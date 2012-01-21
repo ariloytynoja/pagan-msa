@@ -23,6 +23,7 @@
 
 #include <cmath>
 #include "utils/model_factory.h"
+#include "utils/log_output.h"
 
 namespace ppa {
 
@@ -161,20 +162,73 @@ protected:
     {
         if(!is_dna)
         {
+            // old->
             if(l_pos>=0)
             {
                 if(!left->is_terminal_sequence())
-                    site->set_sumAmino(left->get_site_at(l_pos)->get_sumAmino());
+                    site->add_sumAmino(left->get_site_at(l_pos)->get_sumAmino());
                 else if(left->is_read_sequence())
-                    site->set_sumAmino(1);
+                    site->add_sumAmino(1);
             }
             if(r_pos>=0)
             {
                 if(!right->is_terminal_sequence())
-                    site->set_sumAmino(right->get_site_at(r_pos)->get_sumAmino());
+                    site->add_sumAmino(right->get_site_at(r_pos)->get_sumAmino());
                 else if(right->is_read_sequence())
-                    site->set_sumAmino(1);
+                    site->add_sumAmino(1);
             }
+            // <-old
+
+            for(int i=0;i<20;i++)
+                site->set_sumAA(i,0);
+
+            if(l_pos>=0)
+            {
+                if(left->is_read_descendants())
+                {
+                    for(int i=0;i<20;i++)
+                    {
+                        site->add_sumAA(i,left->get_site_at(l_pos)->get_sumAA(i));
+                    }
+                }
+                else if(left->is_read_sequence())
+                {
+                    site->add_sumAA(left->get_site_at(l_pos)->get_state(),1);
+                }
+            }
+            if(r_pos>=0)
+            {
+                if(right->is_read_descendants())
+                {
+                    for(int i=0;i<20;i++)
+                    {
+                        site->add_sumAA(i,right->get_site_at(r_pos)->get_sumAA(i));
+                    }
+                }
+                else if(right->is_read_sequence())
+                {
+                    site->add_sumAA(right->get_site_at(r_pos)->get_state(),1);
+                }
+            }
+
+            int max_c=1;
+            int max_i=site->get_state();
+            for(int i=0;i<20;i++)
+            {
+                int c = site->get_sumAA(i);
+
+                if(c>max_c)
+                {
+                    max_i = i;
+                    max_c = c;
+                }
+                else if(max_c == c)
+                {
+                    max_i = model->parsimony_state(max_i,i);
+                }
+            }
+//            if(max_i >= 0)
+                site->set_state(max_i);
 
             return;
         }
@@ -242,7 +296,7 @@ protected:
                     lsG += 1;
                     lsT += 1;    }
                 else
-                    cout<<"compute_site_consensus: no such option (l)\n";
+                    Log_output::write_out("Basic_alignment: compute_site_consensus: no such option (l)\n",1);
             }
         }
 
@@ -306,7 +360,7 @@ protected:
                     rsG += 1;
                     rsT += 1;    }
                 else
-                    cout<<"compute_site_consensus: no such option (r)\n";
+                    Log_output::write_out("Basic_alignment: compute_site_consensus: no such option (r)\n",1);
             }
         }
 
@@ -317,10 +371,10 @@ protected:
             int sG = lsG+rsG;
             int sT = lsT+rsT;
 
-            site->set_sumA(sA);
-            site->set_sumC(sC);
-            site->set_sumG(sG);
-            site->set_sumT(sT);
+            site->add_sumA(sA);
+            site->add_sumC(sC);
+            site->add_sumG(sG);
+            site->add_sumT(sT);
 
             if(Settings_handle::st.is("use-consensus"))
             {
@@ -355,18 +409,13 @@ protected:
                 else if(sA==sC && sA==sG && sA==sT)
                     site->set_state(14);
                 else
-                    cout<<"compute_site_consensus: no such option (s)"<<sA<<" "<<sC<<" "<<sG<<" "<<sT<<"\n";
+                    Log_output::write_out("Basic_alignment: compute_site_consensus: no such option (s) "+
+                                Log_output::itos(sA)+" "+Log_output::itos(sC)+" "+Log_output::itos(sG)+" "+Log_output::itos(sT)+" "+"\n",1);
             }
         }
     }
 
     /*********************************/
-
-    void debug_msg(std::string msg,int noise_level)
-    {
-        if(Settings::noise>noise_level)
-            cout<<msg<<endl;
-    }
 
     std::string itos(int i) // convert int to string
     {
@@ -533,7 +582,6 @@ protected:
 
         pair_end_reads = false;
 
-        cout << noshowpos;
     }
 
     void set_reads_alignment_settings()
@@ -614,12 +662,6 @@ protected:
 
     void debug_print_input_sequences(int noise_level)
     {
-        if(Settings::noise>noise_level)
-            print_input_sequences();
-    }
-
-    void print_input_sequences()
-    {
 
         vector<string> *full_char_alphabet = Model_factory::get_dna_full_character_alphabet();
 
@@ -628,38 +670,42 @@ protected:
         else if(model->get_data_type() == Model_factory::dna && Settings_handle::st.is("codons"))
             full_char_alphabet = Model_factory::get_codon_full_character_alphabet();
 
-        cout<<"sequences:"<<endl<<" ";
+        stringstream ss;
+        ss<<"sequences:"<<endl<<" ";
         for(int i=1;i<left->sites_length()-1;i++)
-            cout<<Model_factory::get_ancestral_character_alphabet_at(left->get_site_at(i)->get_state());
-        cout<<endl<<" ";
+            ss<<Model_factory::get_ancestral_character_alphabet_at(left->get_site_at(i)->get_state());
+        ss<<endl<<" ";
         for(int i=1;i<right->sites_length()-1;i++)
         {
-            cout<<Model_factory::get_ancestral_character_alphabet_at(right->get_site_at(i)->get_state());
+            ss<<Model_factory::get_ancestral_character_alphabet_at(right->get_site_at(i)->get_state());
         }
-        cout<<endl;
+        ss<<endl;
 
         if(Settings::noise>4)
         {
-            cout<<"\nLEFT";left->print_sequence(left->get_sites());
-            cout<<"\nRIGHT";right->print_sequence(right->get_sites());
-            cout<<endl;
+            ss<<"\nLEFT\n"<<left->print_sequence(left->get_sites());
+            ss<<"\nRIGHT\n"<<right->print_sequence(right->get_sites());
+            ss<<endl;
         }
+        Log_output::write_out(ss.str(),noise_level);
     }
 
-    void print_path(vector<Path_pointer> *path)
+    string print_path(vector<Path_pointer> *path)
     {
-        cout<<endl;
+        stringstream ss;
+        ss<<endl;
         for(unsigned int i=0;i<path->size();i++)
         {
             Path_pointer *tsite =  &path->at(i);
             if(tsite->real_site)
-                cout<<i<<" r: ";
+                ss<<i<<" r: ";
             else
-                cout<<i<<" s: ";
+                ss<<i<<" s: ";
 
-            cout<<tsite->mp.x_ind<<" "<<tsite->mp.y_ind<<" "<<tsite->mp.matrix<<": "<<tsite->mp.score<<" "<<
+            ss<<tsite->mp.x_ind<<" "<<tsite->mp.y_ind<<" "<<tsite->mp.matrix<<": "<<tsite->mp.score<<" "<<
                    fixed<<log(tsite->mp.full_score)<<" "<<fixed<<log(tsite->mp.bwd_score)<<endl;
         }
+        return ss.str();
     }
 
     /********************************************/

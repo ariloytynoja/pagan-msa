@@ -26,6 +26,7 @@
 #include "utils/settings.h"
 #include "utils/settings_handle.h"
 #include "utils/eigen.h"
+#include "utils/log_output.h"
 
 using namespace ppa;
 using namespace std;
@@ -48,7 +49,7 @@ Model_factory::Model_factory(int s)
         ;
     else
     {
-        cout<<"Model_factory(): invalid sequence data type. Exiting\n";
+        Log_output::write_out("Model_factory(): invalid sequence data type. Exiting\n",0);
         exit(1);
     }
 }
@@ -228,37 +229,40 @@ void Model_factory::define_dna_alphabet()
 
     if(Settings::noise>5)
     {
-        cout<<"\nModel_factory::define_dna_alphabet(). DNA parsimony table.\n\n  ";
+        stringstream ss;
+        ss<<"\nModel_factory::define_dna_alphabet(). DNA parsimony table.\n\n  ";
         for(int i=0;i<15;i++)
-            cout<<full_char_alphabet.at(i)<<" ";
-        cout<<endl;
+            ss<<full_char_alphabet.at(i)<<" ";
+        ss<<endl;
 
         for(int i=0;i<15;i++)
         {
-            cout<<full_char_alphabet.at(i)<<" ";
+            ss<<full_char_alphabet.at(i)<<" ";
             for(int j=0;j<15;j++)
             {
-                cout<<full_char_alphabet.at(parsimony_table->g(i,j))<<" ";
+                ss<<full_char_alphabet.at(parsimony_table->g(i,j))<<" ";
             }
-            cout<<endl;
+            ss<<endl;
         }
-        cout<<endl;
+        ss<<endl;
 
-        cout<<"\nModel_factory::define_dna_alphabet(). DNA child parsimony table.\n\n  ";
+        ss<<"\nModel_factory::define_dna_alphabet(). DNA child parsimony table.\n\n  ";
         for(int i=0;i<15;i++)
-            cout<<full_char_alphabet.at(i)<<" ";
-        cout<<endl;
+            ss<<full_char_alphabet.at(i)<<" ";
+        ss<<endl;
 
         for(int i=0;i<15;i++)
         {
-            cout<<full_char_alphabet.at(i)<<" ";
+            ss<<full_char_alphabet.at(i)<<" ";
             for(int j=0;j<15;j++)
             {
-                cout<<full_char_alphabet.at(child_parsimony_table->g(i,j))<<" ";
+                ss<<full_char_alphabet.at(child_parsimony_table->g(i,j))<<" ";
             }
-            cout<<endl;
+            ss<<endl;
         }
-        cout<<endl;
+        ss<<endl;
+
+        Log_output::write_out(ss.str(),6);
     }
 
 
@@ -592,21 +596,25 @@ void Model_factory::define_protein_alphabet()
 
     if(Settings::noise>5)
     {
-        cout<<"\nModel_factory::define_protein_alphabet(). Protein parsimony table.\n\n  ";
+        stringstream ss;
+
+        ss<<"\nModel_factory::define_protein_alphabet(). Protein parsimony table.\n\n  ";
         for(int i=0;i<char_fas;i++)
-            cout<<full_char_alphabet.at(i)<<" ";
-        cout<<endl;
+            ss<<full_char_alphabet.at(i)<<" ";
+        ss<<endl;
 
         for(int i=0;i<char_fas;i++)
         {
-            cout<<full_char_alphabet.at(i)<<" ";
+            ss<<full_char_alphabet.at(i)<<" ";
             for(int j=0;j<char_fas;j++)
             {
-                cout<<full_char_alphabet.at(parsimony_table->g(i,j))<<" ";
+                ss<<full_char_alphabet.at(parsimony_table->g(i,j))<<" ";
             }
-            cout<<endl;
+            ss<<endl;
         }
-        cout<<endl;
+        ss<<endl;
+
+        Log_output::write_out(ss.str(),6);
     }
 
     char_ambiguity = new Db_matrix(20,char_fas);
@@ -752,21 +760,25 @@ void Model_factory::define_protein_alphabet_groups()
 
     if(Settings::noise>5)
     {
-        cout<<"\nModel_factory::define_protein_alphabet(). Protein parsimony table.\n\n  ";
+        stringstream ss;
+
+        ss<<"\nModel_factory::define_protein_alphabet(). Protein parsimony table.\n\n  ";
         for(int i=0;i<char_fas;i++)
-            cout<<full_char_alphabet.at(i)<<" ";
-        cout<<endl;
+            ss<<full_char_alphabet.at(i)<<" ";
+        ss<<endl;
 
         for(int i=0;i<char_fas;i++)
         {
-            cout<<full_char_alphabet.at(i)<<" ";
+            ss<<full_char_alphabet.at(i)<<" ";
             for(int j=0;j<char_fas;j++)
             {
-                cout<<full_char_alphabet.at(parsimony_table->g(i,j))<<" ";
+                ss<<full_char_alphabet.at(parsimony_table->g(i,j))<<" ";
             }
-            cout<<endl;
+            ss<<endl;
         }
-        cout<<endl;
+        ss<<endl;
+
+        Log_output::write_out(ss.str(),6);
     }
 
     char_ambiguity = new Db_matrix(20,char_fas);
@@ -1136,42 +1148,28 @@ void Model_factory::define_codon_alphabet()
     }
 
 
-    //this->print_int_matrix(child_parsimony_table);
-
-
-    if(false)
-    {
-        for(int i=0;i<char_fas;i++)
-        {
-            for(int j=0;j<char_fas;j++)
-            {
-                int p = parsimony_table->g(i,j);
-                int pi = child_parsimony_table->g(p,i);
-                int pj = child_parsimony_table->g(p,j);
-
-                if(pi<0 || pj<0)
-                    cout<<i<<" "<<j<<" "<<p<<" "<<pi<<" "<<pj<<endl;
-            }
-        }
-    }
 
     if(Settings::noise>5)
     {
-        cout<<"\nModel_factory::define_codon_alphabet(). Protein parsimony table.\n\n  ";
+        stringstream ss;
+
+        ss<<"\nModel_factory::define_codon_alphabet(). Protein parsimony table.\n\n  ";
         for(int i=0;i<char_fas;i++)
-            cout<<full_char_alphabet.at(i)<<" ";
-        cout<<endl;
+            ss<<full_char_alphabet.at(i)<<" ";
+        ss<<endl;
 
         for(int i=0;i<char_fas;i++)
         {
-            cout<<full_char_alphabet.at(i)<<" ";
+            ss<<full_char_alphabet.at(i)<<" ";
             for(int j=0;j<char_fas;j++)
             {
-                cout<<full_char_alphabet.at(parsimony_table->g(i,j))<<" ";
+                ss<<full_char_alphabet.at(parsimony_table->g(i,j))<<" ";
             }
-            cout<<endl;
+            ss<<endl;
         }
-        cout<<endl;
+        ss<<endl;
+
+        Log_output::write_out(ss.str(),6);
     }
 
     char_ambiguity = new Db_matrix(1,1); // not needed?
@@ -1187,34 +1185,38 @@ void Model_factory::define_codon_alphabet()
  */
 void Model_factory::print_char_alphabet()
 {
-    cout<<"\nModel_factory::print_char_alphabet()\n";
+    stringstream ss;
+
+    ss<<"\nModel_factory::print_char_alphabet()\n";
     for(unsigned int i=0;i<char_symbols.size();i++)
     {
         Char_symbol a = char_symbols.at(i);
 
-        cout<<"Index "<<a.index<<"; symbol "<<a.symbol<<"; residues ("<<a.n_units<<"): ";
+        ss<<"Index "<<a.index<<"; symbol "<<a.symbol<<"; residues ("<<a.n_units<<"): ";
         for(int j=0;j<a.n_units;j++){
             int t = char_alphabet.find(a.residues.at(j));
-            cout<<a.residues.at(j)<<"["<<t<<"] ";
+            ss<<a.residues.at(j)<<"["<<t<<"] ";
         }
-        cout<<endl;
+        ss<<endl;
     }
+
+    Log_output::write_out(ss.str(),6);
 }
 
 void Model_factory::print_codon_alphabet()
 {
-    cout<<"\nModel_factory::print_codon_alphabet()\n";
+    stringstream ss;
+
+    ss<<"\nModel_factory::print_codon_alphabet()\n";
     for(unsigned int i=0;i<codon_symbols.size();i++)
     {
         Codon_symbol *a = &codon_symbols.at(i);
 
-        cout<<"Index "<<a->index<<"; symbol "<<a->symbol<<"; residues ("<<a->n_units<<"): ";
-//        for(int j=0;j<a->n_units;j++){
-//            int t = char_alphabet.find(a->residues.at(j));
-//            cout<<a.residues.at(j)<<"["<<t<<"] ";
-//        }
-        cout<<endl;
+        ss<<"Index "<<a->index<<"; symbol "<<a->symbol<<"; residues ("<<a->n_units<<"): ";
+        ss<<endl;
     }
+
+    Log_output::write_out(ss.str(),6);
 }
 
 /*******************************************/
@@ -1273,9 +1275,11 @@ void Model_factory::dna_model(float* pi,float kappa, float rho,float ins_rate,fl
 {
 
     if (Settings::noise>4){
-        cout<<"DNA substitution model: base frequencies "
+        stringstream ss;
+        ss<<"DNA substitution model: base frequencies "
                 <<pi[0]<<", "<<pi[1]<<", "<<pi[2]<<" and "<<pi[3]
                 <<"; kappa "<<kappa<<" and rho "<<rho<<"; ins rate "<<ins_rate<<", del rate "<<del_rate<<" and ext. prob "<<ext_prob<<"."<<endl;
+        Log_output::write_out(ss.str(),5);
     }
 
     char_ins_rate = ins_rate;
@@ -1428,9 +1432,7 @@ void Model_factory::protein_model(Settings *st)
 void Model_factory::protein_model(float ins_rate,float del_rate, float ext_prob, float end_ext_prob)
 {
 
-    if (Settings::noise>4){
-        cout<<"Protein substitution model: WAG\n";
-    }
+    Log_output::write_out("Protein substitution model: WAG\n",5);
 
     char_ins_rate = ins_rate;
     char_del_rate = del_rate;
@@ -1552,9 +1554,7 @@ void Model_factory::codon_model(Settings *st)
 void Model_factory::codon_model(float ins_rate,float del_rate, float ext_prob, float end_ext_prob)
 {
 
-    if (Settings::noise>4){
-        cout<<"Codon substitution model: Kosiol&Goldman\n";
-    }
+    Log_output::write_out("Codon substitution model: Kosiol&Goldman\n",5);
 
     char_ins_rate = ins_rate;
     char_del_rate = del_rate;
@@ -1764,14 +1764,14 @@ void Model_factory::build_model(int s,Db_matrix *pi,Db_matrix *q,Db_matrix *wU,D
     }
 
     if (e->getpi_sqrt (tpi, tsq, s, &npi0) != 0) {
-        cout << "\nError in eigen square roots!!\n\n";
-        exit (-1);
+        Log_output::write_out("Model_factory: Error in eigen square roots!!\n",0);
+        exit (1);
     }
 
 
     if (e->eigenQREV (tcq, tpi, tsq, s, npi0, twr, twu, twv) != 0) {
-        cout << "\nError in eigen QREV!!\n\n";
-        exit (-1);
+        Log_output::write_out("Model_factory: Error in eigen QREV!!\n",0);
+        exit (1);
     }
 
     for(int i=0;i<s;i++)
@@ -2040,7 +2040,7 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
                     }
                     else
                     {
-                        cout<<"errors! "<<i<<" "<<j<<"\n";
+                        Log_output::write_out("Model_factory: errors! "+Log_output::itos(i)+" "+Log_output::itos(j)+"\n",2);
                     }
                 }
 
@@ -2173,7 +2173,7 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
                         }
                         else
                         {
-                            cout<<"errors! "<<i<<" "<<j<<"\n";
+                            Log_output::write_out("Model_factory: errors! "+Log_output::itos(i)+" "+Log_output::itos(j)+"\n",2);
                         }
                     }
 
@@ -2197,183 +2197,192 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
 void Model_factory::print_int_matrix(Int_matrix *m)
 {
-    cout<<"    ";
+    stringstream ss;
+    ss<<"    ";
     for(int i=0;i<m->X();i++)
-        cout<<" "<<setw(4)<<i;
-    cout<<endl;
+        ss<<" "<<setw(4)<<i;
+    ss<<endl;
     for(int j=0;j<m->X();j++)
     {
-        cout<<setw(4)<<j;
+        ss<<setw(4)<<j;
         for(int i=0;i<m->X();i++)
-            cout<<" "<<setw(4)<<m->g(i,j);
+            ss<<" "<<setw(4)<<m->g(i,j);
 
-        cout<<endl;
+        ss<<endl;
     }
-    cout<<endl;
+    ss<<endl;
+
+    Log_output::write_out(ss.str(),0);
 }
 
 void Model_factory::print_char_p_matrices(Evol_model &model)
 {
+    stringstream ss;
     // Print out the model
-    cout<<"\nModel_factory::print_char_p_matrices()\n\n";
-    cout<<"alphabet "<<char_alphabet<<endl;
-    cout<<"distance "<<model.distance<<endl;
+    ss<<"\nModel_factory::print_char_p_matrices()\n\n";
+    ss<<"alphabet "<<char_alphabet<<endl;
+    ss<<"distance "<<model.distance<<endl;
 
-    cout<<"\ncharacter equilibrium frequencies (pi)"<<endl;
-    cout << fixed << noshowpos << setprecision (4);
+    ss<<"\ncharacter equilibrium frequencies (pi)"<<endl;
+    ss << fixed << noshowpos << setprecision (4);
 
     for(int i=0;i<char_as;i++)
-        cout << setw(4) <<char_alphabet.at(i)<<"   ";
-    cout<<endl;
+        ss << setw(4) <<char_alphabet.at(i)<<"   ";
+    ss<<endl;
 
     for(int j=0;j<char_as;j++)
-        cout<<" "<<model.charPi->g(j);
-    cout<<endl;
+        ss<<" "<<model.charPi->g(j);
+    ss<<endl;
 
-    cout<<"\nsubstitution matrix"<<endl;
-    cout << fixed << noshowpos << setprecision (4);
+    ss<<"\nsubstitution matrix"<<endl;
+    ss << fixed << noshowpos << setprecision (4);
 
     for(int i=0;i<char_as;i++)
-        cout << setw(6) <<char_alphabet.at(i)<<" ";
-    cout<<endl;
+        ss << setw(6) <<char_alphabet.at(i)<<" ";
+    ss<<endl;
 
     for(int i=0;i<char_as;i++)
     {
-        cout<<char_alphabet.at(i)<<" ";
+        ss<<char_alphabet.at(i)<<" ";
         for(int j=0;j<char_as;j++)
         {
-            cout<<" "<<model.charPr->g(i,j);
+            ss<<" "<<model.charPr->g(i,j);
         }
-        cout<<endl;
+        ss<<endl;
     }
-    cout<<"\nlog substitution matrix"<<endl;
-    cout << fixed << showpos << setprecision (4);
+    ss<<"\nlog substitution matrix"<<endl;
+    ss << fixed << showpos << setprecision (4);
 
     for(int i=0;i<char_as;i++)
-        cout << setw(7) <<char_alphabet.at(i)<<" ";
-    cout<<endl;
+        ss << setw(7) <<char_alphabet.at(i)<<" ";
+    ss<<endl;
 
     for(int i=0;i<char_as;i++)
     {
-        cout<<char_alphabet.at(i)<<" ";
+        ss<<char_alphabet.at(i)<<" ";
         for(int j=0;j<char_as;j++)
         {
-            cout<<" "<<model.logCharPr->g(i,j);
+            ss<<" "<<model.logCharPr->g(i,j);
         }
-        cout<<endl;
+        ss<<endl;
     }
 
 
-    cout << noshowpos <<"\nfull alphabet "<<full_char_alphabet<<endl;
+    ss << noshowpos <<"\nfull alphabet "<<full_char_alphabet<<endl;
 
-    cout<<"\nsubstitution matrix"<<endl;
-    cout << fixed << noshowpos << setprecision (4);
+    ss<<"\nsubstitution matrix"<<endl;
+    ss << fixed << noshowpos << setprecision (4);
 
     for(int i=0;i<char_fas;i++)
-        cout << setw(6) <<full_char_alphabet.at(i)<<" ";
-    cout<<endl;
+        ss << setw(6) <<full_char_alphabet.at(i)<<" ";
+    ss<<endl;
 
     for(int i=0;i<char_fas;i++)
     {
-        cout<<full_char_alphabet.at(i)<<" ";
+        ss<<full_char_alphabet.at(i)<<" ";
         for(int j=0;j<char_fas;j++)
         {
-            cout<<" "<<model.charPr->g(i,j);
+            ss<<" "<<model.charPr->g(i,j);
         }
-        cout<<endl;
+        ss<<endl;
     }
 
 
-    cout<<"\nlog substitution matrix"<<endl;
-    cout << fixed << showpos << setprecision (4);
+    ss<<"\nlog substitution matrix"<<endl;
+    ss << fixed << showpos << setprecision (4);
 
     for(int i=0;i<char_fas;i++) 
-        cout << setw(7) <<full_char_alphabet.at(i)<<" ";
-    cout<<endl;
+        ss << setw(7) <<full_char_alphabet.at(i)<<" ";
+    ss<<endl;
 
     for(int i=0;i<char_fas;i++)
     {
-        cout<<full_char_alphabet.at(i)<<" ";
+        ss<<full_char_alphabet.at(i)<<" ";
         for(int j=0;j<char_fas;j++)
         {
-            cout<<" "<<model.logCharPr->g(i,j);
+            ss<<" "<<model.logCharPr->g(i,j);
         }
-        cout<<endl;
+        ss<<endl;
     }
 
-    cout<<endl;
-    cout<<"indel prob:     "<<model.id_prob<<", "<<model.log_id_prob<<endl;
-    cout<<"extension prob: "<<model.ext_prob<<", "<<model.log_ext_prob<<endl;
-    cout<<"end extension prob: "<<model.end_ext_prob<<", "<<model.log_end_ext_prob<<endl;
-    cout<<"match prob:     "<<model.match_prob<<", "<<model.log_match_prob<<endl;;
-    cout<<endl;
+    ss<<endl;
+    ss<<"indel prob:     "<<model.id_prob<<", "<<model.log_id_prob<<endl;
+    ss<<"extension prob: "<<model.ext_prob<<", "<<model.log_ext_prob<<endl;
+    ss<<"end extension prob: "<<model.end_ext_prob<<", "<<model.log_end_ext_prob<<endl;
+    ss<<"match prob:     "<<model.match_prob<<", "<<model.log_match_prob<<endl;;
+    ss<<endl;
+
+    Log_output::write_out(ss.str(),0);
 
 }
 
 void Model_factory::print_char_q_matrices(Db_matrix *charQ)
 {
-    // Print out the model
-    cout<<"\nModel_factory::print_char_q_matrices()\n\n";
-    cout<<"alphabet "<<char_alphabet<<endl;
+    stringstream ss;
 
-    cout<<"\ncharacter equilibrium frequencies (pi)"<<endl;
-    cout << fixed << noshowpos << setprecision (4);
+    // Print out the model
+    ss<<"\nModel_factory::print_char_q_matrices()\n\n";
+    ss<<"alphabet "<<char_alphabet<<endl;
+
+    ss<<"\ncharacter equilibrium frequencies (pi)"<<endl;
+    ss << fixed << noshowpos << setprecision (4);
 
     for(int i=0;i<char_as;i++)
-        cout << setw(4) <<char_alphabet.at(i)<<"   ";
-    cout<<endl;
+        ss << setw(4) <<char_alphabet.at(i)<<"   ";
+    ss<<endl;
 
     for(int j=0;j<char_as;j++)
-        cout<<" "<<charPi->g(j);
-    cout<<endl;
+        ss<<" "<<charPi->g(j);
+    ss<<endl;
 
-    cout<<"\noriginal substitution matrix"<<endl;
-    cout << fixed << showpos << setprecision (4);
+    ss<<"\noriginal substitution matrix"<<endl;
+    ss << fixed << showpos << setprecision (4);
 
     for(int i=0;i<char_as;i++) 
-        cout << setw(7) <<char_alphabet.at(i)<<" ";
-    cout<<endl;
+        ss << setw(7) <<char_alphabet.at(i)<<" ";
+    ss<<endl;
 
     for(int i=0;i<char_as;i++)
     {
-        cout<<full_char_alphabet.at(i)<<" ";
+        ss<<full_char_alphabet.at(i)<<" ";
         for(int j=0;j<char_as;j++)
-            cout<<" "<<charQ->g(i,j);
+            ss<<" "<<charQ->g(i,j);
 
-        cout<<endl;
+        ss<<endl;
     }
 
-    cout<<"\neigen values & vectors"<<endl;
-    cout << fixed << showpos << setprecision (4);
+    ss<<"\neigen values & vectors"<<endl;
+    ss << fixed << showpos << setprecision (4);
 
     for(int j=0;j<char_as;j++)
-        cout<<" "<<charRoot->g(j);
+        ss<<" "<<charRoot->g(j);
 
-    cout<<endl<<endl;
-
-    for(int i=0;i<char_as;i++)
-    {
-        for(int j=0;j<char_as;j++)
-            cout<<" "<<charU->g(i,j);
-
-        cout<<endl;
-    }
-    cout<<endl;
+    ss<<endl<<endl;
 
     for(int i=0;i<char_as;i++)
     {
         for(int j=0;j<char_as;j++)
-            cout<<" "<<charV->g(i,j);
+            ss<<" "<<charU->g(i,j);
 
-        cout<<endl;
+        ss<<endl;
     }
-    cout<<endl;
+    ss<<endl;
 
-    cout<<"ins rate:     "<<char_ins_rate<<endl;
-    cout<<"del rate:     "<<char_del_rate<<endl;
-    cout<<"extension prob: "<<char_ext_prob<<endl;
-    cout<<endl;
+    for(int i=0;i<char_as;i++)
+    {
+        for(int j=0;j<char_as;j++)
+            ss<<" "<<charV->g(i,j);
 
+        ss<<endl;
+    }
+    ss<<endl;
+
+    ss<<"ins rate:     "<<char_ins_rate<<endl;
+    ss<<"del rate:     "<<char_del_rate<<endl;
+    ss<<"extension prob: "<<char_ext_prob<<endl;
+    ss<<endl;
+
+    Log_output::write_out(ss.str(),0);
 }
 
 
