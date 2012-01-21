@@ -62,7 +62,7 @@ void Log_output::write_msg(const string str,const int priority)
     if(priority>Settings::noise)
         return;
 
-    if(newline)
+    if(newline || Settings::noise > 0)
     {
         Log_output::write_out(str+"\n",priority);
     }
@@ -90,7 +90,7 @@ void Log_output::append_msg(const string str,const int priority)
     if(priority>Settings::noise)
         return;
 
-    if(newline)
+    if(newline || Settings::noise > 0)
     {
         Log_output::write_out(str+"\n",priority);
     }
@@ -116,7 +116,7 @@ void Log_output::write_header(const string str,const int priority)
     if(priority>Settings::noise)
         return;
 
-    if(newline)
+    if(newline || Settings::noise > 0)
     {
         Log_output::write_out(str+"\n",priority);
     }

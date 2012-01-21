@@ -24,6 +24,7 @@
 #include "utils/model_factory.h"
 #include "utils/settings_handle.h"
 #include "utils/log_output.h"
+#include "utils/text_utils.h"
 #include "main/sequence.h"
 #include <iomanip>
 
@@ -55,26 +56,32 @@ Sequence::Sequence(Fasta_entry &seq_entry,const int data_t,bool gapped, bool no_
 
     if(turn_revcomp)
     {
-        string revcomp = "";
-        string warning = "";
+        string revcomp = seq_entry.sequence;
 
-        for(int i=seq_entry.sequence.size()-1; i>=0 ;i--)
-        {
-            if(seq_entry.sequence.at(i) == 'A' || seq_entry.sequence.at(i) == 'a')
-                revcomp.push_back('T');
-            else if(seq_entry.sequence.at(i) == 'C' || seq_entry.sequence.at(i) == 'c')
-                revcomp.push_back('G');
-            else if(seq_entry.sequence.at(i) == 'G' || seq_entry.sequence.at(i) == 'g')
-                revcomp.push_back('C');
-            else if(seq_entry.sequence.at(i) == 'T' || seq_entry.sequence.at(i) == 't')
-                revcomp.push_back('A');
-            else
-                warning = "Unexpected characters found. Reverse-complement failed.\n";
-        }
-        if(warning.length()>0)
-            Log_output::write_out(warning,1);
-        else
-            seq_entry.sequence = revcomp;
+        reverse(revcomp.begin(), revcomp.end());
+
+        Text_utils tu;
+
+        tu.replace_all(revcomp,'A','Z');
+        tu.replace_all(revcomp,'T','A');
+        tu.replace_all(revcomp,'Z','T');
+        tu.replace_all(revcomp,'C','Z');
+        tu.replace_all(revcomp,'G','C');
+        tu.replace_all(revcomp,'Z','G');
+        tu.replace_all(revcomp,'R','Z');
+        tu.replace_all(revcomp,'Y','R');
+        tu.replace_all(revcomp,'Z','Y');
+        tu.replace_all(revcomp,'K','Z');
+        tu.replace_all(revcomp,'M','K');
+        tu.replace_all(revcomp,'Z','M');
+        tu.replace_all(revcomp,'B','Z');
+        tu.replace_all(revcomp,'V','B');
+        tu.replace_all(revcomp,'Z','V');
+        tu.replace_all(revcomp,'D','Z');
+        tu.replace_all(revcomp,'H','D');
+        tu.replace_all(revcomp,'Z','H');
+
+        seq_entry.sequence = revcomp;
 
     }
 

@@ -38,6 +38,14 @@ public:
         return s.str();
     }
 
+    static string ftos(float i)
+    {
+        stringstream s;
+        s.precision(2);
+        s << i;
+        return s.str();
+    }
+
 };
 
 }

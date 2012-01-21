@@ -256,7 +256,7 @@ void Reads_aligner::loop_two_strand_placement(Node *root, vector<Fasta_entry> *r
             node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
             node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
 
-            Log_output::write_msg("aligning read: "+reads->at(i).name+" "+reads->at(i).comment+".",0);
+            Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") aligning read: "+reads->at(i).name+" "+reads->at(i).comment+".",0);
 
             node->align_sequences_this_node(mf,true,false);
 
@@ -284,7 +284,7 @@ void Reads_aligner::loop_two_strand_placement(Node *root, vector<Fasta_entry> *r
             node_rc->set_nhx_tid(node->get_left_child()->get_nhx_tid());
             node_rc->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
 
-            Log_output::write_msg("aligning read (rc): "+reads->at(i).name+" "+reads->at(i).comment+".",0);
+            Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") aligning read (rc): "+reads->at(i).name+" "+reads->at(i).comment+".",0);
 
             node_rc->align_sequences_this_node(mf,true,false);
 
@@ -295,7 +295,7 @@ void Reads_aligner::loop_two_strand_placement(Node *root, vector<Fasta_entry> *r
             else
                 this->read_alignment_scores(node_rc, reads->at(i).name,global_root->get_name(),&read_overlap_rc,&read_identity_rc);
 
-            Log_output::write_out("forward overlap: "+Log_output::itos(read_overlap)+"; backward overlap: "+Log_output::itos(read_overlap_rc)+"\n",2);
+            Log_output::write_out("forward overlap: "+Log_output::ftos(read_overlap)+"; backward overlap: "+Log_output::ftos(read_overlap_rc)+"\n",2);
 
             float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
             float min_identity = Settings_handle::st.get("min-reads-identity").as<float>();
@@ -1341,6 +1341,8 @@ void Reads_aligner::read_alignment_scores(Node * node, string read_name, string 
 
     stringstream ss;
     ss<<"aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"]"<<endl;
+    Log_output::write_out(ss.str(),2);
+    ss.str(string());
     ss<<"matched positions "<<(float)matched/(float)aligned<<" ["<<matched<<"/"<<aligned<<"]"<<endl;
     Log_output::write_out(ss.str(),2);
 
