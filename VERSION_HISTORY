@@ -1,3 +1,8 @@
+v.0.35
+- new output system: less noise; allows outputting to a file
+- translated read alignment with ORF search
+- experiments with optimal reference search for read alignment without a reference
+
 v.0.34
 - can test also reverse-complement and keep better (for read alignment)
 - can do multiple rounds of read placement to find overlap
