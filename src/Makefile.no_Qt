@@ -49,6 +49,7 @@ HEADERS       = utils/text_utils.h \
 		utils/evol_model.h \
                 utils/check_version.h \
 		utils/optimal_reference.h \
+		utils/log_output.h \
                 main/node.h \
 		main/sequence.h \
 		main/basic_alignment.h \
@@ -70,6 +71,7 @@ SOURCES       = main.cpp \
 		utils/check_version.cpp \
 		utils/exonerate_reads.cpp \
 		utils/optimal_reference.cpp \
+		utils/log_output.cpp \
 		main/node.cpp \
 		main/sequence.cpp \
 		main/basic_alignment.cpp \
@@ -92,6 +94,7 @@ OBJECTS       = main.o \
 		check_version.o \
 		exonerate_reads.o \
 		optimal_reference.o \
+		log_output.o \
 		node.o \
 		reference_alignment.o \
 		viterbi_alignment.o \
@@ -151,12 +154,14 @@ main.o: main.cpp utils/settings.h \
 		main/viterbi_alignment.h \
 		utils/evol_model.h \
 		utils/db_matrix.h \
+		utils/log_output.h \
 		utils/int_matrix.h \
 		main/basic_alignment.h \
-		main/reference_alignment.h \
 		utils/model_factory.h \
+		main/reference_alignment.h \
 		utils/fasta_reader.h \
 		utils/xml_writer.h \
+		utils/optimal_reference.h \
 		main/reads_aligner.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
@@ -164,7 +169,9 @@ text_utils.o: utils/text_utils.cpp utils/text_utils.h \
 		utils/exceptions.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o text_utils.o utils/text_utils.cpp
 
-settings.o: utils/settings.cpp utils/settings.h
+settings.o: utils/settings.cpp utils/settings.h \
+		utils/check_version.h \
+		utils/log_output.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o settings.o utils/settings.cpp
 
 newick_reader.o: utils/newick_reader.cpp utils/newick_reader.h \
@@ -177,15 +184,17 @@ newick_reader.o: utils/newick_reader.cpp utils/newick_reader.h \
 		main/viterbi_alignment.h \
 		utils/evol_model.h \
 		utils/db_matrix.h \
+		utils/log_output.h \
 		utils/int_matrix.h \
 		main/basic_alignment.h \
-		main/reference_alignment.h \
 		utils/model_factory.h \
+		main/reference_alignment.h \
 		utils/text_utils.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o newick_reader.o utils/newick_reader.cpp
 
 model_factory.o: utils/model_factory.cpp utils/model_factory.h \
 		utils/db_matrix.h \
+		utils/log_output.h \
 		utils/int_matrix.h \
 		utils/evol_model.h \
 		utils/settings.h \
@@ -203,10 +212,11 @@ fasta_reader.o: utils/fasta_reader.cpp utils/fasta_reader.h \
 		main/viterbi_alignment.h \
 		utils/evol_model.h \
 		utils/db_matrix.h \
+		utils/log_output.h \
 		utils/int_matrix.h \
 		main/basic_alignment.h \
-		main/reference_alignment.h \
 		utils/model_factory.h \
+		main/reference_alignment.h \
 		utils/text_utils.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o fasta_reader.o utils/fasta_reader.cpp
 
@@ -215,16 +225,23 @@ eigen.o: utils/eigen.cpp utils/eigen.h \
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o eigen.o utils/eigen.cpp
 
 db_matrix.o: utils/db_matrix.cpp utils/db_matrix.h \
+		utils/log_output.h \
 		utils/settings.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o db_matrix.o utils/db_matrix.cpp
 
 sequence.o: main/sequence.cpp utils/settings.h \
+		utils/model_factory.h \
+		utils/db_matrix.h \
+		utils/log_output.h \
+		utils/int_matrix.h \
+		utils/evol_model.h \
 		utils/settings_handle.h \
 		main/sequence.h \
 		utils/fasta_entry.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o sequence.o main/sequence.cpp
 
 int_matrix.o: utils/int_matrix.cpp utils/int_matrix.h \
+		utils/log_output.h \
 		utils/settings.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o int_matrix.o utils/int_matrix.cpp
 
@@ -242,22 +259,21 @@ xml_writer.o: utils/xml_writer.cpp utils/xml_writer.h \
 		main/viterbi_alignment.h \
 		utils/evol_model.h \
 		utils/db_matrix.h \
+		utils/log_output.h \
 		utils/int_matrix.h \
 		main/basic_alignment.h \
-		main/reference_alignment.h \
-		utils/model_factory.h
+		utils/model_factory.h \
+		main/reference_alignment.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o xml_writer.o utils/xml_writer.cpp
 
 evol_model.o: utils/evol_model.cpp utils/evol_model.h \
 		utils/db_matrix.h \
-		utils/int_matrix.h
+		utils/log_output.h \
+		utils/int_matrix.h \
+		utils/model_factory.h \
+		utils/settings.h \
+		utils/settings_handle.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o evol_model.o utils/evol_model.cpp
-
-check_version.o: utils/check_version.cpp utils/check_version.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o check_version.o utils/check_version.cpp
-
-exonerate_reads.o: utils/exonerate_reads.cpp utils/exonerate_reads.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o exonerate_reads.o utils/exonerate_reads.cpp
 
 node.o: main/node.cpp main/node.h \
 		utils/exceptions.h \
@@ -268,46 +284,51 @@ node.o: main/node.cpp main/node.h \
 		main/viterbi_alignment.h \
 		utils/evol_model.h \
 		utils/db_matrix.h \
+		utils/log_output.h \
 		utils/int_matrix.h \
 		main/basic_alignment.h \
-		main/reference_alignment.h \
-		utils/model_factory.h
+		utils/model_factory.h \
+		main/reference_alignment.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o node.o main/node.cpp
 
 reference_alignment.o: main/reference_alignment.cpp main/reference_alignment.h \
 		utils/evol_model.h \
 		utils/db_matrix.h \
+		utils/log_output.h \
 		utils/int_matrix.h \
 		utils/settings.h \
 		utils/settings_handle.h \
 		main/sequence.h \
 		utils/fasta_entry.h \
 		main/basic_alignment.h \
+		utils/model_factory.h \
 		utils/exceptions.h \
 		main/node.h \
-		main/viterbi_alignment.h \
-		utils/model_factory.h
+		main/viterbi_alignment.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o reference_alignment.o main/reference_alignment.cpp
 
 viterbi_alignment.o: main/viterbi_alignment.cpp main/viterbi_alignment.h \
 		utils/evol_model.h \
 		utils/db_matrix.h \
+		utils/log_output.h \
 		utils/int_matrix.h \
 		utils/settings.h \
 		utils/settings_handle.h \
 		main/sequence.h \
 		utils/fasta_entry.h \
 		main/basic_alignment.h \
+		utils/model_factory.h \
 		utils/exceptions.h \
 		main/node.h \
-		main/reference_alignment.h \
-		utils/model_factory.h
+		main/reference_alignment.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o viterbi_alignment.o main/viterbi_alignment.cpp
 
 basic_alignment.o: main/basic_alignment.cpp main/basic_alignment.h \
-		utils/evol_model.h \
+		utils/model_factory.h \
 		utils/db_matrix.h \
+		utils/log_output.h \
 		utils/int_matrix.h \
+		utils/evol_model.h \
 		utils/settings.h \
 		utils/settings_handle.h \
 		main/sequence.h \
@@ -315,8 +336,7 @@ basic_alignment.o: main/basic_alignment.cpp main/basic_alignment.h \
 		utils/exceptions.h \
 		main/node.h \
 		main/viterbi_alignment.h \
-		main/reference_alignment.h \
-		utils/model_factory.h
+		main/reference_alignment.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o basic_alignment.o main/basic_alignment.cpp
 
 reads_aligner.o: main/reads_aligner.cpp main/reads_aligner.h \
@@ -324,6 +344,7 @@ reads_aligner.o: main/reads_aligner.cpp main/reads_aligner.h \
 		utils/settings_handle.h \
 		utils/model_factory.h \
 		utils/db_matrix.h \
+		utils/log_output.h \
 		utils/int_matrix.h \
 		utils/evol_model.h \
 		utils/fasta_entry.h \
@@ -333,8 +354,31 @@ reads_aligner.o: main/reads_aligner.cpp main/reads_aligner.h \
 		main/sequence.h \
 		main/viterbi_alignment.h \
 		main/basic_alignment.h \
-		main/reference_alignment.h
+		main/reference_alignment.h \
+		utils/exonerate_reads.h \
+		utils/text_utils.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o reads_aligner.o main/reads_aligner.cpp
+
+check_version.o: utils/check_version.cpp utils/check_version.h \
+		utils/log_output.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o check_version.o utils/check_version.cpp
+
+exonerate_reads.o: utils/exonerate_reads.cpp utils/exonerate_reads.h \
+		utils/fasta_entry.h \
+		main/node.h \
+		utils/exceptions.h \
+		utils/settings.h \
+		utils/settings_handle.h \
+		main/sequence.h \
+		main/viterbi_alignment.h \
+		utils/evol_model.h \
+		utils/db_matrix.h \
+		utils/log_output.h \
+		utils/int_matrix.h \
+		main/basic_alignment.h \
+		utils/model_factory.h \
+		main/reference_alignment.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o exonerate_reads.o utils/exonerate_reads.cpp
 
 optimal_reference.o: utils/optimal_reference.cpp utils/optimal_reference.h \
 		utils/fasta_entry.h \
@@ -346,12 +390,18 @@ optimal_reference.o: utils/optimal_reference.cpp utils/optimal_reference.h \
 		main/viterbi_alignment.h \
 		utils/evol_model.h \
 		utils/db_matrix.h \
+		utils/log_output.h \
 		utils/int_matrix.h \
 		main/basic_alignment.h \
 		utils/model_factory.h \
 		main/reference_alignment.h \
 		utils/fasta_reader.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o optimal_reference.o utils/optimal_reference.cpp
+
+log_output.o: utils/log_output.cpp utils/log_output.h \
+		utils/settings_handle.h \
+		utils/settings.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o log_output.o utils/log_output.cpp
 
 ####### Install
 

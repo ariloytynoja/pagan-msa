@@ -741,7 +741,7 @@ void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs,
     Fasta_entry entry;
     entry.name = "consensus";
     entry.sequence = "";
-    for(int i=0;i<outseqs.at(0).sequence.length();i++)
+    for(int i=0;i<(int)outseqs.at(0).sequence.length();i++)
     {
         int sA=0; int sC=0; int sG=0; int sT=0;
         bool included_in_reference = false;

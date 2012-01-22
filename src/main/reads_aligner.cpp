@@ -358,8 +358,8 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
             if(reads->at(i).cluster_attempts >= max_attempts)
                 continue;
 
-            Node * best_node;
-            Orf *best_orf;
+            Node * best_node = 0;
+            Orf *best_orf = 0;
 
             vector<Orf> open_frames;
             this->find_orfs(&reads->at(i),&open_frames);
@@ -371,7 +371,7 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
                 float best_overlap = -1;
                 float best_identity = -1;
 
-                for(int h=0;h<open_frames.size();h++)
+                for(int h=0;h<(int)open_frames.size();h++)
                 {
                     Node * node = new Node();
                     node->set_name("#orf#");
@@ -487,7 +487,7 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
             if (codon_to_aa.find(codon) == codon_to_aa.end())
             {
 
-                if(prot.length() >= min_orf_length)
+                if((int)prot.length() >= min_orf_length)
                 {
                     Orf o;
                     o.translation = prot;
@@ -510,7 +510,7 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
         }
 
 
-        if(prot.length() >= min_orf_length)
+        if((int)prot.length() >= min_orf_length)
         {
             Orf o;
             o.translation = prot;
@@ -536,7 +536,7 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
             string codon = sequence.substr(j,3);
             if (codon_to_aa.find(codon) == codon_to_aa.end())
             {
-                if(prot.length() >= min_orf_length)
+                if((int)prot.length() >= min_orf_length)
                 {
                     Orf o;
                     o.translation = prot;
@@ -558,7 +558,7 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
             end_site = j+i+2;
         }
 
-        if(prot.length() >= min_orf_length)
+        if((int)prot.length() >= min_orf_length)
         {
             Orf o;
             o.translation = prot;
