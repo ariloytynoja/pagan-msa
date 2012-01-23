@@ -394,9 +394,6 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
                     orf.tid = reads->at(i).tid;
                     orf.cluster_attempts = 0;
                     orf.data_type = Model_factory::protein;
-//                    orf.translation_frame = open_frames.at(h).frame;
-//                    orf.translation_start = open_frames.at(h).start;
-//                    orf.translation_end = open_frames.at(h).end;
 
                     this->copy_node_details(reads_node,&orf);
 

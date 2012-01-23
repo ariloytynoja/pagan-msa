@@ -139,6 +139,7 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
 {
 
     string temp, name, comment, tmp_tid, sequence = "";  // Initialization
+    int tmp_ndup;
 
     while(!input.eof())
     {
@@ -165,6 +166,7 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
                 fe.trim_end = 0;
                 fe.tid = tmp_tid;
                 fe.cluster_attempts = 0;
+                fe.num_duplicates = tmp_ndup;
 
                 seqs.push_back(fe);
                 name = "";
@@ -175,6 +177,8 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
             {
                 name = temp;
                 comment = "";
+                tmp_tid = "";
+                tmp_ndup = 1;
             }
             else
             {
@@ -182,6 +186,7 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
                 name = st->next_token();
                 comment = "";
                 tmp_tid = "";
+                tmp_ndup = 1;
                 while (st->has_more_token())
                 {
                     string block = st->next_token();
@@ -192,6 +197,12 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
                     {
                         block = block.substr(4);
                         tmp_tid = block;
+                    }
+                    if(block.substr(0,14)=="NumDuplicates=")
+                    {
+                        block = block.substr(14);
+                        stringstream ss(block);
+                        ss >> tmp_ndup;
                     }
                 }
                 delete st;
@@ -216,6 +227,7 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
         fe.trim_end = 0;
         fe.tid = tmp_tid;
         fe.cluster_attempts = 0;
+        fe.num_duplicates = tmp_ndup;
 
         seqs.push_back(fe);
     }
@@ -235,10 +247,6 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
                 this->rna_to_DNA(&dna);
 
                 it->sequence = this->DNA_to_protein(&dna);
-//                it->translation_frame = 1;
-//                it->translation_start = 0;
-//                it->translation_end = dna.length();
-
             }
         }
         else
@@ -265,6 +273,7 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
 
             name.erase(name.begin());  // Character @ deletion
             fe.name = name;
+            fe.num_duplicates = 1;
 
             comment = "";
             while (st->has_more_token())
@@ -277,6 +286,12 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
                 {
                     block = block.substr(4);
                     fe.tid = block;
+                }
+                if(block.substr(0,14)=="NumDuplicates=")
+                {
+                    block = block.substr(14);
+                    stringstream ss(block);
+                    ss >> fe.num_duplicates;
                 }
             }
             delete st;
@@ -912,6 +927,43 @@ void Fasta_reader::write_graph(ostream & output, Node * root) const throw (Excep
 }
 
 /****************************************************************************************/
+
+void Fasta_reader::remove_gap_only_columns(vector<Fasta_entry> *sequences)  throw (Exception)
+{
+    int length = sequences->at(0).sequence.length();
+    vector<Fasta_entry>::iterator vi = sequences->begin();
+    for (; vi != sequences->end(); vi++)
+    {
+        if(vi->sequence.length() != length)
+        {
+            Log_output::write_out("Error: aligned sequences of different length. Removal of gap only columns failed.\n",0);
+            return;
+        }
+    }
+
+
+    for(int i=0;i<length;)
+    {
+        bool gap_only = true;
+        for (vi = sequences->begin(); vi != sequences->end(); vi++)
+        {
+            if(vi->sequence.at(i) != '-')
+                gap_only = false;
+        }
+        if(gap_only)
+        {
+            for (vi = sequences->begin(); vi != sequences->end(); vi++)
+            {
+                vi->sequence.erase(i,1);
+            }
+            length = sequences->at(0).sequence.length();
+        }
+        else
+        {
+            i++;
+        }
+    }
+}
 
 bool Fasta_reader::check_alphabet(vector<Fasta_entry> * sequences,int data_type) throw (Exception)
 {

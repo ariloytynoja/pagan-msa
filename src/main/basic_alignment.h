@@ -160,6 +160,15 @@ protected:
 
     void compute_site_consensus(Site *site,Sequence *left,int l_pos,Sequence *right,int r_pos,bool is_dna)
     {
+        int ndl = 1;
+        int ndr = 1;
+
+        if(Settings_handle::st.is("use-duplicate-weigths"))
+        {
+            ndl = left->get_num_duplicates();
+            ndr = right->get_num_duplicates();
+        }
+
         if(!is_dna)
         {
             // old->
@@ -168,14 +177,14 @@ protected:
                 if(!left->is_terminal_sequence())
                     site->add_sumAmino(left->get_site_at(l_pos)->get_sumAmino());
                 else if(left->is_read_sequence())
-                    site->add_sumAmino(1);
+                    site->add_sumAmino(ndl);
             }
             if(r_pos>=0)
             {
                 if(!right->is_terminal_sequence())
                     site->add_sumAmino(right->get_site_at(r_pos)->get_sumAmino());
                 else if(right->is_read_sequence())
-                    site->add_sumAmino(1);
+                    site->add_sumAmino(ndr);
             }
             // <-old
 
@@ -193,7 +202,7 @@ protected:
                 }
                 else if(left->is_read_sequence())
                 {
-                    site->add_sumAA(left->get_site_at(l_pos)->get_state(),1);
+                    site->add_sumAA(left->get_site_at(l_pos)->get_state(),ndl);
                 }
             }
             if(r_pos>=0)
@@ -207,7 +216,7 @@ protected:
                 }
                 else if(right->is_read_sequence())
                 {
-                    site->add_sumAA(right->get_site_at(r_pos)->get_state(),1);
+                    site->add_sumAA(right->get_site_at(r_pos)->get_state(),ndr);
                 }
             }
 
@@ -227,8 +236,7 @@ protected:
                     max_i = model->parsimony_state(max_i,i);
                 }
             }
-//            if(max_i >= 0)
-                site->set_state(max_i);
+            site->set_state(max_i);
 
             return;
         }
@@ -249,52 +257,52 @@ protected:
             {
                 int s = left->get_site_at(l_pos)->get_state();
                 if(s == 0)
-                    lsA += 1;
+                    lsA += ndl;
                 else if(s == 1)
-                    lsC += 1;
+                    lsC += ndl;
                 else if(s == 2)
-                    lsG += 1;
+                    lsG += ndl;
                 else if(s == 3)
-                    lsT += 1;
+                    lsT += ndl;
                 else if(s == 4) {
-                    lsA += 1;
-                    lsG += 1;    }
+                    lsA += ndl;
+                    lsG += ndl;    }
                 else if(s == 5) {
-                    lsC += 1;
-                    lsT += 1;    }
+                    lsC += ndl;
+                    lsT += ndl;    }
                 else if(s == 6) {
-                    lsA += 1;
-                    lsC += 1;    }
+                    lsA += ndl;
+                    lsC += ndl;    }
                 else if(s == 7) {
-                    lsG += 1;
-                    lsT += 1;    }
+                    lsG += ndl;
+                    lsT += ndl;    }
                 else if(s == 8) {
-                    lsA += 1;
-                    lsT += 1;    }
+                    lsA += ndl;
+                    lsT += ndl;    }
                 else if(s == 9) {
-                    lsC += 1;
-                    lsG += 1;    }
+                    lsC += ndl;
+                    lsG += ndl;    }
                 else if(s == 10) {
-                    lsC += 1;
-                    lsG += 1;
-                    lsT += 1;    }
+                    lsC += ndl;
+                    lsG += ndl;
+                    lsT += ndl;    }
                 else if(s == 11) {
-                    lsA += 1;
-                    lsG += 1;
-                    lsT += 1;    }
+                    lsA += ndl;
+                    lsG += ndl;
+                    lsT += ndl;    }
                 else if(s == 12) {
-                    lsA += 1;
-                    lsC += 1;
-                    lsT += 1;    }
+                    lsA += ndl;
+                    lsC += ndl;
+                    lsT += ndl;    }
                 else if(s == 13) {
-                    lsA += 1;
-                    lsC += 1;
-                    lsG += 1;    }
+                    lsA += ndl;
+                    lsC += ndl;
+                    lsG += ndl;    }
                 else if(s == 14) {
-                    lsA += 1;
-                    lsC += 1;
-                    lsG += 1;
-                    lsT += 1;    }
+                    lsA += ndl;
+                    lsC += ndl;
+                    lsG += ndl;
+                    lsT += ndl;    }
                 else
                     Log_output::write_out("Basic_alignment: compute_site_consensus: no such option (l)\n",1);
             }
@@ -313,52 +321,52 @@ protected:
             {
                 int s = right->get_site_at(r_pos)->get_state();
                 if(s == 0)
-                    rsA += 1;
+                    rsA += ndr;
                 else if(s == 1)
-                    rsC += 1;
+                    rsC += ndr;
                 else if(s == 2)
-                    rsG += 1;
+                    rsG += ndr;
                 else if(s == 3)
-                    rsT += 1;
+                    rsT += ndr;
                 else if(s == 4) {
-                    rsA += 1;
-                    rsG += 1;    }
+                    rsA += ndr;
+                    rsG += ndr;    }
                 else if(s == 5) {
-                    rsC += 1;
-                    rsT += 1;    }
+                    rsC += ndr;
+                    rsT += ndr;    }
                 else if(s == 6) {
-                    rsA += 1;
-                    rsC += 1;    }
+                    rsA += ndr;
+                    rsC += ndr;    }
                 else if(s == 7) {
-                    rsG += 1;
-                    rsT += 1;    }
+                    rsG += ndr;
+                    rsT += ndr;    }
                 else if(s == 8) {
-                    rsA += 1;
-                    rsT += 1;    }
+                    rsA += ndr;
+                    rsT += ndr;    }
                 else if(s == 9) {
-                    rsC += 1;
-                    rsG += 1;    }
+                    rsC += ndr;
+                    rsG += ndr;    }
                 else if(s == 10) {
-                    rsC += 1;
-                    rsG += 1;
-                    rsT += 1;    }
+                    rsC += ndr;
+                    rsG += ndr;
+                    rsT += ndr;    }
                 else if(s == 11) {
-                    rsA += 1;
-                    rsG += 1;
-                    rsT += 1;    }
+                    rsA += ndr;
+                    rsG += ndr;
+                    rsT += ndr;    }
                 else if(s == 12) {
-                    rsA += 1;
-                    rsC += 1;
-                    rsT += 1;    }
+                    rsA += ndr;
+                    rsC += ndr;
+                    rsT += ndr;    }
                 else if(s == 13) {
-                    rsA += 1;
-                    rsC += 1;
-                    rsG += 1;    }
+                    rsA += ndr;
+                    rsC += ndr;
+                    rsG += ndr;    }
                 else if(s == 14) {
-                    rsA += 1;
-                    rsC += 1;
-                    rsG += 1;
-                    rsT += 1;    }
+                    rsA += ndr;
+                    rsC += ndr;
+                    rsG += ndr;
+                    rsT += ndr;    }
                 else
                     Log_output::write_out("Basic_alignment: compute_site_consensus: no such option (r)\n",1);
             }

@@ -110,6 +110,7 @@ public:
         output.close();
     }
 
+    void remove_gap_only_columns(vector<Fasta_entry> *sequences)  throw (Exception);
 
     bool check_alphabet(vector<Fasta_entry> *sequences, int data_type = -1)  throw (Exception);
     bool check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes) const;

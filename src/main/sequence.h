@@ -623,6 +623,8 @@ class Sequence
     bool has_read_descendants;
     bool terminal_sequence;
     string gapped_seq;
+
+    int num_duplicates;
 public:
 
     Sequence(Fasta_entry &seq_entry,const int data_type,bool gapped = false, bool no_trimming=false, bool turn_revcomp=false);
@@ -636,6 +638,8 @@ public:
 
     bool is_read_descendants() { return has_read_descendants; }
     void is_read_descendants(bool t) { has_read_descendants = t; }
+
+    int get_num_duplicates() { return num_duplicates; }
 
     void initialise_indeces() {
         curr_site_index = prev_site_index = curr_edge_index = 0;

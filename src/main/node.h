@@ -760,50 +760,6 @@ public:
     }
 
     void additional_sites_before_alignment_column(int j,vector<Insertion_at_node> *addition);
-//    {
-//        if(this->is_leaf())
-//            return;
-//
-//        Site_children *offspring = sequence->get_site_at(j)->get_children();
-//
-//        int lj = offspring->left_index;
-//        int rj = offspring->right_index;
-//
-//        if(lj>=0)
-//            left_child->additional_sites_before_alignment_column(lj,addition);
-//
-//        if(j>0)
-//        {
-//            Site_children *prev_offspring = sequence->get_site_at(j-1)->get_children();
-//
-//            int prev_lj = prev_offspring->left_index;
-//            int prev_rj = prev_offspring->right_index;
-//
-//            if(lj>0 && prev_lj>=0 && lj-prev_lj != 1)
-//            {
-//                Insertion_at_node ins;
-//                ins.node_name_wanted = this->get_name();
-//                ins.length = lj-prev_lj-1;
-//                ins.left_child_wanted = true;
-//                addition->push_back(ins);
-//            }
-//
-//            if(rj>0 && prev_rj>=0 && rj-prev_rj != 1)
-//            {
-//                Insertion_at_node ins;
-//                ins.node_name_wanted = this->get_name();
-//                ins.length = rj-prev_rj-1;
-//                ins.left_child_wanted = false;
-//                addition->push_back(ins);
-//            }
-//        }
-//
-//
-//        if(rj>=0)
-//            right_child->additional_sites_before_alignment_column(rj,addition);
-//
-//    }
-
 
     void start_mpost_plot_file()
     {
@@ -1088,7 +1044,7 @@ public:
         return name;
     }
 
-    void reconstruct_contigs(vector<Fasta_entry> *contigs,bool parent_is_read_sequence)
+    void reconstruct_contigs(vector<Fasta_entry> *contigs,bool parent_is_read_sequence, bool consensus_only = false)
     {
 
         bool this_is_read_sequence = this->get_sequence()->is_read_sequence();
@@ -1253,11 +1209,14 @@ public:
 
             contigs->push_back(entry);
 
-            vector<Fasta_entry> reads;
-            this->get_alignment_for_reads(&reads, show_ref_insertions);
+            if(!consensus_only)
+            {
+                vector<Fasta_entry> reads;
+                this->get_alignment_for_reads(&reads, show_ref_insertions);
 
-            for(int i=0;i<(int)reads.size();i++)
-                contigs->push_back(reads.at(i));
+                for(int i=0;i<(int)reads.size();i++)
+                    contigs->push_back(reads.at(i));
+            }
 
         }
 

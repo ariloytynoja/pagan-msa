@@ -408,6 +408,24 @@ int main(int argc, char *argv[])
         fr.write(outfile, contigs, true);
     }
 
+    if(Settings_handle::st.is("output-consensus"))
+    {
+        vector<Fasta_entry> contigs;
+        root->reconstruct_contigs(&contigs,false,true);
+
+        string outfile =  "outfile";
+        if(Settings_handle::st.is("outfile"))
+            outfile =  Settings_handle::st.get("outfile").as<string>();
+
+        outfile.append("_consensus");
+        Log_output::write_out("Consensus file: "+outfile+".fas\n",1);
+
+        fr.remove_gap_only_columns(&contigs);
+
+        fr.set_chars_by_line(70);
+        fr.write(outfile, contigs, true);
+    }
+
     if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate"))
     {
         fr.set_chars_by_line(70);

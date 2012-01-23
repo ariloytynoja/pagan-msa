@@ -110,6 +110,7 @@ Sequence::Sequence(Fasta_entry &seq_entry,const int data_t,bool gapped, bool no_
     terminal_sequence = true;
     read_sequence = false;
     has_read_descendants = false;
+    num_duplicates = seq_entry.num_duplicates;
 
     if(Settings::noise>5)
     {

@@ -45,7 +45,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description generic("Generic options",100);
     generic.add_options()
-//        ("help", "display help message")
         ("outfile", po::value<string>(), "sequence outfile")
         ("translate", "translate DNA input to protein")
         ("mt-translate", "translate mtDNA input to protein")
@@ -69,7 +68,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("ref-seqfile", po::value<string>(), "reference alignment file (FASTA)")
         ("ref-treefile", po::value<string>(), "reference tree file (NH/NHX)")
         ("readsfile", po::value<string>(), "reads file (FASTA/FASTQ)")
-        ("find-best-orf", "use best ORF in reads")
         ("pair-end","connect paired reads")
         ("454", "correct homopolymer error")
         ("use-consensus", "use consensus for read ancestors")
@@ -80,36 +78,26 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description reads_alignment2("Additional reads alignment options",100);
     reads_alignment2.add_options()
+        ("pacbio","correct for missing data in PacBio reads")
         ("show-contig-ancestor", "fill contig gaps with ancestral sequence")
-        ("inlude-parent-in-contig", "include also ancestral parent in contigs")
         ("consensus-minimum", po::value<int>()->default_value(5), "threshold for inclusion in contig")
-        ("output-consensus", "output contig consensus alone")
         ("test-every-internal-node","test every internal node for each read")
         ("one-placement-only", "place only once despite equally good hits")
         ("placement-only", "compute read placement only")
         ("placement-file", po::value<string>(), "read placement file")
         ("output-nhx-tree", "output tree with NHX TID tags")
-        ("min-orf-coverage", po::value<float>()->default_value(0.95),"minimum ORF coverage to be considered")
-        ("reads-distance", po::value<float>()->default_value(0.1), "evolutionary distance from pseudo-root")
-        ("min-reads-overlap", po::value<float>()->default_value(0.5), "overlap threshold for read and reference")
+        ("reads-distance", po::value<float>()->default_value(0.1,"0.1"), "evolutionary distance from pseudo-root")
+        ("min-reads-overlap", po::value<float>()->default_value(0.5,"0.5"), "overlap threshold for read and reference")
         ("overlap-with-reference","require overlap with reference")
-        ("min-reads-identity", po::value<float>()->default_value(0.5), "identity threshold for aligned sites")
+        ("min-reads-identity", po::value<float>()->default_value(0.5,"0.5"), "identity threshold for aligned sites")
         ("pair-read-gap-extension", po::value<float>(), "read spacer extension probability")
-        ("rank-reads-for-nodes","rank reads within nodes for alignment")
-        ("discard-overlapping-identical-reads", "discard embedded identical reads")
-        ("discard-overlapping-reads", "discard embedded reads")
-        ("discard-pairwise-overlapping-reads", "discard embedded reads (pairwise alignment)")
-        ("align-reads-at-root", "ignore tags and align reads at root")
-        ("align-bad-reads-at-root", "align non-matching reads at root")
-        ("use-identity-score", "choose target based on identity score")
-        ("use-target-normalised-score", "choose target based on target-normalised substitution score")
     ;
 
     boost::program_options::options_description reads_alignment3("Overlapping pair reads options",100);
     reads_alignment3.add_options()
         ("overlap-pair-end","merge overlapping paired reads")
         ("overlap-minimum", po::value<int>()->default_value(15), "minimum overlapping sites")
-        ("overlap-identity", po::value<float>()->default_value(0.75), "minimum identity at overlap")
+        ("overlap-identity", po::value<float>()->default_value(0.75,"0.75"), "minimum identity at overlap")
         ("overlap-identical-minimum", po::value<int>()->default_value(10), "minimum identical overlapping sites")
         ("overlap-merge-file", po::value<string>(), "output file for merged reads")
         ("overlap-merge-only","only merge overlapping paired reads")
@@ -129,6 +117,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description exonerate("Exonerate options",100);
     exonerate.add_options()
+        ("exhaustive-placement","if Exonrate fails, use PAGAN to place the read")
         ("use-exonerate-reads-local","use Exonerate local to map reads to nodes")
         ("exonerate-local-keep-best",po::value<int>()->default_value(5),"keep best # of local matches")
         ("exonerate-local-keep-above",po::value<float>(),"keep local matches above #% of the best score")
@@ -139,7 +128,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("use-exonerate-anchors","use Exonerate to anchor the exact alignment")
         ("exonerate-anchor-offset",po::value<int>()->default_value(15),"offset for the Exonerate anchor alignment")
         ("exonerate-anchor-query-offset",po::value<float>()->default_value(2.0),"offset multiplier for the query ends")
-        ("exhaustive-placement","if Exonrate fails, use PAGAN to place the read")
     ;
 
     boost::program_options::options_description pileup("Read pileup options",100);
@@ -147,11 +135,27 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("reads-pileup","pileup reads")
         ("pileup-reads-ordered","pileup reads are ordered")
         ("pileup-offset", po::value<int>()->default_value(5), "offset for alignment start site")
-        ("pacbio","PacBio reads")
-        ("compare-reverse","test also reverse-complement and keep better")
         ("read-cluster-attempts", po::value<int>()->default_value(1),"attempts to find overlap")
         ("find-cluster-reference","find optimal cluster reference")
         ("cluster-pileup","pileup clustered reads")
+        ("compare-reverse","test also reverse-complement and keep better")
+        ("find-best-orf", "translate and use best ORF")
+        ("min-orf-coverage", po::value<float>()->default_value(0.95,"0.95"),"minimum ORF coverage to be considered")
+        ("inlude-parent-in-contig", "include also ancestral parent in contigs")
+        ("use-duplicate-weigths", "use NumDuplicates=# to weight consensus counts")
+        ("output-consensus", "output contig consensus alone")
+    ;
+
+    boost::program_options::options_description obscure("Additional obscure options",100);
+    obscure.add_options()
+        ("rank-reads-for-nodes","rank reads within nodes for alignment")
+        ("discard-overlapping-identical-reads", "discard embedded identical reads")
+        ("discard-overlapping-reads", "discard embedded reads")
+        ("discard-pairwise-overlapping-reads", "discard embedded reads (pairwise alignment)")
+        ("align-reads-at-root", "ignore tags and align reads at root")
+        ("align-bad-reads-at-root", "align non-matching reads at root")
+        ("use-identity-score", "choose target based on identity score")
+        ("use-target-normalised-score", "choose target based on target-normalised substitution score")
     ;
 
     boost::program_options::options_description graph("Graph options",100);
@@ -175,7 +179,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     boost::program_options::options_description tree_edit("Tree manipulation options",100);
     tree_edit.add_options()
         ("scale-branches", po::value<float>(), "scale tree branches")
-        ("truncate-branches", po::value<float>()->default_value(0.1), "truncate tree branches")
+        ("truncate-branches", po::value<float>()->default_value(0.2,"0.2"), "truncate tree branches")
         ("real-branches", "use real tree branch lengths")
         ("fixed-branches", po::value<float>(), "fixed length for tree branches")
         ("min-branch-length", po::value<float>(), "minimum length for tree branches")
@@ -225,9 +229,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     po::positional_options_description pd;
     pd.add("config-file", 1);
 
-    full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken).add(help_update);
+    full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(obscure).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken).add(help_update);
     desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(model).add(tree_edit).add(alignment).add(help_update);
-    max_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(help_update);
+    max_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(obscure).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(help_update);
     min_desc.add(minimal).add(reads_alignment).add(help_update);
 
 
