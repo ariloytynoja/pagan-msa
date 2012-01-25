@@ -1806,7 +1806,7 @@ double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_fact
     node->set_distance_to_parent(org_dist);
 
     // For scoring (below)
-    Evol_model model = mf->alignment_model(r_dist+0.001,false);
+    Evol_model *model = mf->alignment_model(r_dist+0.001,false);
 
     int matching = 0;
     int aligned = 0;
@@ -1849,8 +1849,8 @@ double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_fact
             if(site1->get_state() == site2->get_state())
                 matching++;
 
-            subst_score += model.score(site1->get_state(),site2->get_state());
-            max_subst_score_l += model.score(site2->get_state(),site2->get_state());
+            subst_score += model->score(site1->get_state(),site2->get_state());
+            max_subst_score_l += model->score(site2->get_state(),site2->get_state());
 
             aligned++;
         }
@@ -1858,7 +1858,7 @@ double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_fact
         if(site->get_children()->right_index>=0)
         {
             Site *site1 = tmpnode->get_right_child()->get_sequence()->get_site_at(site->get_children()->right_index);
-            max_subst_score_r += model.score(site1->get_state(),site1->get_state());
+            max_subst_score_r += model->score(site1->get_state(),site1->get_state());
         }
 
     }

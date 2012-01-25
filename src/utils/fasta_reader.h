@@ -48,6 +48,9 @@ class Fasta_reader
     string protein_to_DNA(string *dna,string *prot) const;
 
 public:
+
+    enum output_mode {plain_alignment,contig_alignment,consensus_only};
+
     Fasta_reader() : chars_by_line(60) {
         this->define_translation_tables();
     }
@@ -75,11 +78,11 @@ public:
         output.close();
     }
 
-    void write_dna(ostream & output, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, Node *root) const throw (Exception);
-    void write_dna(const string & path, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, Node *root, bool overwrite=true) const throw (Exception)
+    void write_dna(ostream & output, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, Node *root, int output_type=Fasta_reader::plain_alignment) const throw (Exception);
+    void write_dna(const string & path, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, Node *root, bool overwrite=true, int output_type=Fasta_reader::plain_alignment) const throw (Exception)
     {
-        ofstream output( (path+".dna.fas").c_str(), overwrite ? (ios::out) : (ios::out|ios::app) );
-        write_dna(output, seqs, org_seqs, root);
+        ofstream output( (path+".fas").c_str(), overwrite ? (ios::out) : (ios::out|ios::app) );
+        write_dna(output, seqs, org_seqs, root, output_type);
         output.close();
     }
 

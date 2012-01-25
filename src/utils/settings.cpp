@@ -217,6 +217,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("no-log-odds", "do not use log-odds substitutions scores")
         ("time", "track time (debugging)")
         ("keep-exonerate-files","keep exonerate files")
+        ("recompute-reference-alignment-model", "recompute reference alignment model")
     ;
 
     boost::program_options::options_description broken("Broken options",100);

@@ -661,7 +661,7 @@ void Fasta_reader::write(ostream & output, const vector<Fasta_entry> & seqs) con
 
 /****************************************************************************************/
 
-void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, Node *root) const throw (Exception)
+void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, Node *root, int output_type) const throw (Exception)
 {
     // Checking the existence of specified file, and possibility to open it in write mode
     if (! output) { throw IOException ("Fasta_reader::write_dna. Failed to open file"); }
@@ -745,6 +745,7 @@ void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs,
             string prot = vi->sequence;
 
             os.sequence = protein_to_DNA(&dna,&prot);
+            os.num_duplicates = vi->num_duplicates;
         }
 
         outseqs.push_back(os);
@@ -756,90 +757,109 @@ void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs,
     Fasta_entry entry;
     entry.name = "consensus";
     entry.sequence = "";
-    for(int i=0;i<(int)outseqs.at(0).sequence.length();i++)
-    {
-        int sA=0; int sC=0; int sG=0; int sT=0;
-        bool included_in_reference = false;
-        for (vi = outseqs.begin(); vi != outseqs.end(); vi++)
-        {
-            char x = vi->sequence.at(i);
 
-            if(read_names.find(vi->name) != read_names.end())
+    if(output_type != Fasta_reader::plain_alignment)
+    {
+
+        for(int i=0;i<(int)outseqs.at(0).sequence.length();i++)
+        {
+            int sA=0; int sC=0; int sG=0; int sT=0;
+            bool included_in_reference = false;
+            char parent_char = '-';
+
+            for (vi = outseqs.begin(); vi != outseqs.end(); vi++)
             {
-                if(x == 'A')
-                    sA++;
-                else if(x == 'C')
-                    sC++;
-                else if(x == 'G')
-                    sG++;
-                else if(x == 'T')
-                    sT++;
+                char x = vi->sequence.at(i);
+                int nd = vi->num_duplicates;
+
+                if(read_names.find(vi->name) != read_names.end())
+                {
+                    if(x == 'A')
+                        sA += nd;
+                    else if(x == 'C')
+                        sC += nd;
+                    else if(x == 'G')
+                        sG += nd;
+                    else if(x == 'T')
+                        sT += nd;
+                }
+                else
+                {
+                    if(x != '-')
+                    {
+                        included_in_reference = true;
+                        if(Settings_handle::st.is("show-contig-ancestor"))
+                            parent_char = tolower(x);
+                    }
+                }
+            }
+
+            if(!included_in_reference && sA+sC+sG+sT<Settings_handle::st.get("consensus-minimum").as<int>())
+            {
+                entry.sequence.append("-");
             }
             else
             {
-                if(x != '-')
-                    included_in_reference = true;
+                if(sA==0 && sC==0 && sG==0 && sT==0)
+                    entry.sequence.append(string(1,parent_char));
+                else if(sA>sC && sA>sG && sA>sT)
+                    entry.sequence.append("A");
+                else if(sC>sA && sC>sG && sC>sT)
+                    entry.sequence.append("C");
+                else if(sG>sA && sG>sC && sG>sT)
+                    entry.sequence.append("G");
+                else if(sT>sA && sT>sC && sT>sG)
+                    entry.sequence.append("T");
+                else if(sA>sC && sA==sG && sA>sT)
+                    entry.sequence.append("R");
+                else if(sC>sA && sC>sG && sC==sT)
+                    entry.sequence.append("Y");
+                else if(sA==sC && sA>sG && sA>sT)
+                    entry.sequence.append("M");
+                else if(sG>sA && sG>sC && sG==sT)
+                    entry.sequence.append("K");
+                else if(sA>sC && sA>sG && sA==sT)
+                    entry.sequence.append("W");
+                else if(sC>sA && sC==sG && sC>sT)
+                    entry.sequence.append("S");
+                else if(sC>sA && sC==sG && sC==sT)
+                    entry.sequence.append("B");
+                else if(sA>sC && sA==sG && sA==sT)
+                    entry.sequence.append("D");
+                else if(sA==sC && sA>sG && sA==sT)
+                    entry.sequence.append("H");
+                else if(sA==sC && sA==sG && sA>sT)
+                    entry.sequence.append("V");
+                else if(sA==sC && sA==sG && sA==sT)
+                    entry.sequence.append("N");
             }
         }
-
-        if(!included_in_reference && sA+sC+sG+sT<Settings_handle::st.get("consensus-minimum").as<int>())
-        {
-            entry.sequence.append("-");
-        }
-        else
-        {
-            if(sA==0 && sC==0 && sG==0 && sT==0)
-                entry.sequence.append("-");
-            else if(sA>sC && sA>sG && sA>sT)
-                entry.sequence.append("A");
-            else if(sC>sA && sC>sG && sC>sT)
-                entry.sequence.append("C");
-            else if(sG>sA && sG>sC && sG>sT)
-                entry.sequence.append("G");
-            else if(sT>sA && sT>sC && sT>sG)
-                entry.sequence.append("T");
-            else if(sA>sC && sA==sG && sA>sT)
-                entry.sequence.append("R");
-            else if(sC>sA && sC>sG && sC==sT)
-                entry.sequence.append("Y");
-            else if(sA==sC && sA>sG && sA>sT)
-                entry.sequence.append("M");
-            else if(sG>sA && sG>sC && sG==sT)
-                entry.sequence.append("K");
-            else if(sA>sC && sA>sG && sA==sT)
-                entry.sequence.append("W");
-            else if(sC>sA && sC==sG && sC>sT)
-                entry.sequence.append("S");
-            else if(sC>sA && sC==sG && sC==sT)
-                entry.sequence.append("B");
-            else if(sA>sC && sA==sG && sA==sT)
-                entry.sequence.append("D");
-            else if(sA==sC && sA>sG && sA==sT)
-                entry.sequence.append("H");
-            else if(sA==sC && sA==sG && sA>sT)
-                entry.sequence.append("V");
-            else if(sA==sC && sA==sG && sA==sT)
-                entry.sequence.append("N");
-        }
     }
 
-    for (vi = outseqs.begin(); vi != outseqs.end(); vi++)
+    if(output_type != Fasta_reader::consensus_only || Settings_handle::st.is("inlude-parent-in-contig") )
     {
-        if(read_names.find(vi->name) == read_names.end())
+        for (vi = outseqs.begin(); vi != outseqs.end(); vi++)
         {
-            this->print_fast_entry(output,&(*vi));
+            if(read_names.find(vi->name) == read_names.end())
+            {
+                this->print_fast_entry(output,&(*vi));
+            }
         }
     }
 
-    this->print_fast_entry(output,&entry);
+     if(output_type != Fasta_reader::plain_alignment)
+            this->print_fast_entry(output,&entry);
 
-    for (vi = outseqs.begin(); vi != outseqs.end(); vi++)
-    {
-        if(read_names.find(vi->name) != read_names.end())
+     if(output_type != Fasta_reader::consensus_only)
+     {
+        for (vi = outseqs.begin(); vi != outseqs.end(); vi++)
         {
-            this->print_fast_entry(output,&(*vi));
+            if(read_names.find(vi->name) != read_names.end())
+            {
+                this->print_fast_entry(output,&(*vi));
+            }
         }
-    }
+     }
 
 }
 

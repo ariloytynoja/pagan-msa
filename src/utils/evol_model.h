@@ -31,8 +31,10 @@ class Evol_model
 {
     std::string full_char_alphabet;
 public:
+    Evol_model() {}
     Evol_model(int data_t,float dist);
     ~Evol_model();
+    void copy(Evol_model *org);
 
     Db_matrix *charPi;
     Db_matrix *charPr;

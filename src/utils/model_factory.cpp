@@ -35,6 +35,9 @@ Model_factory::Model_factory(int s)
 {
     sequence_data_type = s;
 
+    prev_distance = -1;
+    prev_is_local_alignment = false;
+
     if(sequence_data_type == Model_factory::dna)
         if(Settings_handle::st.is("codons"))
             this->define_codon_alphabet();
@@ -76,6 +79,9 @@ Model_factory::~Model_factory()
 
     if(char_ambiguity!=0)
         delete char_ambiguity;
+
+    if(model!=0)
+        delete model;
 }
 
 /*******************************************/
@@ -511,6 +517,8 @@ void Model_factory::define_protein_alphabet()
         } // for(j)
     } // for(i)
 
+    delete cPi;
+    delete cQ;
 
     /*********************/
 
@@ -1059,6 +1067,9 @@ void Model_factory::define_codon_alphabet()
             }
         } // for(j)
     } // for(i)
+
+    delete cPi;
+    delete cQ;
 
 //    this->print_int_matrix(parsimony_table);
 
@@ -1798,8 +1809,24 @@ void Model_factory::build_model(int s,Db_matrix *pi,Db_matrix *q,Db_matrix *wU,D
 
 /*******************************************/
 
-Evol_model Model_factory::alignment_model(double distance, bool is_local_alignment)
+Evol_model* Model_factory::alignment_model(double distance, bool is_local_alignment)
 {
+
+    if(prev_distance<0)
+    {
+        model = new Evol_model(sequence_data_type, distance);
+    }
+
+    if(distance == prev_distance && is_local_alignment == prev_is_local_alignment)
+    {
+        return model;
+    }
+    else
+    {
+        delete model;
+        model = new Evol_model(sequence_data_type, distance);
+    }
+
 
     // Compute the P matrix for regular DNA alphabet (four bases).
     //
@@ -1823,7 +1850,6 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
     e->computePMatrix(char_as,tmr,twu,twv,twr,distance);
 
-    Evol_model model(sequence_data_type, distance);
 
 
     if(is_local_alignment)
@@ -1835,8 +1861,8 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
         if(Settings_handle::st.is("gap-extension"))
             ext =  Settings_handle::st.get("gap-extension").as<float>();
 
-        model.log_ext_prob = log(ext);
-        model.ext_prob = ext;
+        model->log_ext_prob = log(ext);
+        model->ext_prob = ext;
 
         float rate = 0.005;
 
@@ -1844,24 +1870,24 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
             rate =  Settings_handle::st.get("indel-rate").as<float>();
 
 
-        model.ins_rate = rate;
-        model.del_rate = rate;
+        model->ins_rate = rate;
+        model->del_rate = rate;
 
-        model.ins_prob = (1.0-exp(-1.0*rate*distance));
-        model.del_prob = (1.0-exp(-1.0*rate*distance));
+        model->ins_prob = (1.0-exp(-1.0*rate*distance));
+        model->del_prob = (1.0-exp(-1.0*rate*distance));
 
         double t = (1.0-exp(-1*rate*distance));
 
-        model.log_id_prob = log(t);
-        model.log_match_prob = log(1.0-2*t);
-        model.id_prob = t;
-        model.match_prob = 1.0-2*t;
+        model->log_id_prob = log(t);
+        model->log_match_prob = log(1.0-2*t);
+        model->id_prob = t;
+        model->match_prob = 1.0-2*t;
     }
     else
     {
 
-        model.log_ext_prob = log(char_ext_prob);
-        model.ext_prob = char_ext_prob;
+        model->log_ext_prob = log(char_ext_prob);
+        model->ext_prob = char_ext_prob;
 
         if(Settings_handle::st.is("454") && Settings_handle::st.is("reads-pileup"))
         {
@@ -1869,32 +1895,32 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
             char_del_rate = 0.25;
         }
 
-        model.ins_rate = char_ins_rate;
-        model.del_rate = char_del_rate;
+        model->ins_rate = char_ins_rate;
+        model->del_rate = char_del_rate;
 
-        model.ins_prob = (1.0-exp(-1.0*char_ins_rate*distance));
-        model.del_prob = (1.0-exp(-1.0*char_del_rate*distance));
+        model->ins_prob = (1.0-exp(-1.0*char_ins_rate*distance));
+        model->del_prob = (1.0-exp(-1.0*char_del_rate*distance));
 
         double t = (1.0-exp(-0.5*(char_ins_rate+char_del_rate)*distance));
 
-        model.log_id_prob = log(t);
-        model.log_match_prob = log(1.0-2*t);
-        model.id_prob = t;
-        model.match_prob = 1.0-2*t;
+        model->log_id_prob = log(t);
+        model->log_match_prob = log(1.0-2*t);
+        model->id_prob = t;
+        model->match_prob = 1.0-2*t;
     }
 
 
-    model.log_end_ext_prob = log(char_end_ext_prob);
-    model.log_break_ext_prob = log(char_break_ext_prob);
+    model->log_end_ext_prob = log(char_end_ext_prob);
+    model->log_break_ext_prob = log(char_break_ext_prob);
 
-    model.end_ext_prob = char_end_ext_prob;
-    model.break_ext_prob = char_break_ext_prob;
+    model->end_ext_prob = char_end_ext_prob;
+    model->break_ext_prob = char_break_ext_prob;
 
 
     for(int i=0;i<char_as;i++)
     {
-        model.charPi->s(charPi->g(i),i);
-        model.logCharPi->s(log( charPi->g(i) ),i);
+        model->charPi->s(charPi->g(i),i);
+        model->logCharPi->s(log( charPi->g(i) ),i);
 
         for(int j=0;j<char_as;j++)
         {
@@ -1902,13 +1928,13 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
             if( ! Settings_handle::st.is("no-log-odds") )
             {
                 float lo = 0.5 * ( charPi->g(i) + charPi->g(j) ) * sp / ( charPi->g(i) * charPi->g(j) );
-                model.charPr->s(lo,i,j);
-                model.logCharPr->s(log( lo ),i,j);
+                model->charPr->s(lo,i,j);
+                model->logCharPr->s(log( lo ),i,j);
             }
             else
             {
-                model.charPr->s(tmr[i*char_as+j],i,j);
-                model.logCharPr->s(log( tmr[i*char_as+j] ),i,j);
+                model->charPr->s(tmr[i*char_as+j],i,j);
+                model->logCharPr->s(log( tmr[i*char_as+j] ),i,j);
             }
         }
     }
@@ -1953,7 +1979,7 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
         {
             for(int j=0;j<char_fas;j++)
             {
-                model.parsimony_table->s( parsimony_table->g(i,j), i,j);
+                model->parsimony_table->s( parsimony_table->g(i,j), i,j);
 
                 if(i<char_as && j<char_as)
                     continue;
@@ -1964,13 +1990,13 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
                 {
                     for(int m=0;m<char_as;m++)
                     {
-                        double t = model.charPr->g(n,m)*char_ambiguity->g(m,j)*char_ambiguity->g(n,i);
+                        double t = model->charPr->g(n,m)*char_ambiguity->g(m,j)*char_ambiguity->g(n,i);
                         if(max < t) max = t;
                     }
                 }
 
-                model.charPr->s(max,i,j);
-                model.logCharPr->s(log(max),i,j);
+                model->charPr->s(max,i,j);
+                model->logCharPr->s(log(max),i,j);
             }
         }
 
@@ -1987,7 +2013,7 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
         {
             for(int j=0;j<char_fas;j++)
             {
-                model.parsimony_table->s( parsimony_table->g(i,j), i,j);
+                model->parsimony_table->s( parsimony_table->g(i,j), i,j);
 
                 if(i<char_as && j<char_as)
                     continue;
@@ -1999,7 +2025,7 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
                 {
                     for(int n=0;n<char_as;n++)
                     {
-                        double t = model.charPr->g(n,j);
+                        double t = model->charPr->g(n,j);
                         if(max < t) max = t;
                     }
                 }
@@ -2007,7 +2033,7 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
                 {
                     for(int m=0;m<char_as;m++)
                     {
-                        double t = model.charPr->g(i,m);
+                        double t = model->charPr->g(i,m);
                         if(max < t) max = t;
                     }
                 }
@@ -2018,24 +2044,24 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
                     if(l1->n_units==1 && l2->n_units==2)
                     {
-                        max = model.charPr->g(l1->first_codon,l2->first_codon);
-                        t = model.charPr->g(l1->first_codon,l2->second_codon);
+                        max = model->charPr->g(l1->first_codon,l2->first_codon);
+                        t = model->charPr->g(l1->first_codon,l2->second_codon);
                         if(max < t) max = t;
                     }
                     else if(l1->n_units==2 && l2->n_units==1)
                     {
-                        max = model.charPr->g(l1->first_codon,l2->first_codon);
-                        t = model.charPr->g(l1->second_codon,l2->first_codon);
+                        max = model->charPr->g(l1->first_codon,l2->first_codon);
+                        t = model->charPr->g(l1->second_codon,l2->first_codon);
                         if(max < t) max = t;
                     }
                     else if(l1->n_units==2 && l2->n_units==2)
                     {
-                        max = model.charPr->g(l1->first_codon,l2->first_codon);
-                        t = model.charPr->g(l1->first_codon,l2->second_codon);
+                        max = model->charPr->g(l1->first_codon,l2->first_codon);
+                        t = model->charPr->g(l1->first_codon,l2->second_codon);
                         if(max < t) max = t;
-                        t = model.charPr->g(l1->second_codon,l2->first_codon);
+                        t = model->charPr->g(l1->second_codon,l2->first_codon);
                         if(max < t) max = t;
-                        t = model.charPr->g(l1->second_codon,l2->second_codon);
+                        t = model->charPr->g(l1->second_codon,l2->second_codon);
                         if(max < t) max = t;
                     }
                     else
@@ -2044,8 +2070,8 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
                     }
                 }
 
-                model.charPr->s(max,i,j);
-                model.logCharPr->s(log(max),i,j);
+                model->charPr->s(max,i,j);
+                model->logCharPr->s(log(max),i,j);
             }
         }
 
@@ -2088,7 +2114,7 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
             {
                 for(int j=0;j<char_fas;j++)
                 {
-                    model.parsimony_table->s( parsimony_table->g(i,j), i,j);
+                    model->parsimony_table->s( parsimony_table->g(i,j), i,j);
 
                     if(i<char_as && j<char_as)
                         continue;
@@ -2099,13 +2125,13 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
                     {
                         for(int m=0;m<char_as;m++)
                         {
-                            double t = model.charPr->g(n,m)*char_ambiguity->g(m,j)*char_ambiguity->g(n,i);
+                            double t = model->charPr->g(n,m)*char_ambiguity->g(m,j)*char_ambiguity->g(n,i);
                             if(max < t) max = t;
                         }
                     }
 
-                    model.charPr->s(max,i,j);
-                    model.logCharPr->s(log(max),i,j);
+                    model->charPr->s(max,i,j);
+                    model->logCharPr->s(log(max),i,j);
                 }
             }
         }
@@ -2120,7 +2146,7 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
             {
                 for(int j=0;j<char_fas;j++)
                 {
-                    model.parsimony_table->s( parsimony_table->g(i,j), i,j);
+                    model->parsimony_table->s( parsimony_table->g(i,j), i,j);
 
                     if(i<char_as && j<char_as)
                         continue;
@@ -2132,7 +2158,7 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
                     {
                         for(int n=0;n<char_as;n++)
                         {
-                            double t = model.charPr->g(n,j);
+                            double t = model->charPr->g(n,j);
                             if(max < t) max = t;
                         }
                     }
@@ -2140,7 +2166,7 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
                     {
                         for(int m=0;m<char_as;m++)
                         {
-                            double t = model.charPr->g(i,m);
+                            double t = model->charPr->g(i,m);
                             if(max < t) max = t;
                         }
                     }
@@ -2151,24 +2177,24 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
                         if(l1->n_units==1 && l2->n_units==2)
                         {
-                            max = model.charPr->g(l1->first_residue,l2->first_residue);
-                            t = model.charPr->g(l1->first_residue,l2->second_residue);
+                            max = model->charPr->g(l1->first_residue,l2->first_residue);
+                            t = model->charPr->g(l1->first_residue,l2->second_residue);
                             if(max < t) max = t;
                         }
                         else if(l1->n_units==2 && l2->n_units==1)
                         {
-                            max = model.charPr->g(l1->first_residue,l2->first_residue);
-                            t = model.charPr->g(l1->second_residue,l2->first_residue);
+                            max = model->charPr->g(l1->first_residue,l2->first_residue);
+                            t = model->charPr->g(l1->second_residue,l2->first_residue);
                             if(max < t) max = t;
                         }
                         else if(l1->n_units==2 && l2->n_units==2)
                         {
-                            max = model.charPr->g(l1->first_residue,l2->first_residue);
-                            t = model.charPr->g(l1->first_residue,l2->second_residue);
+                            max = model->charPr->g(l1->first_residue,l2->first_residue);
+                            t = model->charPr->g(l1->first_residue,l2->second_residue);
                             if(max < t) max = t;
-                            t = model.charPr->g(l1->second_residue,l2->first_residue);
+                            t = model->charPr->g(l1->second_residue,l2->first_residue);
                             if(max < t) max = t;
-                            t = model.charPr->g(l1->second_residue,l2->second_residue);
+                            t = model->charPr->g(l1->second_residue,l2->second_residue);
                             if(max < t) max = t;
                         }
                         else
@@ -2177,8 +2203,8 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
                         }
                     }
 
-                    model.charPr->s(max,i,j);
-                    model.logCharPr->s(log(max),i,j);
+                    model->charPr->s(max,i,j);
+                    model->logCharPr->s(log(max),i,j);
                 }
             }
         }
@@ -2187,8 +2213,11 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
     /***************************************************************/
 
     if (Settings::noise > 4) {
-        print_char_p_matrices(model);
+        print_char_p_matrices(*model);
     }
+
+    prev_distance = distance;
+    prev_is_local_alignment = is_local_alignment;
 
     return model;
 }

@@ -426,10 +426,42 @@ int main(int argc, char *argv[])
         fr.write(outfile, contigs, true);
     }
 
-    if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate"))
+    if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate") || Settings_handle::st.is("find-best-orf"))
     {
+        string outfile =  "outfile";
+        if(Settings_handle::st.is("outfile"))
+            outfile =  Settings_handle::st.get("outfile").as<string>();
+
+        outfile.append(".dna");
+        Log_output::write_out("Back-translated alignment file: "+outfile+".fas\n",0);
+
         fr.set_chars_by_line(70);
-        fr.write_dna(outfile, aligned_sequences, sequences,root,true);
+        fr.write_dna(outfile, aligned_sequences, sequences,root,true,Fasta_reader::plain_alignment);
+
+        if(Settings_handle::st.is("build-contigs"))
+        {
+            string outfile =  "outfile";
+            if(Settings_handle::st.is("outfile"))
+                outfile =  Settings_handle::st.get("outfile").as<string>();
+
+            outfile.append("_contigs.dna");
+            Log_output::write_out("Back-translated contig file: "+outfile+".fas\n",1);
+
+            fr.set_chars_by_line(70);
+            fr.write_dna(outfile, aligned_sequences, sequences,root,true,Fasta_reader::contig_alignment);
+        }
+        if(Settings_handle::st.is("output-consensus"))
+        {
+            string outfile =  "outfile";
+            if(Settings_handle::st.is("outfile"))
+                outfile =  Settings_handle::st.get("outfile").as<string>();
+
+            outfile.append("_consensus.dna");
+            Log_output::write_out("Back-translated consensus file: "+outfile+".fas\n",1);
+
+            fr.set_chars_by_line(70);
+            fr.write_dna(outfile, aligned_sequences, sequences,root,true,Fasta_reader::consensus_only);
+        }
     }
 
     if(Settings_handle::st.is("output-ancestors"))

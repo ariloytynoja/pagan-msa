@@ -108,8 +108,10 @@ class Model_factory
 
     void build_model(int s,Db_matrix *pi,Db_matrix *q,Db_matrix *wU,Db_matrix *wV,Db_matrix *wRoot);
     void print_char_q_matrices(Db_matrix *charQ);
-//    void print_char_p_matrices(Evol_model &model);
 
+    double prev_distance;
+    bool prev_is_local_alignment;
+    Evol_model *model;
 public:
     Model_factory(int sequence_data_type);
     ~Model_factory();
@@ -127,7 +129,8 @@ public:
     void codon_model(Settings *st);
     void codon_model(float ins_rate,float del_rate, float ext_prob, float end_ext_prob);
 
-    Evol_model alignment_model(double distance, bool is_local_alignment=false);
+    Evol_model* alignment_model(double distance, bool is_local_alignment=false);
+
     void print_int_matrix(Int_matrix *m);
     void print_char_p_matrices(Evol_model &model);
 
