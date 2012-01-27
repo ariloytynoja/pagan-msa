@@ -747,7 +747,7 @@ void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs,
             string prot = vi->sequence;
 
             os.sequence = protein_to_DNA(&dna,&prot);
-            os.num_duplicates = vi->num_duplicates;
+            os.num_duplicates = 1;
         }
 
         outseqs.push_back(os);
@@ -956,7 +956,7 @@ void Fasta_reader::remove_gap_only_columns(vector<Fasta_entry> *sequences)  thro
     vector<Fasta_entry>::iterator vi = sequences->begin();
     for (; vi != sequences->end(); vi++)
     {
-        if(vi->sequence.length() != length)
+        if((int)vi->sequence.length() != length)
         {
             Log_output::write_out("Error: aligned sequences of different length. Removal of gap only columns failed.\n",0);
             return;
