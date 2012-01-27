@@ -685,7 +685,8 @@ void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs,
 
     if(dna_seq_missing)
     {
-        Log_output::write_out("No DNA for all sequences. Back-translation failed.\n",2);
+        Log_output::write_out("No DNA for all sequences. Back-translation failed.\n",1);
+        return;
     }
 
     if(Settings_handle::st.is("find-best-orf"))
@@ -737,7 +738,8 @@ void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs,
         map<string,string>::iterator it2 = dna_seqs.find(vi->name);
         if(it2 == dna_seqs.end())
         {
-            Log_output::write_out("No matching DNA sequence for "+vi->name+". Back-translation failed.\n",2);
+            Log_output::write_out("No matching DNA sequence for "+vi->name+". Back-translation failed.\n",1);
+            return;
         }
         else
         {
