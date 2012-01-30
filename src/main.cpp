@@ -368,126 +368,139 @@ int main(int argc, char *argv[])
 
     Log_output::clean_output();
 
-    // Save results in output file
+
+    // See if any sequences were placed
     //
-    string outfile =  "outfile";
+    if(Settings_handle::st.is("readsfile") && (int)sequences.size() == (int)aligned_sequences.size())
+    {
 
-    if(Settings_handle::st.is("outfile"))
-        outfile =  Settings_handle::st.get("outfile").as<string>();
+        Log_output::write_out("Failed to extend the alignment. No output created.\n",0);
 
-    if(Settings_handle::st.is("xml"))
-        Log_output::write_out("Alignment files: "+outfile+".fas, "+outfile+".xml\n",0);
+    }
     else
-        Log_output::write_out("Alignment file: "+outfile+".fas\n",0);
-
-    fr.set_chars_by_line(70);
-    fr.write(outfile, aligned_sequences, true);
-
-    count = 1;
-    root->set_name_ids(&count);
-
-    if(Settings_handle::st.is("xml"))
     {
-        Xml_writer xw;
-        xw.write(outfile, root, aligned_sequences, true);
-    }
 
-    if(Settings_handle::st.is("build-contigs"))
-    {
-        vector<Fasta_entry> contigs;
-        root->reconstruct_contigs(&contigs,false);
-
+        // Save results in output file
+        //
         string outfile =  "outfile";
+
         if(Settings_handle::st.is("outfile"))
             outfile =  Settings_handle::st.get("outfile").as<string>();
 
-        outfile.append("_contigs");
-        Log_output::write_out("Contig file: "+outfile+".fas\n",1);
+        if(Settings_handle::st.is("xml"))
+            Log_output::write_out("Alignment files: "+outfile+".fas, "+outfile+".xml\n",0);
+        else
+            Log_output::write_out("Alignment file: "+outfile+".fas\n",0);
 
         fr.set_chars_by_line(70);
-        fr.write(outfile, contigs, true);
-    }
+        fr.write(outfile, aligned_sequences, true);
 
-    if(Settings_handle::st.is("output-consensus"))
-    {
-        vector<Fasta_entry> contigs;
-        root->reconstruct_contigs(&contigs,false,true);
+        count = 1;
+        root->set_name_ids(&count);
 
-        string outfile =  "outfile";
-        if(Settings_handle::st.is("outfile"))
-            outfile =  Settings_handle::st.get("outfile").as<string>();
-
-        outfile.append("_consensus");
-        Log_output::write_out("Consensus file: "+outfile+".fas\n",1);
-
-        fr.remove_gap_only_columns(&contigs);
-
-        fr.set_chars_by_line(70);
-        fr.write(outfile, contigs, true);
-    }
-
-    if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate") || Settings_handle::st.is("find-best-orf"))
-    {
-        string outfile =  "outfile";
-        if(Settings_handle::st.is("outfile"))
-            outfile =  Settings_handle::st.get("outfile").as<string>();
-
-        outfile.append(".dna");
-        Log_output::write_out("Back-translated alignment file: "+outfile+".fas\n",0);
-
-        fr.set_chars_by_line(70);
-        fr.write_dna(outfile, aligned_sequences, sequences,root,true,Fasta_reader::plain_alignment);
+        if(Settings_handle::st.is("xml"))
+        {
+            Xml_writer xw;
+            xw.write(outfile, root, aligned_sequences, true);
+        }
 
         if(Settings_handle::st.is("build-contigs"))
         {
+            vector<Fasta_entry> contigs;
+            root->reconstruct_contigs(&contigs,false);
+
             string outfile =  "outfile";
             if(Settings_handle::st.is("outfile"))
                 outfile =  Settings_handle::st.get("outfile").as<string>();
 
-            outfile.append("_contigs.dna");
-            Log_output::write_out("Back-translated contig file: "+outfile+".fas\n",1);
+            outfile.append("_contigs");
+            Log_output::write_out("Contig file: "+outfile+".fas\n",1);
 
             fr.set_chars_by_line(70);
-            fr.write_dna(outfile, aligned_sequences, sequences,root,true,Fasta_reader::contig_alignment);
+            fr.write(outfile, contigs, true);
         }
+
         if(Settings_handle::st.is("output-consensus"))
+        {
+            vector<Fasta_entry> contigs;
+            root->reconstruct_contigs(&contigs,false,true);
+
+            string outfile =  "outfile";
+            if(Settings_handle::st.is("outfile"))
+                outfile =  Settings_handle::st.get("outfile").as<string>();
+
+            outfile.append("_consensus");
+            Log_output::write_out("Consensus file: "+outfile+".fas\n",1);
+
+            fr.remove_gap_only_columns(&contigs);
+
+            fr.set_chars_by_line(70);
+            fr.write(outfile, contigs, true);
+        }
+
+        if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate") || Settings_handle::st.is("find-best-orf"))
         {
             string outfile =  "outfile";
             if(Settings_handle::st.is("outfile"))
                 outfile =  Settings_handle::st.get("outfile").as<string>();
 
-            outfile.append("_consensus.dna");
-            Log_output::write_out("Back-translated consensus file: "+outfile+".fas\n",1);
+            outfile.append(".dna");
+            Log_output::write_out("Back-translated alignment file: "+outfile+".fas\n",0);
 
             fr.set_chars_by_line(70);
-            fr.write_dna(outfile, aligned_sequences, sequences,root,true,Fasta_reader::consensus_only);
+            fr.write_dna(outfile, aligned_sequences, sequences,root,true,Fasta_reader::plain_alignment);
+
+            if(Settings_handle::st.is("build-contigs"))
+            {
+                string outfile =  "outfile";
+                if(Settings_handle::st.is("outfile"))
+                    outfile =  Settings_handle::st.get("outfile").as<string>();
+
+                outfile.append("_contigs.dna");
+                Log_output::write_out("Back-translated contig file: "+outfile+".fas\n",1);
+
+                fr.set_chars_by_line(70);
+                fr.write_dna(outfile, aligned_sequences, sequences,root,true,Fasta_reader::contig_alignment);
+            }
+            if(Settings_handle::st.is("output-consensus"))
+            {
+                string outfile =  "outfile";
+                if(Settings_handle::st.is("outfile"))
+                    outfile =  Settings_handle::st.get("outfile").as<string>();
+
+                outfile.append("_consensus.dna");
+                Log_output::write_out("Back-translated consensus file: "+outfile+".fas\n",1);
+
+                fr.set_chars_by_line(70);
+                fr.write_dna(outfile, aligned_sequences, sequences,root,true,Fasta_reader::consensus_only);
+            }
         }
-    }
 
-    if(Settings_handle::st.is("output-ancestors"))
-    {
-        fr.write_anctree(outfile, root);
-    }
+        if(Settings_handle::st.is("output-ancestors"))
+        {
+            fr.write_anctree(outfile, root);
+        }
 
-    if(Settings_handle::st.is("output-nhx-tree"))
-    {
-        root->write_nhx_tree(outfile);
-    }
+        if(Settings_handle::st.is("output-nhx-tree"))
+        {
+            root->write_nhx_tree(outfile);
+        }
 
-    if( Settings_handle::st.is("scale-branches") ||
-         Settings_handle::st.is("truncate-branches") ||
-          Settings_handle::st.is("fixed-branches") )
-    {
-        Log_output::write_out("Modified guide tree: " +root->print_tree()+"\n",2);
-    }
+        if( Settings_handle::st.is("scale-branches") ||
+             Settings_handle::st.is("truncate-branches") ||
+              Settings_handle::st.is("fixed-branches") )
+        {
+            Log_output::write_out("Modified guide tree: " +root->print_tree()+"\n",2);
+        }
 
-    if(Settings_handle::st.is("output-graph"))
-    {
-        fr.write_graph(outfile, root, true);
-    }
+        if(Settings_handle::st.is("output-graph"))
+        {
+            fr.write_graph(outfile, root, true);
+        }
 
-    if(Settings_handle::st.is("mpost-graph-file")){
-        root->write_sequence_graphs();
+        if(Settings_handle::st.is("mpost-graph-file")){
+            root->write_sequence_graphs();
+        }
     }
 
     ss.str(string());
