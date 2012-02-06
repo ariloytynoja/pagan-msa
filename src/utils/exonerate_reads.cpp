@@ -155,6 +155,7 @@ void Exonerate_reads::write_exonerate_input(Node *root, Fasta_entry *read, map<s
 
 void Exonerate_reads::all_local_alignments(Node *root, vector<Fasta_entry> *reads, std::multimap<std::string,std::string> *tid_nodes, std::map<std::string,std::multimap<std::string,hit> > *hits, bool is_local)
 {
+    Log_output::write_msg("Running Exonerate with all query sequences",0);
 
     int r = rand();
 
@@ -353,13 +354,13 @@ void Exonerate_reads::all_local_alignments(Node *root, vector<Fasta_entry> *read
         map<string,multimap<string,hit> >::iterator iter = hits->find(ri->name);
         if( iter != hits->end() )
         {
-            Log_output::write_out("Exonerate_reads: "+iter->first+" has "+Log_output::itos(iter->second.size())+" hits\n",0);
+            Log_output::write_out("Exonerate_reads: "+iter->first+" has "+Log_output::itos(iter->second.size())+" hits\n",2);
 
             multimap<string,hit>::iterator iter2 = iter->second.begin();
 
             for( ;iter2 != iter->second.end(); iter2++ )
             {
-                Log_output::write_out("  "+ri->name+" matches "+iter2->first+" with score "+Log_output::itos(iter2->second.score)+"\n",0);
+                Log_output::write_out("  "+ri->name+" matches "+iter2->first+" with score "+Log_output::itos(iter2->second.score)+"\n",2);
 
             }
         }
@@ -374,6 +375,8 @@ void Exonerate_reads::all_local_alignments(Node *root, vector<Fasta_entry> *read
 
 void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<string,string> *tid_nodes, map<string,hit> *hits, bool is_local, bool all_nodes)
 {
+
+    Log_output::write_msg("Running Exonerate with one query sequence",0);
 
     int r = rand();
 
