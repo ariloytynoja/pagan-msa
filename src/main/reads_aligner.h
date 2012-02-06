@@ -53,6 +53,7 @@ class Reads_aligner
     string reverse_complement(string dna);
 
     void find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
+    void find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
     void remove_overlapping_reads(vector<Fasta_entry> *reads, Model_factory *mf);
     void remove_target_overlapping_identical_reads(vector<Fasta_entry> *reads_for_this, Model_factory *mf);
     void remove_target_overlapping_reads(vector<Fasta_entry> *reads_for_this);

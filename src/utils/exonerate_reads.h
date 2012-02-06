@@ -28,6 +28,7 @@ class Exonerate_reads
 
     bool split_sugar_string(const std::string& row,hit *h);
     bool split_vulgar_string(const std::string& row,hit *h);
+    void write_exonerate_input(Node *root, vector<Fasta_entry> *reads, map<string,string> *names, int r);
     void write_exonerate_input(Node *root, Fasta_entry *read, map<string,string> *names, int r);
     void delete_files(int r);
 
@@ -36,6 +37,7 @@ public:
     bool test_executable();
 
     void local_alignment(Node *root, Fasta_entry *read, std::multimap<std::string,std::string> *good_hits, std::map<std::string,hit> *hits, bool is_local, bool all_nodes=false);
+    void all_local_alignments(Node *root, vector<Fasta_entry> *reads, std::multimap<std::string,std::string> *tid_nodes, std::map<std::string,std::multimap<std::string,hit> > *hits, bool is_local);
 
 };
 
