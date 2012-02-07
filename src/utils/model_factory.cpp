@@ -1889,7 +1889,7 @@ Evol_model* Model_factory::alignment_model(double distance, bool is_local_alignm
         model->log_ext_prob = log(char_ext_prob);
         model->ext_prob = char_ext_prob;
 
-        if(Settings_handle::st.is("454") && Settings_handle::st.is("reads-pileup"))
+        if(Settings_handle::st.is("454") && Settings_handle::st.is("pileup-alignment"))
         {
             char_ins_rate = 0.25;
             char_del_rate = 0.25;

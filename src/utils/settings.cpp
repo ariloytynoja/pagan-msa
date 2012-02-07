@@ -34,8 +34,8 @@ Settings::Settings(){}
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.36;
-    date = "22 January, 2012";
+    version = 0.37;
+    date = "7 February, 2012";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -56,6 +56,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("noise", po::value<int>(), "output noise level")
         ("log-output-file",po::value<string>(),"output to file instead of stdout")
         ("xml","output also XML alignment")
+        ("output-nhx-tree", "output alignment tree (with NHX TID tags)")
     ;
     boost::program_options::options_description help_update("Help and updates",100);
     help_update.add_options()
@@ -63,37 +64,36 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("version","show program version and check for updates")
     ;
 
-    boost::program_options::options_description reads_alignment("Basic reads alignment options",100);
+    boost::program_options::options_description reads_alignment("Basic alignment extension options",100);
     reads_alignment.add_options()
         ("ref-seqfile", po::value<string>(), "reference alignment file (FASTA)")
         ("ref-treefile", po::value<string>(), "reference tree file (NH/NHX)")
-        ("readsfile", po::value<string>(), "reads file (FASTA/FASTQ)")
-        ("pair-end","connect paired reads")
-        ("454", "correct homopolymer error")
-        ("use-consensus", "use consensus for read ancestors")
-        ("build-contigs", "build contigs of read clusters")
-        ("test-every-node","test every node for each read")
-        ("fast-placement","use Exonerate to quickly assign reads to nodes")
+        ("queryfile", po::value<string>(), "query file (FASTA/FASTQ)")
+        ("454", "correct homopolymer error (DNA)")
+        ("use-consensus", "use consensus for query ancestors")
+        ("build-contigs", "build contigs of query clusters")
+        ("test-every-node","test every node for each query")
+        ("fast-placement","use Exonerate to quickly assign queries to nodes")
     ;
 
-    boost::program_options::options_description reads_alignment2("Additional reads alignment options",100);
+    boost::program_options::options_description reads_alignment2("Additional alignment extension options",100);
     reads_alignment2.add_options()
-        ("pacbio","correct for missing data in PacBio reads")
+        ("pair-end","connect paired reads (FASTQ)")
+        ("pacbio","correct for missing data in PacBio reads (DNA)")
         ("show-contig-ancestor", "fill contig gaps with ancestral sequence")
         ("consensus-minimum", po::value<int>()->default_value(5), "threshold for inclusion in contig")
-        ("test-every-internal-node","test every internal node for each read")
+        ("test-every-internal-node","test every internal node for each query")
         ("one-placement-only", "place only once despite equally good hits")
-        ("placement-only", "compute read placement only")
-        ("placement-file", po::value<string>(), "read placement file")
-        ("output-nhx-tree", "output tree with NHX TID tags")
+        ("placement-only", "compute query placement only")
+        ("placement-file", po::value<string>(), "query placement file")
         ("reads-distance", po::value<float>()->default_value(0.1,"0.1"), "evolutionary distance from pseudo-root")
-        ("min-reads-overlap", po::value<float>()->default_value(0.5,"0.5"), "overlap threshold for read and reference")
+        ("min-reads-overlap", po::value<float>()->default_value(0.5,"0.5"), "overlap threshold for query and reference")
         ("overlap-with-reference","require overlap with reference")
         ("min-reads-identity", po::value<float>()->default_value(0.5,"0.5"), "identity threshold for aligned sites")
-        ("pair-read-gap-extension", po::value<float>(), "read spacer extension probability")
+        ("pair-read-gap-extension", po::value<float>(), "paired read spacer extension probability (DNA)")
     ;
 
-    boost::program_options::options_description reads_alignment3("Overlapping pair reads options",100);
+    boost::program_options::options_description reads_alignment3("Overlapping paired reads options (FASTQ)",100);
     reads_alignment3.add_options()
         ("overlap-pair-end","merge overlapping paired reads")
         ("overlap-minimum", po::value<int>()->default_value(15), "minimum overlapping sites")
@@ -104,7 +104,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("trim-before-merge", "trim read ends with low Q-scores before merging")
     ;
 
-    boost::program_options::options_description reads_alignment4("Trimming and quality options",100);
+    boost::program_options::options_description reads_alignment4("Trimming and quality options (FASTQ)",100);
     reads_alignment4.add_options()
         ("no-fastq", "do not use Q-scores")
         ("trim-read-ends", "trim read ends with low Q-scores")
@@ -117,30 +117,27 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description exonerate("Exonerate options",100);
     exonerate.add_options()
-        ("exhaustive-placement","if Exonrate fails, use PAGAN to place the read")
-        ("use-exonerate-reads-local","use Exonerate local to map reads to nodes")
+        ("exhaustive-placement","if Exonrate fails, use PAGAN to place the query")
+        ("exonerate-separately","run Exonerate separately for each query")
+        ("use-exonerate-local","use Exonerate local to map queries to nodes")
         ("exonerate-local-keep-best",po::value<int>()->default_value(5),"keep best # of local matches")
         ("exonerate-local-keep-above",po::value<float>(),"keep local matches above #% of the best score")
-        ("use-exonerate-reads-gapped","use Exonerate gapped to map reads to nodes")
+        ("use-exonerate-gapped","use Exonerate gapped to map queries to nodes")
         ("exonerate-gapped-keep-best",po::value<int>()->default_value(1),"keep best # of gapped matches")
         ("exonerate-gapped-keep-above",po::value<float>(),"keep gapped matches above #% of the best score")
-        ("keep-despite-exonerate-fails", "keep reads that Exonerate fails to align")
-        ("use-exonerate-anchors","use Exonerate to anchor the exact alignment")
-        ("exonerate-anchor-offset",po::value<int>()->default_value(15),"offset for the Exonerate anchor alignment")
-        ("exonerate-anchor-query-offset",po::value<float>()->default_value(2.0),"offset multiplier for the query ends")
+        ("keep-despite-exonerate-fails", "keep queries that Exonerate fails to align")
     ;
 
-    boost::program_options::options_description pileup("Read pileup options",100);
+    boost::program_options::options_description pileup("Pileup alignment options",100);
     pileup.add_options()
-        ("reads-pileup","pileup reads")
-        ("pileup-reads-ordered","pileup reads are ordered")
-        ("pileup-offset", po::value<int>()->default_value(5), "offset for alignment start site")
-        ("read-cluster-attempts", po::value<int>()->default_value(1),"attempts to find overlap")
+        ("pileup-alignment","make pileup alignment")
+        ("compare-reverse","test also reverse-complement and keep better (DNA)")
+        ("find-best-orf", "translate and use best ORF (DNA)")
+        ("min-orf-coverage", po::value<float>()->default_value(0.95,"0.95"),"minimum ORF coverage to be considered (DNA)")
+        ("pileup-queries-ordered","pileup queries are ordered")
+        ("pileup-offset", po::value<int>()->default_value(5), "offset for ordered alignment start site")
+        ("query-cluster-attempts", po::value<int>()->default_value(1),"attempts to find overlap")
         ("find-cluster-reference","find optimal cluster reference")
-        ("cluster-pileup","pileup clustered reads")
-        ("compare-reverse","test also reverse-complement and keep better")
-        ("find-best-orf", "translate and use best ORF")
-        ("min-orf-coverage", po::value<float>()->default_value(0.95,"0.95"),"minimum ORF coverage to be considered")
         ("inlude-parent-in-contig", "include also ancestral parent in contigs")
         ("use-duplicate-weigths", "use NumDuplicates=# to weight consensus counts")
         ("output-consensus", "output contig consensus alone")
@@ -223,8 +220,12 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     boost::program_options::options_description broken("Broken options",100);
     broken.add_options()
         ("sample-additional-paths", po::value<int>()->default_value(0), "sample additional paths from posterior probabilities")
-        ("cds-seqfile", po::value<string>(), "reference alignment file (FASTA)")
-        ("cds-treefile", po::value<string>(), "reference tree file (NH/NHX)")
+        ("readsfile", po::value<string>(), "reads file (FASTA/FASTQ)")
+        ("reads-pileup","make pileup alignment")
+        ("use-exonerate-anchors","use Exonerate to anchor the exact alignment")
+        ("exonerate-anchor-offset",po::value<int>()->default_value(15),"offset for the Exonerate anchor alignment")
+        ("exonerate-anchor-query-offset",po::value<float>()->default_value(2.0),"offset multiplier for the query ends")
+        ("cluster-pileup","pileup clustered reads (DNA)")
     ;
 
     po::positional_options_description pd;
@@ -262,18 +263,23 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         po::store(po::parse_config_file(cfg, full_desc), vm);
     }
 
-    if(Settings::is("cds-seqfile") || Settings::is("cds-treefile"))
+    if(Settings::is("readsfile"))
     {
         Settings::info_noexit();
-
         stringstream ss;
-        ss<<"\nThe program options '--cds-seqfile' and '--cds-treefile' have been renamed as '--ref-seqfile' and '--ref-treefile'.\n"
-                "Please edit your command argument line accordingly. Exiting.\n\n";
+        ss<<"\nThe program option '--readsfile' has been renamed as '--queryfile'. Please edit your command argument. Exiting.\n\n";
         Log_output::write_out(ss.str(),0);
-
         exit(1);
-
     }
+    if(Settings::is("reads-pileup"))
+    {
+        Settings::info_noexit();
+        stringstream ss;
+        ss<<"\nThe program option '--reads-pileup' has been renamed as '--pileup-alignment'. Please edit your command argument. Exiting.\n\n";
+        Log_output::write_out(ss.str(),0);
+        exit(1);
+    }
+
     po::notify(vm);
 
     if(is("noise"))

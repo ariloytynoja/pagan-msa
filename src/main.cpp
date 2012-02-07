@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     if(Settings_handle::st.is("overlap-merge-only"))
     {
 
-        if(!Settings_handle::st.is("readsfile"))
+        if(!Settings_handle::st.is("queryfile"))
         {
             Log_output::write_out("No reads file given. Exiting.\n\n",0);
             exit(1);
@@ -121,9 +121,9 @@ int main(int argc, char *argv[])
 
         reference_alignment = true;
     }
-    else if(Settings_handle::st.is("readsfile") && Settings_handle::st.is("find-cluster-reference") && !Settings_handle::st.is("ref-seqfile"))
+    else if(Settings_handle::st.is("queryfile") && Settings_handle::st.is("find-cluster-reference") && !Settings_handle::st.is("ref-seqfile"))
     {
-        string seqfile =  Settings_handle::st.get("readsfile").as<string>();
+        string seqfile =  Settings_handle::st.get("queryfile").as<string>();
         Log_output::write_out("Optimal reference sequence from: "+seqfile+"\n",1);
 
         try
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
             fr.read(seqfile, sequences, true);
         }
         catch (ppa::IOException& e) {
-            Log_output::write_out("Error reading the readsfile '"+seqfile+"'.\nExiting.\n\n",0);
+            Log_output::write_out("Error reading the queryfile '"+seqfile+"'.\nExiting.\n\n",0);
             exit(1);
         }
 
@@ -141,9 +141,9 @@ int main(int argc, char *argv[])
         reference_alignment = true;
 
     }
-    else if(Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
+    else if(Settings_handle::st.is("queryfile") && !Settings_handle::st.is("ref-seqfile"))
     {
-        string seqfile =  Settings_handle::st.get("readsfile").as<string>();
+        string seqfile =  Settings_handle::st.get("queryfile").as<string>();
         Log_output::write_out("Reference sequence from: "+seqfile+"\n",1);
 
         try
@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
             fr.read(seqfile, sequences, true);
         }
         catch (ppa::IOException& e) {
-            Log_output::write_out("Error reading the readsfile '"+seqfile+"'.\nExiting.\n\n",0);
+            Log_output::write_out("Error reading the queryfile '"+seqfile+"'.\nExiting.\n\n",0);
             exit(1);
         }
 
@@ -289,7 +289,7 @@ int main(int argc, char *argv[])
 
     if(data_type==Model_factory::dna && Settings_handle::st.is("codons"))
     {
-        // Create a codon alignment model using K&G.
+        // Create a codon alignment model using KHG.
         Log_output::write_out("Model_factory: creating a codon model\n",3);
         mf.codon_model(&Settings_handle::st); // does it need the handle????
     }
@@ -343,7 +343,7 @@ int main(int argc, char *argv[])
         Log_output::write_out(ss.str(),"time");
 
     }
-    else if( Settings_handle::st.is("readsfile") )
+    else if( Settings_handle::st.is("queryfile") )
     {
         Reads_aligner ra;
         ra.align(root,&mf,count);
@@ -371,7 +371,7 @@ int main(int argc, char *argv[])
 
     // See if any sequences were placed
     //
-    if(Settings_handle::st.is("readsfile") && (int)sequences.size() == (int)aligned_sequences.size())
+    if(Settings_handle::st.is("queryfile") && (int)sequences.size() == (int)aligned_sequences.size())
     {
 
         Log_output::write_out("Failed to extend the alignment. No output created.\n",0);
@@ -512,7 +512,7 @@ int main(int argc, char *argv[])
     time( &s_time );
     ss.str(string());
     ss << "\nThe analysis finished: " << asctime( localtime( &s_time ) );
-    ss<<"Total time used: "<<double_t(clock()-analysis_start_time)/CLOCKS_PER_SEC<<" sec.\n\n";
+    ss<<"Total time used by PAGAN: "<<double_t(clock()-analysis_start_time)/CLOCKS_PER_SEC<<" sec.\n\n";
     Log_output::write_out(ss.str(),0);
 
     delete root;

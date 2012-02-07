@@ -242,7 +242,7 @@ void Optimal_reference::align(Node *root, Model_factory *mf, int count)
     }
 
 
-    string file = Settings_handle::st.get("readsfile").as<string>();
+    string file = Settings_handle::st.get("queryfile").as<string>();
 
     Fasta_reader fr;
     vector<Fasta_entry> reads;

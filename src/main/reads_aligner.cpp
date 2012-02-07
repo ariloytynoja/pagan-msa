@@ -33,7 +33,7 @@ Reads_aligner::Reads_aligner(){}
 
 void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 {
-    string file = Settings_handle::st.get("readsfile").as<string>();
+    string file = Settings_handle::st.get("queryfile").as<string>();
 
     Log_output::write_header("Aligning reads ",0);
 
@@ -106,7 +106,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
     // No search for optimal node or TID tags in the tree
     //
-    if(Settings_handle::st.is("align-reads-at-root") || Settings_handle::st.is("reads-pileup"))
+    if(Settings_handle::st.is("align-reads-at-root") || Settings_handle::st.is("pileup-alignment"))
     {
         Log_output::write_header("Aligning reads: simple placement",0);
         this->loop_simple_placement(root,&reads,mf,count);
@@ -146,76 +146,88 @@ void Reads_aligner::loop_simple_placement(Node *root, vector<Fasta_entry> *reads
     string ref_root_name = root->get_name();
 
     int start_i = 0;
-    if(Settings_handle::st.is("reads-pileup") && Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
+    if(Settings_handle::st.is("pileup-alignment") && Settings_handle::st.is("queryfile") && !Settings_handle::st.is("ref-seqfile"))
         start_i = 1;
 
+    int max_attempts = Settings_handle::st.get("query-cluster-attempts").as<int>();
     global_root = root;
-    for(int i=start_i;i<(int)reads->size();i++)
+
+    for(int j=0; j < max_attempts; j++)
     {
 
-        Node * node = new Node();
-
-        stringstream ss;
-        ss<<"#"<<count<<"#";
-        node->set_name(ss.str());
-
-        global_root->set_distance_to_parent(0.001);
-        node->add_left_child(global_root);
-
-
-        Node * reads_node = new Node();
-        this->copy_node_details(reads_node,&reads->at(i));
-
-        node->add_right_child(reads_node);
-
-        node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
-        node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
-
-        ss.str(string());
-        ss<<"("<<i+1<<"/"<<reads->size()<<") aligning read: "<<reads->at(i).name<<" "<<reads->at(i).comment<<".";
-        Log_output::write_msg(ss.str(),0);
-
-
-        int start_offset = -1;
-        int end_offset = -1;
-
-        if(Settings_handle::st.is("pileup-reads-ordered") && !global_root->is_leaf())
+        for(int i=start_i;i<(int)reads->size();i++)
         {
-            Sequence *tmp_seq = global_root->get_sequence();
-            int i=1;
-            for(;i<tmp_seq->sites_length();i++)
+
+            if(reads->at(i).cluster_attempts >= max_attempts)
+                continue;
+
+            Node * node = new Node();
+
+            stringstream ss;
+            ss<<"#"<<count<<"#";
+            node->set_name(ss.str());
+
+            global_root->set_distance_to_parent(0.001);
+            node->add_left_child(global_root);
+
+
+            Node * reads_node = new Node();
+            this->copy_node_details(reads_node,&reads->at(i));
+
+            node->add_right_child(reads_node);
+
+            node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+            node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+
+            ss.str(string());
+            ss<<"("<<i+1<<"/"<<reads->size()<<") aligning read: "<<reads->at(i).name<<" "<<reads->at(i).comment<<".";
+            Log_output::write_msg(ss.str(),0);
+
+
+            int start_offset = -1;
+            int end_offset = -1;
+
+            if(Settings_handle::st.is("pileup-queries-ordered") && !global_root->is_leaf())
             {
-                Site_children *offspring = tmp_seq->get_site_at(i)->get_children();
-                if(offspring->right_index>=0)
-                    break;
+                Sequence *tmp_seq = global_root->get_sequence();
+                int i=1;
+                for(;i<tmp_seq->sites_length();i++)
+                {
+                    Site_children *offspring = tmp_seq->get_site_at(i)->get_children();
+                    if(offspring->right_index>=0)
+                        break;
+                }
+
+                start_offset = i - Settings_handle::st.get("pileup-offset").as<int>();
+                if(start_offset<0 || start_offset>tmp_seq->sites_length())
+                    start_offset = -1;
+
             }
 
-            start_offset = i - Settings_handle::st.get("pileup-offset").as<int>();
-            if(start_offset<0 || start_offset>tmp_seq->sites_length())
-                start_offset = -1;
+            node->align_sequences_this_node(mf,true,false,start_offset,end_offset);
+
+            // check if the alignment significantly overlaps with the reference alignment
+            //
+            bool read_overlaps = this->read_alignment_overlaps(node, reads->at(i).name, ref_root_name);
+
+            if(read_overlaps)
+            {
+                reads->at(i).cluster_attempts = max_attempts;
+
+                count++;
+                global_root = node;
+            }
+            // else delete the node; do not use the read
+            else
+            {
+                reads->at(i).cluster_attempts++;
+
+                node->has_left_child(false);
+                delete node;
+            }
 
         }
-
-        node->align_sequences_this_node(mf,true,false,start_offset,end_offset);
-
-        // check if the alignment significantly overlaps with the reference alignment
-        //
-        bool read_overlaps = this->read_alignment_overlaps(node, reads->at(i).name, ref_root_name);
-
-        if(read_overlaps)
-        {
-            count++;
-            global_root = node;
-        }
-        // else delete the node; do not use the read
-        else
-        {
-            node->has_left_child(false);
-            delete node;
-        }
-
     }
-
 }
 
 void Reads_aligner::loop_two_strand_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
@@ -223,10 +235,10 @@ void Reads_aligner::loop_two_strand_placement(Node *root, vector<Fasta_entry> *r
     string ref_root_name = root->get_name();
 
     int start_i = 0;
-    if(Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
+    if(Settings_handle::st.is("queryfile") && !Settings_handle::st.is("ref-seqfile"))
         start_i = 1;
 
-    int max_attempts = Settings_handle::st.get("read-cluster-attempts").as<int>();
+    int max_attempts = Settings_handle::st.get("query-cluster-attempts").as<int>();
     global_root = root;
 
     for(int j=0; j < max_attempts; j++)
@@ -343,10 +355,10 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
     this->define_translation_tables();
 
     int start_i = 0;
-    if(Settings_handle::st.is("readsfile") && !Settings_handle::st.is("ref-seqfile"))
+    if(Settings_handle::st.is("queryfile") && !Settings_handle::st.is("ref-seqfile"))
         start_i = 1;
 
-    int max_attempts = Settings_handle::st.get("read-cluster-attempts").as<int>();
+    int max_attempts = Settings_handle::st.get("query-cluster-attempts").as<int>();
     global_root = root;
 
     for(int j=0; j < max_attempts; j++)
@@ -650,8 +662,11 @@ void Reads_aligner::loop_default_placement(Node *root, vector<Fasta_entry> *read
 
     // vector of node names giving the best node for each read
     //
-//    this->find_nodes_for_reads(root, reads, mf);
-    this->find_nodes_for_all_reads(root, reads, mf);
+
+    if(Settings_handle::st.is("exonerate-separately"))
+        this->find_nodes_for_reads(root, reads, mf);
+    else
+        this->find_nodes_for_all_reads(root, reads, mf);
 
     if(Settings_handle::st.is("placement-only"))
         exit(0);
@@ -848,7 +863,7 @@ void Reads_aligner::loop_default_placement(Node *root, vector<Fasta_entry> *read
 
 void Reads_aligner::merge_reads_only()
 {
-    string file = Settings_handle::st.get("readsfile").as<string>();
+    string file = Settings_handle::st.get("queryfile").as<string>();
 
     Fasta_reader fr;
     vector<Fasta_entry> reads;
@@ -1168,7 +1183,7 @@ bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, strin
     int read_length = 0;
     int matched = 0;
 
-    if(Settings_handle::st.is("reads-pileup") && !Settings_handle::st.is("overlap-with-reference"))
+    if(Settings_handle::st.is("pileup-alignment") && !Settings_handle::st.is("overlap-with-reference"))
     {
         for( int j=0; j < node_sequence->sites_length(); j++ )
         {
@@ -1206,7 +1221,7 @@ bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, strin
         }
     }
 
-    if( !Settings_handle::st.is("reads-pileup") )
+    if( !Settings_handle::st.is("pileup-alignment") )
     {
         stringstream ss;
         ss<<"aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"];"<<
@@ -1214,7 +1229,7 @@ bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, strin
         Log_output::write_out(ss.str(),2);
     }
 
-    if(Settings_handle::st.is("reads-pileup") && !Settings_handle::st.is("overlap-with-reference"))
+    if(Settings_handle::st.is("pileup-alignment") && !Settings_handle::st.is("overlap-with-reference"))
     {
         if( (float)aligned/(float)read_length >= min_overlap )
             return true;
@@ -1487,7 +1502,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
         map<string,hit> exonerate_hits;
 
-        if(Settings_handle::st.is("use-exonerate-reads-local") || Settings_handle::st.is("fast-placement"))
+        if(Settings_handle::st.is("use-exonerate-local") || Settings_handle::st.is("fast-placement"))
         {
             Exonerate_reads er;
             if(!er.test_executable())
@@ -1514,7 +1529,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                 if(tid_nodes.size()>0)
                     er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits, true,ignore_tid_tags);
 
-                if(Settings_handle::st.is("use-exonerate-reads-gapped") || Settings_handle::st.is("fast-placement"))
+                if(Settings_handle::st.is("use-exonerate-gapped") || Settings_handle::st.is("fast-placement"))
                 {
                     if(Settings_handle::st.is("fast-placement") && tid_nodes.size()==0)
                     {
@@ -1538,7 +1553,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                 }
             }
         }
-        else if(Settings_handle::st.is("use-exonerate-reads-gapped"))
+        else if(Settings_handle::st.is("use-exonerate-gapped"))
         {
             Exonerate_reads er;
             if(!er.test_executable())
@@ -1818,7 +1833,7 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
 
     map<string, multimap<string,hit> > exonerate_hits;
 
-    if(Settings_handle::st.is("use-exonerate-reads-local") || Settings_handle::st.is("fast-placement"))
+    if(Settings_handle::st.is("use-exonerate-local") || Settings_handle::st.is("fast-placement"))
     {
         Exonerate_reads er;
         if(!er.test_executable())
@@ -1828,7 +1843,7 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
         {
             er.all_local_alignments(root,reads,&all_tid_nodes,&exonerate_hits, true);
 
-            if(Settings_handle::st.is("use-exonerate-reads-gapped") || Settings_handle::st.is("fast-placement"))
+            if(Settings_handle::st.is("use-exonerate-gapped") || Settings_handle::st.is("fast-placement"))
             {
                 if(Settings_handle::st.is("fast-placement") && all_tid_nodes.size()==0)
                 {
@@ -1850,7 +1865,7 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
         }
     }
 
-    else if(Settings_handle::st.is("use-exonerate-reads-gapped"))
+    else if(Settings_handle::st.is("use-exonerate-gapped"))
     {
         Exonerate_reads er;
         if(!er.test_executable())
