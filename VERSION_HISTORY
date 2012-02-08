@@ -1,5 +1,5 @@
 v.0.37
-- changes in phylogenetic placement using Exonerate: faster, all run at one go
+- changes in phylogenetic placement using Exonerate: can run all at one go
 - renaming some command line arguments. Please check 'pagan --help'
 
 

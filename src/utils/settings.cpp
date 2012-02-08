@@ -74,6 +74,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("build-contigs", "build contigs of query clusters")
         ("test-every-node","test every node for each query")
         ("fast-placement","use Exonerate to quickly assign queries to nodes")
+        ("very-fast-placement","shorthand for fast heuristic settings")
     ;
 
     boost::program_options::options_description reads_alignment2("Additional alignment extension options",100);
@@ -118,7 +119,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     boost::program_options::options_description exonerate("Exonerate options",100);
     exonerate.add_options()
         ("exhaustive-placement","if Exonrate fails, use PAGAN to place the query")
-        ("exonerate-separately","run Exonerate separately for each query")
+        ("exonerate-once","run Exonerate all queries together")
         ("use-exonerate-local","use Exonerate local to map queries to nodes")
         ("exonerate-local-keep-best",po::value<int>()->default_value(5),"keep best # of local matches")
         ("exonerate-local-keep-above",po::value<float>(),"keep local matches above #% of the best score")
@@ -263,7 +264,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         po::store(po::parse_config_file(cfg, full_desc), vm);
     }
 
-    if(Settings::is("readsfile"))
+    if(is("readsfile"))
     {
         Settings::info_noexit();
         stringstream ss;
@@ -271,7 +272,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         Log_output::write_out(ss.str(),0);
         exit(1);
     }
-    if(Settings::is("reads-pileup"))
+    if(is("reads-pileup"))
     {
         Settings::info_noexit();
         stringstream ss;
@@ -287,6 +288,26 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     if(is("silent"))
         noise = -1;
+
+    if(is("exonerate-local-keep-best") && get("exonerate-local-keep-best").as<int>() > 0 )
+        exonerate_local_keep_best = get("exonerate-local-keep-best").as<int>();
+
+    if(is("exonerate-gapped-keep-best") && get("exonerate-gapped-keep-best").as<int>() > 0 )
+        exonerate_gapped_keep_best = get("exonerate-gapped-keep-best").as<int>();
+
+    if(is("very-fast-placement"))
+    {
+        exonerate_local_keep_best = 1;
+        exonerate_gapped_keep_best = 1;
+
+        if( is("use-exonerate-local") || /*is("exonerate-local-keep-best") ||*/ is("exonerate-local-keep-above") ||
+            is("use-exonerate-gapped") || /*is("exonerate-gapped-keep-best") ||*/ is("exonerate-gapped-keep-above") ||
+            is("exhaustive-placement") || is("keep-despite-exonerate-fails") )
+        {
+            Log_output::write_out("Please disable Exonerate-related options if using '--very-fast-placement'. Exiting.\n",0);
+            exit(1);
+        }
+    }
 
     if (vm.count("help")) {
         this->help();
@@ -431,5 +452,8 @@ void Settings::check_version()
     exit(0);
 }
 
-int     Settings::noise             = 0;
-float   Settings::resize_factor     = 1.5;
+int   Settings::noise             = 0;
+float Settings::resize_factor     = 1.5;
+
+int   Settings::exonerate_local_keep_best = 1;
+int   Settings::exonerate_gapped_keep_best = 1;

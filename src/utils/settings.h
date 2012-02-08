@@ -53,6 +53,10 @@ public:
 
     static int noise;
     static float resize_factor;
+
+    static int exonerate_local_keep_best;
+    static int exonerate_gapped_keep_best;
+
 };
 
 }

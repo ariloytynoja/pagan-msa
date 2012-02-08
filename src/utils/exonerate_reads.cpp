@@ -322,13 +322,11 @@ void Exonerate_reads::all_local_alignments(Node *root, vector<Fasta_entry> *read
             else
             {
                 int lim = best_hits.size();
-                if( is_local && Settings_handle::st.is("exonerate-local-keep-best") &&
-                        Settings_handle::st.get("exonerate-local-keep-best").as<int>()>0 )
-                    lim = Settings_handle::st.get("exonerate-local-keep-best").as<int>();
+                if( is_local )
+                    lim = Settings::exonerate_local_keep_best;
 
-                if( !is_local && Settings_handle::st.is("exonerate-gapped-keep-best") &&
-                        Settings_handle::st.get("exonerate-gapped-keep-best").as<int>()>0 )
-                    lim = Settings_handle::st.get("exonerate-gapped-keep-best").as<int>();
+                if( !is_local )
+                    lim = Settings::exonerate_gapped_keep_best;
 
                 for(int i=0; i<lim && i<(int)best_hits.size(); i++)
                 {
@@ -521,13 +519,11 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
         else
         {
             int lim = hit_names.size();
-            if( is_local && Settings_handle::st.is("exonerate-local-keep-best") &&
-                    Settings_handle::st.get("exonerate-local-keep-best").as<int>()>0 )
-                lim = Settings_handle::st.get("exonerate-local-keep-best").as<int>();
+            if( is_local )
+                lim = Settings::exonerate_local_keep_best;
 
-            if( !is_local && Settings_handle::st.is("exonerate-gapped-keep-best") &&
-                    Settings_handle::st.get("exonerate-gapped-keep-best").as<int>()>0 )
-                lim = Settings_handle::st.get("exonerate-gapped-keep-best").as<int>();
+            if( !is_local )
+                lim = Settings::exonerate_gapped_keep_best;
 
             for(int i=0; i<lim && i<(int)hit_names.size(); i++)
             {

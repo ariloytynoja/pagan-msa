@@ -663,10 +663,10 @@ void Reads_aligner::loop_default_placement(Node *root, vector<Fasta_entry> *read
     // vector of node names giving the best node for each read
     //
 
-    if(Settings_handle::st.is("exonerate-separately"))
-        this->find_nodes_for_reads(root, reads, mf);
-    else
+    if(Settings_handle::st.is("exonerate-once") || Settings_handle::st.is("very-fast-placement"))
         this->find_nodes_for_all_reads(root, reads, mf);
+    else
+        this->find_nodes_for_reads(root, reads, mf);
 
     if(Settings_handle::st.is("placement-only"))
         exit(0);
@@ -1502,7 +1502,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
         map<string,hit> exonerate_hits;
 
-        if(Settings_handle::st.is("use-exonerate-local") || Settings_handle::st.is("fast-placement"))
+        if(Settings_handle::st.is("use-exonerate-local") || Settings_handle::st.is("fast-placement")  || Settings_handle::st.is("very-fast-placement") )
         {
             Exonerate_reads er;
             if(!er.test_executable())
@@ -1549,7 +1549,8 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                             root->get_node_names_with_tid_tag(&tid_nodes);
                         }
                     }
-                    er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
+                    if(tid_nodes.size()>1)
+                        er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
                 }
             }
         }
@@ -1833,7 +1834,7 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
 
     map<string, multimap<string,hit> > exonerate_hits;
 
-    if(Settings_handle::st.is("use-exonerate-local") || Settings_handle::st.is("fast-placement"))
+    if(Settings_handle::st.is("use-exonerate-local") || Settings_handle::st.is("fast-placement") || Settings_handle::st.is("very-fast-placement"))
     {
         Exonerate_reads er;
         if(!er.test_executable())
@@ -1859,8 +1860,8 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
                     }
 
                 }
-
-                er.all_local_alignments(root,reads,&all_tid_nodes,&exonerate_hits,false);
+                if(all_tid_nodes.size()>0)
+                    er.all_local_alignments(root,reads,&all_tid_nodes,&exonerate_hits,false);
             }
         }
     }
