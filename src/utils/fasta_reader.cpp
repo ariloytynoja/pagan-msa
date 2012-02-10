@@ -754,7 +754,7 @@ void Fasta_reader::write_sequential(ostream & output, const vector<Fasta_entry> 
         string temp;
         while (seq != "")
         {
-            if ((int)seq.size() > chars_by_line)
+            if ((int)seq.size() > (int)chars_by_line)
             {
                 temp = string(seq.begin(), seq.begin() + chars_by_line);
                 output << temp  << endl;
