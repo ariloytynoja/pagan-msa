@@ -70,13 +70,21 @@ public:
 
     void trim_fastq_reads(vector<Fasta_entry> * seqs) const throw (Exception);
 
-    void write(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception);
-    void write(const string & path, const vector<Fasta_entry> & seqs, bool overwrite=true) const throw (Exception)
+    void write(ostream & output, const vector<Fasta_entry> & seqs, string format) const throw (Exception);
+    void write(const string & path, const vector<Fasta_entry> & seqs, string format, bool overwrite=true) const throw (Exception)
     {
-        ofstream output( (path+".fas").c_str(), overwrite ? (ios::out) : (ios::out|ios::app));
-        write(output, seqs);
+        string suffix = this->get_format_suffix(format);
+        ofstream output( (path+suffix).c_str(), overwrite ? (ios::out) : (ios::out|ios::app));
+        write(output, seqs, format);
         output.close();
     }
+
+    string get_format_suffix(string format) const throw (Exception);
+    void write_fasta(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception);
+    void write_interleaved(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception);
+    void write_sequential(ostream & output, const vector<Fasta_entry> & seqs, bool truncate) const throw (Exception);
+    void write_long_sequential(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception);
+    void write_simple_nexus(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception);
 
     void write_dna(ostream & output, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, Node *root, int output_type=Fasta_reader::plain_alignment) const throw (Exception);
     void write_dna(const string & path, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, Node *root, bool overwrite=true, int output_type=Fasta_reader::plain_alignment) const throw (Exception)

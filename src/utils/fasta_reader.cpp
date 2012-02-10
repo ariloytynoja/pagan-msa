@@ -594,7 +594,7 @@ void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool 
 
 /****************************************************************************************/
 
-void Fasta_reader::write(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception)
+void Fasta_reader::write(ostream & output, const vector<Fasta_entry> & seqs, string format) const throw (Exception)
 {
     // Checking the existence of specified file, and possibility to open it in write mode
     if (! output) { throw IOException ("Fasta_reader::write. Failed to open file"); }
@@ -622,6 +622,62 @@ void Fasta_reader::write(ostream & output, const vector<Fasta_entry> & seqs) con
         }
     }
 
+     vector<Fasta_entry> seqs2;
+
+    vector<Fasta_entry>::const_iterator vi = seqs.begin();
+    for (; vi != seqs.end(); vi++)
+    {
+        Fasta_entry e = *vi;
+        multimap<string,int>::iterator cit = copy_num.find(vi->name);
+        if(cit!=copy_num.end())
+        {
+            e.name.append("/"+cit->second);
+            copy_num.erase(cit);
+        }
+        seqs2.push_back(e);
+    }
+
+    if(format == "fasta")
+        write_fasta(output,seqs2);
+    else if(format == "raxml")
+        this->write_long_sequential(output,seqs2);
+    else if (format == "phylipi")
+        this->write_interleaved(output,seqs2);
+    else if (format == "phylip")
+        this->write_interleaved(output,seqs2);
+    else if (format == "phylips")
+        this->write_sequential(output,seqs2,true);
+    else if (format == "nexus")
+        this->write_simple_nexus(output,seqs2);
+    else if (format == "paml")
+        this->write_sequential(output,seqs2,false);
+    else
+    {
+        Log_output::write_out("Outformat '"+format+"' not recognised.\nAccepted formats: fasta, raxml, paml, phylips, phylipi, nexus.\n Using 'fasta'.",0);
+        write_fasta(output,seqs2);
+    }
+}
+
+string Fasta_reader::get_format_suffix(string format) const throw (Exception)
+{
+    if(format == "raxml")
+        return ".phy";
+    else if (format == "phylip")
+        return ".phy";
+    else if (format == "phylipi")
+        return ".phy";
+    else if (format == "phylips")
+        return ".phy";
+    else if (format == "nexus")
+        return ".nex";
+    else if (format == "paml")
+        return ".phy";
+    else
+        return ".fas";
+
+}
+void Fasta_reader::write_fasta(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception)
+{
     vector<Fasta_entry>::const_iterator vi = seqs.begin();
 
     // Main loop : for all sequences in vector container
@@ -629,19 +685,14 @@ void Fasta_reader::write(ostream & output, const vector<Fasta_entry> & seqs) con
     {
         output << ">" << vi->name;
 
-        multimap<string,int>::iterator cit = copy_num.find(vi->name);
-        if(cit!=copy_num.end())
-        {
-            output<<"/"<<cit->second;
-            copy_num.erase(cit);
-        }
         if(vi->comment != "")
             output << " " << vi->comment;
 
         output << endl;
 
         // Sequence cutting to specified characters number per line
-        seq = vi->sequence;
+        string seq = vi->sequence;
+        string temp;
         while (seq != "")
         {
             if (seq.size() > chars_by_line)
@@ -657,6 +708,108 @@ void Fasta_reader::write(ostream & output, const vector<Fasta_entry> & seqs) con
             }
         }
     }
+}
+
+
+void Fasta_reader::write_interleaved(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception)
+{
+    vector<Fasta_entry>::const_iterator vi = seqs.begin();
+    int length = vi->sequence.length();
+    output << seqs.size() << " " << length << endl;
+
+    for (int offset = 0; offset<length; offset+=chars_by_line)
+    {
+        vi = seqs.begin();
+
+        for (; vi!=seqs.end(); vi++)
+        {
+            string tmp = vi->name.substr(0,10)+"          ";
+            if (offset > 0)
+            {
+                tmp = "           ";
+            }
+            output << tmp.substr(0,10)<<" ";
+
+            output<<vi->sequence.substr(offset,chars_by_line)<<endl;
+        }
+    }
+}
+
+void Fasta_reader::write_sequential(ostream & output, const vector<Fasta_entry> & seqs, bool truncate) const throw (Exception)
+{
+
+    vector<Fasta_entry>::const_iterator vi = seqs.begin();
+    int length = vi->sequence.length();
+    output << seqs.size() << " " << length << endl;
+
+    for (; vi!=seqs.end(); vi++)
+    {
+        if (truncate)
+            output << (vi->name+"          ").substr(0,10)<<" "<< endl;
+        else
+            output << vi->name << endl;
+
+        // Sequence cutting to specified characters number per line
+        string seq = vi->sequence;
+        string temp;
+        while (seq != "")
+        {
+            if ((int)seq.size() > chars_by_line)
+            {
+                temp = string(seq.begin(), seq.begin() + chars_by_line);
+                output << temp  << endl;
+                seq.erase(seq.begin(), seq.begin() + chars_by_line);
+            }
+            else
+            {
+                output << seq << endl;
+                seq = "";
+            }
+        }
+    }
+}
+
+void Fasta_reader::write_long_sequential(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception)
+{
+
+    vector<Fasta_entry>::const_iterator vi = seqs.begin();
+    int length = vi->sequence.length();
+    output << seqs.size() << " " << length << endl;
+
+    for (; vi!=seqs.end(); vi++)
+        output << vi->name<< endl<<vi->sequence<<endl;
+}
+
+void Fasta_reader::write_simple_nexus(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception)
+{
+
+    vector<Fasta_entry>::const_iterator vi = seqs.begin();
+    int length = vi->sequence.length();
+
+    string datatype = "protein";
+
+    if(this->check_sequence_data_type(&seqs) == Model_factory::dna)
+        datatype = "dna";
+
+    output<<"#NEXUS\nbegin data;\ndimensions ntax="<<seqs.size()<<" nchar="<<length<<";\nformat datatype="<<datatype<<" interleave=yes gap=-;\nmatrix\n"<<endl;
+
+
+    for (int offset = 0; offset<length; offset+=chars_by_line)
+    {
+        output<<endl;
+
+        vi = seqs.begin();
+
+        for (; vi!=seqs.end(); vi++)
+        {
+            string tmp = vi->name.substr(0,20)+"'                    ";
+            output << "'"<<tmp.substr(0,21)<<"     ";
+
+            output<<vi->sequence.substr(offset,chars_by_line)<<endl;
+        }
+    }
+    output<<";\nend;";
+
 }
 
 /****************************************************************************************/

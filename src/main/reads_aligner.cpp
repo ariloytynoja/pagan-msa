@@ -478,7 +478,7 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
 void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
 {
 
-    int min_orf_length = Settings_handle::st.get("min-orf-coverage").as<float>() * read->sequence.length();
+    int min_orf_length = int (Settings_handle::st.get("min-orf-coverage").as<float>() * read->sequence.length() );
 
     string dna = read->dna_sequence;
     int length = dna.length()-1;

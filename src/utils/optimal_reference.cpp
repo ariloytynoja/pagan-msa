@@ -228,7 +228,7 @@ void Optimal_reference::find_best_hit(Fasta_entry *query, vector<Fasta_entry> *s
         node_rc.has_right_child(false);
     }
 
-    Log_output::write_out(best_read->name+" "+Log_output::itos(best_score)+" ("+Log_output::itos(best_read->reversed)+")\n",3);
+    Log_output::write_out(best_read->name+" "+Log_output::ftos(best_score)+" ("+Log_output::itos(best_read->reversed)+")\n",3);
 }
 
 void Optimal_reference::align(Node *root, Model_factory *mf, int count)
@@ -337,7 +337,7 @@ void Optimal_reference::align(Node *root, Model_factory *mf, int count)
         float read_identity;
         this->read_alignment_scores(node, best_read.name, global_root->get_name(), &read_overlap, &read_identity);
 
-        Log_output::write_out("Optimal_reference: overlap: "+Log_output::itos(read_overlap)+", identity "+Log_output::itos(read_identity)+"\n",2);
+        Log_output::write_out("Optimal_reference: overlap: "+Log_output::ftos(read_overlap)+", identity "+Log_output::ftos(read_identity)+"\n",2);
 
         float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
         float min_identity = Settings_handle::st.get("min-reads-identity").as<float>();

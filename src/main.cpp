@@ -387,13 +387,17 @@ int main(int argc, char *argv[])
         if(Settings_handle::st.is("outfile"))
             outfile =  Settings_handle::st.get("outfile").as<string>();
 
+        string format = "fasta";
+        if(Settings_handle::st.is("outformat"))
+            format = Settings_handle::st.get("outformat").as<string>();
+
         if(Settings_handle::st.is("xml"))
-            Log_output::write_out("Alignment files: "+outfile+".fas, "+outfile+".xml\n",0);
+            Log_output::write_out("Alignment files: "+outfile+fr.get_format_suffix(format)+", "+outfile+".xml\n",0);
         else
-            Log_output::write_out("Alignment file: "+outfile+".fas\n",0);
+            Log_output::write_out("Alignment file: "+outfile+fr.get_format_suffix(format)+"\n",0);
 
         fr.set_chars_by_line(70);
-        fr.write(outfile, aligned_sequences, true);
+        fr.write(outfile, aligned_sequences, format, true);
 
         count = 1;
         root->set_name_ids(&count);
@@ -417,7 +421,7 @@ int main(int argc, char *argv[])
             Log_output::write_out("Contig file: "+outfile+".fas\n",1);
 
             fr.set_chars_by_line(70);
-            fr.write(outfile, contigs, true);
+            fr.write(outfile, contigs, "fasta", true);
         }
 
         if(Settings_handle::st.is("output-consensus"))
@@ -435,7 +439,7 @@ int main(int argc, char *argv[])
             fr.remove_gap_only_columns(&contigs);
 
             fr.set_chars_by_line(70);
-            fr.write(outfile, contigs, true);
+            fr.write(outfile, contigs, "fasta", true);
         }
 
         if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate") || Settings_handle::st.is("find-best-orf"))
