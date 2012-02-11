@@ -92,23 +92,24 @@ class Reads_aligner
     }
 
     static bool nodeIsSmaller(const string& l,const string& r)
-    {   char a,b;
-        int vl,vr;
+    {   char a,b,c,d;
+        int vl=0; int vr=0;
         stringstream ls(l);
         stringstream rs(r);
         ls>>a>>vl>>b;
-        rs>>a>>vr>>b;
+        rs>>c>>vr>>d;
 
-        if(vl==0 && vr==0)
-            return (l<r);
+        if(a=='#' && b=='#' && c=='#' && d=='#' && vl>0 && vr>0)
+            return (vl<vr);
 
-        if(vl==0)
-            return true;
-
-        if(vr==0)
+        if(a=='#' && b=='#'&& vl>0)
             return false;
 
-        return (vl<vr);
+        if(c=='#' && d=='#'&& vr>0)
+            return true;
+
+        return (l<r);
+
     }
 public:
     Reads_aligner();
