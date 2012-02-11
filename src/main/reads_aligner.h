@@ -99,6 +99,15 @@ class Reads_aligner
         ls>>a>>vl>>b;
         rs>>a>>vr>>b;
 
+        if(vl==0 && vr==0)
+            return (l<r);
+
+        if(vl==0)
+            return true;
+
+        if(vr==0)
+            return false;
+
         return (vl<vr);
     }
 public:
