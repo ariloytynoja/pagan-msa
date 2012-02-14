@@ -310,6 +310,12 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         }
     }
 
+    if( (is("very-fast-placement") || is("fast-placement")) && !(is("test-every-node") || is("test-every-internal-node")) )
+    {
+        Log_output::write_out("\nWarning: When using option '--(very-)fast-placement', either option '--test-(every-)internal-node'\nor a reference tree with TID tags should be used. "
+                              "If the latter is true, this warning can be ignored.\n",0);
+    }
+
     if (vm.count("help")) {
         this->help();
         return 1;
