@@ -8,6 +8,7 @@
 #include <vector>
 #include <algorithm>
 #include <boost/regex.hpp>
+#include <sys/stat.h>
 
 using namespace std;
 using namespace ppa;
@@ -76,16 +77,19 @@ bool Exonerate_reads::split_vulgar_string(const string& row,hit *h)
     return valid;
 }
 
+
 void Exonerate_reads::write_exonerate_input(Node *root, vector<Fasta_entry> *reads, map<string,string> *names, int r)
 {
     vector<Fasta_entry> aligned_sequences;
     root->get_alignment(&aligned_sequences,true);
 
+    string tmp_dir = this->get_temp_dir();
+
     // create exonerate input
     stringstream q_name;
     q_name <<"q"<<r<<".fas";
 
-    ofstream q_output( q_name.str().c_str(), (ios::out));
+    ofstream q_output( (tmp_dir+q_name.str()).c_str(), (ios::out));
     vector<Fasta_entry>::iterator it = reads->begin();
     for(;it!=reads->end();it++)
     {
@@ -97,7 +101,7 @@ void Exonerate_reads::write_exonerate_input(Node *root, vector<Fasta_entry> *rea
     stringstream t_name;
     t_name <<"t"<<r<<".fas";
 
-    ofstream t_output( t_name.str().c_str(), (ios::out));
+    ofstream t_output( (tmp_dir+t_name.str()).c_str(), (ios::out));
     it = aligned_sequences.begin();
     for(;it!=aligned_sequences.end();it++)
     {
@@ -122,18 +126,20 @@ void Exonerate_reads::write_exonerate_input(Node *root, Fasta_entry *read, map<s
     vector<Fasta_entry> aligned_sequences;
     root->get_alignment(&aligned_sequences,true);
 
+    string tmp_dir = this->get_temp_dir();
+
     // create exonerate input
     stringstream q_name;
     q_name <<"q"<<r<<".fas";
 
-    ofstream q_output( q_name.str().c_str(), (ios::out));
+    ofstream q_output( (tmp_dir+q_name.str()).c_str(), (ios::out));
     q_output<<">"<<read->name<<endl<<read->sequence<<endl;
     q_output.close();
 
     stringstream t_name;
     t_name <<"t"<<r<<".fas";
 
-    ofstream t_output( t_name.str().c_str(), (ios::out));
+    ofstream t_output( (tmp_dir+t_name.str()).c_str(), (ios::out));
     vector<Fasta_entry>::iterator it = aligned_sequences.begin();
     for(;it!=aligned_sequences.end();it++)
     {
@@ -161,6 +167,8 @@ void Exonerate_reads::all_local_alignments(Node *root, vector<Fasta_entry> *read
         Log_output::write_msg("Running Exonerate with all query sequences (gapped)",0);
 
     int r = rand();
+    string tmp_dir = this->get_temp_dir();
+
 
     bool ignore_tid_tags = Settings_handle::st.is("test-every-internal-node") || Settings_handle::st.is("test-every-node") ;
 
@@ -194,9 +202,9 @@ void Exonerate_reads::all_local_alignments(Node *root, vector<Fasta_entry> *read
 
     stringstream command;
     if(is_local)
-        command << "exonerate -q q"<<r<<".fas -t t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
+        command << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
     else
-        command << "exonerate -q q"<<r<<".fas -t t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local -E 2>&1";
+        command << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local -E 2>&1";
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
@@ -384,6 +392,8 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
 
 
     int r = rand();
+    string tmp_dir = this->get_temp_dir();
+
 
     map<string,string> names;
     multimap<string,string>::iterator it = tid_nodes->begin();
@@ -408,9 +418,9 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
 
     stringstream command;
     if(is_local)
-        command << "exonerate -q q"<<r<<".fas -t t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
+        command << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
     else
-        command << "exonerate -q q"<<r<<".fas -t t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local -E 2>&1";
+        command << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local -E 2>&1";
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )

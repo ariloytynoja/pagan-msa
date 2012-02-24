@@ -1166,15 +1166,15 @@ void Model_factory::define_codon_alphabet()
 
         ss<<"\nModel_factory::define_codon_alphabet(). Protein parsimony table.\n\n  ";
         for(int i=0;i<char_fas;i++)
-            ss<<full_char_alphabet.at(i)<<" ";
+            ss<<full_character_alphabet->at(i)<<" ";
         ss<<endl;
 
         for(int i=0;i<char_fas;i++)
         {
-            ss<<full_char_alphabet.at(i)<<" ";
+            ss<<full_character_alphabet->at(i)<<" ";
             for(int j=0;j<char_fas;j++)
             {
-                ss<<full_char_alphabet.at(parsimony_table->g(i,j))<<" ";
+                ss<<full_character_alphabet->at(parsimony_table->g(i,j))<<" ";
             }
             ss<<endl;
         }

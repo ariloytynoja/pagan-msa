@@ -339,8 +339,8 @@ void Optimal_reference::align(Node *root, Model_factory *mf, int count)
 
         Log_output::write_out("Optimal_reference: overlap: "+Log_output::ftos(read_overlap)+", identity "+Log_output::ftos(read_identity)+"\n",2);
 
-        float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
-        float min_identity = Settings_handle::st.get("min-reads-identity").as<float>();
+        float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
+        float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
 
         if(read_overlap < min_overlap || read_identity < min_identity)
         {
@@ -374,7 +374,7 @@ void Optimal_reference::align(Node *root, Model_factory *mf, int count)
 
 void Optimal_reference::copy_node_details(Node *reads_node,Fasta_entry *read,bool turn_revcomp)
 {
-    double r_dist = Settings_handle::st.get("reads-distance").as<float>();
+    double r_dist = Settings_handle::st.get("query-distance").as<float>();
 
     reads_node->set_distance_to_parent(r_dist);
     reads_node->set_name(read->name);

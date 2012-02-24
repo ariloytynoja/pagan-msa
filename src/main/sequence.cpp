@@ -557,7 +557,9 @@ string Sequence::print_sequence(vector<Site> *sites)
 {
 
     vector<string> *alphabet = 0;
-    if(data_type == Model_factory::dna)
+    if(data_type == Model_factory::dna && Settings_handle::st.is("codons"))
+        alphabet = Model_factory::get_codon_full_character_alphabet();
+    else if(data_type == Model_factory::dna)
         alphabet = Model_factory::get_dna_full_character_alphabet();
     else if(data_type == Model_factory::protein)
         alphabet = Model_factory::get_protein_full_character_alphabet();
@@ -567,7 +569,6 @@ string Sequence::print_sequence(vector<Site> *sites)
     for(unsigned int i=0;i<sites->size();i++)
     {
         Site *tsite =  &sites->at(i);
-
         ss<<i<<": ";
         if(tsite->get_site_type()==Site::real_site)
             ss<<tsite->get_index()<<" "<<setw(2)<<alphabet->at(tsite->get_state());

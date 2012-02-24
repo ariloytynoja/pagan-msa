@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <sys/stat.h>
 
 namespace ppa{
 
@@ -31,6 +32,19 @@ class Exonerate_reads
     void write_exonerate_input(Node *root, vector<Fasta_entry> *reads, map<string,string> *names, int r);
     void write_exonerate_input(Node *root, Fasta_entry *read, map<string,string> *names, int r);
     void delete_files(int r);
+
+    string get_temp_dir()
+    {
+        string tmp_dir = "/tmp/";
+        if(Settings_handle::st.is("temp-folder"))
+            tmp_dir = Settings_handle::st.get("temp-folder").as<string>()+"/";
+
+        struct stat st;
+        if(stat(tmp_dir.c_str(),&st) != 0)
+            tmp_dir = "";
+
+        return tmp_dir;
+    }
 
 public:
     Exonerate_reads();

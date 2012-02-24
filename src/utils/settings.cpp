@@ -58,6 +58,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("log-output-file",po::value<string>(),"output to file instead of stdout")
         ("xml","output also XML alignment")
         ("output-nhx-tree", "output alignment tree (with NHX TID tags)")
+        ("temp-folder",po::value<string>(),"non-standard place for temp files")
     ;
     boost::program_options::options_description help_update("Help and updates",100);
     help_update.add_options()
@@ -88,10 +89,10 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("one-placement-only", "place only once despite equally good hits")
         ("placement-only", "compute query placement only")
         ("placement-file", po::value<string>(), "query placement file")
-        ("reads-distance", po::value<float>()->default_value(0.1,"0.1"), "evolutionary distance from pseudo-root")
-        ("min-reads-overlap", po::value<float>()->default_value(0.5,"0.5"), "overlap threshold for query and reference")
+        ("query-distance", po::value<float>()->default_value(0.1,"0.1"), "evolutionary distance from pseudo-root")
+        ("min-query-overlap", po::value<float>()->default_value(0.5,"0.5"), "overlap threshold for query and reference")
         ("overlap-with-reference","require overlap with reference")
-        ("min-reads-identity", po::value<float>()->default_value(0.5,"0.5"), "identity threshold for aligned sites")
+        ("min-query-identity", po::value<float>()->default_value(0.5,"0.5"), "identity threshold for aligned sites")
         ("pair-read-gap-extension", po::value<float>(), "paired read spacer extension probability (DNA)")
     ;
 

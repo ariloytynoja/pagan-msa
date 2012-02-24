@@ -1465,7 +1465,7 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
     // Not all sequences need to be in the tree but give a warning that names don't match.
     if(names_match < 1)
     {
-        Log_output::write_out("\nNo sequences to align! Exiting.\n\n",0);
+        Log_output::write_out("\nSequence names do not match the names in the tree! Exiting.\n\n",0);
         exit(1);
     }
 

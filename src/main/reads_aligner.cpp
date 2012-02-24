@@ -309,8 +309,8 @@ void Reads_aligner::loop_two_strand_placement(Node *root, vector<Fasta_entry> *r
 
             Log_output::write_out("forward overlap: "+Log_output::ftos(read_overlap)+"; backward overlap: "+Log_output::ftos(read_overlap_rc)+"\n",2);
 
-            float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
-            float min_identity = Settings_handle::st.get("min-reads-identity").as<float>();
+            float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
+            float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
 
             if(read_overlap<min_overlap && read_overlap_rc<min_overlap)
             {
@@ -436,8 +436,8 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
                     }
                 }
 
-                float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
-                float min_identity = Settings_handle::st.get("min-reads-identity").as<float>();
+                float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
+                float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
 
                 if(best_overlap > min_overlap && best_identity > min_identity)
                 {
@@ -1152,7 +1152,7 @@ void Reads_aligner::find_paired_reads(vector<Fasta_entry> *reads)
 
 void Reads_aligner::copy_node_details(Node *reads_node,Fasta_entry *read,bool turn_revcomp)
 {
-    double r_dist = Settings_handle::st.get("reads-distance").as<float>();
+    double r_dist = Settings_handle::st.get("query-distance").as<float>();
 
     reads_node->set_distance_to_parent(r_dist);
     reads_node->set_name(read->name);
@@ -1164,7 +1164,7 @@ void Reads_aligner::copy_node_details(Node *reads_node,Fasta_entry *read,bool tu
 
 //void Reads_aligner::copy_orf_details(Node *reads_node,Fasta_entry *read,Orf *orf,bool turn_revcomp)
 //{
-//    double r_dist = Settings_handle::st.get("reads-distance").as<float>();
+//    double r_dist = Settings_handle::st.get("query-distance").as<float>();
 
 //    reads_node->set_distance_to_parent(r_dist);
 //    reads_node->set_name(read->name);
@@ -1176,8 +1176,8 @@ void Reads_aligner::copy_node_details(Node *reads_node,Fasta_entry *read,bool tu
 
 bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, string ref_node_name)
 {
-    float min_overlap = Settings_handle::st.get("min-reads-overlap").as<float>();
-    float min_identity = Settings_handle::st.get("min-reads-identity").as<float>();
+    float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
+    float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
 
     Sequence *node_sequence = node->get_sequence();
 
@@ -2321,7 +2321,7 @@ void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_e
 double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_factory *mf, float best_score)
 {
 
-    double r_dist = Settings_handle::st.get("reads-distance").as<float>();
+    double r_dist = Settings_handle::st.get("query-distance").as<float>();
 
     double org_dist = node->get_distance_to_parent();
     node->set_distance_to_parent(0.001);
@@ -2553,7 +2553,7 @@ void Reads_aligner::remove_target_overlapping_reads(vector<Fasta_entry> *reads)
 
 void Reads_aligner::align_two_reads(Node *node, Fasta_entry *ri1, Fasta_entry *ri2, Model_factory *mf)
 {
-    double r_dist = Settings_handle::st.get("reads-distance").as<float>();
+    double r_dist = Settings_handle::st.get("query-distance").as<float>();
 
     node->set_name("read pair");
 

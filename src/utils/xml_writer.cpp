@@ -43,13 +43,24 @@ void Xml_writer::write(ostream & output, const Node *root, const vector<Fasta_en
 
     vector<Fasta_entry>::const_iterator vi = seqs.begin();
 
+    char c1,c2; int i1;
     // Main loop : for all sequences in vector container
     for (; vi != seqs.end(); vi++)
     {
         string id = root->get_id_for_name(vi->name);
 
-        output << "<leaf id=\"" << id <<"\" name=\"" << vi->name << "\">\n";
-        output << "  <sequence>\n    " << vi->sequence << "\n  </sequence>\n</leaf>\n";
+        stringstream ss(vi->name);
+        ss >> c1 >> i1 >> c2;
+        if(c1 == '#' && c2 == '#' && i1 > 0)
+        {
+            output << "<node id=\"" << vi->name <<"\" name=\"" << vi->name << "\">\n";
+            output << "  <sequence>\n    " << vi->sequence << "\n  </sequence>\n</node>\n";
+        }
+        else
+        {
+            output << "<leaf id=\"" << id <<"\" name=\"" << vi->name << "\">\n";
+            output << "  <sequence>\n    " << vi->sequence << "\n  </sequence>\n</leaf>\n";
+        }
     }
 
     output << "</nodes>\n</ms_alignment>\n";

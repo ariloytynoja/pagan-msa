@@ -149,7 +149,8 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
     else if(elements.size()!=2)
     {
         // Alignment requires a binary guide tree!
-        throw Exception("Newick_reader::parenthesis_to_node. Not a binary tree: " + elt.content + ":" + elt.length);
+//        throw Exception("Newick_reader::parenthesis_to_node. Not a binary tree: " + elt.content + ":" + elt.length);
+        throw Exception("The guide tree should be a rooted binary tree. Exiting.\n");
     }
 
     else
@@ -239,7 +240,8 @@ Node * Newick_reader::parenthesis_to_tree(const string & description) throw (Exc
     if(elements.size()!=2)
     {
         // Alignment requires a binary guide tree!
-        throw Exception("Newick_reader::parenthesis_to_tree(). Not a binary tree: " + content);
+//        throw Exception("Newick_reader::parenthesis_to_tree(). Not a binary tree: " + content);
+        throw Exception("The guide tree should be a rooted binary tree. Exiting.\n");
     }
 
     else
