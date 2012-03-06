@@ -136,6 +136,7 @@ for additional options.
 The following file is included:
 
 - 454_reads.fas : simulated overlapping 454 reads
+- 454_reads_reversed.fas : simulated overlapping 454 reads, half of them reversed
 
 The data can be analysed using the following command:
 
@@ -149,3 +150,27 @@ A similar analysis could now be repeated for another input file with the command
 
 pagan 454.cfg --queryfile more_reads.fas --outfile another_output_pagan
 
+
+If the strand of the reads is unknown, PAGAN can be run with an option that performs
+both forward and reverse-complement alignment and chooses the better one:
+
+pagan --pileup-alignment --use-consensus --454 --queryfile 454_reads_reversed.fas \
+--outfile 454_reads_reversed_pagan --compare-reverse
+
+
+
+==============
+ngs_placement:
+==============
+
+If the strand of the reads is unknown and the reads come from protein-coding sequences
+(e.g. from RNA-seq experiment), PAGAN can be run with an option that searches for open
+reading frames in the query (both in forward and reverse-complement strands) and 
+chooses the one giving the best alignment:
+
+pagan --pileup-alignment --ref-seqfile human.fas --queryfile input_ngs_primates.fas \
+--translate --find-best-orf
+
+The reference sequence should also be DNA or the resulting alignment cannot be 
+back-translated. This option does not correct for reading frames and may not work well
+with data coming e.g. from 454.

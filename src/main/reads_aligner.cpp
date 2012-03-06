@@ -106,7 +106,8 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
     // No search for optimal node or TID tags in the tree
     //
-    if(Settings_handle::st.is("align-reads-at-root") || Settings_handle::st.is("pileup-alignment"))
+    if(Settings_handle::st.is("align-reads-at-root") ||
+            ( Settings_handle::st.is("pileup-alignment") && !Settings_handle::st.is("compare-reverse") && !Settings_handle::st.is("find-best-orf")) )
     {
         Log_output::write_header("Aligning reads: simple placement",0);
         this->loop_simple_placement(root,&reads,mf,count);

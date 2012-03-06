@@ -1,3 +1,8 @@
+v.0.38
+- minor fixes on program options
+- documentation updated
+
+
 v.0.37
 - changes in phylogenetic placement using Exonerate: can run all at one go
 - renaming some command line arguments. Please check 'pagan --help'
