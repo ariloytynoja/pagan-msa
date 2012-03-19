@@ -218,6 +218,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("time", "track time (debugging)")
         ("keep-exonerate-files","keep exonerate files")
         ("recompute-reference-alignment-model", "recompute reference alignment model")
+        ("no-score-scaling","no subsistitution score scaling")
     ;
 
     boost::program_options::options_description broken("Broken options",100);

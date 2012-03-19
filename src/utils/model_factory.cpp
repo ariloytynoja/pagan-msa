@@ -1925,7 +1925,13 @@ Evol_model* Model_factory::alignment_model(double distance, bool is_local_alignm
         for(int j=0;j<char_as;j++)
         {
             float sp = tmr[i*char_as+j];
-            if( ! Settings_handle::st.is("no-log-odds") )
+            if( Settings_handle::st.is("no-score-scaling") )
+            {
+                float lo = sp / ( charPi->g(i) * charPi->g(j) );
+                model->charPr->s(lo,i,j);
+                model->logCharPr->s(log( lo ),i,j);
+            }
+            else if( ! Settings_handle::st.is("no-log-odds") )
             {
                 float lo = 0.5 * ( charPi->g(i) + charPi->g(j) ) * sp / ( charPi->g(i) * charPi->g(j) );
                 model->charPr->s(lo,i,j);
