@@ -102,14 +102,15 @@ string Newick_reader::read_tree(const string & filename) throw (IOException)
 
 Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exception)
 {
+//    cout<<description<<endl;
     Newick_reader::Element elt = Newick_reader::get_element(description);
 
     //New node:
     Node * node = new Node();
     if(!Text_utils::is_empty(elt.length))
-    {
         node->set_distance_to_parent(Text_utils::to_double(elt.length));
-    }
+    else
+        node->set_distance_to_parent(0);
 
     if(!Text_utils::is_empty(elt.nhx))
     {
@@ -206,9 +207,10 @@ Node * Newick_reader::parenthesis_to_tree(const string & description) throw (Exc
     Newick_reader::Element elt = Newick_reader::get_element(description);
 
     if(!Text_utils::is_empty(elt.length))
-    {
         node->set_distance_to_parent(Text_utils::to_double(elt.length));
-    }
+    else
+        node->set_distance_to_parent(0);
+
 
     if(!Text_utils::is_empty(elt.nhx))
     {

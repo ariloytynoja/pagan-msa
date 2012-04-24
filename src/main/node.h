@@ -127,7 +127,7 @@ public:
                 dist_to_parent = Settings_handle::st.get("truncate-branches").as<float>();
             }
         }
-        else if( Settings_handle::st.is("fixed-branches") )
+        if( Settings_handle::st.is("fixed-branches") )
         {
             dist_to_parent = Settings_handle::st.get("fixed-branches").as<float>();
         }

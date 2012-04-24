@@ -1241,7 +1241,10 @@ bool Fasta_reader::check_alphabet(vector<Fasta_entry> * sequences,int data_type)
                 //
                 if(full_alphabet.find(c) == string::npos) {
 
-                    if(c!='-' || !allow_gaps)
+                    if(c=='U')
+                        *si='X';
+
+                    else if(c!='-' || !allow_gaps)
                     {
                         vi->sequence.erase(si);
                         si--;

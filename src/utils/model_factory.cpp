@@ -1851,7 +1851,6 @@ Evol_model* Model_factory::alignment_model(double distance, bool is_local_alignm
     e->computePMatrix(char_as,tmr,twu,twv,twr,distance);
 
 
-
     if(is_local_alignment)
     {
         // these are for reads alignment
