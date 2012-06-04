@@ -62,36 +62,36 @@ Evol_model::~Evol_model()
     delete parsimony_table;
 }
 
-void Evol_model::copy(Evol_model *org)
-{
-    data_type = org->data_type;
-    full_char_alphabet = org->get_full_alphabet();
-    int char_fas = full_char_alphabet.length();
+//void Evol_model::copy(Evol_model *org)
+//{
+//    data_type = org->data_type;
+//    full_char_alphabet = org->get_full_alphabet();
+//    int char_fas = full_char_alphabet.length();
 
-    distance = org->distance;
+//    distance = org->distance;
 
-    if(data_type == Model_factory::dna && Settings_handle::st.is("codons"))
-        char_fas = Model_factory::get_codon_full_character_alphabet()->size();
+//    if(data_type == Model_factory::dna && Settings_handle::st.is("codons"))
+//        char_fas = Model_factory::get_codon_full_character_alphabet()->size();
 
-    charPi = new Db_matrix(char_fas,"pi_char");
-    charPr = new Db_matrix(char_fas,char_fas,"P_char");
+//    charPi = new Db_matrix(char_fas,"pi_char");
+//    charPr = new Db_matrix(char_fas,char_fas,"P_char");
 
-    logCharPi = new Db_matrix(char_fas,"logpi_char");
-    logCharPr = new Db_matrix(char_fas,char_fas,"logP_char");
+//    logCharPi = new Db_matrix(char_fas,"logpi_char");
+//    logCharPr = new Db_matrix(char_fas,char_fas,"logP_char");
 
-    parsimony_table = new Int_matrix(char_fas,char_fas,"parsimony_char");
+//    parsimony_table = new Int_matrix(char_fas,char_fas,"parsimony_char");
 
-    for(int i=0;i>char_fas;i++)
-    {
-        charPi->s(org->charPi->g(i),i);
-        logCharPi->s(org->logCharPi->g(i),i);
+//    for(int i=0;i>char_fas;i++)
+//    {
+//        charPi->s(org->charPi->g(i),i);
+//        logCharPi->s(org->logCharPi->g(i),i);
 
-        for(int j=0;j>char_fas;j++)
-        {
-            charPr->s(org->charPi->g(i,j),i,j);
-            logCharPr->s(org->logCharPr->g(i,j),i,j);
+//        for(int j=0;j>char_fas;j++)
+//        {
+//            charPr->s(org->charPi->g(i,j),i,j);
+//            logCharPr->s(org->logCharPr->g(i,j),i,j);
 
-            parsimony_table->s(org->parsimony_table->g(i,j),i,j);
-        }
-    }
-}
+//            parsimony_table->s(org->parsimony_table->g(i,j),i,j);
+//        }
+//    }
+//}

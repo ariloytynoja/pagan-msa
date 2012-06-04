@@ -513,14 +513,14 @@ public:
         clock_t t_start=clock();
 
         double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
-        Evol_model *model = mf->alignment_model(dist,is_overlap_alignment);
+        Evol_model model = mf->alignment_model(dist,is_overlap_alignment);
 
         stringstream ss;
         ss << "Time node::model: "<<double(clock()-t_start)/CLOCKS_PER_SEC<<"\n";
         Log_output::write_out(ss.str(),"time");
 
         Viterbi_alignment va;
-        va.align(left_child->get_sequence(),right_child->get_sequence(),model,
+        va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
                  left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence, start_offset, end_offset);
 
         ss.str(string());
@@ -568,15 +568,11 @@ public:
 
         Log_output::write_msg("reading alignment node "+this->get_name()+": "+left_child->get_name()+" - "+right_child->get_name()+".",0);
 
-        double dist = 0.1;
-
-        if(Settings_handle::st.is("recompute-reference-alignment-model"))
-            dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
-
-        Evol_model *model = mf->alignment_model(dist);
+        double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
+        Evol_model model = mf->alignment_model(dist);
 
         Reference_alignment ra;
-        ra.read_alignment(left_child->get_sequence(),right_child->get_sequence(),model,
+        ra.read_alignment(left_child->get_sequence(),right_child->get_sequence(),&model,
                  left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
 
         this->add_ancestral_sequence( ra.get_simple_sequence() );

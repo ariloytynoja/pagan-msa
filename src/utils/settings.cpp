@@ -34,8 +34,8 @@ Settings::Settings(){}
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.39;
-    date = "24 April, 2012";
+    version = 0.40;
+    date = "4 June, 2012";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -408,7 +408,7 @@ void Settings::print_msg()
 {
     stringstream ss;
     ss<<"\nPAGAN v."<<version<<" ("<<date<<"). (C) 2010-2012 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
-    ss<<" This program is provided \"as-is\", with NO WARRANTY whatsoever; this is a development version\n and may contain bugs. Contact the author before using the program for any serious analysis.\n";
+    ss<<" This program is provided \"as-is\", with NO WARRANTY whatsoever; this is a development version\n and may contain bugs.\n";
     Log_output::write_out(ss.str(),0);
 }
 
@@ -416,7 +416,7 @@ string Settings::print_log_msg()
 {
     stringstream tmp;
     tmp<<"\n# PAGAN v."<<version<<" ("<<date<<"). (C) 2010-2012 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
-    tmp<<"# This program is provided \"as-is\", with NO WARRANTY whatsoever; this is a development version\n# and may contain bugs. Contact the author before using the program for any serious analysis.\n";
+    tmp<<"# This program is provided \"as-is\", with NO WARRANTY whatsoever; this is a development version\n# and may contain bugs.\n";
     return tmp.str();
 }
 

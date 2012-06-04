@@ -1,3 +1,7 @@
+v.0.40
+- reverting earlier changes: now alignment model is again recomputed for each alignment
+
+
 v.0.39
 - selenocysteins are now converted to X
 - fixed bugs in the tree parser and use of branch lengths
