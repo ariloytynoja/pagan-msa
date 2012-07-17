@@ -1812,22 +1812,6 @@ void Model_factory::build_model(int s,Db_matrix *pi,Db_matrix *q,Db_matrix *wU,D
 Evol_model Model_factory::alignment_model(double distance, bool is_local_alignment)
 {
 
-//    if(prev_distance<0)
-//    {
-//        model = new Evol_model(sequence_data_type, distance);
-//    }
-
-//    if(distance == prev_distance && is_local_alignment == prev_is_local_alignment)
-//    {
-//        return model;
-//    }
-//    else
-//    {
-//        delete model;
-//        model = new Evol_model(sequence_data_type, distance);
-//    }
-
-
     // Compute the P matrix for regular DNA alphabet (four bases).
     //
     Eigen* e = new Eigen();

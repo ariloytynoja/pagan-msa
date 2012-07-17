@@ -29,8 +29,8 @@ class Exonerate_reads
 
     bool split_sugar_string(const std::string& row,hit *h);
     bool split_vulgar_string(const std::string& row,hit *h);
-    void write_exonerate_input(Node *root, vector<Fasta_entry> *reads, map<string,string> *names, int r);
-    void write_exonerate_input(Node *root, Fasta_entry *read, map<string,string> *names, int r);
+    void write_exonerate_input(Node *root, vector<Fasta_entry> *reads, map<string,string> *names, int *r);
+    void write_exonerate_input(Node *root, Fasta_entry *read, map<string,string> *names, int *r);
     void delete_files(int r);
 
     string get_temp_dir()

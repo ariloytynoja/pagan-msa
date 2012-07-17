@@ -610,11 +610,9 @@ protected:
 
     void set_reference_alignment_settings()
     {
-
         max_allowed_skip_distance = 5;
         max_allowed_skip_branches = 50000;
         max_allowed_match_skip_branches = 50000;
-
     }
 
     /********************************************/

@@ -78,18 +78,40 @@ bool Exonerate_reads::split_vulgar_string(const string& row,hit *h)
 }
 
 
-void Exonerate_reads::write_exonerate_input(Node *root, vector<Fasta_entry> *reads, map<string,string> *names, int r)
+void Exonerate_reads::write_exonerate_input(Node *root, vector<Fasta_entry> *reads, map<string,string> *names, int *r)
 {
     vector<Fasta_entry> aligned_sequences;
     root->get_alignment(&aligned_sequences,true);
 
-    string tmp_dir = this->get_temp_dir();
-
     // create exonerate input
-    stringstream q_name;
-    q_name <<"q"<<r<<".fas";
+    //
+    ofstream q_output;
+    ofstream t_output;
 
-    ofstream q_output( (tmp_dir+q_name.str()).c_str(), (ios::out));
+    while(true)
+    {
+
+        stringstream q_name;
+        stringstream t_name;
+
+        string tmp_dir = this->get_temp_dir();
+
+        q_name <<tmp_dir<<"q"<<*r<<".fas";
+        t_name <<tmp_dir<<"t"<<*r<<".fas";
+
+        ifstream q_file(q_name.str().c_str());
+        ifstream t_file(t_name.str().c_str());
+
+        if(!q_file && !t_file)
+        {
+            q_output.open( q_name.str().c_str(), (ios::out) );
+            t_output.open( t_name.str().c_str(), (ios::out) );
+
+            break;
+        }
+        *r = rand();
+    }
+
     vector<Fasta_entry>::iterator it = reads->begin();
     for(;it!=reads->end();it++)
     {
@@ -98,10 +120,6 @@ void Exonerate_reads::write_exonerate_input(Node *root, vector<Fasta_entry> *rea
     q_output.close();
 
 
-    stringstream t_name;
-    t_name <<"t"<<r<<".fas";
-
-    ofstream t_output( (tmp_dir+t_name.str()).c_str(), (ios::out));
     it = aligned_sequences.begin();
     for(;it!=aligned_sequences.end();it++)
     {
@@ -121,25 +139,44 @@ void Exonerate_reads::write_exonerate_input(Node *root, vector<Fasta_entry> *rea
     return;
 }
 
-void Exonerate_reads::write_exonerate_input(Node *root, Fasta_entry *read, map<string,string> *names, int r)
+void Exonerate_reads::write_exonerate_input(Node *root, Fasta_entry *read, map<string,string> *names, int *r)
 {
     vector<Fasta_entry> aligned_sequences;
     root->get_alignment(&aligned_sequences,true);
 
-    string tmp_dir = this->get_temp_dir();
-
     // create exonerate input
-    stringstream q_name;
-    q_name <<"q"<<r<<".fas";
+    //
+    ofstream q_output;
+    ofstream t_output;
 
-    ofstream q_output( (tmp_dir+q_name.str()).c_str(), (ios::out));
+    while(true)
+    {
+
+        stringstream q_name;
+        stringstream t_name;
+
+        string tmp_dir = this->get_temp_dir();
+
+        q_name <<tmp_dir<<"q"<<*r<<".fas";
+        t_name <<tmp_dir<<"t"<<*r<<".fas";
+
+        ifstream q_file(q_name.str().c_str());
+        ifstream t_file(t_name.str().c_str());
+
+        if(!q_file && !t_file)
+        {
+            q_output.open( q_name.str().c_str(), (ios::out) );
+            t_output.open( t_name.str().c_str(), (ios::out) );
+
+            break;
+        }
+        *r = rand();
+    }
+
     q_output<<">"<<read->name<<endl<<read->sequence<<endl;
     q_output.close();
 
-    stringstream t_name;
-    t_name <<"t"<<r<<".fas";
 
-    ofstream t_output( (tmp_dir+t_name.str()).c_str(), (ios::out));
     vector<Fasta_entry>::iterator it = aligned_sequences.begin();
     for(;it!=aligned_sequences.end();it++)
     {
@@ -165,10 +202,6 @@ void Exonerate_reads::all_local_alignments(Node *root, vector<Fasta_entry> *read
         Log_output::write_msg("Running Exonerate with all query sequences (ungapped)",0);
     else
         Log_output::write_msg("Running Exonerate with all query sequences (gapped)",0);
-
-    int r = rand();
-    string tmp_dir = this->get_temp_dir();
-
 
     bool ignore_tid_tags = Settings_handle::st.is("test-every-internal-node") || Settings_handle::st.is("test-every-node") ;
 
@@ -196,7 +229,10 @@ void Exonerate_reads::all_local_alignments(Node *root, vector<Fasta_entry> *read
         }
     }
 
-    this->write_exonerate_input(root,reads,&names,r);
+    int r = rand();
+    string tmp_dir = this->get_temp_dir();
+
+    this->write_exonerate_input(root,reads,&names,&r);
 
     // exonerate command for local alignment
 
@@ -412,7 +448,7 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
         }
     }
 
-    this->write_exonerate_input(root,read,&names,r);
+    this->write_exonerate_input(root,read,&names,&r);
 
     // exonerate command for local alignment
 
@@ -557,11 +593,13 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
 
 void Exonerate_reads::delete_files(int r)
 {
+    string tmp_dir = this->get_temp_dir();
+
     stringstream q_name;
-    q_name <<"q"<<r<<".fas";
+    q_name <<tmp_dir<<"q"<<r<<".fas";
 
     stringstream t_name;
-    t_name <<"t"<<r<<".fas";
+    t_name <<tmp_dir<<"t"<<r<<".fas";
 
     if( remove( q_name.str().c_str() ) != 0 )
        Log_output::write_out( "Error deleting file", 1);
