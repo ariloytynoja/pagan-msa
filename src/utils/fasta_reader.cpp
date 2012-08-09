@@ -191,7 +191,7 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
                 {
                     string block = st->next_token();
                     block = Text_utils::remove_surrounding_whitespaces(block);
-                    comment += block+" ";
+                    comment += " "+block;
 
                     if(block.substr(0,4)=="TID=")
                     {
@@ -686,7 +686,7 @@ void Fasta_reader::write_fasta(ostream & output, const vector<Fasta_entry> & seq
         output << ">" << vi->name;
 
         if(vi->comment != "")
-            output << " " << vi->comment;
+            output << vi->comment;
 
         output << endl;
 
