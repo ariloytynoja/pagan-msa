@@ -444,8 +444,6 @@ void Reference_alignment::backtrack_new_vector_path(vector<Path_pointer> *path,P
     if(fp.mp.y_edge_ind>=0)
         right_edges->at(fp.mp.y_edge_ind).is_used(true);
 
-    bool debug = false;
-//    debug = true;
 
     // Pre-existing gaps in the end skipped over
     //

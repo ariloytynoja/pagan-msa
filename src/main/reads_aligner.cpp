@@ -1281,7 +1281,6 @@ float Reads_aligner::read_alignment_overlap(Node * node, string read_name, strin
 
     int aligned = 0;
     int read_length = 0;
-    int matched = 0;
 
     for( int j=0; j < node_sequence->sites_length(); j++ )
     {

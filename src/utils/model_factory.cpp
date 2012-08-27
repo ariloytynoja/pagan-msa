@@ -1963,7 +1963,6 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
         }
 
 
-        int n,m;
 
         for(int i=0;i<char_fas;i++)
         {
@@ -1996,8 +1995,6 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
     else if(sequence_data_type == Model_factory::dna && Settings_handle::st.is("codons"))
     {
-
-        int n,m;
 
         for(int i=0;i<char_fas;i++)
         {
@@ -2098,8 +2095,6 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
             }
 
 
-            int n,m;
-
             for(int i=0;i<char_fas;i++)
             {
                 for(int j=0;j<char_fas;j++)
@@ -2130,8 +2125,6 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
         else
         {
-            int n,m;
-
             for(int i=0;i<char_fas;i++)
             {
                 for(int j=0;j<char_fas;j++)
@@ -2205,9 +2198,6 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
     if (Settings::noise > 4) {
         print_char_p_matrices(model);
     }
-
-//    prev_distance = distance;
-//    prev_is_local_alignment = is_local_alignment;
 
     return model;
 }

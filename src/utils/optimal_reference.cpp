@@ -165,8 +165,6 @@ bool Optimal_reference::find_best_exonerate_hit(Fasta_entry *q, vector<Fasta_ent
 void Optimal_reference::find_best_hit(Fasta_entry *query, vector<Fasta_entry> *sequences, Model_factory *mf, Fasta_entry *best_read)
 {
 
-    int r = rand();
-
     float best_score = -1;
 
     for(int i=0;i<(int)sequences->size();i++)
