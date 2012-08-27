@@ -53,7 +53,7 @@ HEADERS += utils/text_utils.h \
     utils/exonerate_reads.h \
     utils/optimal_reference.h \
     utils/log_output.h
-LIBS += -lboost_program_options-mt -lboost_regex-mt
+LIBS += -lboost_program_options-mt -lboost_regex-mt -lboost_thread-mt
 INCLUDEPATH += /usr/include
 OTHER_FILES += missing_things.txt \
     ../VERSION_HISTORY \

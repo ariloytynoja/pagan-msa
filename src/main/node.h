@@ -25,6 +25,9 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <queue>
+#include <string>
+#include <vector>
 #include "utils/exceptions.h"
 #include "utils/settings.h"
 #include "utils/settings_handle.h"
@@ -34,10 +37,20 @@
 #include "utils/model_factory.h"
 #include "utils/fasta_entry.h"
 #include "utils/log_output.h"
+#include <boost/thread.hpp>
+#include <boost/lambda/bind.hpp>
+#include <boost/thread/condition.hpp>
+#include <boost/thread/thread_time.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_io.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
+#include <boost/thread/mutex.hpp>
 
-extern bool DEBUG;
 
 using namespace std;
+
 
 namespace ppa
 {
@@ -61,8 +74,14 @@ struct Orf
 
 class Node
 {
-    Node *left_child;
-    Node *right_child;
+
+    //for threading
+    static boost::mutex list_mutex;
+    static boost::mutex model_mutex;
+    static boost::mutex log_mutex;
+
+public:
+    
     bool leaf;
     double dist_to_parent;
     string name;
@@ -71,9 +90,7 @@ class Node
     string nhx_tid;
 
     Sequence *sequence;
-    bool node_has_sequence;
-
-    bool node_has_sequence_object;
+    
     bool node_has_left_child;
     bool node_has_right_child;
     bool adjust_left_node_site_index;
@@ -82,15 +99,24 @@ class Node
     static int number_of_nodes;
     static int alignment_number;
 
+    bool node_has_sequence_object;
+    bool node_has_sequence;
+
     Orf orf;
     bool has_orf;
-public:
+    
+    Node *left_child;
+    Node *right_child;
+
+    bool visited;
+
     Node() : leaf(true), dist_to_parent(0), name("undefined"), nhx_tid(""),
-                    node_has_sequence(false), node_has_sequence_object(false),
-                    node_has_left_child(false), node_has_right_child(false),
-                    adjust_left_node_site_index(false),
-                    adjust_right_node_site_index(false), has_orf(false){}
+             node_has_left_child(false), node_has_right_child(false),
+             adjust_left_node_site_index(false), adjust_right_node_site_index(false),
+             node_has_sequence_object(false), node_has_sequence(false),
+             has_orf(false), visited(false){}
     ~Node();
+
 
     /**************************************/
 
@@ -448,9 +474,10 @@ public:
      */
     void start_alignment(Model_factory *mf)
     {
+        
         if( Settings_handle::st.is("seqfile") )
         {
-            Log_output::write_header("Performing multiple alignment ",0);
+           // Log_output::write_header("Performing multiple alignment ",0);
 
             if(Settings_handle::st.is("mpost-posterior-plot-file"))
             {
@@ -475,24 +502,27 @@ public:
         }
         else if( Settings_handle::st.is("ref-seqfile") )
         {
-            Log_output::write_header("Reading reference alignment ",0);
+            //Log_output::write_header("Reading reference alignment ",0);
             this->read_alignment(mf);
 
             this->reconstruct_parsimony_ancestor(mf);
         }
+      
     }
 
     void align_sequences(Model_factory *mf)
     {
         if(leaf)
             return;
-
+             
         left_child->align_sequences(mf);
         right_child->align_sequences(mf);
 
         this->align_sequences_this_node(mf);
-
+        
     }
+
+    /*******************************************************************************/
 
     void align_sequences_this_node(Model_factory *mf, bool is_reads_sequence=false, bool is_overlap_alignment=false, int start_offset=-1, int end_offset=-1)
     {
@@ -543,6 +573,62 @@ public:
         Log_output::write_out(ss.str(),"time");
 
     }
+
+    /*******************************************************************************/
+
+    void start_threaded_alignment(Model_factory *mf, int n_threads);
+
+    /*******************************************************************************/
+
+    void threaded_function(Model_factory *mf, vector<Node*> *wait_nodes, vector<Node*> *run_nodes);
+
+    /*******************************************************************************/
+
+    void align_sequences_this_node_threaded(Model_factory *mf)
+    {
+
+
+        if(!Settings_handle::st.is("silent"))
+        {
+//            if(!is_reads_sequence)
+//            {
+                stringstream ss;
+                ss<<" aligning node "<<this->get_name()<<" ("<<alignment_number<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<".";
+//                cout<<ss.str()<<endl;
+
+                log_mutex.lock();
+                Log_output::write_msg(ss.str(),0);
+                log_mutex.unlock();
+//            }
+//            else
+//                Log_output::append_msg(" to node '"+left_child->get_name()+"'.",0);
+            alignment_number++;
+        }
+
+        double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
+
+        model_mutex.lock();
+
+        Evol_model model = mf->alignment_model(dist);
+
+        model_mutex.unlock();
+
+        Viterbi_alignment va;
+        va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
+                 left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
+
+        this->add_ancestral_sequence( va.get_simple_sequence() );
+
+//        this->print_alignment();
+
+//        if(is_reads_sequence)
+//            this->get_sequence()->is_read_descendants(true);
+
+    }
+
+
+    /*******************************************************************************/
+
 
     void print_alignment()
     {
@@ -1341,3 +1427,4 @@ public:
 
 }
 #endif // NODE_H
+

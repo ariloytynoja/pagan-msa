@@ -34,8 +34,8 @@ Settings::Settings(){}
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.41;
-    date = "9 August, 2012";
+    version = 0.42;
+    date = "26 August, 2012";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -59,6 +59,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("xml","output also XML alignment")
         ("output-nhx-tree", "output alignment tree (with NHX TID tags)")
         ("temp-folder",po::value<string>(),"non-standard place for temp files")
+        ("threads",po::value<int>(),"number of threads")
     ;
     boost::program_options::options_description help_update("Help and updates",100);
     help_update.add_options()

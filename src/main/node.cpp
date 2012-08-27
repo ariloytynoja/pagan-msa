@@ -35,10 +35,113 @@ Node::~Node()
 
     if(this->node_has_sequence_object)
         delete sequence;
+      
 }
 
 int Node::number_of_nodes = 0;
 int Node::alignment_number = 0;
+
+boost::mutex Node::list_mutex;
+boost::mutex Node::model_mutex;
+boost::mutex Node::log_mutex;
+
+
+/*******************************************************************************/
+
+void Node::start_threaded_alignment(Model_factory *mf, int n_threads)
+{
+
+    this->number_of_nodes = this->get_number_of_leaves()-1;
+    this->alignment_number = 1;
+
+    vector<Node*> all_nodes;
+    this->get_internal_nodes(&all_nodes);
+
+    vector<Node*> wait_nodes;
+    vector<Node*> run_nodes;
+
+    while(!all_nodes.empty())
+    {
+        Node *n = all_nodes.back();
+
+        if(n->left_child->node_has_sequence_object && n->right_child->node_has_sequence_object)
+            run_nodes.push_back(n);
+        else
+            wait_nodes.push_back(n);
+
+        all_nodes.pop_back();
+    }
+
+    vector<Node*> *w_nodes = &wait_nodes;
+    vector<Node*> *r_nodes = &run_nodes;
+
+    boost::thread_group threads;
+
+    for (int i = 0; i < n_threads; ++i)
+        threads.create_thread(boost::bind(&ppa::Node::threaded_function,this,boost::ref(mf),boost::ref(w_nodes),boost::ref(r_nodes)));
+
+    threads.join_all();
+
+
+    if(Settings_handle::st.is("output-ancestors"))
+        this->reconstruct_parsimony_ancestor(mf);
+
+}
+
+/*******************************************************************************/
+
+void Node::threaded_function(Model_factory *mf, vector<Node*> *w_nodes, vector<Node*> *r_nodes)
+{
+    try
+    {
+        while (true)
+        {
+            list_mutex.lock();
+
+            if(r_nodes->empty() && w_nodes->empty())
+            {
+                list_mutex.unlock();
+                break;
+            }
+
+            if (!r_nodes->empty())
+            {
+                Node *n = r_nodes->back();
+                r_nodes->pop_back();
+
+                list_mutex.unlock();
+
+                n->align_sequences_this_node_threaded(mf);
+
+            }
+
+            if (!w_nodes->empty())
+            {
+                vector<Node*>::iterator li = w_nodes->begin();
+                for(;li != w_nodes->end();)
+                {
+                    if((*li)->left_child->node_has_sequence_object && (*li)->right_child->node_has_sequence_object)
+                    {
+                        r_nodes->push_back((*li));
+                        w_nodes->erase(li);
+                        continue;
+                    }
+                    li++;
+                }
+            }
+
+            list_mutex.unlock();
+        }
+    }
+    catch (boost::lock_error& le)
+    {
+      cout << le.what() << endl;
+    }
+}
+
+
+/*******************************************************************************/
+
 
 void Node::add_sequence( Fasta_entry seq_entry, int data_type, bool gapped, bool no_trimming, bool turn_revcomp)
 {

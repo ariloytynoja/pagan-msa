@@ -1,3 +1,7 @@
+v.0.42
+- first attempt for multi-threading for standard multiple alignment
+
+
 v.0.41
 - minor change in how the sequence name is read: no space in the end of line
 

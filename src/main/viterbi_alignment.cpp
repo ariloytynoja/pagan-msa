@@ -24,9 +24,13 @@
 #include "main/node.h"
 #include <iomanip>
 #include <fstream>
+#include <boost/thread/mutex.hpp>
+
+//boost::mutex hold;
 
 using namespace std;
 using namespace ppa;
+
 
 Viterbi_alignment::Viterbi_alignment() { }
 
@@ -34,7 +38,6 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
                              Evol_model *evol_model,float l_branch_length,float r_branch_length,
                              bool is_reads_sequence,int start_offset,int end_offset)
 {
-
     Log_output::write_out("Viterbi_alignment::align: start_offset "+Log_output::itos(start_offset)+
                           ", end_offset "+Log_output::itos(end_offset)+"\n",3);
 
@@ -284,7 +287,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
         else
             this->plot_posterior_probabilities_down();
     }
-
+    
 }
 
 

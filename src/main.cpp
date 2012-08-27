@@ -39,11 +39,13 @@ using namespace ppa;
 
 int main(int argc, char *argv[])
 {
-    clock_t t_start=clock();
 
-    /*
-    / Input: command line arguments & data
-   */
+
+    /***********************************************************************/
+    /*  Start the clock and then read the parameters and data              */
+    /***********************************************************************/
+
+   clock_t t_start=clock();
 
     // Read the arguments
     try
@@ -63,15 +65,34 @@ int main(int argc, char *argv[])
 
     clock_t analysis_start_time=clock();
 
+
+    /***********************************************************************/
+    /*  Threaded alignment: using maximum number by defualt                */
+    /***********************************************************************/
+
+    int THREADS = boost::thread::hardware_concurrency();
+
+    if(Settings_handle::st.is("threads"))
+        {
+        int nt = Settings_handle::st.get("threads").as<int > ();
+        if(nt>0 && nt<=THREADS)
+        {
+            THREADS = nt;
+        }
+    }      
+
+    stringstream ss;
+    ss << "Running with "<<THREADS<<" threads.\n";
+    Log_output::write_out(ss.str(),1);
+
+
     /***********************************************************************/
     /*  Overlapping paired-end read merge only                             */
     /***********************************************************************/
 
-    if(Settings_handle::st.is("overlap-merge-only"))
-    {
+    if (Settings_handle::st.is("overlap-merge-only")) {
 
-        if(!Settings_handle::st.is("queryfile"))
-        {
+        if (!Settings_handle::st.is("queryfile")) {
             Log_output::write_out("No reads file given. Exiting.\n\n",0);
             exit(1);
         }
@@ -277,7 +298,6 @@ int main(int argc, char *argv[])
 
     int data_type = fr.check_sequence_data_type(&sequences);
 
-    stringstream ss;
     ss << "Time main::input: "<<double(clock()-t_start)/CLOCKS_PER_SEC<<"\n";
     Log_output::write_out(ss.str(),"time");
 
@@ -322,7 +342,10 @@ int main(int argc, char *argv[])
     int count = 1;
     root->name_internal_nodes(&count);
 
+    if(THREADS==1)
     root->start_alignment(&mf);
+    else
+        root->start_threaded_alignment(&mf,THREADS);
 
     ss.str(string());
     ss << "Time main::align: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
