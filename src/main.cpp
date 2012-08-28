@@ -46,6 +46,8 @@ int main(int argc, char *argv[])
     /***********************************************************************/
 
    clock_t t_start=clock();
+   struct timespec tcpu_start, tcpu_finish;
+   clock_gettime(CLOCK_MONOTONIC, &tcpu_start);
 
     // Read the arguments
     try
@@ -59,7 +61,6 @@ int main(int argc, char *argv[])
     }
 
     Log_output::open_stream();
-
 
     srand(time(0));
 
@@ -535,11 +536,17 @@ int main(int argc, char *argv[])
     Log_output::write_out(ss.str(),"time");
 
 
+    clock_gettime(CLOCK_MONOTONIC, &tcpu_finish);
+
+    double elapsed;
+    elapsed = (tcpu_finish.tv_sec - tcpu_start.tv_sec);
+    elapsed += (tcpu_finish.tv_nsec - tcpu_start.tv_nsec) / 1000000000.0;
+
     time_t s_time;
     time( &s_time );
     ss.str(string());
     ss << "\nThe analysis finished: " << asctime( localtime( &s_time ) );
-    ss<<"Total time used by PAGAN: "<<double_t(clock()-analysis_start_time)/CLOCKS_PER_SEC<<" sec.\n\n";
+    ss<<"Total time used by PAGAN: "<<elapsed<<" wall sec, " <<double_t(clock()-analysis_start_time)/CLOCKS_PER_SEC<<" cpu sec.\n\n";
     Log_output::write_out(ss.str(),0);
 
     delete root;
