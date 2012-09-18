@@ -26,8 +26,6 @@
 #include <fstream>
 #include <boost/thread/mutex.hpp>
 
-//boost::mutex hold;
-
 using namespace std;
 using namespace ppa;
 

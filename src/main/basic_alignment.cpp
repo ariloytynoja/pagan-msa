@@ -266,9 +266,8 @@ void Basic_alignment::create_ancestral_edges(Sequence *sequence)
 
             }
 
-            if((pstate == Site::xgapped || pstate == Site::xskipped )&& (prev.path_state == Site::ygapped || prev.path_state == Site::yskipped ))
+            if((pstate == Site::xgapped || pstate == Site::xskipped ) && (prev.path_state == Site::ygapped || prev.path_state == Site::yskipped ) && edges_for_skipped_flanked_by_gaps)
             {
-
                 Edge edge(i-1,i,1.0);
                 sequence->push_back_edge(edge);
 
@@ -330,9 +329,8 @@ void Basic_alignment::create_ancestral_edges(Sequence *sequence)
 
             }
 
-            if((pstate == Site::ygapped || pstate == Site::yskipped) && (prev.path_state == Site::xgapped || prev.path_state == Site::xskipped))
+            if((pstate == Site::ygapped || pstate == Site::yskipped) && (prev.path_state == Site::xgapped || prev.path_state == Site::xskipped) && edges_for_skipped_flanked_by_gaps)
             {
-
                 Edge edge(i-1,i,1.0);
                 sequence->push_back_edge(edge);
 
@@ -559,6 +557,7 @@ void Basic_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *c
     if(sequence->get_site_at( edge.get_end_site_index() )->contains_bwd_edge( &edge ) )
         return;
 
+//    cout<<edge.get_start_site_index()<<" "<<edge.get_end_site_index()<<": "<<child->is_used()<<" "<<child->get_branch_count_since_last_used()<<endl;
 
     // Limits for copying old edges:
     //  first, number of nodes since last used

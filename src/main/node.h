@@ -38,19 +38,9 @@
 #include "utils/fasta_entry.h"
 #include "utils/log_output.h"
 #include <boost/thread.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/thread/condition.hpp>
-#include <boost/thread/thread_time.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_io.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 
-
 using namespace std;
-
 
 namespace ppa
 {
