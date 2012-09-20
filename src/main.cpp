@@ -33,6 +33,11 @@
 #include "main/node.h"
 #include "main/reads_aligner.h"
 
+#ifdef __MACH__
+#include <mach/clock.h>
+#include <mach/mach.h>
+#endif
+
 using namespace std;
 
 using namespace ppa;
@@ -45,9 +50,20 @@ int main(int argc, char *argv[])
     /*  Start the clock and then read the parameters and data              */
     /***********************************************************************/
 
-   clock_t t_start=clock();
-   struct timespec tcpu_start, tcpu_finish;
-   clock_gettime(CLOCK_MONOTONIC, &tcpu_start);
+    clock_t t_start=clock();
+    struct timespec tcpu_start, tcpu_finish;
+
+    #ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
+    clock_serv_t cclock;
+    mach_timespec_t mts;
+    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+    clock_get_time(cclock, &mts);
+    mach_port_deallocate(mach_task_self(), cclock);
+    tcpu_start.tv_sec = mts.tv_sec;
+    tcpu_start.tv_nsec = mts.tv_nsec;
+    #else
+    clock_gettime(CLOCK_MONOTONIC, &tcpu_start);
+    #endif
 
     // Read the arguments
     try
@@ -536,7 +552,17 @@ int main(int argc, char *argv[])
     Log_output::write_out(ss.str(),"time");
 
 
+    #ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
+    clock_serv_t cclock;
+    mach_timespec_t mts;
+    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+    clock_get_time(cclock, &mts);
+    mach_port_deallocate(mach_task_self(), cclock);
+    tcpu_finish.tv_sec = mts.tv_sec;
+    tcpu_finish.tv_nsec = mts.tv_nsec;
+    #else
     clock_gettime(CLOCK_MONOTONIC, &tcpu_finish);
+    #endif
 
     double elapsed;
     elapsed = (tcpu_finish.tv_sec - tcpu_start.tv_sec);

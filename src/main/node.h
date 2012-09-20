@@ -37,10 +37,14 @@
 #include "utils/model_factory.h"
 #include "utils/fasta_entry.h"
 #include "utils/log_output.h"
+
+#include <boost/lambda/bind.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 
+
 using namespace std;
+
 
 namespace ppa
 {
@@ -567,10 +571,14 @@ public:
     /*******************************************************************************/
 
     void start_threaded_alignment(Model_factory *mf, int n_threads);
+    
+    /*******************************************************************************/
+    
+    void build_queues(vector<Node*>& wait_nodes, vector<Node*>& run_nodes);
 
     /*******************************************************************************/
 
-    void threaded_function(Model_factory *mf, vector<Node*> *wait_nodes, vector<Node*> *run_nodes);
+    void threaded_function(Model_factory *mf, vector<Node*>& wait_nodes, vector<Node*>& run_nodes);
 
     /*******************************************************************************/
 

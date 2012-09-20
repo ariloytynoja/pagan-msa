@@ -54,32 +54,21 @@ void Node::start_threaded_alignment(Model_factory *mf, int n_threads)
     this->number_of_nodes = this->get_number_of_leaves()-1;
     this->alignment_number = 1;
 
-    vector<Node*> all_nodes;
-    this->get_internal_nodes(&all_nodes);
-
     vector<Node*> wait_nodes;
     vector<Node*> run_nodes;
 
-    while(!all_nodes.empty())
-    {
-        Node *n = all_nodes.back();
-
-        if(n->left_child->node_has_sequence_object && n->right_child->node_has_sequence_object)
-            run_nodes.push_back(n);
-        else
-            wait_nodes.push_back(n);
-
-        all_nodes.pop_back();
-    }
-
-    vector<Node*> *w_nodes = &wait_nodes;
-    vector<Node*> *r_nodes = &run_nodes;
+    build_queues(wait_nodes, run_nodes);
 
     boost::thread_group threads;
 
-    for (int i = 0; i < n_threads; ++i)
-        threads.create_thread(boost::bind(&ppa::Node::threaded_function,this,boost::ref(mf),boost::ref(w_nodes),boost::ref(r_nodes)));
-
+    for (int i = 0; i < n_threads; ++i) {
+        threads.create_thread(boost::bind(&ppa::Node::threaded_function, \
+                                          this, \
+                                          boost::ref(mf), \
+                                          boost::ref(wait_nodes), \
+                                          boost::ref(run_nodes)));
+    }
+        
     threads.join_all();
 
 
@@ -90,46 +79,71 @@ void Node::start_threaded_alignment(Model_factory *mf, int n_threads)
 
 /*******************************************************************************/
 
-void Node::threaded_function(Model_factory *mf, vector<Node*> *w_nodes, vector<Node*> *r_nodes)
+void Node::build_queues(vector<Node*>& wait_nodes, vector<Node*>& run_nodes) {
+    if(not this->is_leaf()) {
+        if(left_child->node_has_sequence_object and right_child->node_has_sequence_object) {
+            run_nodes.push_back(this);
+        }
+        else {
+            wait_nodes.push_back(this);
+            
+            left_child->build_queues(wait_nodes, run_nodes);
+            right_child->build_queues(wait_nodes, run_nodes);
+        }
+    }
+}
+
+/*******************************************************************************/
+
+void Node::threaded_function(Model_factory *mf, vector<Node*>& w_nodes, vector<Node*>& r_nodes)
 {
+    Node* n = NULL;
+    
     try
     {
         while (true)
         {
             list_mutex.lock();
-
-            if(r_nodes->empty() && w_nodes->empty())
-            {
+            
+            if(r_nodes.empty() and w_nodes.empty()) {
                 list_mutex.unlock();
                 break;
             }
-
-            if (!r_nodes->empty())
+            
+            if (not r_nodes.empty())
             {
-                Node *n = r_nodes->back();
-                r_nodes->pop_back();
-
-                list_mutex.unlock();
-
-                n->align_sequences_this_node_threaded(mf);
-
+                n = r_nodes.back();
+                r_nodes.pop_back();
             }
-
-            if (!w_nodes->empty())
+            else {
+                n = NULL;
+            }
+            
+            list_mutex.unlock();
+            
+            
+            if(n != NULL) {
+                n->align_sequences_this_node_threaded(mf);
+            }
+            
+            
+            list_mutex.lock();
+            
+            if (not w_nodes.empty())
             {
-                vector<Node*>::iterator li = w_nodes->begin();
-                for(;li != w_nodes->end();)
+                vector<Node*>::iterator li = w_nodes.begin();
+                while(li != w_nodes.end())
                 {
                     if((*li)->left_child->node_has_sequence_object && (*li)->right_child->node_has_sequence_object)
                     {
-                        r_nodes->push_back((*li));
-                        w_nodes->erase(li);
+                        r_nodes.push_back((*li));
+                        w_nodes.erase(li);
                         continue;
                     }
                     li++;
                 }
             }
-
+            
             list_mutex.unlock();
         }
     }
