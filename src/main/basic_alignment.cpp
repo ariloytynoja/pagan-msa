@@ -549,6 +549,7 @@ void Basic_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vector
     this->transfer_child_edge(sequence, edge, child, branch_length, connects_neighbour_site, adjust_posterior_weight, branch_weight);
 }
 
+
 void Basic_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *child, float branch_length,
                                            bool connects_neighbour_site, bool adjust_posterior_weight, float branch_weight)
 {
