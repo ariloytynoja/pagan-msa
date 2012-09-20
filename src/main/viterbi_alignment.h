@@ -140,8 +140,8 @@ class Viterbi_alignment: public Basic_alignment
         {
             Edge edge(*i,*i+1);
             int ind = left->get_bwd_edge_index_at_site(*i+1,&edge);
-            if(ind>=0)
-                left->get_edges()->at(ind).is_used(true);
+//            if(ind>=0)
+//                left->get_edges()->at(ind).is_used(true);
 
             this->insert_gap_path_pointer(path,*i-1,*j,Viterbi_alignment::x_mat,left_branch_length);
             --*i;
@@ -153,8 +153,8 @@ class Viterbi_alignment: public Basic_alignment
         {
             Edge edge(*i,*i+1);
             int ind = left->get_bwd_edge_index_at_site(*i+1,&edge);
-            if(ind>=0)
-                left->get_edges()->at(ind).is_used(true);
+//            if(ind>=0)
+//                left->get_edges()->at(ind).is_used(true);
         }
 
         add_one_more = false;
@@ -163,8 +163,8 @@ class Viterbi_alignment: public Basic_alignment
         {
             Edge edge(*j,*j+1);
             int ind = right->get_bwd_edge_index_at_site(*j+1,&edge);
-            if(ind>=0)
-                right->get_edges()->at(ind).is_used(true);
+//            if(ind>=0)
+//                right->get_edges()->at(ind).is_used(true);
 
             this->insert_gap_path_pointer(path,*i,*j-1,Viterbi_alignment::y_mat,right_branch_length);
             --*j;
@@ -175,8 +175,8 @@ class Viterbi_alignment: public Basic_alignment
         {
             Edge edge(*j,*j+1);
             int ind = right->get_bwd_edge_index_at_site(*j+1,&edge);
-            if(ind>=0)
-                right->get_edges()->at(ind).is_used(true);
+//            if(ind>=0)
+//                right->get_edges()->at(ind).is_used(true);
         }
     }
 
