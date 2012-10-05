@@ -21,6 +21,7 @@
 #include "main/viterbi_alignment.h"
 #include "main/sequence.h"
 #include "utils/exceptions.h"
+#include "utils/find_substrings.h"
 #include "main/node.h"
 #include <iomanip>
 #include <fstream>
@@ -49,6 +50,40 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
 
     this->debug_print_input_sequences(3);
 
+    vector<int> upper_bound;
+    vector<int> lower_bound;
+
+    if(Settings_handle::st.is("prefix-tunnel"))
+    {
+
+        string s1 = left_sequence->get_sequence_string();
+        string s2 = right_sequence->get_sequence_string();
+        int p_len = Settings_handle::st.get("prefix-length").as<int>();
+
+        Find_substrings fs;
+        vector<Substring_hit> hits;
+        fs.find_long_substrings(&s1,&s2,&hits,p_len);
+
+        fs.define_tunnel(&hits,&upper_bound,&lower_bound,s1.length(),s2.length());
+
+        if(1){
+            cout<<"\n\nl1="<<s1.length()<<"; l2="<<s2.length()<<"; plot(1,1,type=\"n\",xlim=c(1,l1),ylim=c(1,l2))\n";
+            cout<<"segments(0,0,l1,0,col=\"red\"); segments(0,l2,l1,l2,col=\"red\"); segments(0,0,0,l2,col=\"red\"); segments(l1,0,l1,l2,col=\"red\")\n";
+            if(hits.size()>0)
+            {
+                for(vector<Substring_hit>::iterator it1 = hits.begin();it1!=hits.end();it1++)
+                    cout<<"s1="<<it1->start_site_1<<"; e1="<<it1->start_site_1+it1->length<<"; s2="<<it1->start_site_2<<"; e2="<<it1->start_site_2+it1->length<<"; lines(s1:e1,s2:e2)\n";
+                cout<<endl<<endl;
+            }
+            cout<<"upper=c("<<upper_bound.at(0);
+            for(int i=1;i<s1.length();i++)
+                cout<<","<<upper_bound.at(i);
+            cout<<")\nlower=c("<<lower_bound.at(0);
+            for(int i=1;i<s1.length();i++)
+                cout<<","<<lower_bound.at(i);
+            cout<<")\nlines(1:l1,upper); lines(1:l1,lower)\n\n";
+        }
+    }
 
     // set the basic parameters (copy from Settings)
     //
@@ -95,25 +130,41 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     int j_max = match->shape()[1];
     int i_max = match->shape()[0];
 
-
     if(start_offset<0 && end_offset<0)
     {
-        for(int j=0;j<j_max;j++)
+        if(Settings_handle::st.is("prefix-tunnel"))
         {
-            for(int i=0;i<i_max;i++)
+            for(int j=0;j<j_max;j++)
             {
-                this->compute_fwd_scores(i,j);
+                for(int i=0;i<i_max;i++)
+                {
+                    cout<<i<<" "<<j<<endl;
+                    if(j==0 || j>0 && i>upper_bound.at(j-1) && i<lower_bound.at(j-1))
+                    {
+                        cout<<"inside "<<i_max<<" "<<j_max<<" "<<upper_bound.size()<<endl;
+                        this->compute_fwd_scores(i,j);
+                    }
+                }
+            }
+        }
+        else
+        {
+            for(int j=0;j<j_max;j++)
+            {
+                for(int i=0;i<i_max;i++)
+                {
+                    this->compute_fwd_scores(i,j);
+                }
             }
         }
     }
     else
     {
+        if(start_offset<0)
+            start_offset = 0;
 
-    if(start_offset<0)
-        start_offset = 0;
-
-    if(end_offset<0)
-        end_offset = i_max;
+        if(end_offset<0)
+            end_offset = i_max;
 
         int i=0;
 
@@ -750,6 +801,9 @@ void Viterbi_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_point
     int x_ind = fp.mp.x_ind;
     int y_ind = fp.mp.y_ind;
 
+    bool first_x_site = true;
+    bool first_y_site = true;
+
     if(fp.mp.x_edge_ind>=0)
         left_edges->at(fp.mp.x_edge_ind).is_used(true);
     if(fp.mp.y_edge_ind>=0)
@@ -757,6 +811,9 @@ void Viterbi_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_point
 
     int j = match->shape()[1]-1;
     int i = match->shape()[0]-1;
+
+    int max_j = j+1;
+    int max_i = i+1;
 
     // Pre-existing gaps in the end skipped over
     //
@@ -772,6 +829,22 @@ void Viterbi_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_point
         {
             if(vit_mat == Viterbi_alignment::m_mat)
             {
+                if(first_x_site)
+                {
+                    Edge e(x_ind,max_i);
+                    int in = left->get_fwd_edge_index_at_site(x_ind,&e);
+                    if(in>=0)
+                        left_edges->at(in).is_used(true);
+                    first_x_site = false;
+                }
+                if(first_y_site)
+                {
+                    Edge e(y_ind,max_j);
+                    int in = right->get_fwd_edge_index_at_site(y_ind,&e);
+                    if(in>=0)
+                        right_edges->at(in).is_used(true);
+                    first_y_site = false;
+                }
 
                 vit_mat = (*match)[i][j].matrix;
                 x_ind = (*match)[i][j].x_ind;
@@ -792,6 +865,15 @@ void Viterbi_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_point
             }
             else if(vit_mat == Viterbi_alignment::x_mat)
             {
+                if(first_x_site)
+                {
+                    Edge e(x_ind,max_i);
+                    int in = left->get_fwd_edge_index_at_site(x_ind,&e);
+                    if(in>=0)
+                        left_edges->at(in).is_used(true);
+                    first_x_site = false;
+                }
+
                 vit_mat = (*xgap)[i][j].matrix;
                 x_ind = (*xgap)[i][j].x_ind;
                 y_ind = (*xgap)[i][j].y_ind;
@@ -810,6 +892,15 @@ void Viterbi_alignment::backtrack_new_path(vector<Path_pointer> *path,Path_point
             }
             else if(vit_mat == Viterbi_alignment::y_mat)
             {
+                if(first_y_site)
+                {
+                    Edge e(y_ind,max_j);
+                    int in = right->get_fwd_edge_index_at_site(y_ind,&e);
+                    if(in>=0)
+                        right_edges->at(in).is_used(true);
+                    first_y_site = false;
+                }
+
                 vit_mat = (*ygap)[i][j].matrix;
                 x_ind = (*ygap)[i][j].x_ind;
                 y_ind = (*ygap)[i][j].y_ind;

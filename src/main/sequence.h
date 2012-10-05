@@ -748,6 +748,8 @@ public:
         return true;
     }
 
+    string get_sequence_string();
+
     string print_sequence(vector<Site> *sites);
     string print_sequence() { return this->print_sequence(this->get_sites()); }
     string print_path(vector<Site> *sites);

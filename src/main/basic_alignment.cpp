@@ -558,7 +558,7 @@ void Basic_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *c
     if(sequence->get_site_at( edge.get_end_site_index() )->contains_bwd_edge( &edge ) )
         return;
 
-//    cout<<edge.get_start_site_index()<<" "<<edge.get_end_site_index()<<": "<<child->is_used()<<" "<<child->get_branch_count_since_last_used()<<endl;
+//    cout<<edge.get_start_site_index()<<" "<<edge.get_end_site_index()<<": used "<<child->is_used()<<", since last used "<<child->get_branch_count_since_last_used()<<endl;
 
     // Limits for copying old edges:
     //  first, number of nodes since last used

@@ -48,6 +48,58 @@ boost::mutex Node::log_mutex;
 
 /*******************************************************************************/
 
+void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence, bool is_overlap_alignment, int start_offset, int end_offset)
+{
+
+    if(!Settings_handle::st.is("silent"))
+    {
+        if(!is_reads_sequence)
+        {
+            stringstream ss;
+            ss<<" aligning node "<<this->get_name()<<" ("<<alignment_number<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<".";
+            Log_output::write_msg(ss.str(),0);
+        }
+        else
+            Log_output::append_msg(" to node '"+left_child->get_name()+"'.",0);
+        alignment_number++;
+    }
+
+    clock_t t_start=clock();
+
+    double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
+    Evol_model model = mf->alignment_model(dist,is_overlap_alignment);
+
+    stringstream ss;
+    ss << "Time node::model: "<<double(clock()-t_start)/CLOCKS_PER_SEC<<"\n";
+    Log_output::write_out(ss.str(),"time");
+
+    Viterbi_alignment va;
+    va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
+             left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence, start_offset, end_offset);
+
+    ss.str(string());
+    ss << "Time node::viterbi: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
+    Log_output::write_out(ss.str(),"time");
+
+    this->add_ancestral_sequence( va.get_simple_sequence() );
+
+    if(is_reads_sequence)
+        this->get_sequence()->is_read_descendants(true);
+
+    if(Settings::noise>2)
+        this->print_alignment();
+
+    if( Settings_handle::st.is("check-valid-graphs") )
+        this->check_valid_graph();
+
+    ss.str(string());
+    ss << "Time node::exit: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
+    Log_output::write_out(ss.str(),"time");
+
+}
+
+/*******************************************************************************/
+
 void Node::start_threaded_alignment(Model_factory *mf, int n_threads)
 {
 
@@ -153,9 +205,40 @@ void Node::threaded_function(Model_factory *mf, vector<Node*>& w_nodes, vector<N
     }
 }
 
-
 /*******************************************************************************/
 
+void Node::align_sequences_this_node_threaded(Model_factory *mf)
+{
+
+    if(!Settings_handle::st.is("silent"))
+    {
+        stringstream ss;
+        ss<<" aligning node "<<this->get_name()<<" ("<<alignment_number<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<".";
+
+        log_mutex.lock();
+        Log_output::write_msg(ss.str(),0);
+        log_mutex.unlock();
+
+        alignment_number++;
+    }
+
+    double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
+
+    model_mutex.lock();
+
+    Evol_model model = mf->alignment_model(dist);
+
+    model_mutex.unlock();
+
+    Viterbi_alignment va;
+    va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
+             left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
+
+    this->add_ancestral_sequence( va.get_simple_sequence() );
+
+}
+
+/*******************************************************************************/
 
 void Node::add_sequence( Fasta_entry seq_entry, int data_type, bool gapped, bool no_trimming, bool turn_revcomp)
 {
@@ -630,6 +713,8 @@ void Node::additional_sites_before_alignment_column(int j,vector<Insertion_at_no
         right_child->additional_sites_before_alignment_column(rj,addition);
 
 }
+
+/***************************************************************************/
 
 void Node::write_metapost_sequence_graph(ostream *output, ostream *output2, int *count, int root_length) const throw (Exception)
 {

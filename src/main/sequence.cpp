@@ -620,6 +620,39 @@ string Sequence::print_sequence(vector<Site> *sites)
     return ss.str();
 }
 
+/***************************************************************************/
+
+string Sequence::get_sequence_string()
+{
+
+    int seq_length = this->sites_length();
+    string seq;
+
+    if(this->is_terminal_sequence())
+    {
+        for(int j=1;j<seq_length-1;j++)
+            seq += this->get_site_at(j)->get_symbol();
+    }
+    else
+    {
+        for(int j=1;j<seq_length-1;j++)
+        {
+            string c = Model_factory::get_ancestral_character_alphabet_at( this->get_site_at(j)->get_state() );
+
+            int pstate = this->get_site_at(j)->get_path_state();
+            int ptype  = this->get_site_at(j)->get_site_type();
+
+            if( pstate != Site::xskipped && pstate != Site::yskipped && ptype != Site::non_real)
+                seq += c;
+        }
+    }
+
+    return seq;
+}
+
+/***************************************************************************/
+
+
 string Sequence::print_path(vector<Site> *sites)
 {
     stringstream ss;

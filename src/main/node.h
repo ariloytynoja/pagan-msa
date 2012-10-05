@@ -518,55 +518,7 @@ public:
 
     /*******************************************************************************/
 
-    void align_sequences_this_node(Model_factory *mf, bool is_reads_sequence=false, bool is_overlap_alignment=false, int start_offset=-1, int end_offset=-1)
-    {
-
-        if(!Settings_handle::st.is("silent"))
-        {
-            if(!is_reads_sequence)
-            {
-                stringstream ss;
-                ss<<" aligning node "<<this->get_name()<<" ("<<alignment_number<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<".";
-                Log_output::write_msg(ss.str(),0);
-            }
-            else
-                Log_output::append_msg(" to node '"+left_child->get_name()+"'.",0);
-            alignment_number++;
-        }
-
-        clock_t t_start=clock();
-
-        double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
-        Evol_model model = mf->alignment_model(dist,is_overlap_alignment);
-
-        stringstream ss;
-        ss << "Time node::model: "<<double(clock()-t_start)/CLOCKS_PER_SEC<<"\n";
-        Log_output::write_out(ss.str(),"time");
-
-        Viterbi_alignment va;
-        va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
-                 left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence, start_offset, end_offset);
-
-        ss.str(string());
-        ss << "Time node::viterbi: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
-        Log_output::write_out(ss.str(),"time");
-
-        this->add_ancestral_sequence( va.get_simple_sequence() );
-
-        if(is_reads_sequence)
-            this->get_sequence()->is_read_descendants(true);
-
-        if(Settings::noise>2)
-            this->print_alignment();
-
-        if( Settings_handle::st.is("check-valid-graphs") )
-            this->check_valid_graph();
-
-        ss.str(string());
-        ss << "Time node::exit: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
-        Log_output::write_out(ss.str(),"time");
-
-    }
+    void align_sequences_this_node(Model_factory *mf, bool is_reads_sequence=false, bool is_overlap_alignment=false, int start_offset=-1, int end_offset=-1);
 
     /*******************************************************************************/
 
@@ -582,48 +534,7 @@ public:
 
     /*******************************************************************************/
 
-    void align_sequences_this_node_threaded(Model_factory *mf)
-    {
-
-
-        if(!Settings_handle::st.is("silent"))
-        {
-//            if(!is_reads_sequence)
-//            {
-                stringstream ss;
-                ss<<" aligning node "<<this->get_name()<<" ("<<alignment_number<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<".";
-//                cout<<ss.str()<<endl;
-
-                log_mutex.lock();
-                Log_output::write_msg(ss.str(),0);
-                log_mutex.unlock();
-//            }
-//            else
-//                Log_output::append_msg(" to node '"+left_child->get_name()+"'.",0);
-            alignment_number++;
-        }
-
-        double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
-
-        model_mutex.lock();
-
-        Evol_model model = mf->alignment_model(dist);
-
-        model_mutex.unlock();
-
-        Viterbi_alignment va;
-        va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
-                 left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
-
-        this->add_ancestral_sequence( va.get_simple_sequence() );
-
-//        this->print_alignment();
-
-//        if(is_reads_sequence)
-//            this->get_sequence()->is_read_descendants(true);
-
-    }
-
+    void align_sequences_this_node_threaded(Model_factory *mf);
 
     /*******************************************************************************/
 
@@ -1418,6 +1329,8 @@ public:
     void add_ancestral_sequence( Sequence* s ) { sequence = s;  node_has_sequence_object = true;}
 
     Sequence *get_sequence() { return sequence; }
+
+    std::string get_sequence_string();
 
     void check_valid_graph() const;
 
