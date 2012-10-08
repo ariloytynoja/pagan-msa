@@ -22,6 +22,7 @@
 #include "main/sequence.h"
 #include "utils/exceptions.h"
 #include "utils/find_anchors.h"
+#include "utils/exonerate_queries.h"
 #include "main/node.h"
 #include <iomanip>
 #include <fstream>
@@ -53,7 +54,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     vector<int> upper_bound;
     vector<int> lower_bound;
 
-    if(Settings_handle::st.is("prefix-tunnel"))
+    if(Settings_handle::st.is("prefix-anchors") || Settings_handle::st.is("exonerate-anchors"))
     {
 
         string s1 = left_sequence->get_sequence_string(false);
@@ -62,12 +63,34 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
         vector<Substring_hit> hits;
         int p_len = Settings_handle::st.get("prefix-length").as<int>();
 
+//        //
+//        struct timespec tcpu_start, tcpu_finish;
+//        clock_gettime(CLOCK_MONOTONIC, &tcpu_start);
+
         Find_anchors fa;
-        fa.find_long_substrings(&s1,&s2,&hits,p_len);
+        if(Settings_handle::st.is("prefix-anchors"))
+        {
+
+            fa.find_long_substrings(&s1,&s2,&hits,p_len);
+
+        }
+        else
+        {
+            Exonerate_queries er;
+            er.local_pairwise_alignment(&s1,&s2,&hits);
+        }
+
+//        clock_gettime(CLOCK_MONOTONIC, &tcpu_finish);
+//        double elapsed;
+//        elapsed = (tcpu_finish.tv_sec - tcpu_start.tv_sec);
+//        elapsed += (tcpu_finish.tv_nsec - tcpu_start.tv_nsec) / 1000000000.0;
+//        cout<<"\n\ntime "<<elapsed<<endl<<endl;
+//        //
 
         s1 = left_sequence->get_sequence_string(true);
         s2 = right_sequence->get_sequence_string(true);
 
+        fa.check_hits_order_conflict(&hits);
         fa.define_tunnel(&hits,&upper_bound,&lower_bound,s1,s2);
 
         if(0){
@@ -136,7 +159,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
 
     if(start_offset<0 && end_offset<0)
     {
-        if(Settings_handle::st.is("prefix-tunnel"))
+        if(Settings_handle::st.is("prefix-anchors") || Settings_handle::st.is("exonerate-anchors"))
         {
             for(int i=0;i<i_max;i++)
             {

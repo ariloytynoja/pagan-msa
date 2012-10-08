@@ -27,7 +27,7 @@ SOURCES += main.cpp \
     main/basic_alignment.cpp \
     main/reads_aligner.cpp \
     utils/check_version.cpp \
-    utils/exonerate_reads.cpp \
+    utils/exonerate_queries.cpp \
     utils/optimal_reference.cpp \
     utils/log_output.cpp \
     utils/find_anchors.cpp
@@ -51,7 +51,7 @@ HEADERS += utils/text_utils.h \
     main/basic_alignment.h \
     main/reads_aligner.h \
     utils/check_version.h \
-    utils/exonerate_reads.h \
+    utils/exonerate_queries.h \
     utils/optimal_reference.h \
     utils/log_output.h \
     utils/find_anchors.h \

@@ -1,4 +1,4 @@
-#include "exonerate_reads.h"
+#include "exonerate_queries.h"
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -13,18 +13,18 @@
 using namespace std;
 using namespace ppa;
 
-Exonerate_reads::Exonerate_reads()
+Exonerate_queries::Exonerate_queries()
 {
 
 }
 
-bool Exonerate_reads::test_executable()
+bool Exonerate_queries::test_executable()
 {
     int status = system("exonerate  >/dev/null");
     return WEXITSTATUS(status) == 1;
 }
 
-bool Exonerate_reads::split_sugar_string(const string& row,hit *h)
+bool Exonerate_queries::split_sugar_string(const string& row,hit *h)
 {
 
     const boost::regex pattern("sugar:\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)\\s+(\\S)\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)\\s+(\\S)\\s+(\\d+)\n");
@@ -49,7 +49,7 @@ bool Exonerate_reads::split_sugar_string(const string& row,hit *h)
     return valid;
 }
 
-bool Exonerate_reads::split_vulgar_string(const string& row,hit *h)
+bool Exonerate_queries::split_vulgar_string(const string& row,hit *h)
 {
 
     const boost::regex pattern("vulgar:\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)\\s+(\\S)\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)\\s+(\\S)\\s+(\\d+)\\s+(.+)\n");
@@ -78,7 +78,47 @@ bool Exonerate_reads::split_vulgar_string(const string& row,hit *h)
 }
 
 
-void Exonerate_reads::write_exonerate_input(Node *root, vector<Fasta_entry> *reads, map<string,string> *names, int *r)
+void Exonerate_queries::write_exonerate_input(string *str1, string *str2, int *r)
+{
+    // create exonerate input
+    //
+    ofstream q_output;
+    ofstream t_output;
+
+    while(true)
+    {
+
+        stringstream q_name;
+        stringstream t_name;
+
+        string tmp_dir = this->get_temp_dir();
+
+        q_name <<tmp_dir<<"q"<<*r<<".fas";
+        t_name <<tmp_dir<<"t"<<*r<<".fas";
+
+        ifstream q_file(q_name.str().c_str());
+        ifstream t_file(t_name.str().c_str());
+
+        if(!q_file && !t_file)
+        {
+            q_output.open( q_name.str().c_str(), (ios::out) );
+            t_output.open( t_name.str().c_str(), (ios::out) );
+
+            break;
+        }
+        *r = rand();
+    }
+
+    t_output<<">t\n"<<*str2<<endl;
+    t_output.close();
+
+    q_output<<">q\n"<<*str1<<endl;
+    q_output.close();
+
+    return;
+}
+
+void Exonerate_queries::write_exonerate_input(Node *root, vector<Fasta_entry> *reads, map<string,string> *names, int *r)
 {
     vector<Fasta_entry> aligned_sequences;
     root->get_alignment(&aligned_sequences,true);
@@ -139,7 +179,7 @@ void Exonerate_reads::write_exonerate_input(Node *root, vector<Fasta_entry> *rea
     return;
 }
 
-void Exonerate_reads::write_exonerate_input(Node *root, Fasta_entry *read, map<string,string> *names, int *r)
+void Exonerate_queries::write_exonerate_input(Node *root, Fasta_entry *read, map<string,string> *names, int *r)
 {
     vector<Fasta_entry> aligned_sequences;
     root->get_alignment(&aligned_sequences,true);
@@ -196,7 +236,7 @@ void Exonerate_reads::write_exonerate_input(Node *root, Fasta_entry *read, map<s
     return;
 }
 
-void Exonerate_reads::all_local_alignments(Node *root, vector<Fasta_entry> *reads, std::multimap<std::string,std::string> *tid_nodes, std::map<std::string,std::multimap<std::string,hit> > *hits, bool is_local)
+void Exonerate_queries::all_local_alignments(Node *root, vector<Fasta_entry> *reads, std::multimap<std::string,std::string> *tid_nodes, std::map<std::string,std::multimap<std::string,hit> > *hits, bool is_local)
 {
     if(is_local)
         Log_output::write_msg("Running Exonerate with all query sequences (ungapped)",0);
@@ -332,7 +372,7 @@ void Exonerate_reads::all_local_alignments(Node *root, vector<Fasta_entry> *read
                 }
             }
 
-            sort (best_hits.begin(), best_hits.end(), Exonerate_reads::better);
+            sort (best_hits.begin(), best_hits.end(), Exonerate_queries::better);
 
             multimap<string,hit> best_hits_for_this;
 
@@ -418,7 +458,7 @@ void Exonerate_reads::all_local_alignments(Node *root, vector<Fasta_entry> *read
 
 }
 
-void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<string,string> *tid_nodes, map<string,hit> *hits, bool is_local, bool all_nodes)
+void Exonerate_queries::local_alignment(Node *root, Fasta_entry *read, multimap<string,string> *tid_nodes, map<string,hit> *hits, bool is_local, bool all_nodes)
 {
 
     if(is_local)
@@ -528,7 +568,7 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
              }
         }
 
-        sort (best_hits.begin(), best_hits.end(), Exonerate_reads::better);
+        sort (best_hits.begin(), best_hits.end(), Exonerate_queries::better);
 
 
         // keep hits that are above a relative threshold
@@ -591,7 +631,94 @@ void Exonerate_reads::local_alignment(Node *root, Fasta_entry *read, multimap<st
         this->delete_files(r);
 }
 
-void Exonerate_reads::delete_files(int r)
+/****************************************************************************/
+
+void Exonerate_queries::local_pairwise_alignment(string *str1,string *str2,vector<Substring_hit> *hits)
+{
+    int r = rand();
+    string tmp_dir = this->get_temp_dir();
+
+    this->write_exonerate_input(str1,str2,&r);
+
+    // exonerate command for local alignment
+
+    stringstream command;
+    command << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
+
+    FILE *fpipe;
+    if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
+    {
+        Log_output::write_out("Problems with exonerate pipe.\nExiting.\n",0);
+        exit(1);
+    }
+
+    // read exonerate output, summing the multiple hit scores
+
+    char line[256];
+    vector<hit> best_hits;
+
+    while ( fgets( line, sizeof line, fpipe))
+    {
+//        cout<<line;
+        hit h;
+        bool valid = split_sugar_string(string(line),&h);
+
+        if(valid)
+            best_hits.push_back( h);
+    }
+    pclose(fpipe);
+
+
+    if(best_hits.size()>0)
+    {
+
+        sort (best_hits.begin(), best_hits.end(), Exonerate_queries::better);
+
+
+        // keep hits above a threshold
+        int hit_score = -1;
+        if( Settings_handle::st.is("exonerate-hit-score") )
+            hit_score = Settings_handle::st.get("exonerate-hit-score").as<int>();
+
+        int hit_length = Settings_handle::st.get("exonerate-hit-length").as<int>();
+
+        for(int i=0; i<(int)best_hits.size(); i++)
+        {
+            if(hit_score>0 && best_hits.at(i).score > hit_score)
+            {
+                Substring_hit hit;
+                hit.start_site_1 = best_hits.at(i).q_start;
+                hit.start_site_2 = best_hits.at(i).t_start;
+                hit.length = best_hits.at(i).q_end - best_hits.at(i).q_start;
+
+                hits->push_back(hit);
+//                cout<<"hit: "<<hit.start_site_1<<" "<<hit.start_site_2<<" "<<hit.length<<"\n";
+                Log_output::write_out("Exonerate_queries: adding "+best_hits.at(i).node+" "+Log_output::itos(best_hits.at(i).score)+"\n",3);
+            }
+            else if(hit_length>0 && best_hits.at(i).q_end-best_hits.at(i).q_start > hit_length)
+            {
+                Substring_hit hit;
+                hit.start_site_1 = best_hits.at(i).q_start;
+                hit.start_site_2 = best_hits.at(i).t_start;
+                hit.length = best_hits.at(i).q_end - best_hits.at(i).q_start;
+
+                hits->push_back(hit);
+//                cout<<"hit: "<<hit.start_site_1<<" "<<hit.start_site_2<<" "<<hit.length<<"\n";
+                Log_output::write_out("Exonerate_queries: adding "+best_hits.at(i).node+" "+Log_output::itos(best_hits.at(i).score)+"\n",3);
+            }
+
+        }
+    }
+
+    if(!Settings_handle::st.is("keep-exonerate-files"))
+        this->delete_files(r);
+
+}
+
+/****************************************************************************/
+
+
+void Exonerate_queries::delete_files(int r)
 {
     string tmp_dir = this->get_temp_dir();
 

@@ -19,7 +19,7 @@
  ***************************************************************************/
 
 #include "main/reads_aligner.h"
-#include "utils/exonerate_reads.h"
+#include "utils/exonerate_queries.h"
 #include "utils/text_utils.h"
 #include "utils/log_output.h"
 #include <sstream>
@@ -1506,7 +1506,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
         if(Settings_handle::st.is("use-exonerate-local") || Settings_handle::st.is("fast-placement")  || Settings_handle::st.is("very-fast-placement") )
         {
-            Exonerate_reads er;
+            Exonerate_queries er;
             if(!er.test_executable())
                 Log_output::write_out("The executable for exonerate not found! The fast placement search not used!",0);
             else
@@ -1558,7 +1558,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
         }
         else if(Settings_handle::st.is("use-exonerate-gapped"))
         {
-            Exonerate_reads er;
+            Exonerate_queries er;
             if(!er.test_executable())
                 Log_output::write_out("The executable for exonerate not found! The option '--exonerate-reads-gapped' not used!",0);
             else
@@ -1836,7 +1836,7 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
     //
     map<string, multimap<string,hit> > exonerate_hits;
 
-    Exonerate_reads er;
+    Exonerate_queries er;
     if(!er.test_executable())
         Log_output::write_out("The executable for exonerate not found! The fast placement search not used!",0);
 
@@ -1894,7 +1894,7 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
 
             if(tid_nodes.size()>1)
             {
-                Exonerate_reads er;
+                Exonerate_queries er;
                 if(!er.test_executable())
                     Log_output::write_out("The executable for exonerate not found! The option '--exonerate-reads-gapped' not used!",0);
                 else
@@ -2089,7 +2089,7 @@ void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_e
 
     if(Settings_handle::st.is("use-exonerate-local") || Settings_handle::st.is("fast-placement") || Settings_handle::st.is("very-fast-placement"))
     {
-        Exonerate_reads er;
+        Exonerate_queries er;
         if(!er.test_executable())
             Log_output::write_out("The executable for exonerate not found! The fast placement search not used!",0);
 
@@ -2121,7 +2121,7 @@ void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_e
 
     else if(Settings_handle::st.is("use-exonerate-gapped"))
     {
-        Exonerate_reads er;
+        Exonerate_queries er;
         if(!er.test_executable())
             Log_output::write_out("The executable for exonerate not found! The option '--exonerate-reads-gapped' not used!",0);
 

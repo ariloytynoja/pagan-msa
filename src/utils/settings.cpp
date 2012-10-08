@@ -220,9 +220,12 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("keep-exonerate-files","keep exonerate files")
         ("recompute-reference-alignment-model", "recompute reference alignment model")
         ("no-score-scaling","no subsistitution score scaling")
-        ("prefix-tunnel","use prefix approach for DP tunnel")
+        ("prefix-anchors","use prefix approach for DP tunnel")
         ("prefix-length", po::value<int>()->default_value(30), "prefix length")
-        ("prefix-tunnel-offset", po::value<int>()->default_value(10), "prefix tunnel offset")
+        ("exonerate-anchors","use Exonerate for DP tunnel")
+        ("exonerate-hit-length", po::value<int>()->default_value(30), "exonerate hit length")
+        ("exonerate-hit-score", po::value<int>(), "exonerate hit score")
+        ("anchors-tunnel-offset", po::value<int>()->default_value(10), "prefix tunnel offset")
     ;
 
     boost::program_options::options_description broken("Broken options",100);

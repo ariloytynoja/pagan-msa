@@ -124,14 +124,17 @@ void Find_anchors::find_long_substrings(std::string *seq1,std::string *seq2,std:
             it1++;
         }
     }
+}
 
+void Find_anchors::check_hits_order_conflict(vector<Substring_hit> *hits)
+{
     sort(hits->begin(),hits->end(),Find_anchors::sort_by_start_site_1);
 
     bool order_conflicts = false;
 
     if(hits->size()>1)
     {
-        it1 = hits->begin();
+        vector<Substring_hit>::iterator it1 = hits->begin();
         vector<Substring_hit>::iterator it2 = hits->begin();
         it2++;
         for(;it2!=hits->end();it1++,it2++)
@@ -180,11 +183,12 @@ void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<in
 
     for(vector<Substring_hit>::iterator it = hits->begin();it!=hits->end();it++)
     {
+//        cout<<it->start_site_1<<" "<<it->start_site_2<<" "<<it->length<<" "<<length1<<" "<<length2<<"\n";
         for(int i=0;i<it->length;i++)
             diagonals.at(index1.at(it->start_site_1+i)) = index2.at(it->start_site_2+i);
     }
 
-    int width = Settings_handle::st.get("prefix-tunnel-offset").as<int>();
+    int width = Settings_handle::st.get("anchors-tunnel-offset").as<int>();
 
     int y1 = 0;
     int y2 = 0;

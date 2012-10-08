@@ -70,7 +70,7 @@ SOURCES       = main.cpp \
 		utils/xml_writer.cpp \
 		utils/evol_model.cpp \
 		utils/check_version.cpp \
-		utils/exonerate_reads.cpp \
+                utils/exonerate_queries.cpp \
 		utils/optimal_reference.cpp \
 		utils/log_output.cpp \
                 utils/find_anchors.cpp \
@@ -94,7 +94,7 @@ OBJECTS       = main.o \
 		xml_writer.o \
 		evol_model.o \
 		check_version.o \
-		exonerate_reads.o \
+                exonerate_queries.o \
 		optimal_reference.o \
 		log_output.o \
                 find_anchors.o \
@@ -364,7 +364,7 @@ reads_aligner.o: main/reads_aligner.cpp main/reads_aligner.h \
 		main/viterbi_alignment.h \
 		main/basic_alignment.h \
 		main/reference_alignment.h \
-		utils/exonerate_reads.h \
+                utils/exonerate_queries.h \
 		utils/text_utils.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o reads_aligner.o main/reads_aligner.cpp
 
@@ -372,7 +372,7 @@ check_version.o: utils/check_version.cpp utils/check_version.h \
 		utils/log_output.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o check_version.o utils/check_version.cpp
 
-exonerate_reads.o: utils/exonerate_reads.cpp utils/exonerate_reads.h \
+exonerate_queries.o: utils/exonerate_queries.cpp utils/exonerate_queries.h \
 		utils/fasta_entry.h \
 		main/node.h \
 		utils/exceptions.h \
@@ -387,7 +387,7 @@ exonerate_reads.o: utils/exonerate_reads.cpp utils/exonerate_reads.h \
 		main/basic_alignment.h \
 		utils/model_factory.h \
 		main/reference_alignment.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o exonerate_reads.o utils/exonerate_reads.cpp
+        $(CXX) -c $(CXXFLAGS) $(INCPATH) -o exonerate_queries.o utils/exonerate_queries.cpp
 
 optimal_reference.o: utils/optimal_reference.cpp utils/optimal_reference.h \
 		utils/fasta_entry.h \
