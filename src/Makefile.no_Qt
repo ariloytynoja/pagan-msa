@@ -16,21 +16,21 @@ INCPATH  = -I/usr/include -I. -I./utils -I./main -I../boost/include
 LINK     = /usr/bin/g++
 LFLAGS   = 
 LIBS     = $(SUBLIBS)  -Wl,-rpath, -lboost_program_options -lboost_regex -lboost_thread -lm -lrt -L../boost/lib
-AR       = ar cqs
-RANLIB   = 
-TAR      = tar -cf
+AR            = ar cqs
+RANLIB        = 
+TAR           = tar -cf
 GZIP     = gzip -9f
-COPY     = cp -f
+COPY          = cp -f
 COPY_FILE= $(COPY) -p
 COPY_DIR = $(COPY) -pR
-DEL_FILE = rm -f
+DEL_FILE      = rm -f
 SYMLINK  = ln -sf
-DEL_DIR  = rmdir
-MOVE     = mv -f
+DEL_DIR       = rmdir
+MOVE          = mv -f
 
 ####### Output directory
 
-OBJECTS_DIR = ./
+OBJECTS_DIR   = ./
 
 ####### Files
 
@@ -50,6 +50,7 @@ HEADERS       = utils/text_utils.h \
                 utils/check_version.h \
 		utils/optimal_reference.h \
 		utils/log_output.h \
+                utils/find_anchors.h \
                 main/node.h \
 		main/sequence.h \
 		main/basic_alignment.h \
@@ -72,6 +73,7 @@ SOURCES       = main.cpp \
 		utils/exonerate_reads.cpp \
 		utils/optimal_reference.cpp \
 		utils/log_output.cpp \
+                utils/find_anchors.cpp \
 		main/node.cpp \
 		main/sequence.cpp \
 		main/basic_alignment.cpp \
@@ -95,12 +97,13 @@ OBJECTS       = main.o \
 		exonerate_reads.o \
 		optimal_reference.o \
 		log_output.o \
+                find_anchors.o \
 		node.o \
 		reference_alignment.o \
 		viterbi_alignment.o \
 		basic_alignment.o \
 		reads_aligner.o
-TARGET   = pagan
+TARGET        = pagan
 
 first: all
 ####### Implicit rules
@@ -126,11 +129,11 @@ first: all
 
 all: Makefile $(TARGET)
 
-$(TARGET): $(OBJECTS)
+$(TARGET):  $(OBJECTS)  
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(LIBS)
 
 clean:
-	-$(DEL_FILE) $(OBJECTS) 
+	-$(DEL_FILE) $(OBJECTS)
 	-$(DEL_FILE) *~ core *.core
 
 
@@ -162,7 +165,9 @@ main.o: main.cpp utils/settings.h \
 		utils/fasta_reader.h \
 		utils/xml_writer.h \
 		utils/optimal_reference.h \
-		main/reads_aligner.h
+		main/reads_aligner.h \
+                utils/find_anchors.h \
+		utils/substring_hit.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
 text_utils.o: utils/text_utils.cpp utils/text_utils.h \
@@ -236,6 +241,8 @@ sequence.o: main/sequence.cpp utils/settings.h \
 		utils/int_matrix.h \
 		utils/evol_model.h \
 		utils/settings_handle.h \
+		utils/text_utils.h \
+		utils/exceptions.h \
 		main/sequence.h \
 		utils/fasta_entry.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o sequence.o main/sequence.cpp
@@ -319,6 +326,8 @@ viterbi_alignment.o: main/viterbi_alignment.cpp main/viterbi_alignment.h \
 		main/basic_alignment.h \
 		utils/model_factory.h \
 		utils/exceptions.h \
+                utils/find_anchors.h \
+		utils/substring_hit.h \
 		main/node.h \
 		main/reference_alignment.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o viterbi_alignment.o main/viterbi_alignment.cpp
@@ -402,6 +411,12 @@ log_output.o: utils/log_output.cpp utils/log_output.h \
 		utils/settings_handle.h \
 		utils/settings.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o log_output.o utils/log_output.cpp
+
+find_anchors.o: utils/find_anchors.cpp utils/find_anchors.h \
+		utils/substring_hit.h \
+		utils/settings_handle.h \
+		utils/settings.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o find_anchors.o utils/find_anchors.cpp
 
 ####### Install
 

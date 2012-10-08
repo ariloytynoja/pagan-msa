@@ -622,7 +622,7 @@ string Sequence::print_sequence(vector<Site> *sites)
 
 /***************************************************************************/
 
-string Sequence::get_sequence_string()
+string Sequence::get_sequence_string(bool with_gaps)
 {
 
     int seq_length = this->sites_length();
@@ -644,6 +644,9 @@ string Sequence::get_sequence_string()
 
             if( pstate != Site::xskipped && pstate != Site::yskipped && ptype != Site::non_real)
                 seq += c;
+            else
+                if(with_gaps)
+                    seq +=  '-';
         }
     }
 

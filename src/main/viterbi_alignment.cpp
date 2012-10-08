@@ -21,7 +21,7 @@
 #include "main/viterbi_alignment.h"
 #include "main/sequence.h"
 #include "utils/exceptions.h"
-#include "utils/find_substrings.h"
+#include "utils/find_anchors.h"
 #include "main/node.h"
 #include <iomanip>
 #include <fstream>
@@ -56,17 +56,21 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     if(Settings_handle::st.is("prefix-tunnel"))
     {
 
-        string s1 = left_sequence->get_sequence_string();
-        string s2 = right_sequence->get_sequence_string();
+        string s1 = left_sequence->get_sequence_string(false);
+        string s2 = right_sequence->get_sequence_string(false);
+
+        vector<Substring_hit> hits;
         int p_len = Settings_handle::st.get("prefix-length").as<int>();
 
-        Find_substrings fs;
-        vector<Substring_hit> hits;
-        fs.find_long_substrings(&s1,&s2,&hits,p_len);
+        Find_anchors fa;
+        fa.find_long_substrings(&s1,&s2,&hits,p_len);
 
-        fs.define_tunnel(&hits,&upper_bound,&lower_bound,s1.length(),s2.length());
+        s1 = left_sequence->get_sequence_string(true);
+        s2 = right_sequence->get_sequence_string(true);
 
-        if(1){
+        fa.define_tunnel(&hits,&upper_bound,&lower_bound,s1,s2);
+
+        if(0){
             cout<<"\n\nl1="<<s1.length()<<"; l2="<<s2.length()<<"; plot(1,1,type=\"n\",xlim=c(1,l1),ylim=c(1,l2))\n";
             cout<<"segments(0,0,l1,0,col=\"red\"); segments(0,l2,l1,l2,col=\"red\"); segments(0,0,0,l2,col=\"red\"); segments(l1,0,l1,l2,col=\"red\")\n";
             if(hits.size()>0)
@@ -76,10 +80,10 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
                 cout<<endl<<endl;
             }
             cout<<"upper=c("<<upper_bound.at(0);
-            for(int i=1;i<s1.length();i++)
+            for(int i=1;i<(int)s1.length();i++)
                 cout<<","<<upper_bound.at(i);
             cout<<")\nlower=c("<<lower_bound.at(0);
-            for(int i=1;i<s1.length();i++)
+            for(int i=1;i<(int)s1.length();i++)
                 cout<<","<<lower_bound.at(i);
             cout<<")\nlines(1:l1,upper); lines(1:l1,lower)\n\n";
         }
@@ -134,14 +138,12 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     {
         if(Settings_handle::st.is("prefix-tunnel"))
         {
-            for(int j=0;j<j_max;j++)
+            for(int i=0;i<i_max;i++)
             {
-                for(int i=0;i<i_max;i++)
+                for(int j=0;j<j_max;j++)
                 {
-                    cout<<i<<" "<<j<<endl;
-                    if(j==0 || j>0 && i>upper_bound.at(j-1) && i<lower_bound.at(j-1))
+                    if(j>=upper_bound.at(i) && j<=lower_bound.at(i))
                     {
-                        cout<<"inside "<<i_max<<" "<<j_max<<" "<<upper_bound.size()<<endl;
                         this->compute_fwd_scores(i,j);
                     }
                 }
@@ -186,6 +188,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     //
     Site * left_site = left->get_site_at(i_max);
     Site * right_site = right->get_site_at(j_max);
+
 
     Matrix_pointer max_end;
     this->iterate_bwd_edges_for_end_corner(left_site,right_site,&max_end);

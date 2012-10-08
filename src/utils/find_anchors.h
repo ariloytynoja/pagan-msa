@@ -18,8 +18,8 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef FIND_SUBSTRINGS_H
-#define FIND_SUBSTRINGS_H
+#ifndef FIND_ANCHORS_H
+#define FIND_ANCHORS_H
 
 #include <string>
 #include <vector>
@@ -29,12 +29,12 @@
 #include "substring_hit.h"
 
 /*
-Adapted from http://www.drdobbs.com/architecture-and-design/algorithm-alley/184404588
+Partly adapted from http://www.drdobbs.com/architecture-and-design/algorithm-alley/184404588
 */
 
 namespace ppa{
 
-class Find_substrings
+class Find_anchors
 {
     static int pstrcmp(const void *p, const void *q)
     {
@@ -109,10 +109,10 @@ class Find_substrings
 
 
 public:
-    Find_substrings();
+    Find_anchors();
     void find_long_substrings(std::string *seq1,std::string *seq2,std::vector<Substring_hit> *hits,int min_length);
-    void define_tunnel(std::vector<Substring_hit> *hits,std::vector<int> *upper_bound,std::vector<int> *lower_bound,int length1, int length2);
+    void define_tunnel(std::vector<Substring_hit> *hits,std::vector<int> *upper_bound,std::vector<int> *lower_bound,std::string str1, std::string str2);
 };
 
 }
-#endif // FIND_SUBSTRINGS_H
+#endif // FIND_ANCHORS_H

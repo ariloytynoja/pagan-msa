@@ -748,7 +748,7 @@ public:
         return true;
     }
 
-    string get_sequence_string();
+    string get_sequence_string(bool with_gaps);
 
     string print_sequence(vector<Site> *sites);
     string print_sequence() { return this->print_sequence(this->get_sites()); }

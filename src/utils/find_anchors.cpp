@@ -18,7 +18,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include "utils/find_substrings.h"
+#include "utils/find_anchors.h"
 #include "utils/settings_handle.h"
 #include <iostream>
 #include <algorithm>
@@ -26,13 +26,15 @@
 using namespace ppa;
 using namespace std;
 
-Find_substrings::Find_substrings()
+Find_anchors::Find_anchors()
 {
 }
 
 
-void Find_substrings::find_long_substrings(std::string *seq1,std::string *seq2,std::vector<Substring_hit> *hits,int min_length)
+void Find_anchors::find_long_substrings(std::string *seq1,std::string *seq2,std::vector<Substring_hit> *hits,int min_length)
 {
+//    cout<<"find_long_substrings\n";
+
     len1 = seq1->length();
     len2 = seq2->length();
 
@@ -59,7 +61,7 @@ void Find_substrings::find_long_substrings(std::string *seq1,std::string *seq2,s
     beg1 = a[0];
     beg2 = a[l];
 
-    qsort(a, m, sizeof(char *), Find_substrings::pstrcmp);
+    qsort(a, m, sizeof(char *), Find_anchors::pstrcmp);
 
     for (int i = 0; i < m-1; i++)
     {
@@ -79,7 +81,7 @@ void Find_substrings::find_long_substrings(std::string *seq1,std::string *seq2,s
         }
     }
 
-    sort(hits->begin(),hits->end(),Find_substrings::sort_by_length);
+    sort(hits->begin(),hits->end(),Find_anchors::sort_by_length);
 //    cout<<"sorted "<<hits->size()<<"\n";
 
     vector<bool> hit_site1;
@@ -123,7 +125,7 @@ void Find_substrings::find_long_substrings(std::string *seq1,std::string *seq2,s
         }
     }
 
-    sort(hits->begin(),hits->end(),Find_substrings::sort_by_start_site_1);
+    sort(hits->begin(),hits->end(),Find_anchors::sort_by_start_site_1);
 
     bool order_conflicts = false;
 
@@ -146,8 +148,28 @@ void Find_substrings::find_long_substrings(std::string *seq1,std::string *seq2,s
 }
 
 
-void Find_substrings::define_tunnel(std::vector<Substring_hit> *hits,std::vector<int> *upper_bound,std::vector<int> *lower_bound,int length1,int length2)
+void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<int> *upper_bound,std::vector<int> *lower_bound,string str1,string str2)
 {
+//    cout<<"define_tunnel\n";
+
+    int length1 = str1.length();
+    int length2 = str2.length();
+
+    // Has to consider skpped-over gaps as those are in the sequence objects
+    //
+    vector<int> index1;
+    vector<int> index2;
+    index1.push_back(0);
+    index2.push_back(0);
+
+    for(int i=0;i<length1;i++)
+        if(str1.at(i)!='-')
+            index1.push_back(i);
+
+    for(int i=0;i<length2;i++)
+        if(str2.at(i)!='-')
+            index2.push_back(i);
+
     upper_bound->reserve(length1);
     lower_bound->reserve(length1);
 
@@ -159,16 +181,19 @@ void Find_substrings::define_tunnel(std::vector<Substring_hit> *hits,std::vector
     for(vector<Substring_hit>::iterator it = hits->begin();it!=hits->end();it++)
     {
         for(int i=0;i<it->length;i++)
-            diagonals.at(it->start_site_1+i) = it->start_site_2+i;
+            diagonals.at(index1.at(it->start_site_1+i)) = index2.at(it->start_site_2+i);
     }
 
     int width = Settings_handle::st.get("prefix-tunnel-offset").as<int>();
 
     int y1 = 0;
     int y2 = 0;
+    int y;
 
     int prev_y = 0;
     int m_count = 0;
+
+    upper_bound->push_back(0);
 
     for(int i=0;i<length1;i++)
     {
@@ -185,7 +210,7 @@ void Find_substrings::define_tunnel(std::vector<Substring_hit> *hits,std::vector
             m_count = 0;
         }
 
-        int y = min(y1,y2);
+        y = min(y1,y2);
         y = max(y,0);
 
         if(diagonals.at(i)>=0 && m_count>=width)
@@ -219,7 +244,7 @@ void Find_substrings::define_tunnel(std::vector<Substring_hit> *hits,std::vector
             m_count = 0;
         }
 
-        int y = max(y1,y2);
+        y = max(y1,y2);
         y = min(y,length2);
 
         if(diagonals.at(i)>=0 && m_count>=width)
@@ -231,5 +256,6 @@ void Find_substrings::define_tunnel(std::vector<Substring_hit> *hits,std::vector
 
         lower_bound->push_back(y);
     }
+    lower_bound->push_back(y);
     reverse(lower_bound->begin(),lower_bound->end());
 }

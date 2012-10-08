@@ -32,7 +32,6 @@
 #include "utils/log_output.h"
 #include "main/node.h"
 #include "main/reads_aligner.h"
-#include "utils/find_substrings.h"
 #include "utils/substring_hit.h"
 
 #ifdef __MACH__
@@ -47,11 +46,6 @@ using namespace ppa;
 int main(int argc, char *argv[])
 {
 
-//    Find_substrings fs;
-//    string s1 = "bananabanana";
-//    string s2 = "ananasananas";
-//    vector<Substring_hit> hits;
-//    fs.find_long_substrings(&s1,&s2,&hits,3);
 
     /***********************************************************************/
     /*  Start the clock and then read the parameters and data              */
