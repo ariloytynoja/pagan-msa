@@ -1377,6 +1377,7 @@ string Fasta_reader::DNA_to_protein(string *sequence) const
     return prot;
 }
 
+
 string Fasta_reader::protein_to_DNA(string *dna,string *prot) const
 {
     string out;

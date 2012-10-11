@@ -1834,6 +1834,7 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
     e->computePMatrix(char_as,tmr,twu,twv,twr,distance);
 
+
     Evol_model model(sequence_data_type, distance);
 
     if(is_local_alignment)

@@ -48,7 +48,7 @@ boost::mutex Node::log_mutex;
 
 /*******************************************************************************/
 
-void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence, bool is_overlap_alignment, int start_offset, int end_offset)
+void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence, bool is_overlap_alignment)
 {
 
     if(!Settings_handle::st.is("silent"))
@@ -75,7 +75,7 @@ void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence, 
 
     Viterbi_alignment va;
     va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
-             left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence, start_offset, end_offset);
+             left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence);
 
     ss.str(string());
     ss << "Time node::viterbi: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";

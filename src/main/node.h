@@ -518,7 +518,7 @@ public:
 
     /*******************************************************************************/
 
-    void align_sequences_this_node(Model_factory *mf, bool is_reads_sequence=false, bool is_overlap_alignment=false, int start_offset=-1, int end_offset=-1);
+    void align_sequences_this_node(Model_factory *mf, bool is_reads_sequence=false, bool is_overlap_alignment=false);
 
     /*******************************************************************************/
 

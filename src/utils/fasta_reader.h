@@ -44,9 +44,9 @@ class Fasta_reader
 
     void rna_to_DNA(string *sequence) const;
     void define_translation_tables();
+
     string DNA_to_protein(string *sequence) const;
     string protein_to_DNA(string *dna,string *prot) const;
-
 public:
 
     enum output_mode {plain_alignment,contig_alignment,consensus_only};

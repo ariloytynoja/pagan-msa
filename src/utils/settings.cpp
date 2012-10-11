@@ -34,8 +34,8 @@ Settings::Settings(){}
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.43;
-    date = "20 September, 2012";
+    version = 0.44;
+    date = "10 October, 2012";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -119,6 +119,16 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("perfect-reference", "assume perfect reference alignment")
     ;
 
+    boost::program_options::options_description anchoring("Anchoring options",100);
+    anchoring.add_options()
+        ("use-anchors","use Exonerate to anchor alignment")
+        ("exonerate-hit-length", po::value<int>()->default_value(30), "Exonerate hit length for anchor (default)")
+        ("exonerate-hit-score", po::value<int>(), "Exonerate hit score for anchor")
+        ("anchors-offset", po::value<int>()->default_value(15), "anchors offset for alignment")
+        ("use-prefix-anchors","use prefix approach to anchor alignment")
+        ("prefix-hit-length", po::value<int>()->default_value(30), "prefix hit length for anchor")
+    ;
+
     boost::program_options::options_description exonerate("Exonerate options",100);
     exonerate.add_options()
         ("exhaustive-placement","if Exonrate fails, use PAGAN to place the query")
@@ -138,8 +148,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("compare-reverse","test also reverse-complement and keep better (DNA)")
         ("find-best-orf", "translate and use best ORF (DNA)")
         ("min-orf-coverage", po::value<float>()->default_value(0.95,"0.95"),"minimum ORF coverage to be considered (DNA)")
-        ("pileup-queries-ordered","pileup queries are ordered")
-        ("pileup-offset", po::value<int>()->default_value(5), "offset for ordered alignment start site")
         ("query-cluster-attempts", po::value<int>()->default_value(1),"attempts to find overlap")
         ("find-cluster-reference","find optimal cluster reference")
         ("inlude-parent-in-contig", "include also ancestral parent in contigs")
@@ -220,12 +228,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("keep-exonerate-files","keep exonerate files")
         ("recompute-reference-alignment-model", "recompute reference alignment model")
         ("no-score-scaling","no subsistitution score scaling")
-        ("prefix-anchors","use prefix approach for DP tunnel")
-        ("prefix-length", po::value<int>()->default_value(30), "prefix length")
-        ("exonerate-anchors","use Exonerate for DP tunnel")
-        ("exonerate-hit-length", po::value<int>()->default_value(30), "exonerate hit length")
-        ("exonerate-hit-score", po::value<int>(), "exonerate hit score")
-        ("anchors-tunnel-offset", po::value<int>()->default_value(10), "prefix tunnel offset")
+        ("plot-anchors-for-R","plot for R")
     ;
 
     boost::program_options::options_description broken("Broken options",100);
@@ -233,18 +236,15 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("sample-additional-paths", po::value<int>()->default_value(0), "sample additional paths from posterior probabilities")
         ("readsfile", po::value<string>(), "reads file (FASTA/FASTQ)")
         ("reads-pileup","make pileup alignment")
-        ("use-exonerate-anchors","use Exonerate to anchor the exact alignment")
-        ("exonerate-anchor-offset",po::value<int>()->default_value(15),"offset for the Exonerate anchor alignment")
-        ("exonerate-anchor-query-offset",po::value<float>()->default_value(2.0),"offset multiplier for the query ends")
         ("cluster-pileup","pileup clustered reads (DNA)")
     ;
 
     po::positional_options_description pd;
     pd.add("config-file", 1);
 
-    full_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(obscure).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken).add(help_update);
-    desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(model).add(tree_edit).add(alignment).add(help_update);
-    max_desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(obscure).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(help_update);
+    full_desc.add(minimal).add(generic).add(anchoring).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(obscure).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken).add(help_update);
+    desc.add(minimal).add(generic).add(anchoring).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(model).add(tree_edit).add(alignment).add(help_update);
+    max_desc.add(minimal).add(generic).add(anchoring).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(obscure).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(help_update);
     min_desc.add(minimal).add(reads_alignment).add(help_update);
 
 

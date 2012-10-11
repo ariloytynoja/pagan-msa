@@ -1,3 +1,23 @@
+/***************************************************************************
+ *   Copyright (C) 2012 by Ari Loytynoja                                   *
+ *   ari.loytynoja@gmail.com                                               *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+
 #include "exonerate_queries.h"
 #include <cstdio>
 #include <cstdlib>
@@ -684,6 +704,13 @@ void Exonerate_queries::local_pairwise_alignment(string *str1,string *str2,vecto
 
         for(int i=0; i<(int)best_hits.size(); i++)
         {
+            if( best_hits.at(i).q_strand == '-' || best_hits.at(i).t_strand == '-' ||
+                    best_hits.at(i).q_start > best_hits.at(i).q_end || best_hits.at(i).t_start > best_hits.at(i).t_end )
+            {
+                Log_output::write_out("Warning: Anchoring suggests reverse strand hit!\n",1);
+                continue;
+            }
+
             if(hit_score>0 && best_hits.at(i).score > hit_score)
             {
                 Substring_hit hit;

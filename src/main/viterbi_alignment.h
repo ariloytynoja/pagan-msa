@@ -26,7 +26,6 @@
 #include "utils/settings_handle.h"
 #include "main/sequence.h"
 #include "main/basic_alignment.h"
-//#include "main/graph_reconstruction.h"
 #include "boost/multi_array.hpp"
 #include <string>
 
@@ -205,7 +204,7 @@ public:
     Viterbi_alignment();
 
     void align(Sequence *left_sequence,Sequence *right_sequence,Evol_model *model,
-               float left_branch_length=0,float right_branch_length=0,bool is_reads_sequence=false,int start_offset=-1,int end_offset=-1);
+               float left_branch_length=0,float right_branch_length=0,bool is_reads_sequence=false);
 
 
 };

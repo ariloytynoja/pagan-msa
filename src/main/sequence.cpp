@@ -628,6 +628,8 @@ string Sequence::get_sequence_string(bool with_gaps)
     int seq_length = this->sites_length();
     string seq;
 
+    bool codonstr = (this->get_data_type()==Model_factory::dna && Settings_handle::st.is("codons"));
+
     if(this->is_terminal_sequence())
     {
         for(int j=1;j<seq_length-1;j++)
@@ -646,7 +648,12 @@ string Sequence::get_sequence_string(bool with_gaps)
                 seq += c;
             else
                 if(with_gaps)
-                    seq +=  '-';
+                {
+                    if(codonstr)
+                        seq +=  "---";
+                    else
+                        seq +=  '-';
+                }
         }
     }
 

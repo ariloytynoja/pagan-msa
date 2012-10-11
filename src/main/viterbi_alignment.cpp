@@ -21,6 +21,7 @@
 #include "main/viterbi_alignment.h"
 #include "main/sequence.h"
 #include "utils/exceptions.h"
+#include "utils/codon_translation.h"
 #include "utils/find_anchors.h"
 #include "utils/exonerate_queries.h"
 #include "main/node.h"
@@ -36,10 +37,8 @@ Viterbi_alignment::Viterbi_alignment() { }
 
 void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
                              Evol_model *evol_model,float l_branch_length,float r_branch_length,
-                             bool is_reads_sequence,int start_offset,int end_offset)
+                             bool is_reads_sequence)
 {
-    Log_output::write_out("Viterbi_alignment::align: start_offset "+Log_output::itos(start_offset)+
-                          ", end_offset "+Log_output::itos(end_offset)+"\n",3);
 
     left = left_sequence;
     right = right_sequence;
@@ -54,21 +53,29 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     vector<int> upper_bound;
     vector<int> lower_bound;
 
-    if(Settings_handle::st.is("prefix-anchors") || Settings_handle::st.is("exonerate-anchors"))
+    if(Settings_handle::st.is("use-anchors") || Settings_handle::st.is("use-prefix-anchors"))
     {
 
         string s1 = left_sequence->get_sequence_string(false);
         string s2 = right_sequence->get_sequence_string(false);
 
-        vector<Substring_hit> hits;
-        int p_len = Settings_handle::st.get("prefix-length").as<int>();
+        Codon_translation ct;
 
-//        //
+        if(evol_model->get_data_type() == Model_factory::dna && Settings_handle::st.is("codons"))
+        {
+            ct.define_translation_tables();
+            s1 = ct.gapped_DNA_to_protein(&s1);
+            s2 = ct.gapped_DNA_to_protein(&s2);
+        }
+
+        vector<Substring_hit> hits;
+        int p_len = Settings_handle::st.get("prefix-hit-length").as<int>();
+
 //        struct timespec tcpu_start, tcpu_finish;
 //        clock_gettime(CLOCK_MONOTONIC, &tcpu_start);
 
         Find_anchors fa;
-        if(Settings_handle::st.is("prefix-anchors"))
+        if(Settings_handle::st.is("use-prefix-anchors"))
         {
 
             fa.find_long_substrings(&s1,&s2,&hits,p_len);
@@ -85,31 +92,22 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
 //        elapsed = (tcpu_finish.tv_sec - tcpu_start.tv_sec);
 //        elapsed += (tcpu_finish.tv_nsec - tcpu_start.tv_nsec) / 1000000000.0;
 //        cout<<"\n\ntime "<<elapsed<<endl<<endl;
-//        //
 
         s1 = left_sequence->get_sequence_string(true);
         s2 = right_sequence->get_sequence_string(true);
 
+//        cout<<s1<<endl<<s2<<endl;
+        if(evol_model->get_data_type() == Model_factory::dna && Settings_handle::st.is("codons"))
+        {
+            s1 = ct.gapped_DNA_to_protein(&s1);
+            s2 = ct.gapped_DNA_to_protein(&s2);
+        }
+//        cout<<s1<<endl<<s2<<endl;
+
         fa.check_hits_order_conflict(&hits);
+
         fa.define_tunnel(&hits,&upper_bound,&lower_bound,s1,s2);
 
-        if(0){
-            cout<<"\n\nl1="<<s1.length()<<"; l2="<<s2.length()<<"; plot(1,1,type=\"n\",xlim=c(1,l1),ylim=c(1,l2))\n";
-            cout<<"segments(0,0,l1,0,col=\"red\"); segments(0,l2,l1,l2,col=\"red\"); segments(0,0,0,l2,col=\"red\"); segments(l1,0,l1,l2,col=\"red\")\n";
-            if(hits.size()>0)
-            {
-                for(vector<Substring_hit>::iterator it1 = hits.begin();it1!=hits.end();it1++)
-                    cout<<"s1="<<it1->start_site_1<<"; e1="<<it1->start_site_1+it1->length<<"; s2="<<it1->start_site_2<<"; e2="<<it1->start_site_2+it1->length<<"; lines(s1:e1,s2:e2)\n";
-                cout<<endl<<endl;
-            }
-            cout<<"upper=c("<<upper_bound.at(0);
-            for(int i=1;i<(int)s1.length();i++)
-                cout<<","<<upper_bound.at(i);
-            cout<<")\nlower=c("<<lower_bound.at(0);
-            for(int i=1;i<(int)s1.length();i++)
-                cout<<","<<lower_bound.at(i);
-            cout<<")\nlines(1:l1,upper); lines(1:l1,lower)\n\n";
-        }
     }
 
     // set the basic parameters (copy from Settings)
@@ -157,26 +155,13 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     int j_max = match->shape()[1];
     int i_max = match->shape()[0];
 
-    if(start_offset<0 && end_offset<0)
+    if(Settings_handle::st.is("use-anchors") || Settings_handle::st.is("use-prefix-anchors"))
     {
-        if(Settings_handle::st.is("prefix-anchors") || Settings_handle::st.is("exonerate-anchors"))
-        {
-            for(int i=0;i<i_max;i++)
-            {
-                for(int j=0;j<j_max;j++)
-                {
-                    if(j>=upper_bound.at(i) && j<=lower_bound.at(i))
-                    {
-                        this->compute_fwd_scores(i,j);
-                    }
-                }
-            }
-        }
-        else
+        for(int i=0;i<i_max;i++)
         {
             for(int j=0;j<j_max;j++)
             {
-                for(int i=0;i<i_max;i++)
+                if(j>=upper_bound.at(i) && j<=lower_bound.at(i))
                 {
                     this->compute_fwd_scores(i,j);
                 }
@@ -185,23 +170,13 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     }
     else
     {
-        if(start_offset<0)
-            start_offset = 0;
-
-        if(end_offset<0)
-            end_offset = i_max;
-
-        int i=0;
-
-        for(;i<start_offset;i++)
-            this->compute_fwd_scores(i,0);
-
-        for(;i<end_offset;i++)
-            for(int j=0;j<j_max;j++)
+        for(int j=0;j<j_max;j++)
+        {
+            for(int i=0;i<i_max;i++)
+            {
                 this->compute_fwd_scores(i,j);
-
-        for(;i<i_max;i++)
-            this->compute_fwd_scores(i,j_max-1);
+            }
+        }
     }
     Log_output::write_out("Viterbi_alignment: matrix filled",3);
 

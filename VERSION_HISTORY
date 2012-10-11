@@ -1,3 +1,7 @@
+v.0.44
+- alignment anchoring with Exonerate or substring matching
+
+
 v.0.43
 - corrected multi-threading for standard multiple alignment
 

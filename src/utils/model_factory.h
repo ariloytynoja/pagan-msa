@@ -109,9 +109,6 @@ class Model_factory
     void build_model(int s,Db_matrix *pi,Db_matrix *q,Db_matrix *wU,Db_matrix *wV,Db_matrix *wRoot);
     void print_char_q_matrices(Db_matrix *charQ);
 
-//    double prev_distance;
-//    bool prev_is_local_alignment;
-//    Evol_model *model;
 public:
     Model_factory(int sequence_data_type);
     ~Model_factory();

@@ -30,7 +30,8 @@ SOURCES += main.cpp \
     utils/exonerate_queries.cpp \
     utils/optimal_reference.cpp \
     utils/log_output.cpp \
-    utils/find_anchors.cpp
+    utils/find_anchors.cpp \
+    utils/codon_translation.cpp
 HEADERS += utils/text_utils.h \
     utils/settings.h \
     utils/newick_reader.h \
@@ -55,7 +56,8 @@ HEADERS += utils/text_utils.h \
     utils/optimal_reference.h \
     utils/log_output.h \
     utils/find_anchors.h \
-    utils/substring_hit.h
+    utils/substring_hit.h \
+    utils/codon_translation.h
 LIBS += -lboost_program_options-mt -lboost_regex-mt -lboost_thread-mt -lrt
 INCLUDEPATH += /usr/include
 OTHER_FILES += missing_things.txt \

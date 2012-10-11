@@ -185,27 +185,7 @@ void Reads_aligner::loop_simple_placement(Node *root, vector<Fasta_entry> *reads
             Log_output::write_msg(ss.str(),0);
 
 
-            int start_offset = -1;
-            int end_offset = -1;
-
-            if(Settings_handle::st.is("pileup-queries-ordered") && !global_root->is_leaf())
-            {
-                Sequence *tmp_seq = global_root->get_sequence();
-                int i=1;
-                for(;i<tmp_seq->sites_length();i++)
-                {
-                    Site_children *offspring = tmp_seq->get_site_at(i)->get_children();
-                    if(offspring->right_index>=0)
-                        break;
-                }
-
-                start_offset = i - Settings_handle::st.get("pileup-offset").as<int>();
-                if(start_offset<0 || start_offset>tmp_seq->sites_length())
-                    start_offset = -1;
-
-            }
-
-            node->align_sequences_this_node(mf,true,false,start_offset,end_offset);
+            node->align_sequences_this_node(mf,true,false);
 
             // check if the alignment significantly overlaps with the reference alignment
             //
@@ -794,27 +774,7 @@ void Reads_aligner::loop_default_placement(Node *root, vector<Fasta_entry> *read
 
             Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
 
-            int start_offset = -1;
-            int end_offset = -1;
-
-            if(reads_for_this.at(i).use_local)
-            {
-                int offset = 20;
-                int offset_multiplier = 2;
-
-                start_offset = reads_for_this.at(i).local_tstart - offset - reads_for_this.at(i).local_qstart * offset_multiplier;
-                end_offset = reads_for_this.at(i).local_tend + offset +
-                        ( reads_node->get_sequence()->sites_length() - reads_for_this.at(i).local_qend ) * offset_multiplier;
-
-                if(start_offset < 0)
-                    start_offset = -1;
-
-                if(end_offset > current_root->get_sequence()->sites_length())
-                    end_offset = -1;
-
-            }
-
-            node->align_sequences_this_node(mf,true,false,start_offset,end_offset);
+            node->align_sequences_this_node(mf,true,false);
 
 
             // check if the alignment significantly overlaps with the reference alignment
@@ -1671,8 +1631,8 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                         reads->at(i).local_qend = h.q_end;
                         reads->at(i).local_tstart = h.t_start;
                         reads->at(i).local_tend = h.t_end;
-                        if(Settings_handle::st.is("use-exonerate-anchors"))
-                          reads->at(i).use_local  = true;
+//                        if(Settings_handle::st.is("use-exonerate-anchors"))
+//                          reads->at(i).use_local  = true;
                     }
 
                     if(Settings_handle::st.is("placement-file"))

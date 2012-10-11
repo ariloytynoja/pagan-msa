@@ -20,6 +20,7 @@
 
 #include "utils/find_anchors.h"
 #include "utils/settings_handle.h"
+#include "utils/log_output.h"
 #include <iostream>
 #include <algorithm>
 
@@ -33,8 +34,6 @@ Find_anchors::Find_anchors()
 
 void Find_anchors::find_long_substrings(std::string *seq1,std::string *seq2,std::vector<Substring_hit> *hits,int min_length)
 {
-//    cout<<"find_long_substrings\n";
-
     len1 = seq1->length();
     len2 = seq2->length();
 
@@ -82,7 +81,6 @@ void Find_anchors::find_long_substrings(std::string *seq1,std::string *seq2,std:
     }
 
     sort(hits->begin(),hits->end(),Find_anchors::sort_by_length);
-//    cout<<"sorted "<<hits->size()<<"\n";
 
     vector<bool> hit_site1;
     hit_site1.reserve(len1);
@@ -97,8 +95,6 @@ void Find_anchors::find_long_substrings(std::string *seq1,std::string *seq2,std:
     vector<Substring_hit>::iterator it1 = hits->begin();
     for(;it1!=hits->end();)
     {
-//        cout<<"hit "<<it1->start_site_1+it1->length<<endl;
-
         bool overlap = false;
         for(int i=it1->start_site_1,j=it1->start_site_2;i<it1->start_site_1+it1->length,j<it1->start_site_2+it1->length;i++,j++)
         {
@@ -153,8 +149,6 @@ void Find_anchors::check_hits_order_conflict(vector<Substring_hit> *hits)
 
 void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<int> *upper_bound,std::vector<int> *lower_bound,string str1,string str2)
 {
-//    cout<<"define_tunnel\n";
-
     int length1 = str1.length();
     int length2 = str2.length();
 
@@ -162,33 +156,36 @@ void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<in
     //
     vector<int> index1;
     vector<int> index2;
-    index1.push_back(0);
-    index2.push_back(0);
 
     for(int i=0;i<length1;i++)
         if(str1.at(i)!='-')
-            index1.push_back(i);
+            index1.push_back(i+1);
 
     for(int i=0;i<length2;i++)
         if(str2.at(i)!='-')
-            index2.push_back(i);
+            index2.push_back(i+1);
 
-    upper_bound->reserve(length1);
-    lower_bound->reserve(length1);
+
+    upper_bound->reserve(length1+1);
+    lower_bound->reserve(length1+1);
 
     vector<int> diagonals;
-    diagonals.reserve(length1);
-    for(int i=0;i<length1;i++)
+    diagonals.reserve(length1+1);
+    for(int i=0;i<length1+1;i++)
         diagonals.push_back(-1);
 
     for(vector<Substring_hit>::iterator it = hits->begin();it!=hits->end();it++)
     {
 //        cout<<it->start_site_1<<" "<<it->start_site_2<<" "<<it->length<<" "<<length1<<" "<<length2<<"\n";
         for(int i=0;i<it->length;i++)
+        {
             diagonals.at(index1.at(it->start_site_1+i)) = index2.at(it->start_site_2+i);
+        }
     }
 
-    int width = Settings_handle::st.get("anchors-tunnel-offset").as<int>();
+
+
+    int width = Settings_handle::st.get("anchors-offset").as<int>();
 
     int y1 = 0;
     int y2 = 0;
@@ -197,16 +194,18 @@ void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<in
     int prev_y = 0;
     int m_count = 0;
 
-    upper_bound->push_back(0);
-
-    for(int i=0;i<length1;i++)
+    for(int i=0;i<=length1;i++)
     {
         if(i>=width && diagonals.at(i-width)>=0)
-            y1 = diagonals.at(i-width);
+            y1 = diagonals.at(i-width)+0;
 
         if(diagonals.at(i)>=0)
         {
-            y2 = diagonals.at(i)-width;
+            y2 = diagonals.at(i)-width+0;
+        }
+
+        if(diagonals.at(i)>=0 && i>0 && diagonals.at(i-1)+1 == diagonals.at(i))
+        {
             m_count++;
         }
         else
@@ -217,14 +216,16 @@ void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<in
         y = min(y1,y2);
         y = max(y,0);
 
-        if(diagonals.at(i)>=0 && m_count>=width)
+        if(diagonals.at(i)>=0 && i>0 && diagonals.at(i-1)+1 == diagonals.at(i) && m_count>=width)
         {
             prev_y = y;
         }
 
         y = min(y,prev_y);
+        y = max(y,0);
 
         upper_bound->push_back(y);
+
     }
 
     y1 = length2;
@@ -233,14 +234,18 @@ void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<in
     prev_y = length2;
     m_count = 0;
 
-    for(int i=length1-1;i>=0;i--)
+    for(int i=length1;i>=0;i--)
     {
-        if(i<=length1-1-width && diagonals.at(i+width)>=0)
-            y1 = diagonals.at(i+width);
+        if(i<=length1-width && diagonals.at(i+width)>=0)
+            y1 = diagonals.at(i+width)+0;
 
         if(diagonals.at(i)>=0)
         {
-            y2 = diagonals.at(i)+width;
+            y2 = diagonals.at(i)+width+0;
+        }
+
+        if(diagonals.at(i)>=0 && i<length1 && diagonals.at(i+1)-1 == diagonals.at(i))
+        {
             m_count++;
         }
         else
@@ -251,15 +256,54 @@ void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<in
         y = max(y1,y2);
         y = min(y,length2);
 
-        if(diagonals.at(i)>=0 && m_count>=width)
+        if(diagonals.at(i)>=0 && i<length1 && diagonals.at(i+1)-1 == diagonals.at(i)&& m_count>=width)
         {
             prev_y = y;
         }
 
         y = max(y,prev_y);
+        y = min(y,length2);
 
-        lower_bound->push_back(y);
+        lower_bound->insert(lower_bound->begin(),y);
     }
-    lower_bound->push_back(y);
-    reverse(lower_bound->begin(),lower_bound->end());
+
+    if(Settings::noise>0)
+    {
+        int sum = 0;
+        for(int i=0;i<length1;i++)
+            sum += lower_bound->at(i)-upper_bound->at(i);
+
+        stringstream s;
+        s.precision(4);
+        s<<"Anchoring: Computing "<<((float)sum/(length1*length2))*100.0<<"% of DP matrix.\n";
+        Log_output::write_out(s.str(),1);
+    }
+
+
+    if(Settings_handle::st.is("plot-anchors-for-R")){
+        cout<<"\n\nl1="<<str1.length()<<"; l2="<<str2.length()<<"; plot(1,1,type=\"n\",xlim=c(0,l1),ylim=c(0,l2))\n";
+        cout<<"segments(0,0,l1,0,col=\"red\"); segments(0,l2,l1,l2,col=\"red\"); segments(0,0,0,l2,col=\"red\"); segments(l1,0,l1,l2,col=\"red\")\n";
+        stringstream xh;
+        stringstream yh;
+        int lastx = 0,lasty = 0;
+        for(int i=0;i<(int)diagonals.size();i++)
+        {
+            if(diagonals.at(i)>=0)
+                {
+                xh<<i<<",";
+                yh<<diagonals.at(i)<<",";
+                lastx=i;lasty=diagonals.at(i);
+            }
+        }
+        xh<<lastx;yh<<lasty;
+        cout<<"xhit=c("<<xh.str()<<");yhit=c("<<yh.str()<<");points(xhit,yhit,pch=\".\")\n";
+        cout<<"upper=c("<<upper_bound->at(0);
+        for(int i=1;i<(int)upper_bound->size();i++)
+            cout<<","<<upper_bound->at(i);
+        cout<<")\nlower=c("<<lower_bound->at(0);
+        for(int i=1;i<(int)lower_bound->size();i++)
+            cout<<","<<lower_bound->at(i);
+        cout<<")\nlines(0:l1,upper,col=\"green\"); lines(0:l1,lower,col=\"blue\")\n\n";
+    }
+
 }
