@@ -155,25 +155,22 @@ FORCE:
 
 main.o: main.cpp utils/settings.h \
 		utils/settings_handle.h \
+		utils/log_output.h \
 		utils/input_output_parser.h \
 		utils/fasta_entry.h \
-		main/node.h \
+		utils/fasta_reader.h \
 		utils/exceptions.h \
+		main/node.h \
 		main/sequence.h \
 		main/viterbi_alignment.h \
 		utils/evol_model.h \
 		utils/db_matrix.h \
-		utils/log_output.h \
 		utils/int_matrix.h \
 		main/basic_alignment.h \
 		utils/model_factory.h \
 		main/reference_alignment.h \
-		utils/newick_reader.h \
-		utils/fasta_reader.h \
-		utils/xml_writer.h \
 		utils/optimal_reference.h \
-		main/reads_aligner.h \
-		utils/substring_hit.h
+		main/reads_aligner.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
 node.o: main/node.cpp main/node.h \
@@ -434,8 +431,9 @@ codon_translation.o: utils/codon_translation.cpp utils/codon_translation.h
 
 input_output_parser.o: utils/input_output_parser.cpp utils/input_output_parser.h \
 		utils/fasta_entry.h \
-		main/node.h \
+		utils/fasta_reader.h \
 		utils/exceptions.h \
+		main/node.h \
 		utils/settings.h \
 		utils/settings_handle.h \
 		main/sequence.h \
@@ -448,7 +446,6 @@ input_output_parser.o: utils/input_output_parser.cpp utils/input_output_parser.h
 		utils/model_factory.h \
 		main/reference_alignment.h \
 		utils/newick_reader.h \
-		utils/fasta_reader.h \
 		utils/xml_writer.h \
 		utils/optimal_reference.h \
 		main/reads_aligner.h \

@@ -23,6 +23,7 @@
 
 #include <vector>
 #include "utils/fasta_entry.h"
+#include "utils/fasta_reader.h"
 #include "main/node.h"
 #include "utils/model_factory.h"
 
@@ -33,11 +34,11 @@ class Input_output_parser
 public:
     Input_output_parser();
 
-    void parse_input_sequences(std::vector<Fasta_entry> *sequences,bool *reference_alignment);
-    Node * parse_input_tree(vector<Fasta_entry> *sequences,bool reference_alignment);
-    void match_sequences_and_tree(std::vector<Fasta_entry> *sequences,Node *root, bool reference_alignment, int *data_type);
-    void define_alignment_model(Model_factory *mf,int data_type);
-    void output_aligned_sequences(std::vector<Fasta_entry> *sequences,Node *root);
+    void parse_input_sequences(ppa::Fasta_reader *fr,vector<Fasta_entry> *sequences, bool *reference_alignment);
+    Node * parse_input_tree(ppa::Fasta_reader *fr,vector<Fasta_entry> *sequences, bool reference_alignment);
+    void match_sequences_and_tree(ppa::Fasta_reader *fr,vector<Fasta_entry> *sequences, Node *root, bool reference_alignment,int *data_type);
+    void define_alignment_model(ppa::Fasta_reader *fr,Model_factory *mf, int data_type);
+    void output_aligned_sequences(ppa::Fasta_reader *fr,vector<Fasta_entry> *sequences, Node *root);
 };
 }
 

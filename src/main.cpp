@@ -23,17 +23,13 @@
 #include <ctime>
 #include "utils/settings.h"
 #include "utils/settings_handle.h"
-#include "utils/input_output_parser.h"
-#include "utils/newick_reader.h"
-#include "utils/fasta_reader.h"
-#include "utils/xml_writer.h"
-#include "utils/model_factory.h"
-#include "utils/evol_model.h"
-#include "utils/optimal_reference.h"
 #include "utils/log_output.h"
+#include "utils/input_output_parser.h"
+#include "utils/fasta_reader.h"
 #include "main/node.h"
+#include "utils/model_factory.h"
+#include "utils/optimal_reference.h"
 #include "main/reads_aligner.h"
-#include "utils/substring_hit.h"
 
 #ifdef __MACH__
 #include <mach/clock.h>
@@ -103,11 +99,12 @@ int main(int argc, char *argv[])
     /*  Read the sequence file                                             */
     /***********************************************************************/
 
-    bool reference_alignment = false;
+    Fasta_reader fr;
     vector<Fasta_entry> sequences;
+    bool reference_alignment = false;
 
     Input_output_parser iop;
-    iop.parse_input_sequences(&sequences,&reference_alignment);
+    iop.parse_input_sequences(&fr,&sequences,&reference_alignment);
 
 
 
@@ -115,7 +112,7 @@ int main(int argc, char *argv[])
     /*  Read the guidetree file                                            */
     /***********************************************************************/
 
-    Node *root = iop.parse_input_tree(&sequences,reference_alignment);
+    Node *root = iop.parse_input_tree(&fr,&sequences,reference_alignment);
 
 
 
@@ -124,7 +121,7 @@ int main(int argc, char *argv[])
     /***********************************************************************/
 
     int data_type = -1;
-    iop.match_sequences_and_tree(&sequences,root,reference_alignment,&data_type);
+    iop.match_sequences_and_tree(&fr,&sequences,root,reference_alignment,&data_type);
 
 
     /***********************************************************************/
@@ -140,7 +137,7 @@ int main(int argc, char *argv[])
     /***********************************************************************/
 
     Model_factory mf(data_type);
-    iop.define_alignment_model(&mf,data_type);
+    iop.define_alignment_model(&fr,&mf,data_type);
 
 
     /***********************************************************************/
@@ -179,7 +176,6 @@ int main(int argc, char *argv[])
     int count = 1;
     root->name_internal_nodes(&count);
 
-    cout<<"start\n";
     if(reference_alignment)
     {
         root->read_reference_alignment(&mf);
@@ -238,7 +234,7 @@ int main(int argc, char *argv[])
     /*  Collect the results and output them                                */
     /***********************************************************************/
 
-    iop.output_aligned_sequences(&sequences,root);
+    iop.output_aligned_sequences(&fr,&sequences,root);
 
 
     /***********************************************************************/
@@ -264,16 +260,21 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_MONOTONIC, &tcpu_finish);
     #endif
 
+    /***********************************************************************/
+
     double elapsed;
     elapsed = (tcpu_finish.tv_sec - tcpu_start.tv_sec);
     elapsed += (tcpu_finish.tv_nsec - tcpu_start.tv_nsec) / 1000000000.0;
 
     time_t s_time;
     time( &s_time );
+
+    /***********************************************************************/
     ss.str(string());
     ss << "\nThe analysis finished: " << asctime( localtime( &s_time ) );
     ss<<"Total time used by PAGAN: "<<elapsed<<" wall sec, " <<double_t(clock()-analysis_start_time)/CLOCKS_PER_SEC<<" cpu sec.\n\n";
     Log_output::write_out(ss.str(),0);
+    /***********************************************************************/
 
     delete root;
 

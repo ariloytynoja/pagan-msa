@@ -43,7 +43,7 @@ Input_output_parser::Input_output_parser()
 
 /************************************************************************************/
 
-void Input_output_parser::parse_input_sequences(vector<Fasta_entry> *sequences, bool *reference_alignment)
+void Input_output_parser::parse_input_sequences(Fasta_reader *fr,vector<Fasta_entry> *sequences, bool *reference_alignment)
 {
 
     /***********************************************************************/
@@ -68,7 +68,6 @@ void Input_output_parser::parse_input_sequences(vector<Fasta_entry> *sequences, 
     /*  Read the sequences                                                 */
     /***********************************************************************/
 
-    Fasta_reader fr;
 
     if(Settings_handle::st.is("seqfile"))
     {
@@ -77,7 +76,7 @@ void Input_output_parser::parse_input_sequences(vector<Fasta_entry> *sequences, 
 
         try
         {
-            fr.read(seqfile, *sequences, true);
+            fr->read(seqfile, *sequences, true);
         }
         catch (ppa::IOException& e) {
             Log_output::write_out("Error reading the sequence file '"+seqfile+"'.\nExiting.\n\n",0);
@@ -91,7 +90,7 @@ void Input_output_parser::parse_input_sequences(vector<Fasta_entry> *sequences, 
 
         try
         {
-            fr.read(seqfile, *sequences, true);
+            fr->read(seqfile, *sequences, true);
         }
         catch (ppa::IOException& e) {
             Log_output::write_out("Error reading the reference alignment  file '"+seqfile+"'.\nExiting.\n\n",0);
@@ -107,7 +106,7 @@ void Input_output_parser::parse_input_sequences(vector<Fasta_entry> *sequences, 
 
         try
         {
-            fr.read(seqfile, *sequences, true);
+            fr->read(seqfile, *sequences, true);
         }
         catch (ppa::IOException& e) {
             Log_output::write_out("Error reading the queryfile '"+seqfile+"'.\nExiting.\n\n",0);
@@ -127,7 +126,7 @@ void Input_output_parser::parse_input_sequences(vector<Fasta_entry> *sequences, 
 
         try
         {
-            fr.read(seqfile, *sequences, true);
+            fr->read(seqfile, *sequences, true);
         }
         catch (ppa::IOException& e) {
             Log_output::write_out("Error reading the queryfile '"+seqfile+"'.\nExiting.\n\n",0);
@@ -152,13 +151,12 @@ void Input_output_parser::parse_input_sequences(vector<Fasta_entry> *sequences, 
 
 /************************************************************************************/
 
-Node *Input_output_parser::parse_input_tree(vector<Fasta_entry> *sequences,bool reference_alignment)
+Node *Input_output_parser::parse_input_tree(Fasta_reader *fr,vector<Fasta_entry> *sequences,bool reference_alignment)
 {
     /***********************************************************************/
     /*  Read the guidetree                                                 */
     /***********************************************************************/
 
-    Fasta_reader fr;
     Node *root;
     if(Settings_handle::st.is("treefile"))
     {
@@ -198,7 +196,7 @@ Node *Input_output_parser::parse_input_tree(vector<Fasta_entry> *sequences,bool 
     }
     else if(reference_alignment && sequences->size()==1)
     {
-        int data_type = fr.check_sequence_data_type(sequences);
+        int data_type = fr->check_sequence_data_type(sequences);
 
         root = new Node();
         root->set_name(sequences->at(0).name);
@@ -220,13 +218,11 @@ Node *Input_output_parser::parse_input_tree(vector<Fasta_entry> *sequences,bool 
 
 /************************************************************************************/
 
-void Input_output_parser::match_sequences_and_tree(std::vector<Fasta_entry> *sequences,Node *root,bool reference_alignment,int *data_type)
+void Input_output_parser::match_sequences_and_tree(Fasta_reader *fr, std::vector<Fasta_entry> *sequences,Node *root,bool reference_alignment,int *data_type)
 {
     /***********************************************************************/
     /*  Check that input is fine and place the sequences to nodes          */
     /***********************************************************************/
-
-    Fasta_reader fr;
 
     // Check that the guidetree and sequences match
 
@@ -234,7 +230,7 @@ void Input_output_parser::match_sequences_and_tree(std::vector<Fasta_entry> *seq
     root->get_leaf_nodes(&leaf_nodes);
 
 
-    bool tree_branches_ok = fr.check_sequence_names(sequences,&leaf_nodes);
+    bool tree_branches_ok = fr->check_sequence_names(sequences,&leaf_nodes);
     if(!tree_branches_ok)
     {
         Log_output::write_out("Attempting to prune the tree: ",2);
@@ -251,28 +247,25 @@ void Input_output_parser::match_sequences_and_tree(std::vector<Fasta_entry> *seq
 
     // Check the data type
 
-    *data_type = fr.check_sequence_data_type(sequences);
+    *data_type = fr->check_sequence_data_type(sequences);
 
-    if(!fr.check_alphabet(sequences,*data_type))
+    if(!fr->check_alphabet(sequences,*data_type))
         Log_output::write_out(" Warning: Illegal characters in input sequences removed!\n",2);
 
 
     //  Place the sequences to nodes
 
-    fr.place_sequences_to_nodes(sequences,&leaf_nodes,reference_alignment,*data_type);
-
+    fr->place_sequences_to_nodes(sequences,&leaf_nodes,reference_alignment,*data_type);
 
 }
 
 /************************************************************************************/
 
-void Input_output_parser::define_alignment_model(Model_factory *mf,int data_type)
+void Input_output_parser::define_alignment_model(Fasta_reader *fr,Model_factory *mf,int data_type)
 {
     /***********************************************************************/
     /*  Define the alignment model                                         */
     /***********************************************************************/
-
-    Fasta_reader fr;
 
     if(data_type==Model_factory::dna && Settings_handle::st.is("codons"))
     {
@@ -284,7 +277,7 @@ void Input_output_parser::define_alignment_model(Model_factory *mf,int data_type
     {
         // Create a DNA alignment model using empirical base frequencies.
         Log_output::write_out("Model_factory: creating a DNA model\n",3);
-        float *dna_pi = fr.base_frequencies();
+        float *dna_pi = fr->base_frequencies();
         mf->dna_model(dna_pi,&Settings_handle::st);
     }
     else if(data_type==Model_factory::protein)
@@ -298,7 +291,7 @@ void Input_output_parser::define_alignment_model(Model_factory *mf,int data_type
 
 /************************************************************************************/
 
-void Input_output_parser::output_aligned_sequences(std::vector<Fasta_entry> *sequences,Node *root)
+void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<Fasta_entry> *sequences,Node *root)
 {
 
     /***********************************************************************/
@@ -306,8 +299,6 @@ void Input_output_parser::output_aligned_sequences(std::vector<Fasta_entry> *seq
     /***********************************************************************/
 
 //    root->show_seqs();
-
-    Fasta_reader fr;
 
     vector<Fasta_entry> aligned_sequences;
     root->get_alignment(&aligned_sequences,Settings_handle::st.is("output-ancestors"));
@@ -336,12 +327,12 @@ void Input_output_parser::output_aligned_sequences(std::vector<Fasta_entry> *seq
             format = Settings_handle::st.get("outformat").as<string>();
 
         if(Settings_handle::st.is("xml"))
-            Log_output::write_out("Alignment files: "+outfile+fr.get_format_suffix(format)+", "+outfile+".xml\n",0);
+            Log_output::write_out("Alignment files: "+outfile+fr->get_format_suffix(format)+", "+outfile+".xml\n",0);
         else
-            Log_output::write_out("Alignment file: "+outfile+fr.get_format_suffix(format)+"\n",0);
+            Log_output::write_out("Alignment file: "+outfile+fr->get_format_suffix(format)+"\n",0);
 
-        fr.set_chars_by_line(70);
-        fr.write(outfile, aligned_sequences, format, true);
+        fr->set_chars_by_line(70);
+        fr->write(outfile, aligned_sequences, format, true);
 
         int count = 1;
         root->set_name_ids(&count);
@@ -364,8 +355,8 @@ void Input_output_parser::output_aligned_sequences(std::vector<Fasta_entry> *seq
             outfile.append("_contigs");
             Log_output::write_out("Contig file: "+outfile+".fas\n",1);
 
-            fr.set_chars_by_line(70);
-            fr.write(outfile, contigs, "fasta", true);
+            fr->set_chars_by_line(70);
+            fr->write(outfile, contigs, "fasta", true);
         }
 
         if(Settings_handle::st.is("output-consensus"))
@@ -380,10 +371,10 @@ void Input_output_parser::output_aligned_sequences(std::vector<Fasta_entry> *seq
             outfile.append("_consensus");
             Log_output::write_out("Consensus file: "+outfile+".fas\n",1);
 
-            fr.remove_gap_only_columns(&contigs);
+            fr->remove_gap_only_columns(&contigs);
 
-            fr.set_chars_by_line(70);
-            fr.write(outfile, contigs, "fasta", true);
+            fr->set_chars_by_line(70);
+            fr->write(outfile, contigs, "fasta", true);
         }
 
         if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate") || Settings_handle::st.is("find-best-orf"))
@@ -395,8 +386,8 @@ void Input_output_parser::output_aligned_sequences(std::vector<Fasta_entry> *seq
             outfile.append(".dna");
             Log_output::write_out("Back-translated alignment file: "+outfile+".fas\n",0);
 
-            fr.set_chars_by_line(70);
-            fr.write_dna(outfile, aligned_sequences, *sequences,root,true,Fasta_reader::plain_alignment);
+            fr->set_chars_by_line(70);
+            fr->write_dna(outfile, aligned_sequences, *sequences,root,true,Fasta_reader::plain_alignment);
 
             if(Settings_handle::st.is("build-contigs"))
             {
@@ -407,8 +398,8 @@ void Input_output_parser::output_aligned_sequences(std::vector<Fasta_entry> *seq
                 outfile.append("_contigs.dna");
                 Log_output::write_out("Back-translated contig file: "+outfile+".fas\n",1);
 
-                fr.set_chars_by_line(70);
-                fr.write_dna(outfile, aligned_sequences, *sequences,root,true,Fasta_reader::contig_alignment);
+                fr->set_chars_by_line(70);
+                fr->write_dna(outfile, aligned_sequences, *sequences,root,true,Fasta_reader::contig_alignment);
             }
             if(Settings_handle::st.is("output-consensus"))
             {
@@ -419,14 +410,14 @@ void Input_output_parser::output_aligned_sequences(std::vector<Fasta_entry> *seq
                 outfile.append("_consensus.dna");
                 Log_output::write_out("Back-translated consensus file: "+outfile+".fas\n",1);
 
-                fr.set_chars_by_line(70);
-                fr.write_dna(outfile, aligned_sequences, *sequences,root,true,Fasta_reader::consensus_only);
+                fr->set_chars_by_line(70);
+                fr->write_dna(outfile, aligned_sequences, *sequences,root,true,Fasta_reader::consensus_only);
             }
         }
 
         if(Settings_handle::st.is("output-ancestors"))
         {
-            fr.write_anctree(outfile, root);
+            fr->write_anctree(outfile, root);
         }
 
         if(Settings_handle::st.is("output-nhx-tree"))
@@ -443,7 +434,7 @@ void Input_output_parser::output_aligned_sequences(std::vector<Fasta_entry> *seq
 
         if(Settings_handle::st.is("output-graph"))
         {
-            fr.write_graph(outfile, root, true);
+            fr->write_graph(outfile, root, true);
         }
 
         if(Settings_handle::st.is("mpost-graph-file")){

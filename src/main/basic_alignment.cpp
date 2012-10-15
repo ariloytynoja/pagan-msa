@@ -266,7 +266,7 @@ void Basic_alignment::create_ancestral_edges(Sequence *sequence)
 
             }
 
-            if((pstate == Site::xgapped || pstate == Site::xskipped ) && (prev.path_state == Site::ygapped || prev.path_state == Site::yskipped ) && edges_for_skipped_flanked_by_gaps)
+            if((pstate == Site::xgapped || pstate == Site::xskipped ) && (prev.path_state == Site::ygapped || prev.path_state == Site::yskipped )) // && edges_for_skipped_flanked_by_gaps)
             {
                 Edge edge(i-1,i,1.0);
                 sequence->push_back_edge(edge);
@@ -329,7 +329,7 @@ void Basic_alignment::create_ancestral_edges(Sequence *sequence)
 
             }
 
-            if((pstate == Site::ygapped || pstate == Site::yskipped) && (prev.path_state == Site::xgapped || prev.path_state == Site::xskipped) && edges_for_skipped_flanked_by_gaps)
+            if((pstate == Site::ygapped || pstate == Site::yskipped) && (prev.path_state == Site::xgapped || prev.path_state == Site::xskipped)) // && edges_for_skipped_flanked_by_gaps)
             {
                 Edge edge(i-1,i,1.0);
                 sequence->push_back_edge(edge);
