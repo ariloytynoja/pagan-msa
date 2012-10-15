@@ -9,6 +9,12 @@ CONFIG += console
 CONFIG -= app_bundle
 TEMPLATE = app
 SOURCES += main.cpp \
+    main/node.cpp \
+    main/sequence.cpp \
+    main/reference_alignment.cpp \
+    main/viterbi_alignment.cpp \
+    main/basic_alignment.cpp \
+    main/reads_aligner.cpp \
     utils/text_utils.cpp \
     utils/settings.cpp \
     utils/newick_reader.cpp \
@@ -16,23 +22,24 @@ SOURCES += main.cpp \
     utils/fasta_reader.cpp \
     utils/eigen.cpp \
     utils/db_matrix.cpp \
-    main/sequence.cpp \
     utils/int_matrix.cpp \
     utils/settings_handle.cpp \
     utils/xml_writer.cpp \
     utils/evol_model.cpp \
-    main/node.cpp \
-    main/reference_alignment.cpp \
-    main/viterbi_alignment.cpp \
-    main/basic_alignment.cpp \
-    main/reads_aligner.cpp \
     utils/check_version.cpp \
     utils/exonerate_queries.cpp \
     utils/optimal_reference.cpp \
     utils/log_output.cpp \
     utils/find_anchors.cpp \
-    utils/codon_translation.cpp
+    utils/codon_translation.cpp \
+    utils/input_output_parser.cpp
 HEADERS += utils/text_utils.h \
+    main/node.h \
+    main/sequence.h \
+    main/reference_alignment.h \
+    main/viterbi_alignment.h \
+    main/basic_alignment.h \
+    main/reads_aligner.h \
     utils/settings.h \
     utils/newick_reader.h \
     utils/model_factory.h \
@@ -40,24 +47,19 @@ HEADERS += utils/text_utils.h \
     utils/eigen.h \
     utils/exceptions.h \
     utils/db_matrix.h \
-    main/sequence.h \
     utils/int_matrix.h \
     utils/fasta_entry.h \
     utils/settings_handle.h \
     utils/xml_writer.h \
     utils/evol_model.h \
-    main/node.h \
-    main/reference_alignment.h \
-    main/viterbi_alignment.h \
-    main/basic_alignment.h \
-    main/reads_aligner.h \
     utils/check_version.h \
     utils/exonerate_queries.h \
     utils/optimal_reference.h \
     utils/log_output.h \
     utils/find_anchors.h \
     utils/substring_hit.h \
-    utils/codon_translation.h
+    utils/codon_translation.h \
+    utils/input_output_parser.h
 LIBS += -lboost_program_options-mt -lboost_regex-mt -lboost_thread-mt -lrt
 INCLUDEPATH += /usr/include
 OTHER_FILES += missing_things.txt \
