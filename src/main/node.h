@@ -469,40 +469,41 @@ public:
     void start_alignment(Model_factory *mf)
     {
         
-        if( Settings_handle::st.is("seqfile") )
+       // Log_output::write_header("Performing multiple alignment ",0);
+
+        if(Settings_handle::st.is("mpost-posterior-plot-file"))
         {
-           // Log_output::write_header("Performing multiple alignment ",0);
-
-            if(Settings_handle::st.is("mpost-posterior-plot-file"))
-            {
-                this->start_mpost_plot_file();
-            }
-
-            this->number_of_nodes = this->get_number_of_leaves()-1;
-            this->alignment_number = 1;
-
-            this->align_sequences(mf);
-
-            if(Settings_handle::st.is("mpost-posterior-plot-file"))
-            {
-                this->finish_mpost_plot_file();
-            }
-
-            if(Settings_handle::st.is("output-ancestors"))
-            {
-//                show_seqs();
-                this->reconstruct_parsimony_ancestor(mf);
-            }
+            this->start_mpost_plot_file();
         }
-        else if( Settings_handle::st.is("ref-seqfile") )
-        {
-            //Log_output::write_header("Reading reference alignment ",0);
-            this->read_alignment(mf);
 
+        this->number_of_nodes = this->get_number_of_leaves()-1;
+        this->alignment_number = 1;
+
+        this->align_sequences(mf);
+
+        if(Settings_handle::st.is("mpost-posterior-plot-file"))
+        {
+            this->finish_mpost_plot_file();
+        }
+
+        if(Settings_handle::st.is("output-ancestors"))
+        {
+//                show_seqs();
             this->reconstruct_parsimony_ancestor(mf);
         }
       
     }
+
+
+    void read_reference_alignment(Model_factory *mf)
+    {
+        //Log_output::write_header("Reading reference alignment ",0);
+        this->read_alignment(mf);
+
+        this->reconstruct_parsimony_ancestor(mf);
+    }
+
+
 
     void align_sequences(Model_factory *mf)
     {
@@ -571,7 +572,6 @@ public:
                  left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
 
         this->add_ancestral_sequence( ra.get_simple_sequence() );
-
     }
 
     void reconstruct_parsimony_ancestor(Model_factory *mf)
