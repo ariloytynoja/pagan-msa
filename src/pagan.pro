@@ -4,7 +4,7 @@
 QT -= gui
 TARGET = pagan
 
-CONFIG = release
+CONFIG = debug
 CONFIG += console
 CONFIG -= app_bundle
 TEMPLATE = app
