@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Ari Loytynoja                                   *
+ *   Copyright (C) 2010-2012 by Ari Loytynoja                              *
  *   ari.loytynoja@gmail.com                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -34,8 +34,8 @@ Settings::Settings(){}
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.45;
-    date = "15 October, 2012";
+    version = 0.46;
+    date = "16 October, 2012";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -225,7 +225,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("ambiguity-factor", po::value<float>(), "multiplier for subst. score of ambiguity characters")
         ("no-log-odds", "do not use log-odds substitutions scores")
         ("time", "track time (debugging)")
-        ("keep-exonerate-files","keep exonerate files")
+        ("keep-temporary-files","keep exonerate files")
         ("recompute-reference-alignment-model", "recompute reference alignment model")
         ("no-score-scaling","no subsistitution score scaling")
         ("plot-anchors-for-R","plot for R")

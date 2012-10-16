@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012 by Ari Loytynoja                                   *
+ *   Copyright (C) 2010-2012 by Ari Loytynoja                              *
  *   ari.loytynoja@gmail.com                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -23,13 +23,17 @@
 #include "utils/log_output.h"
 #include "utils/newick_reader.h"
 #include "utils/fasta_reader.h"
+#include "utils/mafft_alignment.h"
+#include "utils/raxml_tree.h"
 #include "utils/xml_writer.h"
 #include "utils/model_factory.h"
 #include "utils/evol_model.h"
 #include "utils/optimal_reference.h"
 #include "main/node.h"
+#include "utils/tree_node.h"
 #include "main/reads_aligner.h"
 #include "utils/substring_hit.h"
+#include "utils/codon_translation.h"
 #include <iostream>
 #include <vector>
 
@@ -151,7 +155,7 @@ void Input_output_parser::parse_input_sequences(Fasta_reader *fr,vector<Fasta_en
 
 /************************************************************************************/
 
-Node *Input_output_parser::parse_input_tree(Fasta_reader *fr,vector<Fasta_entry> *sequences,bool reference_alignment)
+Node *Input_output_parser::parse_input_tree(Fasta_reader *fr,vector<Fasta_entry> *sequences,bool reference_alignment,int n_threads)
 {
     /***********************************************************************/
     /*  Read the guidetree                                                 */
@@ -207,10 +211,101 @@ Node *Input_output_parser::parse_input_tree(Fasta_reader *fr,vector<Fasta_entry>
     }
     else
     {
-        Log_output::write_out("\nError: No tree file defined.\n",0);
-        Settings_handle::st.info();
+        RAxML_tree rt;
+        Mafft_alignment ma;
 
-        exit(1);
+        int data_type = fr->check_sequence_data_type(sequences);
+
+        if(reference_alignment && rt.test_executable())
+        {
+            bool is_protein = (data_type==Model_factory::protein);
+
+            vector<Fasta_entry> *input = sequences;
+            vector<Fasta_entry> translated;
+
+            if(Settings_handle::st.is("codons") && data_type==Model_factory::dna)
+            {
+                Codon_translation ct;
+                ct.define_translation_tables();
+                for(int i=0;i<sequences->size();i++)
+                {
+                    string s = sequences->at(i).sequence;
+                    s = ct.gapped_DNA_to_protein(&s);
+
+                    Fasta_entry e;
+                    e.name = sequences->at(i).name;
+                    e.sequence = s;
+
+                    translated.push_back(e);
+                }
+                input = &translated;
+                is_protein = true;
+            }
+
+            Log_output::write_msg("Computing RAxML guidetree for given input alignment.",0);
+            string tree = rt.infer_phylogeny(sequences,is_protein,n_threads);
+
+            Tree_node tn;
+            tree = tn.get_rooted_tree(tree);
+
+            Newick_reader nr;
+            root = nr.parenthesis_to_tree(tree);
+        }
+        else if(ma.test_executable() && rt.test_executable())
+        {
+            bool is_protein = (data_type==Model_factory::protein);
+
+            vector<Fasta_entry> *input = sequences;
+            vector<Fasta_entry> translated;
+
+            if(Settings_handle::st.is("codons") && data_type==Model_factory::dna)
+            {
+                Codon_translation ct;
+                ct.define_translation_tables();
+                for(int i=0;i<sequences->size();i++)
+                {
+                    string s = sequences->at(i).sequence;
+                    s = ct.gapped_DNA_to_protein(&s);
+
+                    Fasta_entry e;
+                    e.name = sequences->at(i).name;
+                    e.sequence = s;
+
+                    translated.push_back(e);
+                }
+                input = &translated;
+                is_protein = true;
+            }
+
+            Log_output::write_msg("Computing an initial alignment with MAFFT.",0);
+            ma.align_sequences(input);
+
+            Log_output::write_msg("Computing RAxML guidetree for the initial alignment.",0);
+            string tree = rt.infer_phylogeny(input,is_protein,n_threads);
+
+            Tree_node tn;
+            tree = tn.get_rooted_tree(tree);
+
+            Newick_reader nr;
+            root = nr.parenthesis_to_tree(tree);
+        }
+        else
+        {
+            Log_output::write_out("\nError: No tree file defined. MAFFT and/or RAxML not found.\n",0);
+            Settings_handle::st.info();
+
+            exit(1);
+        }
+
+        string outfile =  "outfile";
+        if(Settings_handle::st.is("outfile"))
+            outfile =  Settings_handle::st.get("outfile").as<string>();
+        outfile += ".tre";
+
+        ofstream output( outfile.c_str(), (ios::out));
+        output<<root->print_tree()<<endl;
+        output.close();
+
     }
 
     return root;
@@ -330,6 +425,11 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             Log_output::write_out("Alignment files: "+outfile+fr->get_format_suffix(format)+", "+outfile+".xml\n",0);
         else
             Log_output::write_out("Alignment file: "+outfile+fr->get_format_suffix(format)+"\n",0);
+
+        if(!Settings_handle::st.is("treefile") && !Settings_handle::st.is("ref-treefile"))
+            Log_output::write_out("Guidetree file: "+outfile+".tre\n",0);
+
+
 
         fr->set_chars_by_line(70);
         fr->write(outfile, aligned_sequences, format, true);

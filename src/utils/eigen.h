@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Ari Loytynoja                                   *
+ *   Copyright (C) 2010-2012 by Ari Loytynoja                              *
  *   ari.loytynoja@gmail.com                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -19,8 +19,9 @@
  ***************************************************************************/
 
 /*
- * computePMatrix() function is modified from the code of Simon Whelan,
- * all the rest comes from Ziheng Yang's software package paml3.14.
+ * These routines have been modified from the code for the PAML software.
+ * (c) Ziheng Yang.
+ * See the PAML documentation and code for details.
  */
 
 #ifndef EIGEN_H
@@ -46,12 +47,15 @@ public:
     int getpi_sqrt (double pi[], double pi_sqrt[], int n, int *npi0);
     int eigenQREV (double Q[], double pi[], double pi_sqrt[], int n, int npi0, double Root[], double U[], double V[]);
     int eigenRealSym(double A[], int n, double Root[], double work[]);
-    void computePMatrix(int n, double* pMat, double* U, double* V, double* Root, double time);
 
     void HouseholderRealSym(double a[], int n, double d[], double e[]);
     int EigenTridagQLImplicit(double d[], double e[], int n, double z[]);
     void EigenSort(double d[], double U[], int n);
     
+    /*
+      Copyright (C) by Simon Whelan.
+    */
+    void computePMatrix(int n, double* pMat, double* U, double* V, double* Root, double time);
 };
 
 }

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012 by Ari Loytynoja                                   *
+ *   Copyright (C) 2010-2012 by Ari Loytynoja                              *
  *   ari.loytynoja@gmail.com                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -35,7 +35,7 @@ public:
     Input_output_parser();
 
     void parse_input_sequences(ppa::Fasta_reader *fr,vector<Fasta_entry> *sequences, bool *reference_alignment);
-    Node * parse_input_tree(ppa::Fasta_reader *fr,vector<Fasta_entry> *sequences, bool reference_alignment);
+    Node * parse_input_tree(ppa::Fasta_reader *fr,vector<Fasta_entry> *sequences, bool reference_alignment, int n_threads);
     void match_sequences_and_tree(ppa::Fasta_reader *fr,vector<Fasta_entry> *sequences, Node *root, bool reference_alignment,int *data_type);
     void define_alignment_model(ppa::Fasta_reader *fr,Model_factory *mf, int data_type);
     void output_aligned_sequences(ppa::Fasta_reader *fr,vector<Fasta_entry> *sequences, Node *root);

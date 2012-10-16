@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Ari Loytynoja                                   *
+ *   Copyright (C) 2010-2012 by Ari Loytynoja                              *
  *   ari.loytynoja@gmail.com                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -19,10 +19,9 @@
  ***************************************************************************/
 
 /*
- * These routines have been modified from the code for the PAML software.
- * (c) Ziheng Yang.
- * See the PAML documentation and code for details.
- */
+  Copyright (C) by Ziheng Yang except where otherwise stated.
+  The code is adapted from Ziheng Yang's software package PAML 3.14.
+*/
 
 #include "utils/eigen.h"
 #include "utils/settings.h"
@@ -322,6 +321,11 @@ int Eigen::EigenTridagQLImplicit(double d[], double e[], int n, double z[])
 }
 
 #undef SIGN
+
+
+/*
+  Copyright (C) by Simon Whelan.
+*/
 
 void Eigen::computePMatrix(int n, double* pMat, double* U, double* V, double* Root, double time) {
 

@@ -18,46 +18,45 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef SETTINGS_H
-#define SETTINGS_H
+#ifndef RAXML_TREE_H
+#define RAXML_TREE_H
 
-#include <boost/program_options.hpp>
+#include "utils/settings_handle.h"
+#include "utils/fasta_entry.h"
+#include <fstream>
 #include <string>
+#include <vector>
+#include <sys/stat.h>
 
-namespace ppa{
+using namespace std;
 
-class Settings
+namespace ppa {
+
+class RAxML_tree
 {
-    boost::program_options::variables_map vm;
-    boost::program_options::options_description full_desc;
-    boost::program_options::options_description desc;
-    boost::program_options::options_description min_desc;
-    boost::program_options::options_description max_desc;
+    string raxmlpath;
 
-    float version;
-    std::string date;
+    std::string get_temp_dir()
+    {
+        std::string tmp_dir = "/tmp/";
+
+        if(Settings_handle::st.is("temp-folder"))
+            tmp_dir = Settings_handle::st.get("temp-folder").as<string>()+"/";
+
+        struct stat st;
+        if(stat(tmp_dir.c_str(),&st) != 0)
+            tmp_dir = "";
+
+        return tmp_dir;
+    }
+
+    void delete_files(int r);
+
 public:
-    Settings();
-    int read_command_line_arguments(int argc, char *argv[]);
-
-    bool is(std::string name) { return vm.count(name); }
-    const boost::program_options::variable_value & get(const std::string & name) const { return vm[name]; }
-
-    void help();
-    void help_all();
-    void info();
-    void info_noexit();
-    void check_version();
-    void print_msg();
-    std::string print_log_msg();
-
-    static int noise;
-    static float resize_factor;
-
-    static int exonerate_local_keep_best;
-    static int exonerate_gapped_keep_best;
-
+    RAxML_tree();
+    bool test_executable();
+    string infer_phylogeny(std::vector<Fasta_entry> *sequences,bool is_protein, int n_threads);
 };
-
 }
-#endif // SETTINGS_H
+
+#endif // RAXML_TREE_H

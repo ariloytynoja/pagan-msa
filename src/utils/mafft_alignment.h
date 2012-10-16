@@ -18,46 +18,28 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef EXONERATE_QUERIES_H
-#define EXONERATE_QUERIES_H
+#ifndef MAFFT_ALIGNMENT_H
+#define MAFFT_ALIGNMENT_H
 
-#include "utils/fasta_entry.h"
-#include "utils/substring_hit.h"
-#include "main/node.h"
 #include <fstream>
 #include <string>
 #include <vector>
-#include <map>
 #include <sys/stat.h>
+#include "utils/settings_handle.h"
+#include "utils/fasta_entry.h"
 
 namespace ppa{
 
-struct hit {
-    std::string query;
-    std::string node;
-    int score;
-    int q_start;
-    int q_end;
-    char q_strand;
-    int t_start;
-    int t_end;
-    char t_strand;
-};
+using namespace std;
 
-class Exonerate_queries
+class Mafft_alignment
 {
-    static bool better (hit i,hit j) { return (i.score>j.score); }
+    string mafftpath;
 
-    bool split_sugar_string(const std::string& row,hit *h);
-    bool split_vulgar_string(const std::string& row,hit *h);
-    void write_exonerate_input(string *str1, string *str2, int *r);
-    void write_exonerate_input(Node *root, vector<Fasta_entry> *reads, map<string,string> *names, int *r);
-    void write_exonerate_input(Node *root, Fasta_entry *read, map<string,string> *names, int *r);
-    void delete_files(int r);
-
-    string get_temp_dir()
+    std::string get_temp_dir()
     {
-        string tmp_dir = "/tmp/";
+        std::string tmp_dir = "/tmp/";
+
         if(Settings_handle::st.is("temp-folder"))
             tmp_dir = Settings_handle::st.get("temp-folder").as<string>()+"/";
 
@@ -68,16 +50,50 @@ class Exonerate_queries
         return tmp_dir;
     }
 
+    std::string remove_last_whitespaces(const std::string & s)
+    {
+        // Copy sequence
+        std::string st (s);
+
+        while (st.size() > 0 && this->is_whitespace_character(st[st.size() - 1]))
+        {
+            st.erase(st.end() - 1);
+        }
+
+        // Send result
+        return st;
+    }
+
+    std::string remove_whitespaces(const std::string & s)
+    {
+        std::string st="";
+
+        for (unsigned int i = 0; i < s.size(); i++)
+        {
+            if (!this->is_whitespace_character(s[i]))
+            {
+                st+=s[i];
+            }
+        }
+        return st;
+    }
+
+    bool is_whitespace_character(char c)
+    {
+        return (c == ' ')
+               || (c == '\t')
+               || (c == '\n')
+               || (c == '\r')
+               || (c == '\f');
+    }
+
+    void delete_files(int r);
+
 public:
-    Exonerate_queries();
+    Mafft_alignment();
     bool test_executable();
-
-    void local_alignment(Node *root, Fasta_entry *read, std::multimap<std::string,std::string> *good_hits, std::map<std::string,hit> *hits, bool is_local, bool all_nodes=false);
-    void all_local_alignments(Node *root, vector<Fasta_entry> *reads, std::multimap<std::string,std::string> *tid_nodes, std::map<std::string,std::multimap<std::string,hit> > *hits, bool is_local);
-
-    void local_pairwise_alignment(string *str1,string *str2,vector<Substring_hit> *hits);
+    void align_sequences(vector<Fasta_entry> *sequences);
 };
-
 }
 
-#endif // EXONERATE_QUERIES_H
+#endif // MAFFT_ALIGNMENT_H

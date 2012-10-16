@@ -33,7 +33,10 @@ SOURCES += main.cpp \
     utils/log_output.cpp \
     utils/find_anchors.cpp \
     utils/codon_translation.cpp \
-    utils/input_output_parser.cpp
+    utils/input_output_parser.cpp \
+    utils/mafft_alignment.cpp \
+    utils/raxml_tree.cpp \
+    utils/tree_node.cpp
 HEADERS += utils/text_utils.h \
     main/node.h \
     main/sequence.h \
@@ -60,7 +63,10 @@ HEADERS += utils/text_utils.h \
     utils/find_anchors.h \
     utils/substring_hit.h \
     utils/codon_translation.h \
-    utils/input_output_parser.h
+    utils/input_output_parser.h \
+    utils/mafft_alignment.h \
+    utils/raxml_tree.h \
+    utils/tree_node.h
 LIBS += -lboost_program_options-mt -lboost_regex-mt -lboost_thread-mt -lrt
 INCLUDEPATH += /usr/include
 OTHER_FILES += missing_things.txt \

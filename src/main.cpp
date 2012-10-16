@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Ari Loytynoja                                   *
+ *   Copyright (C) 2010-2012 by Ari Loytynoja                              *
  *   ari.loytynoja@gmail.com                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -94,6 +94,26 @@ int main(int argc, char *argv[])
     clock_t analysis_start_time=clock();
 
 
+    /***********************************************************************/
+    /*  Threaded alignment: using maximum number by defualt                */
+    /***********************************************************************/
+
+    int n_threads = boost::thread::hardware_concurrency();
+    if(Settings_handle::st.is("threads"))
+    {
+        int nt = Settings_handle::st.get("threads").as<int > ();
+        if(nt>0 && nt<=n_threads) { n_threads = nt; }
+    }
+
+    /***********************************************************************/
+    stringstream ss;
+    ss << "Running with "<<n_threads<<" threads.\n";
+    Log_output::write_out(ss.str(),1);
+    /***********************************************************************/
+
+
+
+
 
     /***********************************************************************/
     /*  Read the sequence file                                             */
@@ -112,7 +132,7 @@ int main(int argc, char *argv[])
     /*  Read the guidetree file                                            */
     /***********************************************************************/
 
-    Node *root = iop.parse_input_tree(&fr,&sequences,reference_alignment);
+    Node *root = iop.parse_input_tree(&fr,&sequences,reference_alignment,n_threads);
 
 
 
@@ -125,7 +145,7 @@ int main(int argc, char *argv[])
 
 
     /***********************************************************************/
-    stringstream ss;
+    ss.str(string());
     ss << "Time main::input: "<<double(clock()-t_start)/CLOCKS_PER_SEC<<"\n";
     Log_output::write_out(ss.str(),"time");
     /***********************************************************************/
@@ -144,26 +164,6 @@ int main(int argc, char *argv[])
     ss.str(string());
     ss << "Time main::model: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
     Log_output::write_out(ss.str(),"time");
-    /***********************************************************************/
-
-
-
-
-    /***********************************************************************/
-    /*  Threaded alignment: using maximum number by defualt                */
-    /***********************************************************************/
-
-    int n_threads = boost::thread::hardware_concurrency();
-    if(Settings_handle::st.is("threads"))
-    {
-        int nt = Settings_handle::st.get("threads").as<int > ();
-        if(nt>0 && nt<=n_threads) { n_threads = nt; }
-    }
-
-    /***********************************************************************/
-    ss.str(string());
-    ss << "Running with "<<n_threads<<" threads.\n";
-    Log_output::write_out(ss.str(),1);
     /***********************************************************************/
 
 
