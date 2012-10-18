@@ -472,7 +472,7 @@ void Exonerate_queries::all_local_alignments(Node *root, vector<Fasta_entry> *re
     }
 
 
-    if(!Settings_handle::st.is("keep-temporary-files"))
+    if(!Settings_handle::st.is("keep-temp-files"))
         this->delete_files(r);
 
 
@@ -647,7 +647,7 @@ void Exonerate_queries::local_alignment(Node *root, Fasta_entry *read, multimap<
         read->node_to_align = "discarded_read";
     }
 
-    if(!Settings_handle::st.is("keep-temporary-files"))
+    if(!Settings_handle::st.is("keep-temp-files"))
         this->delete_files(r);
 }
 
@@ -737,7 +737,7 @@ void Exonerate_queries::local_pairwise_alignment(string *str1,string *str2,vecto
         }
     }
 
-    if(!Settings_handle::st.is("keep-temporary-files"))
+    if(!Settings_handle::st.is("keep-temp-files"))
         this->delete_files(r);
 
 }

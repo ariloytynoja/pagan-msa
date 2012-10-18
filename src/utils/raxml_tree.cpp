@@ -144,7 +144,7 @@ string RAxML_tree::infer_phylogeny(std::vector<Fasta_entry> *sequences,bool is_p
     input.close();
 
 
-    if(!Settings_handle::st.is("keep-temporary-files"))
+    if(!Settings_handle::st.is("keep-temp-files"))
         this->delete_files(r);
 
     return tree;

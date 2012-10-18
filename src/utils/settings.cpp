@@ -127,6 +127,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("anchors-offset", po::value<int>()->default_value(15), "anchors offset for alignment")
         ("use-prefix-anchors","use prefix approach to anchor alignment")
         ("prefix-hit-length", po::value<int>()->default_value(30), "prefix hit length for anchor")
+        ("keep-temp-files","keep temporary files (mainly for debugging)")
     ;
 
     boost::program_options::options_description exonerate("Exonerate options",100);
@@ -225,7 +226,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("ambiguity-factor", po::value<float>(), "multiplier for subst. score of ambiguity characters")
         ("no-log-odds", "do not use log-odds substitutions scores")
         ("time", "track time (debugging)")
-        ("keep-temporary-files","keep exonerate files")
         ("recompute-reference-alignment-model", "recompute reference alignment model")
         ("no-score-scaling","no subsistitution score scaling")
         ("plot-anchors-for-R","plot for R")

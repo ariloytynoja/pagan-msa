@@ -193,7 +193,8 @@ void Mafft_alignment::align_sequences(vector<Fasta_entry> *sequences)
 
     pclose(fpipe);
 
-    this->delete_files(r);
+    if(!Settings_handle::st.is("keep-temp-files"))
+        this->delete_files(r);
 }
 
 void Mafft_alignment::delete_files(int r)
