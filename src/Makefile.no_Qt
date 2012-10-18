@@ -58,7 +58,10 @@ HEADERS       = main/node.h \
 		utils/log_output.h \
 		utils/find_anchors.h \
 		utils/codon_translation.h \
-		utils/input_output_parser.h
+		utils/input_output_parser.h \
+		utils/mafft_alignment.h \
+		utils/raxml_tree.h \
+		utils/tree_node.h
 SOURCES       = main.cpp \
 		main/node.cpp \
 		main/sequence.cpp \
@@ -83,7 +86,10 @@ SOURCES       = main.cpp \
 		utils/log_output.cpp \
 		utils/find_anchors.cpp \
 		utils/codon_translation.cpp \
-		utils/input_output_parser.cpp 
+		utils/input_output_parser.cpp \
+		utils/mafft_alignment.cpp \
+		utils/raxml_tree.cpp \
+		utils/tree_node.cpp 
 OBJECTS       = main.o \
 		node.o \
 		sequence.o \
@@ -108,7 +114,10 @@ OBJECTS       = main.o \
 		log_output.o \
 		find_anchors.o \
 		codon_translation.o \
-		input_output_parser.o
+		input_output_parser.o \
+		mafft_alignment.o \
+		raxml_tree.o \
+		tree_node.o
 TARGET        = pagan
 
 first: all
@@ -446,11 +455,35 @@ input_output_parser.o: utils/input_output_parser.cpp utils/input_output_parser.h
 		utils/model_factory.h \
 		main/reference_alignment.h \
 		utils/newick_reader.h \
+		utils/mafft_alignment.h \
+		utils/raxml_tree.h \
 		utils/xml_writer.h \
 		utils/optimal_reference.h \
+		utils/tree_node.h \
 		main/reads_aligner.h \
 		utils/substring_hit.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o input_output_parser.o utils/input_output_parser.cpp
+
+mafft_alignment.o: utils/mafft_alignment.cpp utils/mafft_alignment.h \
+		utils/settings_handle.h \
+		utils/settings.h \
+		utils/fasta_entry.h \
+		utils/log_output.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o mafft_alignment.o utils/mafft_alignment.cpp
+
+raxml_tree.o: utils/raxml_tree.cpp utils/raxml_tree.h \
+		utils/settings_handle.h \
+		utils/settings.h \
+		utils/fasta_entry.h \
+		utils/model_factory.h \
+		utils/db_matrix.h \
+		utils/log_output.h \
+		utils/int_matrix.h \
+		utils/evol_model.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o raxml_tree.o utils/raxml_tree.cpp
+
+tree_node.o: utils/tree_node.cpp utils/tree_node.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o tree_node.o utils/tree_node.cpp
 
 ####### Install
 

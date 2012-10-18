@@ -164,7 +164,7 @@ void RAxML_tree::delete_files(int r)
     f_names.push_back("RAxML_parsimonyTree.r");
     f_names.push_back("RAxML_result.r");
 
-    for(int i=0;i<f_names.size();i++)
+    for(int i=0;i<(int)f_names.size();i++)
     {
         stringstream m_name;
         m_name <<tmp_dir<<f_names.at(i)<<r;

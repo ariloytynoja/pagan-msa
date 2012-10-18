@@ -44,7 +44,7 @@ public:
     {
         Codon_translation ct;
         ct.define_translation_tables();
-        for(int i=0;i<sequences->size();i++)
+        for(int i=0;i<(int)sequences->size();i++)
         {
             string s = sequences->at(i).sequence;
             s = ct.gapped_DNA_to_protein(&s);
