@@ -68,6 +68,7 @@ class Exonerate_queries
         return tmp_dir;
     }
 
+    string exoneratepath;
 public:
     Exonerate_queries();
     bool test_executable();
