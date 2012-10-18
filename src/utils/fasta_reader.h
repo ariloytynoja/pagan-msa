@@ -94,7 +94,9 @@ public:
         output.close();
     }
 
-    void print_fast_entry(ostream & output, const Fasta_entry *entry) const;
+    void backtranslate_dna(const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, vector<Fasta_entry> &outseqs) const throw (Exception);
+
+    void print_fasta_entry(ostream & output, const Fasta_entry *entry) const;
 
     void write_fastq(ostream & output, const vector<Fasta_entry> & seqs) const throw (Exception);
     void write_fastq(const string & path, const vector<Fasta_entry> & seqs, bool overwrite=true) const throw (Exception)

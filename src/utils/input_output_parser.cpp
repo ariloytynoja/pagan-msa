@@ -225,24 +225,12 @@ Node *Input_output_parser::parse_input_tree(Fasta_reader *fr,vector<Fasta_entry>
 
             if(Settings_handle::st.is("codons") && data_type==Model_factory::dna)
             {
-                Codon_translation ct;
-                ct.define_translation_tables();
-                for(int i=0;i<sequences->size();i++)
-                {
-                    string s = sequences->at(i).sequence;
-                    s = ct.gapped_DNA_to_protein(&s);
-
-                    Fasta_entry e;
-                    e.name = sequences->at(i).name;
-                    e.sequence = s;
-
-                    translated.push_back(e);
-                }
+                this->translate_codons(sequences,&translated);
                 input = &translated;
                 is_protein = true;
             }
 
-            Log_output::write_msg("Computing RAxML guidetree for given input alignment.",0);
+            Log_output::write_msg("Computing RAxML guidetree for the given input alignment.",0);
             string tree = rt.infer_phylogeny(sequences,is_protein,n_threads);
 
             Tree_node tn;
@@ -260,19 +248,7 @@ Node *Input_output_parser::parse_input_tree(Fasta_reader *fr,vector<Fasta_entry>
 
             if(Settings_handle::st.is("codons") && data_type==Model_factory::dna)
             {
-                Codon_translation ct;
-                ct.define_translation_tables();
-                for(int i=0;i<sequences->size();i++)
-                {
-                    string s = sequences->at(i).sequence;
-                    s = ct.gapped_DNA_to_protein(&s);
-
-                    Fasta_entry e;
-                    e.name = sequences->at(i).name;
-                    e.sequence = s;
-
-                    translated.push_back(e);
-                }
+                this->translate_codons(sequences,&translated);
                 input = &translated;
                 is_protein = true;
             }
@@ -484,10 +460,13 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
                 outfile =  Settings_handle::st.get("outfile").as<string>();
 
             outfile.append(".dna");
-            Log_output::write_out("Back-translated alignment file: "+outfile+".fas\n",0);
+            Log_output::write_out("Back-translated alignment file: "+outfile+fr->get_format_suffix(format)+"\n",0);
 
             fr->set_chars_by_line(70);
-            fr->write_dna(outfile, aligned_sequences, *sequences,root,true,Fasta_reader::plain_alignment);
+            vector<Fasta_entry> dna_sequences;
+            fr->backtranslate_dna(aligned_sequences,*sequences,dna_sequences);
+
+            fr->write(outfile, dna_sequences, format, true);
 
             if(Settings_handle::st.is("build-contigs"))
             {

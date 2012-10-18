@@ -120,6 +120,14 @@ void Mafft_alignment::align_sequences(vector<Fasta_entry> *sequences)
         exit(1);
     }
 
+    map<string,string> dna_seqs;
+    bool has_dna_seqs = (sequences->at(0).sequence.length() > 0);
+    if(has_dna_seqs)
+    {
+        for(si = sequences->begin();si!=sequences->end();si++)
+            dna_seqs.insert(pair<string,string>(si->name,si->dna_sequence));
+    }
+
 
     sequences->clear();
 
@@ -143,6 +151,14 @@ void Mafft_alignment::align_sequences(vector<Fasta_entry> *sequences)
                 sequence = this->remove_whitespaces(sequence);
                 transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
                 s.sequence = sequence;
+
+                if(has_dna_seqs)
+                {
+                    map<string,string>::iterator it = dna_seqs.find(name);
+                    if(it!=dna_seqs.end())
+                        s.dna_sequence = it->second;
+                }
+
                 sequences->push_back(s);
                 name = "";
                 sequence = "";
@@ -164,6 +180,14 @@ void Mafft_alignment::align_sequences(vector<Fasta_entry> *sequences)
         sequence = this->remove_whitespaces(sequence);
         transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
         s.sequence = sequence;
+
+        if(has_dna_seqs)
+        {
+            map<string,string>::iterator it = dna_seqs.find(name);
+            if(it!=dna_seqs.end())
+                s.dna_sequence = it->second;
+        }
+
         sequences->push_back(s);
     }
 

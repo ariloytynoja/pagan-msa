@@ -46,7 +46,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     boost::program_options::options_description generic("Generic options",100);
     generic.add_options()
         ("outfile", po::value<string>(), "alignment outfile")
-        ("outformat", po::value<string>(), "alignment format")
+        ("outformat", po::value<string>(), "alignment format [fasta,nexus,paml,phylipi,phylips,raxml]")
         ("translate", "translate DNA input to protein")
         ("mt-translate", "translate mtDNA input to protein")
         ("output-ancestors", "include ancestors in outfile")

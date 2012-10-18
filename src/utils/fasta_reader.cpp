@@ -814,6 +814,61 @@ void Fasta_reader::write_simple_nexus(ostream & output, const vector<Fasta_entry
 
 /****************************************************************************************/
 
+void Fasta_reader::backtranslate_dna(const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, vector<Fasta_entry> &outseqs) const throw (Exception)
+{
+    bool dna_seq_missing = false;
+    vector<Fasta_entry>::const_iterator it = org_seqs.begin();
+    map<string,string> dna_seqs;
+
+    Text_utils tu;
+
+    for (; it != org_seqs.end(); it++)
+    {
+        if( it->dna_sequence.length() == 0 )
+            dna_seq_missing = true;
+
+        string seq = it->dna_sequence;
+        tu.replace_all(seq,"-","");
+
+        dna_seqs.insert(pair<string,string>(it->name,seq));
+    }
+
+    if(dna_seq_missing)
+    {
+        Log_output::write_out("No DNA for all sequences. Back-translation failed.\n",1);
+        return;
+    }
+
+    vector<Fasta_entry>::const_iterator vi;
+
+    // Main loop : for all sequences in vector container
+    for (vi = seqs.begin(); vi != seqs.end(); vi++)
+    {
+        Fasta_entry os;
+        os.name = vi->name;
+        os.comment = vi->comment;
+
+
+        map<string,string>::iterator it2 = dna_seqs.find(vi->name);
+        if(it2 == dna_seqs.end())
+        {
+            Log_output::write_out("No matching DNA sequence for "+vi->name+". Back-translation failed.\n",1);
+            return;
+        }
+        else
+        {
+            string dna = it2->second;
+            string prot = vi->sequence;
+
+            os.sequence = protein_to_DNA(&dna,&prot);
+            os.num_duplicates = 1;
+        }
+
+        outseqs.push_back(os);
+    }
+
+}
+
 void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, Node *root, int output_type) const throw (Exception)
 {
     // Checking the existence of specified file, and possibility to open it in write mode
@@ -997,13 +1052,13 @@ void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs,
         {
             if(read_names.find(vi->name) == read_names.end())
             {
-                this->print_fast_entry(output,&(*vi));
+                this->print_fasta_entry(output,&(*vi));
             }
         }
     }
 
      if(output_type != Fasta_reader::plain_alignment)
-            this->print_fast_entry(output,&entry);
+            this->print_fasta_entry(output,&entry);
 
      if(output_type != Fasta_reader::consensus_only)
      {
@@ -1011,14 +1066,14 @@ void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs,
         {
             if(read_names.find(vi->name) != read_names.end())
             {
-                this->print_fast_entry(output,&(*vi));
+                this->print_fasta_entry(output,&(*vi));
             }
         }
      }
 
 }
 
-void Fasta_reader::print_fast_entry(ostream & output, const Fasta_entry *entry) const
+void Fasta_reader::print_fasta_entry(ostream & output, const Fasta_entry *entry) const
 {
     output << ">" << entry->name << " " <<entry->comment<< endl;
     string seq = entry->sequence;

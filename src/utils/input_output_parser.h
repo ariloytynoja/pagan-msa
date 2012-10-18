@@ -26,6 +26,7 @@
 #include "utils/fasta_reader.h"
 #include "main/node.h"
 #include "utils/model_factory.h"
+#include "utils/codon_translation.h"
 
 namespace ppa{
 
@@ -39,6 +40,22 @@ public:
     void match_sequences_and_tree(ppa::Fasta_reader *fr,vector<Fasta_entry> *sequences, Node *root, bool reference_alignment,int *data_type);
     void define_alignment_model(ppa::Fasta_reader *fr,Model_factory *mf, int data_type);
     void output_aligned_sequences(ppa::Fasta_reader *fr,vector<Fasta_entry> *sequences, Node *root);
+    void translate_codons(vector<Fasta_entry> *sequences, vector<Fasta_entry> *translated)
+    {
+        Codon_translation ct;
+        ct.define_translation_tables();
+        for(int i=0;i<sequences->size();i++)
+        {
+            string s = sequences->at(i).sequence;
+            s = ct.gapped_DNA_to_protein(&s);
+
+            Fasta_entry e;
+            e.name = sequences->at(i).name;
+            e.sequence = s;
+
+            translated->push_back(e);
+        }
+    }
 };
 }
 
