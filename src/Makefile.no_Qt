@@ -3,19 +3,23 @@
 #############################################################################
 
 ####### Compiler, tools and options
+UNAME    = $(shell uname)
 
 CC       = /usr/bin/gcc
 CXX      = /usr/bin/g++
 LEX      = flex
 YACC     = yacc
-CFLAGS   = -pipe -Wall -W -Wno-unused -O2 
-CXXFLAGS = -pipe -Wall -W -Wno-unused -O2 
-LEXFLAGS = 
+CFLAGS   = -pipe -Wall -W -Wno-unused -O2
+CXXFLAGS = -pipe -Wall -W -Wno-unused -O2
+LEXFLAGS =
 YACCFLAGS= -d
 INCPATH  = -I/usr/include -I. -I./utils -I./main -I../boost/include
 LINK     = /usr/bin/g++
-LFLAGS   = 
-LIBS     = $(SUBLIBS)  -Wl,-rpath, -lboost_program_options -lboost_regex -lboost_thread -lm -lrt -L../boost/lib
+LFLAGS   =
+LIBS     = $(SUBLIBS)  -Wl,-rpath, -lboost_program_options -lboost_regex -lboost_thread -lm -L../boost/lib
+ifneq ($(UNAME), Darwin)
+LIBS    += -lrt
+endif
 AR            = ar cqs
 RANLIB        = 
 TAR           = tar -cf

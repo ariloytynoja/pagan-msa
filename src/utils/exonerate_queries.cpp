@@ -30,6 +30,10 @@
 #include <boost/regex.hpp>
 #include <sys/stat.h>
 
+#if defined (__APPLE__)
+#include <mach-o/dyld.h>
+#endif
+
 using namespace std;
 using namespace ppa;
 
