@@ -40,10 +40,11 @@ bool RAxML_tree::test_executable()
 
     string epath = string(path).substr(0,length);
     epath.replace(epath.rfind("pagan"),string("pagan").size(),string(""));
-    mafftpath = epath;
-    epath = epath+"sh.exe "+epath+"raxml -h >/dev/null 2>/dev/null";
+    raxmlpath = epath;
+    epath = epath+"raxml -h >/dev/null 2>/dev/null";
     int status = system(epath.c_str());
-    return WEXITSTATUS(status) == 1;
+
+    return WEXITSTATUS(status) == 0;
 
     # else
     int status = system("raxml -h >/dev/null 2>/dev/null");
@@ -94,16 +95,15 @@ string RAxML_tree::infer_phylogeny(std::vector<Fasta_entry> *sequences,bool is_p
         stringstream r_name;
         r_name <<tmp_dir<<"RAxML_info.r"<<r;
         ifstream r_file(r_name.str().c_str());
-
+ 
         if(!m_file && !r_file)
         {
             m_output.open( m_name.str().c_str(), (ios::out) );
-            break;
+	    break;
         }
         r = rand();
     }
-
-
+    
     vector<Fasta_entry>::iterator si = sequences->begin();
     m_output <<sequences->size()<<" "<<sequences->at(0).sequence.length()<<endl;
     for(;si!=sequences->end();si++)
@@ -111,6 +111,9 @@ string RAxML_tree::infer_phylogeny(std::vector<Fasta_entry> *sequences,bool is_p
         m_output<<si->name<<endl<<si->sequence<<endl;
     }
     m_output.close();
+
+    if(n_threads == 1)
+        n_threads = 2;
 
     stringstream command;
     if(is_protein)

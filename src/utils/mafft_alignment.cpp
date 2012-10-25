@@ -101,13 +101,18 @@ void Mafft_alignment::align_sequences(vector<Fasta_entry> *sequences)
         r = rand();
     }
 
-    vector<Fasta_entry>::iterator si = sequences->begin();
+    map<string,string> dna_seqs;
+    bool has_dna_seqs = (sequences->at(0).sequence.length() > 0);
 
+    vector<Fasta_entry>::iterator si = sequences->begin();
     for(;si!=sequences->end();si++)
     {
         m_output<<">"<<si->name<<endl<<si->sequence<<endl;
+        if(has_dna_seqs)
+            dna_seqs.insert(pair<string,string>(si->name,si->dna_sequence));
     }
     m_output.close();
+    sequences->clear();
 
     stringstream command;
     command << mafftpath<<"mafft "+tmp_dir+"m"<<r<<".fas  2>/dev/null";
@@ -120,16 +125,6 @@ void Mafft_alignment::align_sequences(vector<Fasta_entry> *sequences)
         exit(1);
     }
 
-    map<string,string> dna_seqs;
-    bool has_dna_seqs = (sequences->at(0).sequence.length() > 0);
-    if(has_dna_seqs)
-    {
-        for(si = sequences->begin();si!=sequences->end();si++)
-            dna_seqs.insert(pair<string,string>(si->name,si->dna_sequence));
-    }
-
-
-    sequences->clear();
 
     // read mafft output
     string name, sequence = "";  // Initialization

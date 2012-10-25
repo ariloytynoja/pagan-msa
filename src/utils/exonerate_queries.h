@@ -32,6 +32,9 @@
 
 namespace ppa{
 
+#ifndef EXONERATE_HIT_H
+#define EXONERATE_HIT_H
+
 struct hit {
     std::string query;
     std::string node;
@@ -43,6 +46,8 @@ struct hit {
     int t_end;
     char t_strand;
 };
+
+#endif // EXONERATE_HIT_H
 
 class Exonerate_queries
 {

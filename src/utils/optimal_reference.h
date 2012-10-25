@@ -30,6 +30,9 @@
 
 namespace ppa{
 
+#ifndef EXONERATE_HIT_H
+#define EXONERATE_HIT_H
+
 struct hit {
     std::string query;
     std::string target;
@@ -41,6 +44,8 @@ struct hit {
     int t_end;
     char t_strand;
 };
+
+#endif // EXONERATE_HIT_H
 
 class Optimal_reference
 {

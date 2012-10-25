@@ -77,14 +77,13 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
         Find_anchors fa;
         if(Settings_handle::st.is("use-prefix-anchors"))
         {
-
             fa.find_long_substrings(&s1,&s2,&hits,p_len);
-
         }
         else
         {
             Exonerate_queries er;
-            er.local_pairwise_alignment(&s1,&s2,&hits);
+            if(er.test_executable())
+                er.local_pairwise_alignment(&s1,&s2,&hits);
         }
 
 //        clock_gettime(CLOCK_MONOTONIC, &tcpu_finish);

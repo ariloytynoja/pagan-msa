@@ -25,6 +25,7 @@
 #include "utils/fasta_reader.h"
 #include "utils/mafft_alignment.h"
 #include "utils/raxml_tree.h"
+#include "utils/exonerate_queries.h"
 #include "utils/xml_writer.h"
 #include "utils/model_factory.h"
 #include "utils/evol_model.h"
@@ -325,9 +326,14 @@ void Input_output_parser::match_sequences_and_tree(Fasta_reader *fr, std::vector
 
 
     //  Place the sequences to nodes
-
     fr->place_sequences_to_nodes(sequences,&leaf_nodes,reference_alignment,*data_type);
 
+    if(Settings_handle::st.is("use-anchors"))
+    {
+        Exonerate_queries er;
+        if(!er.test_executable())
+            Log_output::write_out("The executable for exonerate not found! Alignment anchoring not used!\n",0);
+    }
 }
 
 /************************************************************************************/
