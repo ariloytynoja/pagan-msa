@@ -178,6 +178,17 @@ Node *Input_output_parser::parse_input_tree(Fasta_reader *fr,vector<Fasta_entry>
             Log_output::write_out("Error reading the guide tree file '"+treefile+"'.\nExiting.\n\n",0);
             exit(1);
         }
+        try {
+            root = nr.parenthesis_to_tree(tree);
+        }
+        catch(exception e)
+        {
+            Log_output::write_out("The guide tree should be a rooted binary tree. Trying mid-point rooting.\n\n",0);
+
+            Tree_node tn;
+            tree = tn.get_rooted_tree(tree);
+            root = nr.parenthesis_to_tree(tree);
+        }
 
         root = nr.parenthesis_to_tree(tree);
     }
