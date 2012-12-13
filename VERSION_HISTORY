@@ -1,3 +1,7 @@
+v.0.48
+- new option: --test-every-terminal-node
+
+
 v.0.47
 - compiles on Darwin and Cygwin
 
