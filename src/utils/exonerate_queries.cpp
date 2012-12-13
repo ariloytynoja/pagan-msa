@@ -307,7 +307,7 @@ void Exonerate_queries::all_local_alignments(Node *root, vector<Fasta_entry> *re
     else
         Log_output::write_msg("Running Exonerate with all query sequences (gapped)",0);
 
-    bool ignore_tid_tags = Settings_handle::st.is("test-every-internal-node") || Settings_handle::st.is("test-every-node") ;
+    bool ignore_tid_tags = Settings_handle::st.is("test-every-internal-node") || Settings_handle::st.is("test-every-terminal-node") || Settings_handle::st.is("test-every-node") ;
 
     set<string> tid_tags;
     vector<Fasta_entry>::iterator ri = reads->begin();

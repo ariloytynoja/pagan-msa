@@ -1432,6 +1432,10 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
     {
         root->get_internal_node_names(&tid_nodes);
     }
+    else if(Settings_handle::st.is("test-every-terminal-node"))
+    {
+        root->get_terminal_node_names(&tid_nodes);
+    }
     else if(Settings_handle::st.is("test-every-node"))
     {
         root->get_node_names(&tid_nodes);
@@ -1477,6 +1481,10 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                 {
                     root->get_internal_node_names(&tid_nodes);
                 }
+                else if(Settings_handle::st.is("test-every-terminal-node"))
+                {
+                    root->get_terminal_node_names(&tid_nodes);
+                }
                 else if(Settings_handle::st.is("test-every-node"))
                 {
                     root->get_node_names(&tid_nodes);
@@ -1501,6 +1509,10 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                         if(Settings_handle::st.is("test-every-internal-node"))
                         {
                             root->get_internal_node_names(&tid_nodes);
+                        }
+                        else if(Settings_handle::st.is("test-every-terminal-node"))
+                        {
+                            root->get_terminal_node_names(&tid_nodes);
                         }
                         else if(Settings_handle::st.is("test-every-node"))
                         {
@@ -1529,6 +1541,10 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                 {
                     root->get_node_names(&tid_nodes);
                 }
+                else if(Settings_handle::st.is("test-every-terminal-node"))
+                {
+                    root->get_terminal_node_names(&tid_nodes);
+                }
                 else if(Settings_handle::st.is("test-every-internal-node"))
                 {
                     root->get_internal_node_names(&tid_nodes);
@@ -1556,6 +1572,10 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                 if(Settings_handle::st.is("test-every-node"))
                 {
                     root->get_node_names(&tid_nodes);
+                }
+                else if(Settings_handle::st.is("test-every-terminal-node"))
+                {
+                    root->get_terminal_node_names(&tid_nodes);
                 }
                 else if(Settings_handle::st.is("test-every-internal-node"))
                 {
@@ -1780,6 +1800,10 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
     {
         root->get_internal_node_names(&all_tid_nodes);
     }
+    else if(Settings_handle::st.is("test-every-terminal-node"))
+    {
+        root->get_terminal_node_names(&all_tid_nodes);
+    }
     else if(Settings_handle::st.is("test-every-node"))
     {
         root->get_node_names(&all_tid_nodes);
@@ -1823,6 +1847,9 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
             {
                 if(Settings_handle::st.is("test-every-node"))
                     root->get_node_names(&tid_nodes);
+
+                else if(Settings_handle::st.is("test-every-terminal-node"))
+                    root->get_terminal_node_names(&tid_nodes);
 
                 else if(Settings_handle::st.is("test-every-internal-node"))
                     root->get_internal_node_names(&tid_nodes);
@@ -2031,6 +2058,10 @@ void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_e
     {
         root->get_internal_node_names(&all_tid_nodes);
     }
+    else if(Settings_handle::st.is("test-every-terminal-node"))
+    {
+        root->get_terminal_node_names(&all_tid_nodes);
+    }
     else if(Settings_handle::st.is("test-every-node"))
     {
         root->get_node_names(&all_tid_nodes);
@@ -2063,6 +2094,9 @@ void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_e
                 {
                     if(Settings_handle::st.is("test-every-internal-node"))
                         root->get_internal_node_names(&all_tid_nodes);
+
+                    else if(Settings_handle::st.is("test-every-terminal-node"))
+                        root->get_terminal_node_names(&all_tid_nodes);
 
                     else if(Settings_handle::st.is("test-every-node"))
                         root->get_node_names(&all_tid_nodes);
@@ -2110,6 +2144,9 @@ void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_e
             {
                 if(Settings_handle::st.is("test-every-node"))
                     root->get_node_names(&tid_nodes);
+
+                else if(Settings_handle::st.is("test-every-terminal-node"))
+                    root->get_terminal_node_names(&tid_nodes);
 
                 else if(Settings_handle::st.is("test-every-internal-node"))
                     root->get_internal_node_names(&tid_nodes);

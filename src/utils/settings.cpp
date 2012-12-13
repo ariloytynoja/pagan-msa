@@ -87,6 +87,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("show-contig-ancestor", "fill contig gaps with ancestral sequence")
         ("consensus-minimum", po::value<int>()->default_value(5), "threshold for inclusion in contig")
         ("test-every-internal-node","test every internal node for each query")
+        ("test-every-terminal-node","test every terminal node for each query")
         ("one-placement-only", "place only once despite equally good hits")
         ("placement-only", "compute query placement only")
         ("placement-file", po::value<string>(), "query placement file")
@@ -319,9 +320,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         }
     }
 
-    if( (is("very-fast-placement") || is("fast-placement")) && !(is("test-every-node") || is("test-every-internal-node")) )
+    if( (is("very-fast-placement") || is("fast-placement")) && !(is("test-every-node") || is("test-every-internal-node") || is("test-every-terminal-node") ) )
     {
-        Log_output::write_out("\nWarning: When using option '--(very-)fast-placement', either option '--test-(every-)internal-node'\nor a reference tree with TID tags should be used. "
+        Log_output::write_out("\nWarning: When using option '--(very-)fast-placement', either option '--test-every-[internal-|terminal-]node'\nor a reference tree with TID tags should be used. "
                               "If the latter is true, this warning can be ignored.\n",0);
     }
 

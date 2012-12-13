@@ -359,6 +359,17 @@ public:
         list->insert(pair<string,string>(this->get_name(),this->get_name()));
     }
 
+    void get_terminal_node_names(multimap<string,string> *list)
+    {
+        if(this->is_leaf())
+            list->insert(pair<string,string>(this->get_name(),this->get_name()));
+        else
+        {
+            left_child->get_terminal_node_names(list);
+            right_child->get_terminal_node_names(list);
+        }
+    }
+
     void get_internal_node_names_with_tid_tag(multimap<string,string> *list)
     {
         if(!this->is_leaf())
