@@ -24,6 +24,7 @@
 #include "utils/newick_reader.h"
 #include "utils/fasta_reader.h"
 #include "utils/mafft_alignment.h"
+#include "utils/bppdist_tree.h"
 #include "utils/raxml_tree.h"
 #include "utils/exonerate_queries.h"
 #include "utils/xml_writer.h"
@@ -138,10 +139,28 @@ void Input_output_parser::parse_input_sequences(Fasta_reader *fr,vector<Fasta_en
             exit(1);
         }
 
-        vector<Fasta_entry>::iterator it = sequences->begin();
-        it++;
-        for(;it!=sequences->end();)
-            sequences->erase(it);
+        if(Settings_handle::st.is("use-duplicate-weigths"))
+        {
+            Fasta_entry heaviest = *sequences->begin();
+
+            vector<Fasta_entry>::iterator it = sequences->begin();
+            for(;it!=sequences->end();)
+            {
+                if(it->num_duplicates > heaviest.num_duplicates)
+                    heaviest = *it;
+
+                sequences->erase(it);
+            }
+
+            sequences->push_back(heaviest);
+        }
+        else
+        {
+            vector<Fasta_entry>::iterator it = sequences->begin();
+            it++;
+            for(;it!=sequences->end();)
+                sequences->erase(it);
+        }
 
        *reference_alignment = true;
     }
@@ -223,66 +242,134 @@ Node *Input_output_parser::parse_input_tree(Fasta_reader *fr,vector<Fasta_entry>
     }
     else
     {
-        RAxML_tree rt;
-        Mafft_alignment ma;
-
-        int data_type = fr->check_sequence_data_type(sequences);
-
-        if(reference_alignment && rt.test_executable())
+        if(Settings_handle::st.is("raxml-tree"))
         {
-            bool is_protein = (data_type==Model_factory::protein);
+            RAxML_tree rt;
+            Mafft_alignment ma;
 
-            vector<Fasta_entry> *input = sequences;
-            vector<Fasta_entry> translated;
+            int data_type = fr->check_sequence_data_type(sequences);
 
-            if(Settings_handle::st.is("codons") && data_type==Model_factory::dna)
+            if(reference_alignment && rt.test_executable())
             {
-                this->translate_codons(sequences,&translated);
-                input = &translated;
-                is_protein = true;
+                bool is_protein = (data_type==Model_factory::protein);
+
+                vector<Fasta_entry> *input = sequences;
+                vector<Fasta_entry> translated;
+
+                if(Settings_handle::st.is("codons") && data_type==Model_factory::dna)
+                {
+                    this->translate_codons(sequences,&translated);
+                    input = &translated;
+                    is_protein = true;
+                }
+
+                Log_output::write_msg("Computing RAxML guidetree for the given input alignment.",0);
+                string tree = rt.infer_phylogeny(sequences,is_protein,n_threads);
+
+                Tree_node tn;
+                tree = tn.get_rooted_tree(tree);
+
+                Newick_reader nr;
+                root = nr.parenthesis_to_tree(tree);
             }
-
-            Log_output::write_msg("Computing RAxML guidetree for the given input alignment.",0);
-            string tree = rt.infer_phylogeny(sequences,is_protein,n_threads);
-
-            Tree_node tn;
-            tree = tn.get_rooted_tree(tree);
-
-            Newick_reader nr;
-            root = nr.parenthesis_to_tree(tree);
-        }
-        else if(ma.test_executable() && rt.test_executable())
-        {
-            bool is_protein = (data_type==Model_factory::protein);
-
-            vector<Fasta_entry> *input = sequences;
-            vector<Fasta_entry> translated;
-
-            if(Settings_handle::st.is("codons") && data_type==Model_factory::dna)
+            else if(ma.test_executable() && rt.test_executable())
             {
-                this->translate_codons(sequences,&translated);
-                input = &translated;
-                is_protein = true;
+                bool is_protein = (data_type==Model_factory::protein);
+
+                vector<Fasta_entry> *input = sequences;
+                vector<Fasta_entry> translated;
+
+                if(Settings_handle::st.is("codons") && data_type==Model_factory::dna)
+                {
+                    this->translate_codons(sequences,&translated);
+                    input = &translated;
+                    is_protein = true;
+                }
+
+                Log_output::write_msg("Computing an initial alignment with MAFFT.",0);
+                ma.align_sequences(input);
+
+                Log_output::write_msg("Computing RAxML guidetree for the initial alignment.",0);
+                string tree = rt.infer_phylogeny(input,is_protein,n_threads);
+
+                Tree_node tn;
+                tree = tn.get_rooted_tree(tree);
+
+                Newick_reader nr;
+                root = nr.parenthesis_to_tree(tree);
             }
+            else
+            {
+                Log_output::write_out("\nError: No tree file defined. MAFFT and/or RAxML not found.\n",0);
+                Settings_handle::st.info();
 
-            Log_output::write_msg("Computing an initial alignment with MAFFT.",0);
-            ma.align_sequences(input);
-
-            Log_output::write_msg("Computing RAxML guidetree for the initial alignment.",0);
-            string tree = rt.infer_phylogeny(input,is_protein,n_threads);
-
-            Tree_node tn;
-            tree = tn.get_rooted_tree(tree);
-
-            Newick_reader nr;
-            root = nr.parenthesis_to_tree(tree);
+                exit(1);
+            }
         }
         else
         {
-            Log_output::write_out("\nError: No tree file defined. MAFFT and/or RAxML not found.\n",0);
-            Settings_handle::st.info();
+            BppDist_tree rt;
+            Mafft_alignment ma;
 
-            exit(1);
+            int data_type = fr->check_sequence_data_type(sequences);
+
+            if(reference_alignment && rt.test_executable())
+            {
+                bool is_protein = (data_type==Model_factory::protein);
+
+                vector<Fasta_entry> *input = sequences;
+                vector<Fasta_entry> translated;
+
+                if(Settings_handle::st.is("codons") && data_type==Model_factory::dna)
+                {
+                    this->translate_codons(sequences,&translated);
+                    input = &translated;
+                    is_protein = true;
+                }
+
+                Log_output::write_msg("Computing BppDist guidetree for the given input alignment.",0);
+                string tree = rt.infer_phylogeny(sequences,is_protein,n_threads);
+
+                Tree_node tn;
+                tree = tn.get_rooted_tree(tree);
+
+                Newick_reader nr;
+                root = nr.parenthesis_to_tree(tree);
+            }
+            else if(ma.test_executable() && rt.test_executable())
+            {
+                bool is_protein = (data_type==Model_factory::protein);
+
+                vector<Fasta_entry> *input = sequences;
+                vector<Fasta_entry> translated;
+
+                if(Settings_handle::st.is("codons") && data_type==Model_factory::dna)
+                {
+                    this->translate_codons(sequences,&translated);
+                    input = &translated;
+                    is_protein = true;
+                }
+
+                Log_output::write_msg("Computing an initial alignment with MAFFT.",0);
+                ma.align_sequences(input);
+
+                Log_output::write_msg("Computing BppDist guidetree for the initial alignment.",0);
+//                string tree = rt.infer_phylogeny(input,is_protein,n_threads);
+                string tree = rt.infer_phylogeny(input,is_protein,n_threads);
+
+                Tree_node tn;
+                tree = tn.get_rooted_tree(tree);
+
+                Newick_reader nr;
+                root = nr.parenthesis_to_tree(tree);
+            }
+            else
+            {
+                Log_output::write_out("\nError: No tree file defined. MAFFT and/or BppDist not found.\n",0);
+                Settings_handle::st.info();
+
+                exit(1);
+            }
         }
 
         string outfile =  "outfile";

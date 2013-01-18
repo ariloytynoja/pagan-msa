@@ -968,6 +968,11 @@ void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs,
     entry.name = "consensus";
     entry.sequence = "";
 
+    int min_num_seqs = int( root->get_weighted_number_of_leaves() * (float)Settings_handle::st.get("consensus-minimum-proportion").as<float>() );
+
+    if(min_num_seqs < Settings_handle::st.get("consensus-minimum").as<int>())
+        min_num_seqs = Settings_handle::st.get("consensus-minimum").as<int>();
+
     if(output_type != Fasta_reader::plain_alignment)
     {
 
@@ -1004,7 +1009,7 @@ void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs,
                 }
             }
 
-            if(!included_in_reference && sA+sC+sG+sT<Settings_handle::st.get("consensus-minimum").as<int>())
+            if(!included_in_reference && sA+sC+sG+sT < min_num_seqs)
             {
                 entry.sequence.append("-");
             }

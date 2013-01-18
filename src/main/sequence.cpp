@@ -175,7 +175,7 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
         if(Settings_handle::st.is("454") &&  prev_row > 2  )
         {
             // first edge
-            float weight = 0.9;
+            float weight = 1;
 
             Edge edge( this->get_previous_site_index(),this->get_current_site_index(), weight );
             this->push_back_edge(edge);
@@ -187,7 +187,8 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
             {
                 // second edge
                 int prev_ind = this->get_previous_site()->get_first_bwd_edge()->get_start_site_index();
-                Edge edge_2( prev_ind ,this->get_current_site_index(), 1.0-weight );
+//                Edge edge_2( prev_ind ,this->get_current_site_index(), 1.0-weight );
+                Edge edge_2( prev_ind ,this->get_current_site_index(), 0.9 );
                 this->push_back_edge(edge_2);
 
                 this->get_site_at(prev_ind)->add_new_fwd_edge_index( this->get_current_edge_index() );
@@ -198,7 +199,8 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
             {
                 // second edge
                 int prev_ind = this->get_previous_site()->get_first_bwd_edge()->get_start_site_index();
-                Edge edge_2( prev_ind ,this->get_current_site_index(), 1.0-weight-0.02 );
+//                Edge edge_2( prev_ind ,this->get_current_site_index(), 1.0-weight-0.02 );
+                Edge edge_2( prev_ind ,this->get_current_site_index(), 0.9 );
                 this->push_back_edge(edge_2);
 
                 this->get_site_at(prev_ind)->add_new_fwd_edge_index( this->get_current_edge_index() );
@@ -206,7 +208,8 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
 
                 // third edge
                 int prev_prev_ind = get_site_at(prev_ind)->get_first_bwd_edge()->get_start_site_index();
-                Edge edge_3( prev_prev_ind ,this->get_current_site_index(), 0.02 );
+//                Edge edge_3( prev_prev_ind ,this->get_current_site_index(), 0.02 );
+                Edge edge_3( prev_prev_ind ,this->get_current_site_index(), 0.9 );
                 this->push_back_edge(edge_3);
 
                 this->get_site_at(prev_prev_ind)->add_new_fwd_edge_index( this->get_current_edge_index() );
@@ -214,6 +217,36 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
 
             }
         }
+
+        // If 454 data, correct for homopolymer error
+        //
+        else if(Settings_handle::st.is("homopolymer") &&  prev_row > 2  )
+        {
+            // first edge
+            float weight = 0.25;
+
+            Edge edge( this->get_previous_site_index(),this->get_current_site_index(), 1 );
+            this->push_back_edge(edge);
+
+            this->get_previous_site()->set_first_fwd_edge_index( this->get_current_edge_index() );
+            this->get_current_site()->set_first_bwd_edge_index( this->get_current_edge_index() );
+
+            int prev_ind = this->get_previous_site()->get_first_bwd_edge()->get_start_site_index();
+
+            while(prev_row>2)
+            {
+                Edge edge_2( prev_ind ,this->get_current_site_index(), weight );
+                this->push_back_edge(edge_2);
+
+                this->get_site_at(prev_ind)->add_new_fwd_edge_index( this->get_current_edge_index() );
+                this->get_current_site()->add_new_bwd_edge_index( this->get_current_edge_index() );
+
+                prev_ind = get_site_at(prev_ind)->get_first_bwd_edge()->get_start_site_index();
+
+                prev_row--;
+            }
+        }
+
         else
         {
             Edge edge( this->get_previous_site_index(),this->get_current_site_index() );

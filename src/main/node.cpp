@@ -461,6 +461,11 @@ void Node::add_root_consensus(vector<Fasta_entry> *aligned_sequences)
     entry.name = "consensus";
     entry.comment = "";
 
+    int min_num_seqs = int( this->get_weighted_number_of_leaves() * (float)Settings_handle::st.get("consensus-minimum-proportion").as<float>() );
+
+    if(min_num_seqs < Settings_handle::st.get("consensus-minimum").as<int>())
+        min_num_seqs = Settings_handle::st.get("consensus-minimum").as<int>();
+
     for(int j=1;j<root_length-1;j++)
     {
         Site *site = root->get_site_at(j);
@@ -469,7 +474,7 @@ void Node::add_root_consensus(vector<Fasta_entry> *aligned_sequences)
         int sG = site->get_sumG();
         int sT = site->get_sumT();
 
-        if(sA+sC+sG+sT<Settings_handle::st.get("consensus-minimum").as<int>())
+        if(sA+sC+sG+sT < min_num_seqs)
         {
             entry.sequence.append("-");
         }

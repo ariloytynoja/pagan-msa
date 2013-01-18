@@ -92,6 +92,16 @@ class Reads_aligner
         stable_sort(reads->begin(),reads->end(),Reads_aligner::longer_sequence);
     }
 
+    static bool more_copies(const Fasta_entry& a,const Fasta_entry& b)
+    {
+        return  (a.num_duplicates>b.num_duplicates);
+    }
+
+    void sort_reads_vector_by_duplicate_number(vector<Fasta_entry> *reads)
+    {
+        stable_sort(reads->begin(),reads->end(),Reads_aligner::more_copies);
+    }
+
     static bool nodeIsSmaller(const string& l,const string& r)
     {   char a,b,c,d;
         int vl=0; int vr=0;

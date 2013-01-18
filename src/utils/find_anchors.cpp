@@ -37,6 +37,9 @@ void Find_anchors::find_long_substrings(std::string *seq1,std::string *seq2,std:
     len1 = seq1->length();
     len2 = seq2->length();
 
+//    cout<<*seq1<<endl<<*seq2<<endl<<endl;
+//    cout<<">root\n"<<*seq1<<endl;
+
     char c1[len1];
     char c2[len2];
     char *a[len1+len2];
@@ -152,6 +155,8 @@ void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<in
     int length1 = str1.length();
     int length2 = str2.length();
 
+//    cout<<"\n>S1\n"<<str1<<"\n>S2\n"<<str2<<"\n";
+
     // Has to consider skpped-over gaps as those are in the sequence objects
     //
     vector<int> index1;
@@ -177,12 +182,16 @@ void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<in
     for(vector<Substring_hit>::iterator it = hits->begin();it!=hits->end();it++)
     {
 //        cout<<it->start_site_1<<" "<<it->start_site_2<<" "<<it->length<<" "<<length1<<" "<<length2<<"\n";
-        for(int i=0;i<it->length;i++)
+        int i=0;
+        for(;i<it->length;i++)
         {
             diagonals.at(index1.at(it->start_site_1+i)) = index2.at(it->start_site_2+i);
         }
-    }
 
+        if(it->start_site_1+i < (int)index1.size() && index1.at(it->start_site_1+i) < (int)diagonals.size())
+            diagonals.at(index1.at(it->start_site_1+i)) = -2;
+
+    }
 
 
     int width = Settings_handle::st.get("anchors-offset").as<int>();
@@ -208,7 +217,7 @@ void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<in
         {
             m_count++;
         }
-        else
+        else if(diagonals.at(i)==-2)
         {
             m_count = 0;
         }
@@ -220,6 +229,9 @@ void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<in
         {
             prev_y = y;
         }
+
+//        if(i>0)
+//            cout<<i<<" "<<y1<<" "<<y2<<" "<<prev_y<<"; "<<diagonals.at(i)<<" "<<diagonals.at(i-1)<<" "<<m_count<<endl;
 
         y = min(y,prev_y);
         y = max(y,0);
@@ -248,7 +260,7 @@ void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<in
         {
             m_count++;
         }
-        else
+        else if(diagonals.at(i)==-2)
         {
             m_count = 0;
         }

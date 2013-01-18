@@ -874,6 +874,13 @@ public:
             return left_child->get_number_of_leaves()+right_child->get_number_of_leaves();
     }
 
+    int get_weighted_number_of_leaves()
+    {
+        if(leaf)
+             return this->get_sequence()->get_num_duplicates();
+        else
+            return left_child->get_weighted_number_of_leaves()+right_child->get_weighted_number_of_leaves();
+    }
 
     int get_number_of_read_leaves()
     {
@@ -1092,6 +1099,11 @@ public:
             entry.name = "consensus_"+this->find_first_nonread_left_parent();
             entry.comment = this->find_first_nonread_left_parent();
 
+            int min_num_seqs = int( this->get_weighted_number_of_leaves() * (float)Settings_handle::st.get("consensus-minimum-proportion").as<float>() );
+
+            if(min_num_seqs < Settings_handle::st.get("consensus-minimum").as<int>())
+                min_num_seqs = Settings_handle::st.get("consensus-minimum").as<int>();
+
             if(seq->get_data_type() == Model_factory::dna)
             {
 
@@ -1129,7 +1141,7 @@ public:
                             entry.sequence.append("-");
                         }
                     }
-                    else if(!included_in_reference && sA+sC+sG+sT<Settings_handle::st.get("consensus-minimum").as<int>())
+                    else if(!included_in_reference && sA+sC+sG+sT < min_num_seqs)
                     {
                         entry.sequence.append("-");
                     }
@@ -1201,7 +1213,7 @@ public:
                             entry.sequence.append("-");
                         }
                     }
-                    else if(!included_in_reference && sAmino<Settings_handle::st.get("consensus-minimum").as<int>())
+                    else if(!included_in_reference && sAmino < min_num_seqs)
                     {
                         entry.sequence.append("-");
                     }

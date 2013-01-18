@@ -18,23 +18,23 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef MAFFT_ALIGNMENT_H
-#define MAFFT_ALIGNMENT_H
+#ifndef BPPDIST_TREE_H
+#define BPPDIST_TREE_H
 
+#include "utils/settings_handle.h"
+#include "utils/fasta_entry.h"
 #include <fstream>
 #include <string>
 #include <vector>
 #include <sys/stat.h>
-#include "utils/settings_handle.h"
-#include "utils/fasta_entry.h"
-
-namespace ppa{
 
 using namespace std;
 
-class Mafft_alignment
+namespace ppa {
+
+class BppDist_tree
 {
-    string mafftpath;
+    string bppdistpath;
 
     std::string get_temp_dir()
     {
@@ -50,51 +50,14 @@ class Mafft_alignment
         return tmp_dir;
     }
 
-    std::string remove_last_whitespaces(const std::string & s)
-    {
-        // Copy sequence
-        std::string st (s);
-
-        while (st.size() > 0 && this->is_whitespace_character(st[st.size() - 1]))
-        {
-            st.erase(st.end() - 1);
-        }
-
-        // Send result
-        return st;
-    }
-
-    std::string remove_whitespaces(const std::string & s)
-    {
-        std::string st="";
-
-        for (unsigned int i = 0; i < s.size(); i++)
-        {
-            if (!this->is_whitespace_character(s[i]))
-            {
-                st+=s[i];
-            }
-        }
-        return st;
-    }
-
-    bool is_whitespace_character(char c)
-    {
-        return (c == ' ')
-               || (c == '\t')
-               || (c == '\n')
-               || (c == '\r')
-               || (c == '\f');
-    }
-
     void delete_files(int r);
 
 public:
-    Mafft_alignment();
+    BppDist_tree();
     bool test_executable();
-    void align_sequences(vector<Fasta_entry> *sequences);
-    void align_sequences_fifo(vector<Fasta_entry> *sequences);
+    string infer_phylogeny(std::vector<Fasta_entry> *sequences,bool is_protein, int n_threads);
+    string infer_phylogeny_fifo(std::vector<Fasta_entry> *sequences,bool is_protein, int n_threads);
 };
 }
 
-#endif // MAFFT_ALIGNMENT_H
+#endif // BPPDIST_TREE_H

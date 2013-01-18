@@ -165,10 +165,12 @@ protected:
 
         if(Settings_handle::st.is("use-duplicate-weigths"))
         {
-            ndl = left->get_num_duplicates();
-            ndr = right->get_num_duplicates();
+            if(left->is_terminal_sequence())
+                ndl = left->get_num_duplicates();
+            if(right->is_terminal_sequence())
+                ndr = right->get_num_duplicates();
         }
-
+//        cout<<"\n"<<l_pos<<" "<<ndl<<"; "<<r_pos<<" "<<ndr<<" "<<left->is_read_sequence()<<" "<<right->is_read_sequence()<<endl;
         if(!is_dna)
         {
             // old->
@@ -378,7 +380,7 @@ protected:
             int sC = lsC+rsC;
             int sG = lsG+rsG;
             int sT = lsT+rsT;
-
+//            cout<<sA<<","<<sC<<","<<sG<<","<<sT<<"\n";
             site->add_sumA(sA);
             site->add_sumC(sC);
             site->add_sumG(sG);

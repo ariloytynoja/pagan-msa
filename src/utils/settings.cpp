@@ -34,8 +34,8 @@ Settings::Settings(){}
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.48;
-    date = "13 December, 2012";
+    version = 0.49;
+    date = "18 January, 2013";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -47,6 +47,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     generic.add_options()
         ("outfile", po::value<string>(), "alignment outfile")
         ("outformat", po::value<string>(), "alignment format [fasta,nexus,paml,phylipi,phylips,raxml]")
+        ("raxml-tree","use RAxML for guide tree computation [default BppDist]")
         ("translate", "translate DNA input to protein")
         ("mt-translate", "translate mtDNA input to protein")
         ("output-ancestors", "include ancestors in outfile")
@@ -73,6 +74,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("ref-treefile", po::value<string>(), "reference tree file (NH/NHX)")
         ("queryfile", po::value<string>(), "query file (FASTA/FASTQ)")
         ("454", "correct homopolymer error (DNA)")
+        ("homopolymer", "correct homopolymer error (more agressively)")
         ("use-consensus", "use consensus for query ancestors")
         ("build-contigs", "build contigs of query clusters")
         ("test-every-node","test every node for each query")
@@ -86,6 +88,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("pacbio","correct for missing data in PacBio reads (DNA)")
         ("show-contig-ancestor", "fill contig gaps with ancestral sequence")
         ("consensus-minimum", po::value<int>()->default_value(5), "threshold for inclusion in contig")
+        ("consensus-minimum-proportion", po::value<float>()->default_value(0.5,"0.5"), "threshold for inclusion in contig")
         ("test-every-internal-node","test every internal node for each query")
         ("test-every-terminal-node","test every terminal node for each query")
         ("one-placement-only", "place only once despite equally good hits")

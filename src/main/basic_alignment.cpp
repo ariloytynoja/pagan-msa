@@ -136,8 +136,10 @@ void Basic_alignment::create_ancestral_sequence(Sequence *sequence, vector<Path_
             int rc = right->get_site_at(r_pos)->get_state();
             site.set_state( model->parsimony_state(lc,rc) );
 
+            int sttmp = site.get_state();
             if(is_reads_sequence && (Settings_handle::st.is("use-consensus") || Settings_handle::st.is("build-contigs") ))
                 this->compute_site_consensus(&site,left,l_pos,right,r_pos, is_dna);
+//            cout<<"b "<<sttmp<<"; a "<<site.get_state()<<"\n";
 
             site.set_path_state( Site::matched );
 

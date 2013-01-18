@@ -36,7 +36,8 @@ SOURCES += main.cpp \
     utils/input_output_parser.cpp \
     utils/mafft_alignment.cpp \
     utils/raxml_tree.cpp \
-    utils/tree_node.cpp
+    utils/tree_node.cpp \
+    utils/bppdist_tree.cpp
 HEADERS += utils/text_utils.h \
     main/node.h \
     main/sequence.h \
@@ -66,7 +67,8 @@ HEADERS += utils/text_utils.h \
     utils/input_output_parser.h \
     utils/mafft_alignment.h \
     utils/raxml_tree.h \
-    utils/tree_node.h
+    utils/tree_node.h \
+    utils/bppdist_tree.h
 LIBS += -lboost_program_options-mt -lboost_regex-mt -lboost_thread-mt -lrt
 INCLUDEPATH += /usr/include
 OTHER_FILES += missing_things.txt \

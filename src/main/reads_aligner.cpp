@@ -33,6 +33,16 @@ Reads_aligner::Reads_aligner(){}
 
 void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 {
+
+    // Handle also the first one correctly
+    //
+    if(!Settings_handle::st.is("ref-seqfile"))
+    {
+        root->get_sequence()->is_read_sequence(true);
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////
+
     string file = Settings_handle::st.get("queryfile").as<string>();
 
     Log_output::write_header("Aligning reads ",0);
@@ -54,6 +64,8 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
     if(!fr.check_alphabet(&reads,data_type))
         Log_output::write_out(" Warning: Illegal characters in input reads sequences removed!\n",2);
+
+    /////////////////////////////////////////////////////////////////////////////////////////
 
     // Merge overlapping reads
     //
@@ -82,6 +94,8 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
         }
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////////
+
     // Trim read ends
     //
     if(Settings_handle::st.is("trim-read-ends"))
@@ -103,6 +117,15 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     {
         this->add_trimming_comment( &reads );
     }
+
+    /////////////////////////////////////////////////////////////////////////////////////////
+
+    if(Settings_handle::st.is("use-duplicate-weigths"))
+    {
+        this->sort_reads_vector_by_duplicate_number( &reads );
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////
 
     // No search for optimal node or TID tags in the tree
     //

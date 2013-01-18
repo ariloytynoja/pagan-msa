@@ -99,7 +99,7 @@ string RAxML_tree::infer_phylogeny(std::vector<Fasta_entry> *sequences,bool is_p
         if(!m_file && !r_file)
         {
             m_output.open( m_name.str().c_str(), (ios::out) );
-	    break;
+            break;
         }
         r = rand();
     }
