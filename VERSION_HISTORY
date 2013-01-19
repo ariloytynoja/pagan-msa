@@ -1,3 +1,9 @@
+v.0.49
+Still in development:
+ - new option to create a distance tree using bpp_dist package.
+ - significant changes (and improvements) for pileup alignment of 454 reads.
+
+
 v.0.48
 - new option: --test-every-terminal-node
 
