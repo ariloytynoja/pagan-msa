@@ -57,14 +57,14 @@ public:
 
     void set_chars_by_line(int n) { chars_by_line = n; }
 
-    void read(istream & input, vector<Fasta_entry> & seqs, bool short_names) const throw (Exception);
-    void read(const string & path, vector<Fasta_entry> & seqs, bool short_names) const throw (Exception)
+    void read(istream & input, vector<Fasta_entry> & seqs, bool short_names, bool degap) const throw (Exception);
+    void read(const string & path, vector<Fasta_entry> & seqs, bool short_names=false, bool degap=false) const throw (Exception)
     {
         ifstream input(path.c_str(), ios::in);
-        read(input, seqs, short_names);
+        read(input, seqs, short_names,degap);
         input.close();
     }
-    void read_fasta(istream & input, vector<Fasta_entry> & seqs, bool short_names) const throw (Exception);
+    void read_fasta(istream & input, vector<Fasta_entry> & seqs, bool short_names=false, bool degap=false) const throw (Exception);
     void read_fastq(istream & input, vector<Fasta_entry> & seqs) const throw (Exception);
     void read_graph(istream & input, vector<Fasta_entry> & seqs, bool short_names) const throw (Exception);
 
@@ -124,6 +124,7 @@ public:
     }
 
     void remove_gap_only_columns(vector<Fasta_entry> *sequences)  throw (Exception);
+    void remove_gaps(string *seq) const throw (Exception);
 
     bool check_alphabet(vector<Fasta_entry> *sequences, int data_type = -1)  throw (Exception);
     bool check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes) const;

@@ -53,10 +53,9 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
     //
     this->set_basic_settings();
     if(!Settings_handle::st.is("perfect-reference"))
-    {
         this->set_reference_alignment_settings();
-    }
 
+    this->set_additional_settings();
 
     // Set the edge weighting scheme, define the dynamic-programming matrices
     //

@@ -82,7 +82,7 @@ void Input_output_parser::parse_input_sequences(Fasta_reader *fr,vector<Fasta_en
 
         try
         {
-            fr->read(seqfile, *sequences, true);
+            fr->read(seqfile, *sequences, true, true);
         }
         catch (ppa::IOException& e) {
             Log_output::write_out("Error reading the sequence file '"+seqfile+"'.\nExiting.\n\n",0);
@@ -96,7 +96,7 @@ void Input_output_parser::parse_input_sequences(Fasta_reader *fr,vector<Fasta_en
 
         try
         {
-            fr->read(seqfile, *sequences, true);
+            fr->read(seqfile, *sequences, true, false);
         }
         catch (ppa::IOException& e) {
             Log_output::write_out("Error reading the reference alignment  file '"+seqfile+"'.\nExiting.\n\n",0);
@@ -112,7 +112,7 @@ void Input_output_parser::parse_input_sequences(Fasta_reader *fr,vector<Fasta_en
 
         try
         {
-            fr->read(seqfile, *sequences, true);
+            fr->read(seqfile, *sequences, true,true);
         }
         catch (ppa::IOException& e) {
             Log_output::write_out("Error reading the queryfile '"+seqfile+"'.\nExiting.\n\n",0);
@@ -132,7 +132,7 @@ void Input_output_parser::parse_input_sequences(Fasta_reader *fr,vector<Fasta_en
 
         try
         {
-            fr->read(seqfile, *sequences, true);
+            fr->read(seqfile, *sequences, true,true);
         }
         catch (ppa::IOException& e) {
             Log_output::write_out("Error reading the queryfile '"+seqfile+"'.\nExiting.\n\n",0);

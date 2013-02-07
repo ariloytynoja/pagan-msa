@@ -550,46 +550,15 @@ protected:
         weighted_branch_skip_penalty = false; // by default, use penalty *per node*
 
         max_allowed_skip_distance = 0.5;
-        if(Settings_handle::st.is("branch-length-confirm-insertion"))
-            max_allowed_skip_distance = Settings_handle::st.get("branch-length-confirm-insertion").as<float>();
-
         max_allowed_skip_branches = 10;
-        if(Settings_handle::st.is("any-skips-confirm-insertion"))
-            max_allowed_skip_branches = Settings_handle::st.get("any-skips-confirm-insertion").as<int>();
-
         max_allowed_match_skip_branches = 5;
-        if(Settings_handle::st.is("match-skips-confirm-insertion"))
-            max_allowed_match_skip_branches = Settings_handle::st.get("match-skips-confirm-insertion").as<int>();
 
         branch_skip_weight = 1;
-        if(Settings_handle::st.is("branch-skip-weight-per-distance"))
-        {
-            branch_skip_weight = Settings_handle::st.get("branch-skip-weight-per-distance").as<float>();
-            weighted_branch_skip_penalty = true;
-        }
-
         branch_skip_probability = 0.2;
-        if(Settings_handle::st.is("branch-skip-penalty-per-branch"))
-        {
-            branch_skip_probability = Settings_handle::st.get("branch-skip-penalty-per-branch").as<float>();
-            weighted_branch_skip_penalty = false;
-        }
 
         weight_edges = false;
-        if( Settings_handle::st.is("weight-sampled-edges") && Settings_handle::st.get("sample-additional-paths").as<int>() > 0)
-            weight_edges = true;
-
         compute_full_score = false;
-        if( Settings_handle::st.is("full-probability") ||
-            Settings_handle::st.is("mpost-posterior-plot-file") ||
-            Settings_handle::st.is("sample-path") ||
-            Settings_handle::st.get("sample-additional-paths").as<int>() > 0 )
-            compute_full_score = true;
-
         no_terminal_edges = false;
-        if( Settings_handle::st.is("no-terminal-edges") )
-            no_terminal_edges = true;
-
         pair_end_reads = false;
 
     }
@@ -615,6 +584,42 @@ protected:
         max_allowed_skip_distance = 5;
         max_allowed_skip_branches = 50000;
         max_allowed_match_skip_branches = 50000;
+    }
+
+    void set_additional_settings()
+    {
+        if(Settings_handle::st.is("branch-length-confirm-insertion"))
+            max_allowed_skip_distance = Settings_handle::st.get("branch-length-confirm-insertion").as<float>();
+
+        if(Settings_handle::st.is("any-skips-confirm-insertion"))
+            max_allowed_skip_branches = Settings_handle::st.get("any-skips-confirm-insertion").as<int>();
+
+        if(Settings_handle::st.is("match-skips-confirm-insertion"))
+            max_allowed_match_skip_branches = Settings_handle::st.get("match-skips-confirm-insertion").as<int>();
+
+        if(Settings_handle::st.is("branch-skip-weight-per-distance"))
+        {
+            branch_skip_weight = Settings_handle::st.get("branch-skip-weight-per-distance").as<float>();
+            weighted_branch_skip_penalty = true;
+        }
+
+        if(Settings_handle::st.is("branch-skip-penalty-per-branch"))
+        {
+            branch_skip_probability = Settings_handle::st.get("branch-skip-penalty-per-branch").as<float>();
+            weighted_branch_skip_penalty = false;
+        }
+
+        if( Settings_handle::st.is("weight-sampled-edges") && Settings_handle::st.get("sample-additional-paths").as<int>() > 0)
+            weight_edges = true;
+
+        if( Settings_handle::st.is("full-probability") ||
+            Settings_handle::st.is("mpost-posterior-plot-file") ||
+            Settings_handle::st.is("sample-path") ||
+            Settings_handle::st.get("sample-additional-paths").as<int>() > 0 )
+            compute_full_score = true;
+
+        if( Settings_handle::st.is("no-terminal-edges") )
+            no_terminal_edges = true;
     }
 
     /********************************************/

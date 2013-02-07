@@ -220,7 +220,7 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
 
         // If 454 data, correct for homopolymer error
         //
-        else if(Settings_handle::st.is("homopolymer") &&  prev_row > 2  )
+        else if(Settings_handle::st.is("homopolymer") &&  prev_row >= 2  )
         {
             // first edge
             float weight = 0.25;
@@ -233,7 +233,7 @@ void Sequence::create_default_sequence(Fasta_entry &seq_entry)
 
             int prev_ind = this->get_previous_site()->get_first_bwd_edge()->get_start_site_index();
 
-            while(prev_row>2)
+            while(prev_row>=2)
             {
                 Edge edge_2( prev_ind ,this->get_current_site_index(), weight );
                 this->push_back_edge(edge_2);

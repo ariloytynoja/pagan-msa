@@ -77,7 +77,7 @@ using namespace ppa;
 
 /****************************************************************************************/
 
-void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_names = false) const throw (Exception)
+void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_names, bool degap) const throw (Exception)
 {
     if (!input) { throw IOException ("Fasta_reader::read. Failed to open file"); }
 
@@ -91,7 +91,7 @@ void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_
     if(c=='>')
     {
         input.unget();
-        this->read_fasta(input,seqs,short_names);
+        this->read_fasta(input,seqs,short_names,degap);
     }
     else if(c=='@')
     {
@@ -135,7 +135,7 @@ void Fasta_reader::read(istream & input, vector<Fasta_entry> & seqs, bool short_
 
 }
 
-void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool short_names = false) const throw (Exception)
+void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool short_names, bool degap) const throw (Exception)
 {
 
     string temp, name, comment, tmp_tid, sequence = "";  // Initialization
@@ -155,6 +155,9 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
             if((name != "") && (sequence != ""))
             {
                 transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
+
+                if(degap)
+                    this->remove_gaps(&sequence);
 
                 Fasta_entry fe;                               
                 fe.name = name;
@@ -216,6 +219,9 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
     if((name != "") && (sequence != ""))
     {
         transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
+
+        if(degap)
+            this->remove_gaps(&sequence);
 
         Fasta_entry fe;
         fe.name = name;
@@ -1199,6 +1205,21 @@ void Fasta_reader::remove_gap_only_columns(vector<Fasta_entry> *sequences)  thro
         }
     }
 }
+
+/****************************************************************************************/
+
+void Fasta_reader::remove_gaps(string *seq) const throw (Exception)
+{
+    for(int i=0;i<seq->length();)
+    {
+        if(seq->at(i) == '-')
+            seq->erase(i,1);
+        else
+            i++;
+    }
+}
+
+/****************************************************************************************/
 
 bool Fasta_reader::check_alphabet(vector<Fasta_entry> * sequences,int data_type) throw (Exception)
 {

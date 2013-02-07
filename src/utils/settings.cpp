@@ -156,7 +156,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("query-cluster-attempts", po::value<int>()->default_value(1),"attempts to find overlap")
         ("find-cluster-reference","find optimal cluster reference")
         ("inlude-parent-in-contig", "include also ancestral parent in contigs")
-        ("use-duplicate-weigths", "use NumDuplicates=# to weight consensus counts")
+        ("use-duplicate-weights", "use NumDuplicates=# to weight consensus counts")
+        ("no-read-ordering","do not order reads by duplicate number")
         ("output-consensus", "output contig consensus alone")
     ;
 

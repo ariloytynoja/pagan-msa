@@ -120,7 +120,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
     /////////////////////////////////////////////////////////////////////////////////////////
 
-    if(Settings_handle::st.is("use-duplicate-weigths"))
+    if(Settings_handle::st.is("use-duplicate-weigths") && not Settings_handle::st.is("no-read-ordering"))
     {
         this->sort_reads_vector_by_duplicate_number( &reads );
     }
