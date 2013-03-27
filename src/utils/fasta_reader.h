@@ -125,6 +125,7 @@ public:
 
     void remove_gap_only_columns(vector<Fasta_entry> *sequences)  throw (Exception);
     void remove_gaps(string *seq) const throw (Exception);
+    void remove_gaps(vector<Fasta_entry> *seqs) const throw (Exception);
 
     bool check_alphabet(vector<Fasta_entry> *sequences, int data_type = -1)  throw (Exception);
     bool check_sequence_names(const vector<Fasta_entry> *sequences,const vector<Node*> *leaf_nodes) const;

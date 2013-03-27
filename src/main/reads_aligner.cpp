@@ -54,6 +54,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     try
     {
         fr.read(file, reads, true);
+        fr.remove_gaps(&reads);
     }
     catch (ppa::IOException& e) {
         Log_output::write_out("Error reading the reads file '"+file+"'.\nExiting.\n\n",0);

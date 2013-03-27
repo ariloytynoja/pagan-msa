@@ -1219,6 +1219,13 @@ void Fasta_reader::remove_gaps(string *seq) const throw (Exception)
     }
 }
 
+void Fasta_reader::remove_gaps(vector<Fasta_entry> *seqs) const throw (Exception)
+{
+    for(int i=0;i<seqs->size();i++)
+        this->remove_gaps(&seqs->at(i).sequence);
+
+}
+
 /****************************************************************************************/
 
 bool Fasta_reader::check_alphabet(vector<Fasta_entry> * sequences,int data_type) throw (Exception)
