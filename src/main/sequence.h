@@ -241,7 +241,7 @@ struct Site
     int branch_count_since_last_used;
     float branch_distance_since_last_used;
 
-    int sumA, sumC, sumG, sumT,sumAmino;
+    int sumA, sumC, sumG, sumT, sumAmino;
     int sumAA[20];
 public:
     Site(vector<Edge> *e,int type=Site::real_site,int p_state=Site::terminal):index(-1),character_state(-1),character_symbol("0"),

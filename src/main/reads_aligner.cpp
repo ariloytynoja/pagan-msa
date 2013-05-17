@@ -66,93 +66,56 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     if(!fr.check_alphabet(&reads,data_type))
         Log_output::write_out(" Warning: Illegal characters in input reads sequences removed!\n",2);
 
-    /////////////////////////////////////////////////////////////////////////////////////////
 
-    // Merge overlapping reads
+    // Merge overlapping and trim reads if selected, otherwise jsut update the sequence comment
     //
-    if( Settings_handle::st.is("overlap-pair-end") )
-    {
-        if(Settings_handle::st.is("trim-before-merge"))
-        {
-            fr.trim_fastq_reads(&reads);
-         }
+    this->merge_and_trim( mf, &fr,  &reads );
 
-        this->merge_paired_reads( &reads, mf );
 
-        if(Settings_handle::st.is("overlap-merge-file"))
-        {
-
-            string path = Settings_handle::st.get("overlap-merge-file").as<string>();
-
-            Log_output::write_out("Reads output file: "+path+".fastq\n",1);
-
-            fr.write_fastq(path,reads);
-        }
-        if( Settings_handle::st.is("pair-end") )
-        {
-            Log_output::write_out(" Warning: both '--overlap-pair-end' and '--pair-end' options defined.\n"
-                    " Pairing of overlapping reads may cause duplicated sequence regions.\n\n",2);
-        }
-    }
-
-    /////////////////////////////////////////////////////////////////////////////////////////
-
-    // Trim read ends
+    // Sort merged reads by copy number
     //
-    if(Settings_handle::st.is("trim-read-ends"))
-    {
-        Log_output::write_header("Aligning reads: trim read ends",0);
-        fr.trim_fastq_reads(&reads);
-    }
-
-    // Couple paired reads
-    //
-    if( Settings_handle::st.is("pair-end") )
-    {
-        Log_output::write_header("Aligning reads: find read pairs",0);
-        this->find_paired_reads( &reads );
-    }
-
-    // Or just add the comments..
-    else
-    {
-        this->add_trimming_comment( &reads );
-    }
-
-    /////////////////////////////////////////////////////////////////////////////////////////
-
     if(Settings_handle::st.is("use-duplicate-weigths") && not Settings_handle::st.is("no-read-ordering"))
     {
         this->sort_reads_vector_by_duplicate_number( &reads );
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////
 
-    // No search for optimal node or TID tags in the tree
-    //
-    if(Settings_handle::st.is("align-reads-at-root") ||
-            ( Settings_handle::st.is("pileup-alignment") && !Settings_handle::st.is("compare-reverse") && !Settings_handle::st.is("find-best-orf")) )
-    {
-        Log_output::write_header("Aligning reads: simple placement",0);
-        this->loop_simple_placement(root,&reads,mf,count);
-    }
+    //////////////////////////////////////////////////////////////////
+    //                                                              //
+    //     Different read placement options  (until now)            //
+    //                                                              //
+    //////////////////////////////////////////////////////////////////
 
-    // alignment of sga cluster; can be reverse
-    else if(Settings_handle::st.is("compare-reverse"))
+
+    // Alignment of RNA-seq clusters; can be reverse (currently just pileup)
+    if( Settings_handle::st.is("pileup-alignment") && Settings_handle::st.is("compare-reverse"))
     {
         Log_output::write_header("Aligning reads: placement with reverse comparison",0);
         this->loop_two_strand_placement(root,&reads,mf,count);
     }
 
-    // alignment of translated sga cluster; can be reverse
-    else if(Settings_handle::st.is("find-best-orf"))
+    // Alignment of translated RNA-seq clusters; can be reverse (currently just pileup)
+    else if( Settings_handle::st.is("pileup-alignment") && Settings_handle::st.is("find-best-orf"))
     {
         Log_output::write_header("Aligning reads: placement with ORF search",0);
         this->loop_translated_placement(root,&reads,mf,count);
     }
 
-    // Proper placement
-    //
+    // Pileup: no search for optimal node or TID tags in the tree
+    else if( Settings_handle::st.is("align-reads-at-root") || Settings_handle::st.is("pileup-alignment") )
+    {
+        Log_output::write_header("Aligning reads: simple placement",0);
+        this->loop_simple_placement(root,&reads,mf,count);
+    }
+
+    // NEW!
+    else if(Settings_handle::st.is("stepwise-search"))
+    {
+        Log_output::write_header("Aligning reads: stepwise search",0);
+
+    }
+
+    // Default placement
     else
     {
         Log_output::write_header("Aligning reads: default placement",0);
@@ -657,6 +620,17 @@ void Reads_aligner::define_translation_tables()
         }
     }
 }
+
+void Reads_aligner::loop_stepwise_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
+{
+    bool single_ref_sequence = false;
+    if(root->get_number_of_leaves()==1)
+        single_ref_sequence = true;
+
+    global_root = root;
+
+}
+
 void Reads_aligner::loop_default_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
 {
     bool single_ref_sequence = false;
@@ -668,7 +642,7 @@ void Reads_aligner::loop_default_placement(Node *root, vector<Fasta_entry> *read
     // vector of node names giving the best node for each read
     //
 
-    if(Settings_handle::st.is("exonerate-once") || Settings_handle::st.is("very-fast-placement"))
+    if(Settings_handle::st.is("very-fast-placement"))
         this->find_nodes_for_all_reads_together(root, reads, mf);
     else if(Settings_handle::st.is("fast-placement"))
         this->find_nodes_for_all_reads(root, reads, mf);
@@ -881,8 +855,51 @@ void Reads_aligner::merge_reads_only()
     fr.write_fastq(path,reads);
 }
 
-void Reads_aligner::add_trimming_comment(vector<Fasta_entry> *reads)
+void Reads_aligner::merge_and_trim(Model_factory *mf, Fasta_reader *fr, vector<Fasta_entry> *reads)
 {
+
+    // Merge overlapping reads
+    //
+    if( Settings_handle::st.is("overlap-pair-end") )
+    {
+        if(Settings_handle::st.is("trim-before-merge"))
+        {
+            fr->trim_fastq_reads(reads);
+         }
+
+        this->merge_paired_reads( reads, mf );
+
+        if(Settings_handle::st.is("overlap-merge-file"))
+        {
+
+            string path = Settings_handle::st.get("overlap-merge-file").as<string>();
+
+            Log_output::write_out("Reads output file: "+path+".fastq\n",1);
+
+            fr->write_fastq(path,*reads);
+        }
+        if( Settings_handle::st.is("pair-end") )
+        {
+            Log_output::write_out(" Warning: both '--overlap-pair-end' and '--pair-end' options defined.\n"
+                    " Pairing of overlapping reads may cause duplicated sequence regions.\n\n",2);
+        }
+    }
+
+
+    if(Settings_handle::st.is("trim-read-ends"))
+    {
+        Log_output::write_header("Aligning reads: trim read ends",0);
+        fr->trim_fastq_reads( reads );
+    }
+
+    // Couple paired reads
+    //
+    if( Settings_handle::st.is("pair-end") )
+    {
+        Log_output::write_header("Aligning reads: find read pairs",0);
+        this->find_paired_reads( reads );
+    }
+
     vector<Fasta_entry>::iterator fit1 = reads->begin();
 
     for(;fit1 != reads->end();fit1++)
@@ -1147,17 +1164,6 @@ void Reads_aligner::copy_node_details(Node *reads_node,Fasta_entry *read,bool tu
 
 }
 
-//void Reads_aligner::copy_orf_details(Node *reads_node,Fasta_entry *read,Orf *orf,bool turn_revcomp)
-//{
-//    double r_dist = Settings_handle::st.get("query-distance").as<float>();
-
-//    reads_node->set_distance_to_parent(r_dist);
-//    reads_node->set_name(read->name);
-//    reads_node->add_name_comment(read->comment);
-//    reads_node->add_sequence( *orf, read->data_type, false, true, turn_revcomp);
-//    reads_node->get_sequence()->is_read_sequence(true);
-
-//}
 
 bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, string ref_node_name)
 {
@@ -1446,29 +1452,34 @@ bool Reads_aligner::correct_sites_index(Node *current_root, string ref_node_name
 
 }
 
+void Reads_aligner::get_target_node_names(Node *root,multimap<string,string> *tid_nodes, bool *ignore_tid_tags)
+{
+    if(Settings_handle::st.is("test-every-internal-node"))
+    {
+        root->get_internal_node_names(tid_nodes);
+    }
+    else if(Settings_handle::st.is("test-every-terminal-node"))
+    {
+        root->get_terminal_node_names(tid_nodes);
+    }
+    else if(Settings_handle::st.is("test-every-node"))
+    {
+        root->get_node_names(tid_nodes);
+    }
+    else
+    {
+        root->get_node_names_with_tid_tag(tid_nodes);
+        *ignore_tid_tags = false;
+    }
+}
+
 void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
 {
 
     multimap<string,string> tid_nodes;
     bool ignore_tid_tags = true;
 
-    if(Settings_handle::st.is("test-every-internal-node"))
-    {
-        root->get_internal_node_names(&tid_nodes);
-    }
-    else if(Settings_handle::st.is("test-every-terminal-node"))
-    {
-        root->get_terminal_node_names(&tid_nodes);
-    }
-    else if(Settings_handle::st.is("test-every-node"))
-    {
-        root->get_node_names(&tid_nodes);
-    }
-    else
-    {
-        root->get_node_names_with_tid_tag(&tid_nodes);
-        ignore_tid_tags = false;
-    }
+    this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
 
     ofstream pl_output;
 
@@ -1476,6 +1487,14 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
     {
         string fname = Settings_handle::st.get("placement-file").as<string>();
         pl_output.open(fname.append(".tsv").c_str());
+    }
+
+    Exonerate_queries er;
+    bool has_exonerate = true;
+    if(!er.test_executable())
+    {
+        has_exonerate = false;
+        Log_output::write_out("The executable for exonerate not found! The fast placement search not used!",0);
     }
 
     for(int i=0;i<(int)reads->size();i++)
@@ -1492,96 +1511,25 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
 
         map<string,hit> exonerate_hits;
 
-        if(Settings_handle::st.is("use-exonerate-local") || Settings_handle::st.is("fast-placement")  || Settings_handle::st.is("very-fast-placement") )
+        if(has_exonerate && Settings_handle::st.is("use-exonerate-local") )
         {
-            Exonerate_queries er;
-            if(!er.test_executable())
-                Log_output::write_out("The executable for exonerate not found! The fast placement search not used!",0);
-            else
-            {
-                tid_nodes.clear();
+            tid_nodes.clear();
+            this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
 
-                if(Settings_handle::st.is("test-every-internal-node"))
-                {
-                    root->get_internal_node_names(&tid_nodes);
-                }
-                else if(Settings_handle::st.is("test-every-terminal-node"))
-                {
-                    root->get_terminal_node_names(&tid_nodes);
-                }
-                else if(Settings_handle::st.is("test-every-node"))
-                {
-                    root->get_node_names(&tid_nodes);
-                }
-                else
-                {
-                    root->get_node_names_with_tid_tag(&tid_nodes);
-                    ignore_tid_tags = false;
-                }
+            if(tid_nodes.size()>1)
+                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits, true,ignore_tid_tags);
 
-
-                if(tid_nodes.size()>0)
-                    er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits, true,ignore_tid_tags);
-
-                if(Settings_handle::st.is("use-exonerate-gapped") || Settings_handle::st.is("fast-placement"))
-                {
-                    if(Settings_handle::st.is("fast-placement") && tid_nodes.size()==0)
-                    {
-                        tid_nodes.clear();
-                        reads->at(i).node_to_align="";
-
-                        if(Settings_handle::st.is("test-every-internal-node"))
-                        {
-                            root->get_internal_node_names(&tid_nodes);
-                        }
-                        else if(Settings_handle::st.is("test-every-terminal-node"))
-                        {
-                            root->get_terminal_node_names(&tid_nodes);
-                        }
-                        else if(Settings_handle::st.is("test-every-node"))
-                        {
-                            root->get_node_names(&tid_nodes);
-                        }
-                        else
-                        {
-                            root->get_node_names_with_tid_tag(&tid_nodes);
-                        }
-                    }
-                    if(tid_nodes.size()>1)
-                        er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
-                }
-            }
+            if(tid_nodes.size()>1 && Settings_handle::st.is("use-exonerate-gapped"))
+                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
         }
-        else if(Settings_handle::st.is("use-exonerate-gapped"))
+
+        else if(has_exonerate && Settings_handle::st.is("use-exonerate-gapped"))
         {
-            Exonerate_queries er;
-            if(!er.test_executable())
-                Log_output::write_out("The executable for exonerate not found! The option '--exonerate-reads-gapped' not used!",0);
-            else
-            {
-                tid_nodes.clear();
+            tid_nodes.clear();
+            this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
 
-                if(Settings_handle::st.is("test-every-node"))
-                {
-                    root->get_node_names(&tid_nodes);
-                }
-                else if(Settings_handle::st.is("test-every-terminal-node"))
-                {
-                    root->get_terminal_node_names(&tid_nodes);
-                }
-                else if(Settings_handle::st.is("test-every-internal-node"))
-                {
-                    root->get_internal_node_names(&tid_nodes);
-                }
-                else
-                {
-                    root->get_node_names_with_tid_tag(&tid_nodes);
-                    ignore_tid_tags = false;
-                }
-
-                if(tid_nodes.size()>0)
-                    er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
-            }
+            if(tid_nodes.size()>1)
+                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
         }
 
         // Discarded by Exonerate
@@ -1593,23 +1541,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                 reads->at(i).node_to_align == "";
                 tid_nodes.clear();
 
-                if(Settings_handle::st.is("test-every-node"))
-                {
-                    root->get_node_names(&tid_nodes);
-                }
-                else if(Settings_handle::st.is("test-every-terminal-node"))
-                {
-                    root->get_terminal_node_names(&tid_nodes);
-                }
-                else if(Settings_handle::st.is("test-every-internal-node"))
-                {
-                    root->get_internal_node_names(&tid_nodes);
-                }
-                else
-                {
-                    root->get_node_names_with_tid_tag(&tid_nodes);
-                    ignore_tid_tags = false;
-                }
+                this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
             }
             else
             {
@@ -1624,7 +1556,6 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
         // Has TID or exhaustive search
         if(tid != "")
         {
-
             int matches = tid_nodes.count(tid);
 
             if( ignore_tid_tags )
@@ -1675,8 +1606,6 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                         reads->at(i).local_qend = h.q_end;
                         reads->at(i).local_tstart = h.t_start;
                         reads->at(i).local_tend = h.t_end;
-//                        if(Settings_handle::st.is("use-exonerate-anchors"))
-//                          reads->at(i).use_local  = true;
                     }
 
                     if(Settings_handle::st.is("placement-file"))
@@ -1820,24 +1749,7 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
     multimap<string,string> all_tid_nodes;
     bool ignore_tid_tags = true;
 
-    if(Settings_handle::st.is("test-every-internal-node"))
-    {
-        root->get_internal_node_names(&all_tid_nodes);
-    }
-    else if(Settings_handle::st.is("test-every-terminal-node"))
-    {
-        root->get_terminal_node_names(&all_tid_nodes);
-    }
-    else if(Settings_handle::st.is("test-every-node"))
-    {
-        root->get_node_names(&all_tid_nodes);
-    }
-    else
-    {
-        root->get_node_names_with_tid_tag(&all_tid_nodes);
-        ignore_tid_tags = false;
-    }
-
+    this->get_target_node_names(root,&all_tid_nodes,&ignore_tid_tags);
 
     //
     // Call Exonerate to reduce the search space
@@ -1845,8 +1757,12 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
     map<string, multimap<string,hit> > exonerate_hits;
 
     Exonerate_queries er;
+    bool has_exonerate = true;
     if(!er.test_executable())
+    {
+        has_exonerate = false;
         Log_output::write_out("The executable for exonerate not found! The fast placement search not used!",0);
+    }
 
     else if(all_tid_nodes.size()>0)
         er.all_local_alignments(root,reads,&all_tid_nodes,&exonerate_hits, true);
@@ -1869,17 +1785,7 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
         {
             if(Settings_handle::st.is("exhaustive-placement"))
             {
-                if(Settings_handle::st.is("test-every-node"))
-                    root->get_node_names(&tid_nodes);
-
-                else if(Settings_handle::st.is("test-every-terminal-node"))
-                    root->get_terminal_node_names(&tid_nodes);
-
-                else if(Settings_handle::st.is("test-every-internal-node"))
-                    root->get_internal_node_names(&tid_nodes);
-
-                else
-                    root->get_node_names_with_tid_tag(&tid_nodes);
+                this->get_target_node_names(root,&all_tid_nodes,&ignore_tid_tags);
             }
 
             else
@@ -1903,22 +1809,16 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
                     tid_nodes.insert( make_pair<string,string>(iter2->first,iter2->second.node) );
             }
 
-            if(tid_nodes.size()>1)
+            if(has_exonerate && tid_nodes.size()>1)
             {
-                Exonerate_queries er;
-                if(!er.test_executable())
-                    Log_output::write_out("The executable for exonerate not found! The option '--exonerate-reads-gapped' not used!",0);
-                else
-                {
-                    map<string, hit> exonerate_gapped_hits;
-                    er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_gapped_hits,false,ignore_tid_tags);
+                map<string, hit> exonerate_gapped_hits;
+                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_gapped_hits,false,ignore_tid_tags);
 
-                    tid_nodes.clear();
-                    map<string, hit>::iterator iter2 = exonerate_gapped_hits.begin();
-                    if( iter2 != exonerate_gapped_hits.end() )
-                    {
-                        tid_nodes.insert( make_pair<string,string>(iter2->first,iter2->second.node) );
-                    }
+                tid_nodes.clear();
+                map<string, hit>::iterator iter2 = exonerate_gapped_hits.begin();
+                if( iter2 != exonerate_gapped_hits.end() )
+                {
+                    tid_nodes.insert( make_pair<string,string>(iter2->first,iter2->second.node) );
                 }
             }
         }
@@ -2065,7 +1965,6 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
 
 void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
 {
-
     ofstream pl_output;
 
     if(Settings_handle::st.is("placement-file"))
@@ -2074,81 +1973,32 @@ void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_e
         pl_output.open(fname.append(".tsv").c_str());
     }
 
-
     multimap<string,string> all_tid_nodes;
     bool ignore_tid_tags = true;
 
-    if(Settings_handle::st.is("test-every-internal-node"))
-    {
-        root->get_internal_node_names(&all_tid_nodes);
-    }
-    else if(Settings_handle::st.is("test-every-terminal-node"))
-    {
-        root->get_terminal_node_names(&all_tid_nodes);
-    }
-    else if(Settings_handle::st.is("test-every-node"))
-    {
-        root->get_node_names(&all_tid_nodes);
-    }
-    else
-    {
-        root->get_node_names_with_tid_tag(&all_tid_nodes);
-        ignore_tid_tags = false;
-    }
-
+    this->get_target_node_names(root,&all_tid_nodes,&ignore_tid_tags);
 
     //
     // Call Exonerate to reduce the search space
+    //
+    Exonerate_queries er;
+    bool has_exonerate = true;
+    if(!er.test_executable())
+    {
+        has_exonerate = false;
+        Log_output::write_out("The executable for exonerate not found! The fast placement search not used!",0);
+    }
 
     map<string, multimap<string,hit> > exonerate_hits;
 
-    if(Settings_handle::st.is("use-exonerate-local") || Settings_handle::st.is("fast-placement") || Settings_handle::st.is("very-fast-placement"))
+    if( has_exonerate && all_tid_nodes.size()>1)
     {
-        Exonerate_queries er;
-        if(!er.test_executable())
-            Log_output::write_out("The executable for exonerate not found! The fast placement search not used!",0);
-
-        else if(all_tid_nodes.size()>0)
-        {
-            er.all_local_alignments(root,reads,&all_tid_nodes,&exonerate_hits, true);
-
-            if(Settings_handle::st.is("use-exonerate-gapped") || Settings_handle::st.is("fast-placement"))
-            {
-                if(Settings_handle::st.is("fast-placement") && all_tid_nodes.size()==0)
-                {
-                    if(Settings_handle::st.is("test-every-internal-node"))
-                        root->get_internal_node_names(&all_tid_nodes);
-
-                    else if(Settings_handle::st.is("test-every-terminal-node"))
-                        root->get_terminal_node_names(&all_tid_nodes);
-
-                    else if(Settings_handle::st.is("test-every-node"))
-                        root->get_node_names(&all_tid_nodes);
-
-                    else
-                    {
-                        root->get_node_names_with_tid_tag(&all_tid_nodes);
-                    }
-
-                }
-                if(all_tid_nodes.size()>0)
-                    er.all_local_alignments(root,reads,&all_tid_nodes,&exonerate_hits,false);
-            }
-        }
+        er.all_local_alignments(root,reads,&all_tid_nodes,&exonerate_hits, true);
     }
 
-    else if(Settings_handle::st.is("use-exonerate-gapped"))
-    {
-        Exonerate_queries er;
-        if(!er.test_executable())
-            Log_output::write_out("The executable for exonerate not found! The option '--exonerate-reads-gapped' not used!",0);
-
-        else if(all_tid_nodes.size()>0)
-            er.all_local_alignments(root,reads,&all_tid_nodes,&exonerate_hits,false);
-    }
-
-
-
+    //
+    // Map one read at time
+    //
     for(int i=0;i<(int)reads->size();i++)
     {
 
@@ -2166,17 +2016,7 @@ void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_e
         {
             if(Settings_handle::st.is("exhaustive-placement"))
             {
-                if(Settings_handle::st.is("test-every-node"))
-                    root->get_node_names(&tid_nodes);
-
-                else if(Settings_handle::st.is("test-every-terminal-node"))
-                    root->get_terminal_node_names(&tid_nodes);
-
-                else if(Settings_handle::st.is("test-every-internal-node"))
-                    root->get_internal_node_names(&tid_nodes);
-
-                else
-                    root->get_node_names_with_tid_tag(&tid_nodes);
+                this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
             }
 
             else

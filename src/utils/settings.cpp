@@ -34,8 +34,8 @@ Settings::Settings(){}
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.49;
-    date = "18 January, 2013";
+    version = 0.50;
+    date = "15 May, 2013";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -80,6 +80,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("test-every-node","test every node for each query")
         ("fast-placement","use Exonerate to quickly assign queries to nodes")
         ("very-fast-placement","shorthand for fast heuristic settings")
+        ("stepwise-search","stepwise-search")
+        ("search-step-size", po::value<int>()->default_value(3),"search step size as tree levels")
     ;
 
     boost::program_options::options_description reads_alignment2("Additional alignment extension options",100);
@@ -137,7 +139,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     boost::program_options::options_description exonerate("Exonerate options",100);
     exonerate.add_options()
         ("exhaustive-placement","if Exonrate fails, use PAGAN to place the query")
-        ("exonerate-once","run Exonerate all queries together")
         ("use-exonerate-local","use Exonerate local to map queries to nodes")
         ("exonerate-local-keep-best",po::value<int>()->default_value(5),"keep best # of local matches")
         ("exonerate-local-keep-above",po::value<float>(),"keep local matches above #% of the best score")

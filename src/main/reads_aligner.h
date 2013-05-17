@@ -44,6 +44,7 @@ class Reads_aligner
     map<string,string> aa_to_codon;
 
     void loop_default_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void loop_stepwise_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_simple_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_two_strand_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_translated_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
@@ -51,6 +52,8 @@ class Reads_aligner
     void find_orfs(Fasta_entry *read,vector<Orf> *open_frames);
     void define_translation_tables();
     string reverse_complement(string dna);
+
+    void get_target_node_names(Node *root,multimap<string,string> *tid_nodes, bool *ignore_tid_tags);
 
     void find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
     void find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
@@ -65,11 +68,11 @@ class Reads_aligner
     void read_alignment_scores(Node * node, string read_name, string ref_node_name, float *overlap, float *identity);
     bool read_alignment_overlaps(Node * node, string read_name, string ref_node_name);
     float read_alignment_overlap(Node * node, string read_name, string ref_node_name);
-    void add_trimming_comment(vector<Fasta_entry> *reads);
+    void merge_and_trim(Model_factory *mf, Fasta_reader *fr, vector<Fasta_entry> *reads);
     void merge_paired_reads(vector<Fasta_entry> *reads, Model_factory *mf);
     void find_paired_reads(vector<Fasta_entry> *reads);
     void copy_node_details(Node *reads_node,Fasta_entry *read,bool turn_revcomp = false);
-    //void copy_orf_details(Node *reads_node,Fasta_entry *read,Orf *orf,bool turn_revcomp);
+
     bool correct_sites_index(Node *current_root, string ref_node_name, int alignments_done, map<string,Node*> *nodes_map);
 
     static bool better_score(const Fasta_entry& a,const Fasta_entry& b)
