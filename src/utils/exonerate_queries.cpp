@@ -761,6 +761,7 @@ void Exonerate_queries::local_pairwise_alignment(string *str1,string *str2,vecto
                 hit.start_site_1 = best_hits.at(i).q_start;
                 hit.start_site_2 = best_hits.at(i).t_start;
                 hit.length = best_hits.at(i).q_end - best_hits.at(i).q_start;
+                hit.score = best_hits.at(i).score;
 
                 hits->push_back(hit);
 //                cout<<"hit: "<<hit.start_site_1<<" "<<hit.start_site_2<<" "<<hit.length<<"\n";
@@ -772,6 +773,7 @@ void Exonerate_queries::local_pairwise_alignment(string *str1,string *str2,vecto
                 hit.start_site_1 = best_hits.at(i).q_start;
                 hit.start_site_2 = best_hits.at(i).t_start;
                 hit.length = best_hits.at(i).q_end - best_hits.at(i).q_start;
+                hit.score = best_hits.at(i).score;
 
                 hits->push_back(hit);
 //                cout<<"hit: "<<hit.start_site_1<<" "<<hit.start_site_2<<" "<<hit.length<<"\n";

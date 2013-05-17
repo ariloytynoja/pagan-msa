@@ -29,6 +29,7 @@ struct Substring_hit
     int start_site_1;
     int start_site_2;
     int length;
+    int score;
 };
 
 }

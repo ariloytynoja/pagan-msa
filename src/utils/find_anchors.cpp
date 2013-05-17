@@ -78,6 +78,7 @@ void Find_anchors::find_long_substrings(std::string *seq1,std::string *seq2,std:
                 s.start_site_1 = pos1;
                 s.start_site_2 = pos2;
                 s.length = length;
+                s.score = length;
                 hits->push_back(s);
             }
         }
@@ -125,28 +126,64 @@ void Find_anchors::find_long_substrings(std::string *seq1,std::string *seq2,std:
     }
 }
 
-void Find_anchors::check_hits_order_conflict(vector<Substring_hit> *hits)
+void Find_anchors::check_hits_order_conflict(std::string *seq1,std::string *seq2,vector<Substring_hit> *hits)
 {
-    sort(hits->begin(),hits->end(),Find_anchors::sort_by_start_site_1);
+    len1 = seq1->length();
+    len2 = seq2->length();
 
-    bool order_conflicts = false;
+    sort(hits->begin(),hits->end(),Find_anchors::sort_by_score);
 
-    if(hits->size()>1)
+    vector<bool> hit_site1;
+    hit_site1.reserve(len1);
+    for(int i=0;i<len1;i++)
+        hit_site1.push_back(false);
+
+    vector<bool> hit_site2;
+    hit_site2.reserve(len2);
+    for(int i=0;i<len2;i++)
+        hit_site2.push_back(false);
+
+//    cout<<"\nHits "<<hits->size()<<endl;
+
+    vector<Substring_hit>::iterator it1 = hits->begin();
+    for(;it1!=hits->end();)
     {
-        vector<Substring_hit>::iterator it1 = hits->begin();
-        vector<Substring_hit>::iterator it2 = hits->begin();
-        it2++;
-        for(;it2!=hits->end();it1++,it2++)
+        bool overlap = false;
+        for(int i=it1->start_site_1,j=it1->start_site_2;i<it1->start_site_1+it1->length,j<it1->start_site_2+it1->length;i++,j++)
         {
-            if(it1->start_site_1>it2->start_site_1 || it1->start_site_2>it2->start_site_2)
-                order_conflicts = true;
+            if(hit_site1.at(i) || hit_site2.at(j))
+            {
+                overlap = true;
+                break;
+            }
+        }
+
+
+        if(overlap)
+        {
+            hits->erase(it1);
+        }
+        else
+        {
+            for(int i=it1->start_site_1,j=it1->start_site_2;i<it1->start_site_1+it1->length,j<it1->start_site_2+it1->length;i++,j++)
+            {
+                hit_site1.at(i)=true;
+                hit_site2.at(j)=true;
+            }
+            it1++;
         }
     }
 
-    if(order_conflicts)
-    {
-        hits->clear();
-    }
+//    cout<<"Hits "<<hits->size()<<endl;
+
+//    if(hits->size()>0)
+//    {
+//        vector<Substring_hit>::iterator it1 = hits->begin();
+//        for(;it1!=hits->end();it1++)
+//        {
+//            cout<<"REMAINS "<<it1->start_site_1<<".."<<it1->start_site_1+it1->length<<" "<<it1->start_site_2<<".."<<it1->start_site_2+it1->length<<" ("<<it1->score<<")\n";
+//        }
+//    }
 }
 
 

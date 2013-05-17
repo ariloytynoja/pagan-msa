@@ -48,8 +48,16 @@ class Find_anchors
         return (p.length > q.length);
     }
 
+    static bool sort_by_score(Substring_hit p, Substring_hit q)
+    {
+        return (p.score > q.score);
+    }
+
     static bool sort_by_start_site_1(Substring_hit p, Substring_hit q)
     {
+        if(p.start_site_1 == q.start_site_1)
+            return (p.start_site_2 < q.start_site_2);
+
         return (p.start_site_1 < q.start_site_1);
     }
 
@@ -112,7 +120,7 @@ class Find_anchors
 public:
     Find_anchors();
     void find_long_substrings(std::string *seq1,std::string *seq2,std::vector<Substring_hit> *hits,int min_length);
-    void check_hits_order_conflict(std::vector<Substring_hit> *hits);
+    void check_hits_order_conflict(std::string *seq1,std::string *seq2,std::vector<Substring_hit> *hits);
     void define_tunnel(std::vector<Substring_hit> *hits,std::vector<int> *upper_bound,std::vector<int> *lower_bound,std::string str1, std::string str2);
 };
 

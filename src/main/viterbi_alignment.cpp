@@ -37,7 +37,7 @@ Viterbi_alignment::Viterbi_alignment() { }
 
 void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
                              Evol_model *evol_model,float l_branch_length,float r_branch_length,
-                             bool is_reads_sequence)
+                             bool is_reads_sequence, bool is_overlap_alignment)
 {
 
     left = left_sequence;
@@ -53,7 +53,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     vector<int> upper_bound;
     vector<int> lower_bound;
 
-    if(Settings_handle::st.is("use-anchors") || Settings_handle::st.is("use-prefix-anchors"))
+    if(not is_overlap_alignment && ( Settings_handle::st.is("use-anchors") || Settings_handle::st.is("use-prefix-anchors") ))
     {
 
         string s1 = left_sequence->get_sequence_string(false);
@@ -103,7 +103,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
         }
 //        cout<<s1<<endl<<s2<<endl;
 
-        fa.check_hits_order_conflict(&hits);
+        fa.check_hits_order_conflict(&s1,&s2,&hits);
 
         fa.define_tunnel(&hits,&upper_bound,&lower_bound,s1,s2);
 
@@ -156,7 +156,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     int j_max = match->shape()[1];
     int i_max = match->shape()[0];
 
-    if(Settings_handle::st.is("use-anchors") || Settings_handle::st.is("use-prefix-anchors"))
+    if(not is_overlap_alignment && ( Settings_handle::st.is("use-anchors") || Settings_handle::st.is("use-prefix-anchors") ))
     {
         for(int i=0;i<i_max;i++)
         {

@@ -204,7 +204,7 @@ public:
     Viterbi_alignment();
 
     void align(Sequence *left_sequence,Sequence *right_sequence,Evol_model *model,
-               float left_branch_length=0,float right_branch_length=0,bool is_reads_sequence=false);
+               float left_branch_length=0,float right_branch_length=0,bool is_reads_sequence=false, bool is_overlap_alignment=false);
 
 
 };

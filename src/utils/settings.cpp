@@ -80,8 +80,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("test-every-node","test every node for each query")
         ("fast-placement","use Exonerate to quickly assign queries to nodes")
         ("very-fast-placement","shorthand for fast heuristic settings")
-        ("stepwise-search","stepwise-search")
-        ("search-step-size", po::value<int>()->default_value(3),"search step size as tree levels")
+        ("tagged-search","search over tagged nodes")
+        ("upwards-search","stepwise search from root")
     ;
 
     boost::program_options::options_description reads_alignment2("Additional alignment extension options",100);

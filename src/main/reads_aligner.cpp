@@ -69,15 +69,8 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 
     // Merge overlapping and trim reads if selected, otherwise jsut update the sequence comment
     //
-    this->merge_and_trim( mf, &fr,  &reads );
+    this->merge_and_trim_and_sort( mf, &fr,  &reads );
 
-
-    // Sort merged reads by copy number
-    //
-    if(Settings_handle::st.is("use-duplicate-weigths") && not Settings_handle::st.is("no-read-ordering"))
-    {
-        this->sort_reads_vector_by_duplicate_number( &reads );
-    }
 
 
     //////////////////////////////////////////////////////////////////
@@ -109,10 +102,17 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     }
 
     // NEW!
-    else if(Settings_handle::st.is("stepwise-search"))
+    else if(Settings_handle::st.is("tagged-search"))
     {
-        Log_output::write_header("Aligning reads: stepwise search",0);
+        Log_output::write_header("Aligning reads: tagged search",0);
+        this->loop_tagged_placement(root,&reads,mf,count);
+    }
 
+    // NEW!
+    else if(Settings_handle::st.is("upwards-search"))
+    {
+        Log_output::write_header("Aligning reads: upwards search",0);
+        this->loop_upwards_placement(root,&reads,mf,count);
     }
 
     // Default placement
@@ -621,13 +621,163 @@ void Reads_aligner::define_translation_tables()
     }
 }
 
-void Reads_aligner::loop_stepwise_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
+void Reads_aligner::loop_tagged_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
 {
     bool single_ref_sequence = false;
     if(root->get_number_of_leaves()==1)
         single_ref_sequence = true;
 
     global_root = root;
+
+}
+
+void Reads_aligner::loop_upwards_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
+{
+    bool single_ref_sequence = false;
+    if(root->get_number_of_leaves()==1)
+        single_ref_sequence = true;
+
+    global_root = root;
+
+    double r_dist = Settings_handle::st.get("query-distance").as<float>();
+    Evol_model model = mf->alignment_model(r_dist+0.001,false);
+
+//    for(int i=0;i<(int)reads->size();i++)
+    for(int i=0;i<1;i++)
+    {
+
+        Node *current_root = root;
+
+        while(true)
+        {
+
+            Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") aligning read: '"+reads->at(i).name+"'",0);
+
+            Node * temp_left_node = new Node();
+            temp_left_node->set_name("left");
+
+            Node * left_real_node = current_root->get_left_child();
+            float org_left_distance = left_real_node->get_distance_to_parent();
+            left_real_node->set_distance_to_parent(0.001);
+            temp_left_node->add_left_child(left_real_node);
+
+            Node * left_reads_node = new Node();
+            this->copy_node_details(left_reads_node,&reads->at(i));
+            temp_left_node->add_right_child(left_reads_node);
+
+            temp_left_node->align_sequences_this_node(mf,true,false);
+
+
+            Node * temp_right_node = new Node();
+            temp_right_node->set_name("right");
+
+            Node * right_real_node = current_root->get_right_child();
+            float org_right_distance = right_real_node->get_distance_to_parent();
+            right_real_node->set_distance_to_parent(0.001);
+            temp_right_node->add_left_child(right_real_node);
+
+            Node * right_reads_node = new Node();
+            this->copy_node_details(right_reads_node,&reads->at(i));
+            temp_right_node->add_right_child(right_reads_node);
+
+            temp_right_node->align_sequences_this_node(mf,true,false);
+
+
+            int matching = 0; int aligned = 0;
+
+            float subst_score = 0; float max_subst_score_l = 0; float max_subst_score_r = 0;
+
+            Node *tmpnode;
+            tmpnode = temp_left_node;
+
+            for( int k=1; k < tmpnode->get_sequence()->sites_length()-1; k++ )
+            {
+                Site *site = tmpnode->get_sequence()->get_site_at(k);
+
+                if(site->get_children()->right_index>=0 && site->get_children()->left_index>=0)
+                {
+
+                    Site *site1 = tmpnode->get_right_child()->get_sequence()->get_site_at(site->get_children()->right_index);
+                    Site *site2 = tmpnode->get_left_child()->get_sequence()->get_site_at(site->get_children()->left_index);
+
+                    if(site1->get_state() == site2->get_state())
+                        matching++;
+
+                    subst_score += model.score(site1->get_state(),site2->get_state());
+                    max_subst_score_l += model.score(site2->get_state(),site2->get_state());
+
+                    aligned++;
+                }
+
+                if(site->get_children()->right_index>=0)
+                {
+                    Site *site1 = tmpnode->get_right_child()->get_sequence()->get_site_at(site->get_children()->right_index);
+                    max_subst_score_r += model.score(site1->get_state(),site1->get_state());
+                }
+
+            }
+
+            double left_score_s = (double) matching/ (double) left_reads_node->get_sequence()->sites_length();
+            double left_score_l = (double) subst_score/ (double) max_subst_score_l;
+            double left_score_r = (double) subst_score/ (double) max_subst_score_r;
+
+            //
+
+            matching = 0; aligned = 0;
+            subst_score = 0; max_subst_score_l = 0; max_subst_score_r = 0;
+
+            tmpnode = temp_right_node;
+
+            for( int k=1; k < tmpnode->get_sequence()->sites_length()-1; k++ )
+            {
+                Site *site = tmpnode->get_sequence()->get_site_at(k);
+
+                if(site->get_children()->right_index>=0 && site->get_children()->left_index>=0)
+                {
+
+                    Site *site1 = tmpnode->get_right_child()->get_sequence()->get_site_at(site->get_children()->right_index);
+                    Site *site2 = tmpnode->get_left_child()->get_sequence()->get_site_at(site->get_children()->left_index);
+
+                    if(site1->get_state() == site2->get_state())
+                        matching++;
+
+                    subst_score += model.score(site1->get_state(),site2->get_state());
+                    max_subst_score_l += model.score(site2->get_state(),site2->get_state());
+
+                    aligned++;
+                }
+
+                if(site->get_children()->right_index>=0)
+                {
+                    Site *site1 = tmpnode->get_right_child()->get_sequence()->get_site_at(site->get_children()->right_index);
+                    max_subst_score_r += model.score(site1->get_state(),site1->get_state());
+                }
+
+            }
+
+            double right_score_s = (double) matching/ (double) right_reads_node->get_sequence()->sites_length();
+            double right_score_l = (double) subst_score/ (double) max_subst_score_l;
+            double right_score_r = (double) subst_score/ (double) max_subst_score_r;
+
+
+            cout<<"\nleft  "<<left_score_s<<" "<<left_score_l<<" "<<left_score_r<<endl;
+            cout<<"right "<<right_score_s<<" "<<right_score_l<<" "<<right_score_r<<endl<<endl;
+
+            //
+
+            left_real_node->set_distance_to_parent(org_left_distance);
+            right_real_node->set_distance_to_parent(org_right_distance);
+
+            temp_left_node->has_left_child(false);
+            delete temp_left_node;
+
+            temp_right_node->has_left_child(false);
+            delete temp_right_node;
+
+            break;
+        }
+
+    }
 
 }
 
@@ -855,7 +1005,7 @@ void Reads_aligner::merge_reads_only()
     fr.write_fastq(path,reads);
 }
 
-void Reads_aligner::merge_and_trim(Model_factory *mf, Fasta_reader *fr, vector<Fasta_entry> *reads)
+void Reads_aligner::merge_and_trim_and_sort(Model_factory *mf, Fasta_reader *fr, vector<Fasta_entry> *reads)
 {
 
     // Merge overlapping reads
@@ -885,12 +1035,14 @@ void Reads_aligner::merge_and_trim(Model_factory *mf, Fasta_reader *fr, vector<F
         }
     }
 
-
+    // Trim reads ends
+    //
     if(Settings_handle::st.is("trim-read-ends"))
     {
         Log_output::write_header("Aligning reads: trim read ends",0);
         fr->trim_fastq_reads( reads );
     }
+
 
     // Couple paired reads
     //
@@ -900,6 +1052,8 @@ void Reads_aligner::merge_and_trim(Model_factory *mf, Fasta_reader *fr, vector<F
         this->find_paired_reads( reads );
     }
 
+    // Add comment about trimming -- or just blank
+    //
     vector<Fasta_entry>::iterator fit1 = reads->begin();
 
     for(;fit1 != reads->end();fit1++)
@@ -910,6 +1064,13 @@ void Reads_aligner::merge_and_trim(Model_factory *mf, Fasta_reader *fr, vector<F
             trimming << "P1ST"<<fit1->trim_start<<":P1ET"<<fit1->trim_end;
             fit1->comment += trimming.str();
         }
+    }
+
+    // Sort reads by copy number
+    //
+    if(Settings_handle::st.is("use-duplicate-weigths") && not Settings_handle::st.is("no-read-ordering"))
+    {
+        this->sort_reads_vector_by_duplicate_number( reads );
     }
 }
 

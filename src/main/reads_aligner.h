@@ -44,7 +44,8 @@ class Reads_aligner
     map<string,string> aa_to_codon;
 
     void loop_default_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
-    void loop_stepwise_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void loop_tagged_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void loop_upwards_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_simple_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_two_strand_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_translated_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
@@ -68,7 +69,7 @@ class Reads_aligner
     void read_alignment_scores(Node * node, string read_name, string ref_node_name, float *overlap, float *identity);
     bool read_alignment_overlaps(Node * node, string read_name, string ref_node_name);
     float read_alignment_overlap(Node * node, string read_name, string ref_node_name);
-    void merge_and_trim(Model_factory *mf, Fasta_reader *fr, vector<Fasta_entry> *reads);
+    void merge_and_trim_and_sort(Model_factory *mf, Fasta_reader *fr, vector<Fasta_entry> *reads);
     void merge_paired_reads(vector<Fasta_entry> *reads, Model_factory *mf);
     void find_paired_reads(vector<Fasta_entry> *reads);
     void copy_node_details(Node *reads_node,Fasta_entry *read,bool turn_revcomp = false);

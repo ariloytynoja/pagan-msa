@@ -75,7 +75,7 @@ void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence, 
 
     Viterbi_alignment va;
     va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
-             left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence);
+             left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence,is_overlap_alignment);
 
     ss.str(string());
     ss << "Time node::viterbi: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
