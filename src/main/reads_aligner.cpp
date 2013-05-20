@@ -642,11 +642,14 @@ void Reads_aligner::loop_upwards_placement(Node *root, vector<Fasta_entry> *read
     double r_dist = Settings_handle::st.get("query-distance").as<float>();
     Evol_model model = mf->alignment_model(r_dist+0.001,false);
 
-//    for(int i=0;i<(int)reads->size();i++)
-    for(int i=0;i<1;i++)
+    for(int i=0;i<(int)reads->size();i++)
+//    for(int i=0;i<1;i++)
     {
 
-        Node *current_root = root;
+        double best_score = -1;
+        Node * best_node = 0;
+
+        Node * current_root = root;
 
         while(true)
         {
@@ -704,17 +707,21 @@ void Reads_aligner::loop_upwards_placement(Node *root, vector<Fasta_entry> *read
                         matching++;
 
                     subst_score += model.score(site1->get_state(),site2->get_state());
+                    max_subst_score_r += model.score(site1->get_state(),site1->get_state());
                     max_subst_score_l += model.score(site2->get_state(),site2->get_state());
 
                     aligned++;
                 }
-
-                if(site->get_children()->right_index>=0)
+                else if(site->get_children()->right_index>=0)
                 {
                     Site *site1 = tmpnode->get_right_child()->get_sequence()->get_site_at(site->get_children()->right_index);
                     max_subst_score_r += model.score(site1->get_state(),site1->get_state());
                 }
-
+                else if(site->get_children()->left_index>=0)
+                {
+                    Site *site2 = tmpnode->get_left_child()->get_sequence()->get_site_at(site->get_children()->left_index);
+                    max_subst_score_l += model.score(site2->get_state(),site2->get_state());
+                }
             }
 
             double left_score_s = (double) matching/ (double) left_reads_node->get_sequence()->sites_length();
@@ -742,26 +749,52 @@ void Reads_aligner::loop_upwards_placement(Node *root, vector<Fasta_entry> *read
                         matching++;
 
                     subst_score += model.score(site1->get_state(),site2->get_state());
+                    max_subst_score_r += model.score(site1->get_state(),site1->get_state());
                     max_subst_score_l += model.score(site2->get_state(),site2->get_state());
 
                     aligned++;
                 }
-
-                if(site->get_children()->right_index>=0)
+                else if(site->get_children()->right_index>=0)
                 {
                     Site *site1 = tmpnode->get_right_child()->get_sequence()->get_site_at(site->get_children()->right_index);
                     max_subst_score_r += model.score(site1->get_state(),site1->get_state());
                 }
-
+                else if(site->get_children()->left_index>=0)
+                {
+                    Site *site2 = tmpnode->get_left_child()->get_sequence()->get_site_at(site->get_children()->left_index);
+                    max_subst_score_l += model.score(site2->get_state(),site2->get_state());
+                }
             }
 
             double right_score_s = (double) matching/ (double) right_reads_node->get_sequence()->sites_length();
-            double right_score_l = (double) subst_score/ (double) max_subst_score_l;
             double right_score_r = (double) subst_score/ (double) max_subst_score_r;
+            double right_score_l = (double) subst_score/ (double) max_subst_score_l;
 
 
-            cout<<"\nleft  "<<left_score_s<<" "<<left_score_l<<" "<<left_score_r<<endl;
-            cout<<"right "<<right_score_s<<" "<<right_score_l<<" "<<right_score_r<<endl<<endl;
+            cout<<"\nleft  "<<left_real_node->get_name()<<" "<<left_score_s<<" "<<left_score_l<<" "<<left_score_r<<endl;
+            cout<<"right "<<right_real_node->get_name()<<" "<<right_score_s<<" "<<right_score_l<<" "<<right_score_r<<endl<<endl;
+
+            double left_score = left_score_s;
+            double right_score = right_score_s;
+
+            if(left_score > right_score)
+            {
+                if(left_score > best_score)
+                {
+                    best_score = left_score;
+                    best_node = left_real_node;
+                }
+                current_root = left_real_node;
+            }
+            else
+            {
+                if(right_score > best_score)
+                {
+                    best_score = right_score;
+                    best_node = right_real_node;
+                }
+                current_root = right_real_node;
+            }
 
             //
 
@@ -774,8 +807,14 @@ void Reads_aligner::loop_upwards_placement(Node *root, vector<Fasta_entry> *read
             temp_right_node->has_left_child(false);
             delete temp_right_node;
 
-            break;
+            if(current_root->is_leaf())
+                break;
         }
+
+        cout<<" best node: "<<best_node->get_name()<<endl;
+
+        reads->at(i).node_score = best_score;
+        reads->at(i).node_to_align = best_node->get_name();
 
     }
 
