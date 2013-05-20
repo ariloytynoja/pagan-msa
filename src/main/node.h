@@ -261,15 +261,19 @@ public:
     /**************************************/
 
 
-    void get_all_nodes(vector<Node*> *nodes)
+    void get_all_nodes(vector<Node*> *nodes,bool visit_leaves_first=false)
     {
         if(!leaf)
-            left_child->get_all_nodes(nodes);
+            left_child->get_all_nodes(nodes,visit_leaves_first);
 
-        nodes->push_back(this);
+        if(not visit_leaves_first)
+            nodes->push_back(this);
 
         if(!leaf)
-            right_child->get_all_nodes(nodes);
+            right_child->get_all_nodes(nodes,visit_leaves_first);
+
+        if(visit_leaves_first)
+            nodes->push_back(this);
     }
 
     void get_leaf_nodes(vector<Node*> *nodes)
@@ -459,6 +463,61 @@ public:
             return true;
         else
             return false;
+    }
+
+    /************************************/
+
+    void get_state_identity(int pos,int query_state,vector<int> *scores,bool visit_leaves_first=false)
+    {
+        if(leaf)
+        {
+            if(this->get_sequence()->get_site_at(pos)->get_state() == query_state)
+                scores->push_back(1);
+            else
+                scores->push_back(0);
+        }
+        else
+        {
+            Site_children *offspring = sequence->get_site_at(pos)->get_children();
+
+            int lj = offspring->left_index;
+            if(lj>=0)
+            {
+                left_child->get_state_identity(lj,query_state,scores,visit_leaves_first);
+            }
+            else
+            {
+                for(int i=0;i<left_child->get_number_of_nodes();i++)
+                     scores->push_back(0);
+            }
+
+            if(not visit_leaves_first)
+            {
+                if(this->get_sequence()->get_site_at(pos)->get_state() == query_state)
+                    scores->push_back(1);
+                else
+                    scores->push_back(0);
+            }
+
+            int rj = offspring->right_index;
+            if(rj>=0)
+            {
+                right_child->get_state_identity(rj,query_state,scores,visit_leaves_first);
+            }
+            else
+            {
+                for(int i=0;i<right_child->get_number_of_nodes();i++)
+                     scores->push_back(0);
+            }
+
+            if(visit_leaves_first)
+            {
+                if(this->get_sequence()->get_site_at(pos)->get_state() == query_state)
+                    scores->push_back(1);
+                else
+                    scores->push_back(0);
+            }
+        }
     }
 
     /************************************/
