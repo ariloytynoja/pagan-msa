@@ -96,6 +96,7 @@ void Input_output_parser::parse_input_sequences(Fasta_reader *fr,vector<Fasta_en
 
         try
         {
+            Log_output::write_header("Reading reference alignment",0);
             fr->read(seqfile, *sequences, true, false);
         }
         catch (ppa::IOException& e) {
@@ -132,6 +133,7 @@ void Input_output_parser::parse_input_sequences(Fasta_reader *fr,vector<Fasta_en
 
         try
         {
+            Log_output::write_header("Reading reference alignment",0);
             fr->read(seqfile, *sequences, true,true);
         }
         catch (ppa::IOException& e) {

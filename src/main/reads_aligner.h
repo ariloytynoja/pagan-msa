@@ -45,10 +45,11 @@ class Reads_aligner
 
     void loop_default_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_tagged_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
-    void loop_upwards_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_simple_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_two_strand_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_translated_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+
+    void do_upwards_search(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
 
     void find_orfs(Fasta_entry *read,vector<Orf> *open_frames);
     void define_translation_tables();

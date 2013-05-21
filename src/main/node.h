@@ -520,6 +520,74 @@ public:
         }
     }
 
+
+    void get_subst_distance(int pos,int query_state,vector<float> *scores,Evol_model *model,bool visit_leaves_first=false)
+    {
+        if(leaf)
+        {
+            scores->push_back( model->score(this->get_sequence()->get_site_at(pos)->get_state(), query_state) );
+        }
+        else
+        {
+            Site_children *offspring = sequence->get_site_at(pos)->get_children();
+
+            int lj = offspring->left_index;
+            if(lj>=0)
+            {
+                left_child->get_subst_distance(lj,query_state,scores,model,visit_leaves_first);
+            }
+            else
+            {
+                for(int i=0;i<left_child->get_number_of_nodes();i++)
+                     scores->push_back(0);
+            }
+
+            if(not visit_leaves_first)
+            {
+                scores->push_back( model->score(this->get_sequence()->get_site_at(pos)->get_state(), query_state) );
+            }
+
+            int rj = offspring->right_index;
+            if(rj>=0)
+            {
+                right_child->get_subst_distance(rj,query_state,scores,model,visit_leaves_first);
+            }
+            else
+            {
+                for(int i=0;i<right_child->get_number_of_nodes();i++)
+                     scores->push_back(0);
+            }
+
+            if(visit_leaves_first)
+            {
+                scores->push_back( model->score(this->get_sequence()->get_site_at(pos)->get_state(), query_state) );
+            }
+        }
+    }
+
+    Node * get_parent_node(string node_name)
+    {
+        if(leaf)
+            return 0;
+
+        if(this->get_left_child()->get_name()==node_name)
+            return this;
+        if(this->get_right_child()->get_name()==node_name)
+            return this;
+
+        Node *tmp;
+
+        tmp = this->get_left_child()->get_parent_node(node_name);
+        if(tmp!=0)
+            return tmp;
+        tmp = this->get_right_child()->get_parent_node(node_name);
+        if(tmp!=0)
+            return tmp;
+
+        return 0;
+    }
+
+
     /************************************/
 
     void has_sequence(bool s) { node_has_sequence = s; }
