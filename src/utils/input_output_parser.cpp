@@ -25,6 +25,7 @@
 #include "utils/fasta_reader.h"
 #include "utils/mafft_alignment.h"
 #include "utils/bppdist_tree.h"
+#include "utils/bppphysamp_tree.h"
 #include "utils/raxml_tree.h"
 #include "utils/exonerate_queries.h"
 #include "utils/xml_writer.h"
@@ -475,6 +476,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
     /*  Collect the results and output them                                */
     /***********************************************************************/
 
+
 //    root->show_seqs();
 
     vector<Fasta_entry> aligned_sequences;
@@ -598,6 +600,70 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
                 fr->set_chars_by_line(70);
                 fr->write_dna(outfile, aligned_sequences, *sequences,root,true,Fasta_reader::consensus_only);
             }
+        }
+
+        if( Settings_handle::st.is("prune-extended-alignment") )
+        {
+            bool is_protein = root->get_sequence()->get_data_type()==Model_factory::protein;
+
+            set<string> removenames;
+            BppPhySamp_tree bppphys;
+            bppphys.reduce_sequences(&removenames,is_protein);
+
+
+            set<string> readnames;
+            root->get_read_node_names(&readnames);
+
+            set<string> keepnames;
+            root->get_closest_reference_leaves(&keepnames);
+
+            Newick_reader nr;
+            string tree = root->print_tree();
+            Node *tmp_root = nr.parenthesis_to_tree(tree);
+
+            tmp_root->set_has_sequence();
+            tmp_root->unset_has_sequence(&removenames);
+            tmp_root->set_has_sequence(&readnames);
+            tmp_root->set_has_sequence(&keepnames);
+            tmp_root->prune_tree();
+
+            tree = tmp_root->print_tree();
+
+            set<string> leaves_kept;
+            tmp_root->get_leaf_node_names(&leaves_kept);
+
+            string outfile =  "outfile";
+
+            if(Settings_handle::st.is("outfile"))
+                outfile =  Settings_handle::st.get("outfile").as<string>();
+
+            outfile.append(".pruned");
+
+            string format = "fasta";
+            if(Settings_handle::st.is("outformat"))
+                format = Settings_handle::st.get("outformat").as<string>();
+
+            Log_output::write_out("Pruned alignment file: "+outfile+fr->get_format_suffix(format)+"\n",0);
+            Log_output::write_out("Pruned tree file: "+outfile+".tre\n",0);
+
+
+            vector<Fasta_entry> pruned_sequences;
+            vector<Fasta_entry>::iterator fit = aligned_sequences.begin();
+            for(;fit!=aligned_sequences.end();fit++)
+            {
+                if(leaves_kept.find(fit->name)!=leaves_kept.end())
+                {
+                    pruned_sequences.push_back(*fit);
+                }
+            }
+            fr->remove_gap_only_columns(&pruned_sequences);
+
+            fr->set_chars_by_line(70);
+            fr->write(outfile, pruned_sequences, format, true);
+
+            tmp_root->write_nhx_tree(outfile);
+//            cout<<tree<<endl;
+
         }
 
         if(Settings_handle::st.is("output-ancestors"))

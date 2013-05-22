@@ -82,7 +82,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("very-fast-placement","shorthand for fast heuristic settings")
 //        ("tagged-search","search over tagged nodes")
         ("upwards-search","stepwise search from root")
-        ("prune-extended-alignment","remove distantly related sequences")
+        ("prune-extended-alignment","remove closely related sequences")
+        ("prune-keep-number",po::value<int>()->default_value(15),"keep N most distantly related sequences (default)")
+        ("prune-keep-threshold",po::value<float>(),"remove sequences with distance below threshold")
     ;
 
     boost::program_options::options_description reads_alignment2("Additional alignment extension options",100);

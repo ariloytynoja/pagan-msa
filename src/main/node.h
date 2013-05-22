@@ -287,6 +287,17 @@ public:
             nodes->push_back(this);
     }
 
+    void get_leaf_node_names(set<string> *names)
+    {
+        if(!this->is_leaf())
+        {
+            left_child->get_leaf_node_names(names);
+            right_child->get_leaf_node_names(names);
+        }
+        else
+            names->insert(this->get_name());
+    }
+
     void get_leaf_nodes(map<string,Node*> *nodes)
     {
         if(this->is_leaf())
@@ -596,6 +607,162 @@ public:
     void prune_tree() { this->prune_down(); this->prune_up(); }
     void prune_up();
     void prune_down();
+
+    void unset_has_sequence()
+    {
+        if(this->is_leaf())
+        {
+            this->has_sequence(false);
+        }
+        else
+        {
+            this->get_left_child()->unset_has_sequence();
+            this->get_right_child()->unset_has_sequence();
+        }
+    }
+
+    void unset_has_sequence(set<string> *remove)
+    {
+        if(this->is_leaf())
+        {
+            if(remove->find(this->get_name())!=remove->end())
+            {
+                this->has_sequence(false);
+            }
+        }
+        else
+        {
+            this->get_left_child()->unset_has_sequence(remove);
+            this->get_right_child()->unset_has_sequence(remove);
+        }
+    }
+
+    void set_has_sequence()
+    {
+        if(this->is_leaf())
+        {
+            this->has_sequence(true);
+        }
+        else
+        {
+            this->get_left_child()->set_has_sequence();
+            this->get_right_child()->set_has_sequence();
+        }
+    }
+
+    void set_has_sequence(set<string> *keep)
+    {
+        if(this->is_leaf())
+        {
+            if(keep->find(this->get_name())!=keep->end())
+            {
+                this->has_sequence(true);
+            }
+        }
+        else
+        {
+            this->get_left_child()->set_has_sequence(keep);
+            this->get_right_child()->set_has_sequence(keep);
+        }
+    }
+
+
+    void set_reads_has_sequence()
+    {
+        if(this->is_leaf() )
+        {
+            if(this->get_sequence()->is_read_sequence())
+            {
+                this->has_sequence(true);
+            }
+        }
+        else
+        {
+            this->get_left_child()->set_reads_has_sequence();
+            this->get_right_child()->set_reads_has_sequence();
+        }
+    }
+
+    bool all_descendants_reads()
+    {
+        if(this->is_leaf())
+        {
+            if(this->get_sequence()->is_read_sequence())
+                return true;
+            else
+                return false;
+        }
+        else
+        {
+            return this->get_left_child()->all_descendants_reads()
+                && this->get_right_child()->all_descendants_reads();
+        }
+    }
+
+    void get_closest_reference_leaf(float *dist,string *name)
+    {
+        if(this->is_leaf())
+        {
+            if(this->get_sequence()->is_read_sequence())
+            {
+                *dist = -1;
+                *name = "";
+            }
+            else
+            {
+                *dist = this->get_distance_to_parent();
+                *name = this->get_name();
+            }
+        }
+        else
+        {
+            float ld = -1;
+            string ln = "";
+            this->get_left_child()->get_closest_reference_leaf(&ld,&ln);
+            float rd = -1;
+            string rn = "";
+            this->get_right_child()->get_closest_reference_leaf(&rd,&rn);
+
+            if(ld>=0 && ld<rd)
+            {
+                *dist = ld+this->get_distance_to_parent();
+                *name = ln;
+            }
+            else if(rd>=0)
+            {
+                *dist = rd+this->get_distance_to_parent();
+                *name = rn;
+            }
+        }
+    }
+
+    void get_closest_reference_leaves(set<string> *names)
+    {
+        if(!this->is_leaf())
+        {
+            this->get_left_child()->get_closest_reference_leaves(names);
+            this->get_right_child()->get_closest_reference_leaves(names);
+
+            bool lr = this->get_left_child()->all_descendants_reads();
+            bool rr = this->get_right_child()->all_descendants_reads();
+
+            if(not lr && rr)
+            {
+                float dist = -1;
+                string name = "";
+                this->get_left_child()->get_closest_reference_leaf(&dist,&name);
+                names->insert(name);
+            }
+            else if(lr && not rr)
+            {
+                float dist = -1;
+                string name = "";
+                this->get_right_child()->get_closest_reference_leaf(&dist,&name);
+                names->insert(name);
+            }
+        }
+    }
+
 
     /************************************/
 
