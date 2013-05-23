@@ -1706,7 +1706,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
     if(!er.test_executable())
     {
         has_exonerate = false;
-        Log_output::write_out("The executable for exonerate not found! The fast placement search not used!",0);
+        Log_output::write_out("The executable for Exonerate not found! The fast placement search not used!",0);
     }
 
     for(int i=0;i<(int)reads->size();i++)
@@ -1973,7 +1973,7 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
     if(!er.test_executable())
     {
         has_exonerate = false;
-        Log_output::write_out("The executable for exonerate not found! The fast placement search not used!",0);
+        Log_output::write_out("The executable for Exonerate not found! The fast placement search not used!",0);
     }
 
     else if(all_tid_nodes.size()>0)
@@ -2198,7 +2198,7 @@ void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_e
     if(!er.test_executable())
     {
         has_exonerate = false;
-        Log_output::write_out("The executable for exonerate not found! The fast placement search not used!",0);
+        Log_output::write_out("The executable for Exonerate not found! The fast placement search not used!",0);
     }
 
     map<string, multimap<string,hit> > exonerate_hits;

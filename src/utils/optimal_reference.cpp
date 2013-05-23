@@ -45,7 +45,7 @@ void Optimal_reference::find_optimal_reference(vector<Fasta_entry> *sequences)
     int status = system("exonerate  >/dev/null");
     if( WEXITSTATUS(status) != 1 )
     {
-        Log_output::write_out("The executable for exonerate not found! Using the first read as the reference!",1);
+        Log_output::write_out("The executable for Exonerate not found! Using the first read as the reference!",1);
 
         vector<Fasta_entry>::iterator it = sequences->begin();
         it++;
@@ -255,7 +255,7 @@ void Optimal_reference::align(Node *root, Model_factory *mf, int count)
     int status = system("exonerate  >/dev/null");
     if( WEXITSTATUS(status) != 1 )
     {
-        Log_output::write_out("The executable for exonerate not found! Exiting!",0);
+        Log_output::write_out("The executable for Exonerate not found! Exiting!",0);
         exit(1);
     }
 
