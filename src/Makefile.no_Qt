@@ -66,7 +66,8 @@ HEADERS       = main/node.h \
 		utils/mafft_alignment.h \
 		utils/raxml_tree.h \
 		utils/tree_node.h \
-		utils/bppdist_tree.h
+		utils/bppdist_tree.h \
+		utils/bppphysamp_tree.h
 SOURCES       = main.cpp \
 		main/node.cpp \
 		main/sequence.cpp \
@@ -95,7 +96,8 @@ SOURCES       = main.cpp \
 		utils/mafft_alignment.cpp \
 		utils/raxml_tree.cpp \
 		utils/tree_node.cpp \
-		utils/bppdist_tree.cpp 
+		utils/bppdist_tree.cpp \
+		utils/bppphysamp_tree.cpp 
 OBJECTS       = main.o \
 		node.o \
 		sequence.o \
@@ -124,7 +126,8 @@ OBJECTS       = main.o \
 		mafft_alignment.o \
 		raxml_tree.o \
 		tree_node.o \
-		bppdist_tree.o
+		bppdist_tree.o \
+		bppphysamp_tree.o
 TARGET        = pagan
 
 first: all
@@ -506,6 +509,9 @@ bppdist_tree.o: utils/bppdist_tree.cpp utils/bppdist_tree.h \
 		utils/int_matrix.h \
 		utils/evol_model.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o bppdist_tree.o utils/bppdist_tree.cpp
+
+bppphysamp_tree.o: utils/bppphysamp_tree.cpp utils/bppphysamp_tree.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o bppphysamp_tree.o utils/bppphysamp_tree.cpp
 
 ####### Install
 
