@@ -608,10 +608,9 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
             set<string> removenames;
             BppPhySamp_tree bppphys;
-            if(not bppphys.test_executable())
+            if(bppphys.test_executable())
             {
                 bppphys.reduce_sequences(&removenames,is_protein);
-
 
                 set<string> readnames;
                 root->get_read_node_names(&readnames);
