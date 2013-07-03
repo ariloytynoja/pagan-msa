@@ -571,8 +571,13 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             Log_output::write_out("Back-translated alignment file: "+outfile+fr->get_format_suffix(format)+"\n",0);
 
             fr->set_chars_by_line(70);
+
+            map<string,string> dna_seqs;
+
+            fr->get_DNA_seqs(root, sequences, &dna_seqs);
+
             vector<Fasta_entry> dna_sequences;
-            fr->backtranslate_dna(aligned_sequences,*sequences,dna_sequences);
+            fr->backtranslate_dna(aligned_sequences,&dna_seqs,dna_sequences);
 
             fr->write(outfile, dna_sequences, format, true);
 

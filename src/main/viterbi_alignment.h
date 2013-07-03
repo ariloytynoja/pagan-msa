@@ -36,6 +36,9 @@ using namespace ppa;
 
 class Viterbi_alignment: public Basic_alignment
 {
+    vector<int> upper_bound;
+    vector<int> lower_bound;
+    bool tunnel_defined;
 
     typedef boost::multi_array<Matrix_pointer, 2> align_array;
     typedef align_array::index index;
@@ -202,6 +205,8 @@ class Viterbi_alignment: public Basic_alignment
 
 public:
     Viterbi_alignment();
+
+    float define_tunnel(Sequence *left_sequence,Sequence *right_sequence,Evol_model *evol_model,bool compute_coverage=false);
 
     void align(Sequence *left_sequence,Sequence *right_sequence,Evol_model *model,
                float left_branch_length=0,float right_branch_length=0,bool is_reads_sequence=false, bool is_overlap_alignment=false);

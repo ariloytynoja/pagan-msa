@@ -820,24 +820,57 @@ void Fasta_reader::write_simple_nexus(ostream & output, const vector<Fasta_entry
 
 /****************************************************************************************/
 
-void Fasta_reader::backtranslate_dna(const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, vector<Fasta_entry> &outseqs) const throw (Exception)
+void Fasta_reader::get_DNA_seqs(Node *root, const vector<Fasta_entry> *org_seqs, map<string,string> *dna_seqs)
 {
-    bool dna_seq_missing = false;
-    vector<Fasta_entry>::const_iterator it = org_seqs.begin();
-    map<string,string> dna_seqs;
-
     Text_utils tu;
+    vector<Fasta_entry>::const_iterator it = org_seqs->begin();
 
-    for (; it != org_seqs.end(); it++)
+    for (; it != org_seqs->end(); it++)
     {
-        if( it->dna_sequence.length() == 0 )
-            dna_seq_missing = true;
-
         string seq = it->dna_sequence;
         tu.replace_all(seq,"-","");
 
-        dna_seqs.insert(pair<string,string>(it->name,seq));
+        dna_seqs->insert(pair<string,string>(it->name,seq));
     }
+
+    vector<Node*> read_nodes;
+    root->get_read_nodes_below(&read_nodes);
+
+    vector<Node*>::iterator nit = read_nodes.begin();
+    for (; nit != read_nodes.end(); nit++)
+    {
+        if((*nit)->has_Orf())
+        {
+            dna_seqs->insert(pair<string,string>((*nit)->get_name(),(*nit)->get_Orf().dna_sequence));
+        }
+    }
+
+}
+
+void Fasta_reader::backtranslate_dna(const vector<Fasta_entry> & seqs, const map<string,string> *dna_seqs, vector<Fasta_entry> &outseqs) const throw (Exception)
+{
+    bool dna_seq_missing = false;
+    /*map<string,string> dna_seqs*/;
+
+//    vector<Fasta_entry>::const_iterator it = org_seqs.begin();
+
+    map<string,string>::const_iterator it = dna_seqs->begin();
+
+    Text_utils tu;
+
+    for (; it != dna_seqs->end(); it++)
+    {
+        if( it->second.length() == 0 )
+            dna_seq_missing = true;
+
+//        string seq = it->second;
+//        tu.replace_all(seq,"-","");
+
+//        dna_seqs->insert(pair<string,string>(it->first,seq));
+    }
+
+
+
 
     if(dna_seq_missing)
     {
@@ -855,8 +888,8 @@ void Fasta_reader::backtranslate_dna(const vector<Fasta_entry> & seqs, const vec
         os.comment = vi->comment;
 
 
-        map<string,string>::iterator it2 = dna_seqs.find(vi->name);
-        if(it2 == dna_seqs.end())
+        map<string,string>::const_iterator it2 = dna_seqs->find(vi->name);
+        if(it2 == dna_seqs->end())
         {
             Log_output::write_out("No matching DNA sequence for "+vi->name+". Back-translation failed.\n",1);
             return;

@@ -33,7 +33,82 @@ using namespace std;
 using namespace ppa;
 
 
-Viterbi_alignment::Viterbi_alignment() { }
+Viterbi_alignment::Viterbi_alignment() { tunnel_defined = false; }
+
+float Viterbi_alignment::define_tunnel(Sequence *left_sequence,Sequence *right_sequence,Evol_model *evol_model,bool compute_coverage)
+{
+
+    string s1 = left_sequence->get_sequence_string(false);
+    string s2 = right_sequence->get_sequence_string(false);
+
+    Codon_translation ct;
+
+    if(evol_model->get_data_type() == Model_factory::dna && Settings_handle::st.is("codons"))
+    {
+        ct.define_translation_tables();
+        s1 = ct.gapped_DNA_to_protein(&s1);
+        s2 = ct.gapped_DNA_to_protein(&s2);
+    }
+
+    vector<Substring_hit> hits;
+    int p_len = Settings_handle::st.get("prefix-hit-length").as<int>();
+
+//        struct timespec tcpu_start, tcpu_finish;
+//        clock_gettime(CLOCK_MONOTONIC, &tcpu_start);
+
+    Find_anchors fa;
+    if(Settings_handle::st.is("use-prefix-anchors"))
+    {
+        fa.find_long_substrings(&s1,&s2,&hits,p_len);
+    }
+    else
+    {
+        Exonerate_queries er;
+        if(er.test_executable())
+            er.local_pairwise_alignment(&s1,&s2,&hits);
+    }
+
+//        clock_gettime(CLOCK_MONOTONIC, &tcpu_finish);
+//        double elapsed;
+//        elapsed = (tcpu_finish.tv_sec - tcpu_start.tv_sec);
+//        elapsed += (tcpu_finish.tv_nsec - tcpu_start.tv_nsec) / 1000000000.0;
+//        cout<<"\n\ntime "<<elapsed<<endl<<endl;
+
+    s1 = left_sequence->get_sequence_string(true);
+    s2 = right_sequence->get_sequence_string(true);
+
+//        cout<<s1<<endl<<s2<<endl;
+    if(evol_model->get_data_type() == Model_factory::dna && Settings_handle::st.is("codons"))
+    {
+        s1 = ct.gapped_DNA_to_protein(&s1);
+        s2 = ct.gapped_DNA_to_protein(&s2);
+    }
+//        cout<<s1<<endl<<s2<<endl;
+
+    fa.check_hits_order_conflict(&s1,&s2,&hits);
+
+    fa.define_tunnel(&hits,&upper_bound,&lower_bound,s1,s2);
+
+    float coverage = 0;
+
+    if(compute_coverage)
+    {
+        int sum = 0;
+        for(int i=0;i<s1.length();i++)
+            sum += lower_bound.at(i)-upper_bound.at(i);
+
+        coverage = ((float)sum/(s1.length()*s2.length()));
+
+        stringstream s;
+        s.precision(4);
+        s<<"Anchoring: Computing "<<coverage*100.0<<"% of DP matrix.\n";
+        Log_output::write_out(s.str(),1);
+    }
+
+    tunnel_defined = true;
+
+    return coverage;
+}
 
 void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
                              Evol_model *evol_model,float l_branch_length,float r_branch_length,
@@ -50,64 +125,6 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
 
     this->debug_print_input_sequences(3);
 
-    vector<int> upper_bound;
-    vector<int> lower_bound;
-
-    if(not is_overlap_alignment && ( Settings_handle::st.is("use-anchors") || Settings_handle::st.is("use-prefix-anchors") ))
-    {
-
-        string s1 = left_sequence->get_sequence_string(false);
-        string s2 = right_sequence->get_sequence_string(false);
-
-        Codon_translation ct;
-
-        if(evol_model->get_data_type() == Model_factory::dna && Settings_handle::st.is("codons"))
-        {
-            ct.define_translation_tables();
-            s1 = ct.gapped_DNA_to_protein(&s1);
-            s2 = ct.gapped_DNA_to_protein(&s2);
-        }
-
-        vector<Substring_hit> hits;
-        int p_len = Settings_handle::st.get("prefix-hit-length").as<int>();
-
-//        struct timespec tcpu_start, tcpu_finish;
-//        clock_gettime(CLOCK_MONOTONIC, &tcpu_start);
-
-        Find_anchors fa;
-        if(Settings_handle::st.is("use-prefix-anchors"))
-        {
-            fa.find_long_substrings(&s1,&s2,&hits,p_len);
-        }
-        else
-        {
-            Exonerate_queries er;
-            if(er.test_executable())
-                er.local_pairwise_alignment(&s1,&s2,&hits);
-        }
-
-//        clock_gettime(CLOCK_MONOTONIC, &tcpu_finish);
-//        double elapsed;
-//        elapsed = (tcpu_finish.tv_sec - tcpu_start.tv_sec);
-//        elapsed += (tcpu_finish.tv_nsec - tcpu_start.tv_nsec) / 1000000000.0;
-//        cout<<"\n\ntime "<<elapsed<<endl<<endl;
-
-        s1 = left_sequence->get_sequence_string(true);
-        s2 = right_sequence->get_sequence_string(true);
-
-//        cout<<s1<<endl<<s2<<endl;
-        if(evol_model->get_data_type() == Model_factory::dna && Settings_handle::st.is("codons"))
-        {
-            s1 = ct.gapped_DNA_to_protein(&s1);
-            s2 = ct.gapped_DNA_to_protein(&s2);
-        }
-//        cout<<s1<<endl<<s2<<endl;
-
-        fa.check_hits_order_conflict(&s1,&s2,&hits);
-
-        fa.define_tunnel(&hits,&upper_bound,&lower_bound,s1,s2);
-
-    }
 
     // set the basic parameters (copy from Settings)
     //
@@ -156,7 +173,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     int j_max = match->shape()[1];
     int i_max = match->shape()[0];
 
-    if(not is_overlap_alignment && ( Settings_handle::st.is("use-anchors") || Settings_handle::st.is("use-prefix-anchors") ))
+    if( tunnel_defined )
     {
         for(int i=0;i<i_max;i++)
         {

@@ -74,23 +74,39 @@ void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence, 
     Log_output::write_out(ss.str(),"time");
 
     Viterbi_alignment va;
-    va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
-             left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence,is_overlap_alignment);
+    float tunnel_coverage = 0;
 
-    ss.str(string());
-    ss << "Time node::viterbi: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
-    Log_output::write_out(ss.str(),"time");
+    if(not is_overlap_alignment && ( Settings_handle::st.is("use-anchors") || Settings_handle::st.is("use-prefix-anchors") ))
+        tunnel_coverage = va.define_tunnel(left_child->get_sequence(),right_child->get_sequence(),&model,true);
 
-    this->add_ancestral_sequence( va.get_simple_sequence() );
+    float threshold = Settings_handle::st.get("anchoring-coverage-threshold").as<float>();
 
-    if(is_reads_sequence)
-        this->get_sequence()->is_read_descendants(true);
+    if(tunnel_coverage <= threshold)
+    {
+        va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
+                 left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence,is_overlap_alignment);
 
-    if(Settings::noise>2)
-        this->print_alignment();
+        ss.str(string());
+        ss << "Time node::viterbi: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
+        Log_output::write_out(ss.str(),"time");
 
-    if( Settings_handle::st.is("check-valid-graphs") )
-        this->check_valid_graph();
+        this->add_ancestral_sequence( va.get_simple_sequence() );
+
+        if(is_reads_sequence)
+            this->get_sequence()->is_read_descendants(true);
+
+        if(Settings::noise>2)
+            this->print_alignment();
+
+        if( Settings_handle::st.is("check-valid-graphs") )
+            this->check_valid_graph();
+    }
+    else
+    {
+        ss.str(string());
+        ss<<" anchoring coverage "<<tunnel_coverage<<" is below the threshold. Skipping the full alignment.";
+        Log_output::write_msg(ss.str(),0);
+    }
 
     ss.str(string());
     ss << "Time node::exit: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
@@ -231,6 +247,11 @@ void Node::align_sequences_this_node_threaded(Model_factory *mf)
     model_mutex.unlock();
 
     Viterbi_alignment va;
+    float tunnel_coverage = 0;
+
+    if( Settings_handle::st.is("use-anchors") || Settings_handle::st.is("use-prefix-anchors") )
+        tunnel_coverage = va.define_tunnel(left_child->get_sequence(),right_child->get_sequence(),&model,false);
+
     va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
              left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
 

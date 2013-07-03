@@ -189,9 +189,9 @@ public:
         nhx_tid = nm;
     }
 
-    void set_orf(Orf *o) { orf = *o; has_orf = true; ;}
-    Orf get_orf() { return orf; }
-    bool has_ORF() { return has_orf; }
+    void set_Orf(Orf *o) { orf = *o; has_orf = true; ;}
+    Orf get_Orf() { return orf; }
+    bool has_Orf() { return has_orf; }
 
     string get_name() const { return name; }
 
@@ -452,7 +452,7 @@ public:
         {
             if(this->get_sequence()->is_read_sequence())
             {
-                dna_seqs->insert(pair<string,string>(this->get_name(),this->get_orf().dna_sequence));
+                dna_seqs->insert(pair<string,string>(this->get_name(),this->get_Orf().dna_sequence));
             }
         }
         else

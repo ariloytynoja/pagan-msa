@@ -94,7 +94,8 @@ public:
         output.close();
     }
 
-    void backtranslate_dna(const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, vector<Fasta_entry> &outseqs) const throw (Exception);
+    void get_DNA_seqs(Node *root, const vector<Fasta_entry> *org_seqs, map<string,string> *dna_seqs);
+    void backtranslate_dna(const vector<Fasta_entry> & seqs, const map<string,string> *dna_seqs, vector<Fasta_entry> &outseqs) const throw (Exception);
 
     void print_fasta_entry(ostream & output, const Fasta_entry *entry) const;
 

@@ -316,6 +316,7 @@ void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<in
         lower_bound->insert(lower_bound->begin(),y);
     }
 
+    /*
     if(Settings::noise>0)
     {
         int sum = 0;
@@ -327,7 +328,7 @@ void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<in
         s<<"Anchoring: Computing "<<((float)sum/(length1*length2))*100.0<<"% of DP matrix.\n";
         Log_output::write_out(s.str(),1);
     }
-
+    */
 
     if(Settings_handle::st.is("plot-anchors-for-R")){
         cout<<"\n\nl1="<<str1.length()<<"; l2="<<str2.length()<<"; plot(1,1,type=\"n\",xlim=c(0,l1),ylim=c(0,l2))\n";

@@ -175,6 +175,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("align-bad-reads-at-root", "align non-matching reads at root")
         ("use-identity-score", "choose target based on identity score")
         ("use-target-normalised-score", "choose target based on target-normalised substitution score")
+        ("anchoring-coverage-threshold",po::value<float>()->default_value(1.0,"1.00"),"anchoring coverage threshold for skipping")
     ;
 
     boost::program_options::options_description graph("Graph options",100);
