@@ -695,7 +695,7 @@ void Exonerate_queries::local_alignment(Node *root, Fasta_entry *read, multimap<
 
 /****************************************************************************/
 
-void Exonerate_queries::local_pairwise_alignment(string *str1,string *str2,vector<Substring_hit> *hits)
+void Exonerate_queries::local_pairwise_alignment(string *str1,string *str2,vector<Substring_hit> *hits,int *best_reverse_hit)
 {
     int r = rand();
     string tmp_dir = this->get_temp_dir();
@@ -749,6 +749,8 @@ void Exonerate_queries::local_pairwise_alignment(string *str1,string *str2,vecto
             if( best_hits.at(i).q_strand == '-' || best_hits.at(i).t_strand == '-' ||
                     best_hits.at(i).q_start > best_hits.at(i).q_end || best_hits.at(i).t_start > best_hits.at(i).t_end )
             {
+                if(best_reverse_hit != 0)
+                    *best_reverse_hit = best_hits.at(i).score;
                 Log_output::write_out("Warning: Anchoring suggests reverse strand hit!\n",1);
                 continue;
             }

@@ -176,6 +176,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("use-identity-score", "choose target based on identity score")
         ("use-target-normalised-score", "choose target based on target-normalised substitution score")
         ("anchoring-coverage-threshold",po::value<float>()->default_value(1.0,"1.00"),"anchoring coverage threshold for skipping")
+        ("new-placement","new placement")
     ;
 
     boost::program_options::options_description graph("Graph options",100);

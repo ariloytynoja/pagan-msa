@@ -46,8 +46,8 @@ class Reads_aligner
     void loop_default_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_tagged_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
-    void loop_translated_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
-    void loop_read_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void loop_translated_pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void loop_query_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
 
     void do_upwards_search(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
 
@@ -57,6 +57,7 @@ class Reads_aligner
 
     void get_target_node_names(Node *root,multimap<string,string> *tid_nodes, bool *ignore_tid_tags);
 
+    void find_nodes_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
     void find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
     void find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
     void find_nodes_for_all_reads_together(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
@@ -127,6 +128,64 @@ class Reads_aligner
         return (l<r);
 
     }
+
+    void create_temp_node(Node *node,string ss, Node *global_root, Fasta_entry *read,bool is_reverse)
+    {
+        global_root->set_distance_to_parent(0.001);
+
+        node->set_name(ss);
+        node->add_left_child(global_root);
+
+        Node * reads_node = new Node();
+        this->copy_node_details(reads_node,read,is_reverse);
+
+        node->add_right_child(reads_node);
+
+        node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+        node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+    }
+
+    void create_temp_orf_node(Node *node,Node *global_root, Fasta_entry *read, Orf *open_frame)
+    {
+        node->set_name("#orf#");
+
+        global_root->set_distance_to_parent(0.001);
+        node->add_left_child(global_root);
+
+
+        Node * reads_node = new Node();
+
+        Fasta_entry orf;
+        orf.name = read->name;
+        orf.comment = read->comment;
+        orf.sequence = open_frame->translation;
+        orf.dna_sequence = open_frame->dna_sequence;
+        orf.quality = "";
+        orf.first_read_length = -1;
+        orf.trim_start = 0;
+        orf.trim_end = 0;
+        orf.tid = read->tid;
+        orf.cluster_attempts = 0;
+        orf.data_type = Model_factory::protein;
+
+        this->copy_node_details(reads_node,&orf);
+
+        node->add_right_child(reads_node);
+
+    }
+
+
+    void compute_read_overlap(Node *node,string read_name,string ref_root_name,string global_root_name,float *read_overlap,float *read_identity)
+    {
+        if(node->node_has_sequence_object)
+        {
+            if(Settings_handle::st.is("overlap-with-reference"))
+                this->read_alignment_scores(node, read_name,ref_root_name,read_overlap,read_identity);
+            else
+                this->read_alignment_scores(node, read_name,global_root_name,read_overlap,read_identity);
+        }
+    }
+
 public:
     Reads_aligner();
     void align(Node *root, Model_factory *mf,int count);

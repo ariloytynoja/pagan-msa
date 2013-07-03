@@ -81,7 +81,7 @@ public:
     void local_alignment(Node *root, Fasta_entry *read, std::multimap<std::string,std::string> *good_hits, std::map<std::string,hit> *hits, bool is_local, bool all_nodes=false);
     void all_local_alignments(Node *root, vector<Fasta_entry> *reads, std::multimap<std::string,std::string> *tid_nodes, std::map<std::string,std::multimap<std::string,hit> > *hits, bool is_local, bool ignore_tid_tags);
 
-    void local_pairwise_alignment(string *str1,string *str2,vector<Substring_hit> *hits);
+    void local_pairwise_alignment(string *str1,string *str2,vector<Substring_hit> *hits,int *best_reverse_hit=0);
 };
 
 }

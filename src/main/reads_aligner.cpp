@@ -84,7 +84,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     if( Settings_handle::st.is("pileup-alignment") && Settings_handle::st.is("find-best-orf"))
     {
         Log_output::write_header("Aligning reads: placement with ORF search",0);
-        this->loop_translated_placement(root,&reads,mf,count);
+        this->loop_translated_pileup_alignment(root,&reads,mf,count);
     }
 
     // Pileup: no search for optimal node or TID tags in the tree; can compare reverse strand
@@ -92,6 +92,13 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     {
         Log_output::write_header("Aligning reads: simple placement",0);
         this->loop_pileup_alignment(root,&reads,mf,count);
+    }
+
+    // New stuff
+    else if( Settings_handle::st.is("new-placement") )
+    {
+        Log_output::write_header("Aligning reads: new placement",0);
+        this->loop_query_placement(root,&reads,mf,count);
     }
 
 //    // NEW!
@@ -119,14 +126,13 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 void Reads_aligner::loop_pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
 {
     string ref_root_name = root->get_name();
+    global_root = root;
 
     int start_i = 0;
     if(Settings_handle::st.is("queryfile") && !Settings_handle::st.is("ref-seqfile"))
         start_i = 1;
 
     int max_attempts = Settings_handle::st.get("query-cluster-attempts").as<int>();
-    global_root = root;
-
     float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
     float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
 
@@ -148,64 +154,31 @@ void Reads_aligner::loop_pileup_alignment(Node *root, vector<Fasta_entry> *reads
             stringstream ss;
             ss<<"#"<<count<<"#";
 
-            global_root->set_distance_to_parent(0.001);
-
             Node * node = new Node();
-            node->set_name(ss.str());
-            node->add_left_child(global_root);
+            float read_overlap = -1;
+            float read_identity = -1;
 
-            Node * reads_node = new Node();
-            this->copy_node_details(reads_node,&reads->at(i));
-
-            node->add_right_child(reads_node);
-
-            node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
-            node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+            this->create_temp_node(node,ss.str(), global_root, &reads->at(i),false);
 
             Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") aligning read: "+reads->at(i).name+" "+reads->at(i).comment+".",0);
 
             node->align_sequences_this_node(mf,true,false);
+            this->compute_read_overlap(node,reads->at(i).name,ref_root_name,global_root->get_name(),&read_overlap,&read_identity);
 
-            float read_overlap = -1;
-            float read_identity = -1;
 
-            if(node->node_has_sequence_object)
-            {
-                if(Settings_handle::st.is("overlap-with-reference"))
-                    this->read_alignment_scores(node, reads->at(i).name,ref_root_name,&read_overlap,&read_identity);
-                else
-                    this->read_alignment_scores(node, reads->at(i).name,global_root->get_name(),&read_overlap,&read_identity);
-            }
-
+            Node * node_rc;
             float read_overlap_rc = -1;
             float read_identity_rc = -1;
-            Node * node_rc;
 
             if(Settings_handle::st.is("compare-reverse"))
             {
                 node_rc = new Node();
-                node_rc->set_name(ss.str());
-                node_rc->add_left_child(global_root);
-
-                Node * reads_node_rc = new Node();
-                this->copy_node_details(reads_node_rc,&reads->at(i),true);
-
-                node_rc->add_right_child(reads_node_rc);
-
-                node_rc->set_nhx_tid(node->get_left_child()->get_nhx_tid());
-                node_rc->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+                this->create_temp_node(node_rc,ss.str(), global_root, &reads->at(i),true);
 
                 Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") aligning read (rc): "+reads->at(i).name+" "+reads->at(i).comment+".",0);
 
                 node_rc->align_sequences_this_node(mf,true,false);
-
-                if(node_rc->node_has_sequence_object)
-                {
-                    if(Settings_handle::st.is("overlap-with-reference"))
-                        this->read_alignment_scores(node_rc, reads->at(i).name,ref_root_name,&read_overlap_rc,&read_identity_rc);
-                    else
-                        this->read_alignment_scores(node_rc, reads->at(i).name,global_root->get_name(),&read_overlap_rc,&read_identity_rc);
-                }
+                this->compute_read_overlap(node_rc,reads->at(i).name,ref_root_name,global_root->get_name(),&read_overlap_rc,&read_identity_rc);
 
                 Log_output::write_out("forward overlap: "+Log_output::ftos(read_overlap)+"; backward overlap: "+Log_output::ftos(read_overlap_rc)+"\n",1);
             }
@@ -259,18 +232,25 @@ void Reads_aligner::loop_pileup_alignment(Node *root, vector<Fasta_entry> *reads
     }
 }
 
-void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
+void Reads_aligner::loop_translated_pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
 {
-    string ref_root_name = root->get_name();
-
     this->define_translation_tables();
+
+    string ref_root_name = root->get_name();
+    global_root = root;
 
     int start_i = 0;
     if(Settings_handle::st.is("queryfile") && !Settings_handle::st.is("ref-seqfile"))
         start_i = 1;
 
     int max_attempts = Settings_handle::st.get("query-cluster-attempts").as<int>();
-    global_root = root;
+    float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
+    float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
+
+    if(min_overlap<0)
+        min_overlap = 0;
+    if(min_identity<0)
+        min_identity = 0;
 
     for(int j=0; j < max_attempts; j++)
     {
@@ -297,44 +277,13 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
                 for(int h=0;h<(int)open_frames.size();h++)
                 {
                     Node * node = new Node();
-                    node->set_name("#orf#");
-
-                    global_root->set_distance_to_parent(0.001);
-                    node->add_left_child(global_root);
-
-
-                    Node * reads_node = new Node();
-
-                    Fasta_entry orf;
-                    orf.name = reads->at(i).name;
-                    orf.comment = reads->at(i).comment;
-                    orf.sequence = open_frames.at(h).translation;
-//                    orf.dna_sequence = reads->at(i).dna_sequence;
-                    orf.dna_sequence = open_frames.at(h).dna_sequence;
-                    orf.quality = "";
-                    orf.first_read_length = -1;
-                    orf.trim_start = 0;
-                    orf.trim_end = 0;
-                    orf.tid = reads->at(i).tid;
-                    orf.cluster_attempts = 0;
-                    orf.data_type = Model_factory::protein;
-
-                    this->copy_node_details(reads_node,&orf);
-
-                    node->add_right_child(reads_node);
-
-                    node->align_sequences_this_node(mf,true,false);
-
                     float read_overlap = -1;
                     float read_identity = -1;
 
-                    if(node->node_has_sequence_object)
-                    {
-                        if(Settings_handle::st.is("overlap-with-reference"))
-                            this->read_alignment_scores(node, reads->at(i).name,ref_root_name,&read_overlap,&read_identity);
-                        else
-                            this->read_alignment_scores(node, reads->at(i).name,global_root->get_name(),&read_overlap,&read_identity);
-                    }
+                    this->create_temp_orf_node(node,global_root, &reads->at(i), &open_frames.at(h));
+
+                    node->align_sequences_this_node(mf,true,false);
+                    this->compute_read_overlap(node,reads->at(i).name,ref_root_name,global_root->get_name(),&read_overlap,&read_identity);
 
                     if(read_overlap > best_overlap || (read_overlap == best_overlap && read_overlap > read_identity) )
                     {
@@ -350,9 +299,6 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
                     }
                 }
 
-                float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
-                float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
-
                 if(best_overlap > min_overlap && best_identity > min_identity)
                 {
                     reads->at(i).cluster_attempts = max_attempts;
@@ -364,9 +310,6 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
                     best_node->get_right_child()->set_nhx_tid(best_node->get_left_child()->get_nhx_tid());
 
                     best_node->get_right_child()->set_Orf(best_orf);
-
-//                    cout<<best_orf->translation<<endl<<best_orf->dna_sequence<<endl;
-//                    cout<<best_orf->start<<endl<<best_orf->end<<endl<<best_orf->frame<<endl;
 
                     stringstream ss;
                     ss<<"#"<<count<<"#";
@@ -962,7 +905,7 @@ void Reads_aligner::loop_default_placement(Node *root, vector<Fasta_entry> *read
     }
 }
 
-void Reads_aligner::loop_read_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
+void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
 {
     bool single_ref_sequence = false;
     if(root->get_number_of_leaves()==1)
@@ -970,40 +913,8 @@ void Reads_aligner::loop_read_placement(Node *root, vector<Fasta_entry> *reads, 
 
     global_root = root;
 
-    // vector of node names giving the best node for each read
-    //
+    this->find_nodes_for_queries(root, reads, mf);
 
-    if(Settings_handle::st.is("very-fast-placement"))
-    {
-        Log_output::write_header("Placing query sequences: very fast Exonerate placement",0);
-        this->find_nodes_for_all_reads_together(root, reads, mf);
-    }
-    else if(Settings_handle::st.is("fast-placement"))
-    {
-        Log_output::write_header("Placing query sequences: fast Exonerate placement",0);
-        this->find_nodes_for_all_reads(root, reads, mf);
-    }
-    /*
-    // NEW!
-    else if(Settings_handle::st.is("tagged-search"))
-    {
-        Log_output::write_header("Placing query sequences: tagged search",0);
-//        this->loop_tagged_placement(root,&reads,mf,count);
-    }
-    // NEW!
-    else if(Settings_handle::st.is("upwards-search"))
-    {
-        Log_output::write_header("Placing query sequences: upwards search",0);
-        this->do_upwards_search(root,reads,mf);
-    }
-    */
-    else
-    {
-        this->find_nodes_for_reads(root, reads, mf);
-    }
-
-    if(Settings_handle::st.is("placement-only"))
-        exit(0);
 
     Log_output::write_header("Aligning query sequences",0);
 
@@ -1053,6 +964,7 @@ void Reads_aligner::loop_read_placement(Node *root, vector<Fasta_entry> *reads, 
 
         this->sort_reads_vector(&reads_for_this);
 
+        /*
         // remove fully overlapping reads that are mapped to this node
         //
         if(Settings_handle::st.is("rank-reads-for-nodes"))
@@ -1094,6 +1006,7 @@ void Reads_aligner::loop_read_placement(Node *root, vector<Fasta_entry> *reads, 
                 Log_output::write_out("\nWarning: without ranking the reads for nodes, one cannot resolve overlap between reads. The flag has no effect!\n\n",2);
             }
         }
+        */
 
         string ref_node_name = *sit;
 
@@ -1108,27 +1021,22 @@ void Reads_aligner::loop_read_placement(Node *root, vector<Fasta_entry> *reads, 
         for(int i=0;i<(int)reads_for_this.size();i++)
         {
             Node * node = new Node();
+            float read_overlap = -1;
+            float read_identity = -1;
 
             stringstream ss;
             ss<<"#"<<count<<"#";
             node->set_name(ss.str());
 
-            current_root->set_distance_to_parent(0.001);
-            node->add_left_child(current_root);
+            this->create_temp_node(node,ss.str(), current_root, &reads_for_this.at(i),false);
 
-            Node * reads_node = new Node();
-            this->copy_node_details(reads_node,&reads_for_this.at(i));
-
-
-            node->add_right_child(reads_node);
-
-            node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
-            node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
 
             Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
 
             node->align_sequences_this_node(mf,true,false);
+            this->compute_read_overlap(node,reads_for_this->at(i).name,ref_root_name,current_root->get_name(),&read_overlap,&read_identity);
 
+            /*HERE*/
 
             // check if the alignment significantly overlaps with the reference alignment
             //
@@ -1845,6 +1753,254 @@ void Reads_aligner::get_target_node_names(Node *root,multimap<string,string> *ti
             Log_output::write_out("No tagged nodes found. Considering all nodes!\n\n",0);
             tid_nodes->clear();
             root->get_node_names(tid_nodes);
+        }
+    }
+}
+
+void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
+{
+    multimap<string,string> tid_nodes;
+    bool ignore_tid_tags = true;
+
+    this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+
+
+    Exonerate_queries er;
+    bool has_exonerate = true;
+    if(!er.test_executable())
+    {
+        has_exonerate = false;
+        Log_output::write_out("The executable for Exonerate not found! The fast placement search not used!",0);
+    }
+
+    for(int i=0;i<(int)reads->size();i++)
+    {
+        reads->at(i).node_score = -1.0;
+
+        string tid = reads->at(i).tid;
+        if( ignore_tid_tags )
+            tid = "<empty>";
+
+        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping read: '"+reads->at(i).name+"'",0);
+
+        // Call Exonerate to reduce the search space
+
+        map<string,hit> exonerate_hits;
+
+        int best_reverse_hit = 0;
+        if(has_exonerate && Settings_handle::st.is("use-exonerate-local") )
+        {
+            tid_nodes.clear();
+            this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+
+            if(tid_nodes.size()>1)
+                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits, true,ignore_tid_tags);
+
+            if(tid_nodes.size()>1 && Settings_handle::st.is("use-exonerate-gapped"))
+                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
+
+            /*
+            int best_forward_hit = 0;
+            multimap<string,hit>::iterator ith = exonerate_hits.begin();
+            for(;ith != exonerate_hits.end();ith++)
+            {
+                hit h = ith->second;
+                cout<<h.score<<endl;
+                if(h.score > best_forward_hit)
+                    best_forward_hit = h.score;
+            }
+
+            cout<<best_reverse_hit<<" "<<best_forward_hit<<endl;
+            if(best_reverse_hit>best_forward_hit)
+            {
+                Fasta_entry revseq =reads->at(i);
+                revseq.sequence = this->reverse_complement(revseq.sequence);
+
+                tid_nodes.clear();
+                this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+
+                if(tid_nodes.size()>1)
+                    er.local_alignment(root,&revseq,&tid_nodes,&exonerate_hits, true,ignore_tid_tags,&best_reverse_hit);
+
+                if(tid_nodes.size()>1 && Settings_handle::st.is("use-exonerate-gapped"))
+                    er.local_alignment(root,&revseq,&tid_nodes,&exonerate_hits,false,ignore_tid_tags,&best_reverse_hit);
+
+                 if(best_reverse_hit>best_forward_hit)
+                 {
+                    reads->at(i) = revseq;
+                 }
+            }
+            */
+        }
+
+
+        // Discarded by Exonerate
+
+        if(reads->at(i).node_to_align == "discarded_read")
+        {
+            if(Settings_handle::st.is("exhaustive-placement"))
+            {
+                reads->at(i).node_to_align == "";
+                tid_nodes.clear();
+
+                this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+            }
+            else
+            {
+                stringstream ss;
+                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" was discarded by Exonerate.\n";
+                Log_output::write_out(ss.str(),2);
+
+                continue;
+            }
+        }
+
+        // Has TID or exhaustive search
+        if(tid != "")
+        {
+            int matches = tid_nodes.count(tid);
+
+            if( ignore_tid_tags )
+                matches = tid_nodes.size();
+
+
+            // has TID but no matching node
+
+            if(matches == 0)
+            {
+                stringstream ss;
+                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" has no matching node. Aligned to root.\n";
+                Log_output::write_out(ss.str(),2);
+
+                reads->at(i).node_to_align = root->get_name();
+            }
+
+
+            // has only one matching node and no need for ranking
+
+            else if(matches == 1 && !Settings_handle::st.is("rank-reads-for-nodes") )
+            {
+                multimap<string,string>::iterator tit = tid_nodes.find(tid);
+
+                if( ignore_tid_tags )
+                    tit = tid_nodes.begin();
+
+                if(tit != tid_nodes.end())
+                {
+                    stringstream ss;
+                    ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" only matches the node "<<tit->second<<"."<<endl;
+                    Log_output::write_out(ss.str(),2);
+
+                    reads->at(i).node_to_align = tit->second;
+
+                    multimap<string,hit>::iterator ith = exonerate_hits.find(tit->second);
+                    if(ith != exonerate_hits.end())
+                    {
+                        hit h = ith->second;
+
+                        reads->at(i).local_qstart = h.q_start;
+                        reads->at(i).local_qend = h.q_end;
+                        reads->at(i).local_tstart = h.t_start;
+                        reads->at(i).local_tend = h.t_end;
+                    }
+                }
+            }
+
+
+            // has TID and matching nodes, or exhaustive search
+
+            else
+            {
+                double best_score = -HUGE_VAL;
+                string best_node = root->get_name();
+
+                map<string,Node*> nodes;
+                root->get_all_nodes(&nodes);
+
+                multimap<string,string>::iterator tit;
+                int matching_nodes = 0;
+
+                if( ignore_tid_tags )
+                {
+                    tit = tid_nodes.begin();
+                    matching_nodes = tid_nodes.size();
+                }
+                else
+                {
+                    tit = tid_nodes.find(tid);
+                    matching_nodes = tid_nodes.count(tid);
+                }
+
+                if(tit != tid_nodes.end())
+                {
+
+                    stringstream ss;
+                    ss<<"Read "<<reads->at(i).name<<" with TID "<<tid<<" matches "<<matching_nodes<<" nodes.\n";
+                    Log_output::write_out(ss.str(),2);
+
+                    while(tit != tid_nodes.end() && matching_nodes>0)
+                    {
+                        map<string,Node*>::iterator nit = nodes.find(tit->second);
+                        double score = this->read_match_score( nit->second, &reads->at(i), mf, best_score);
+
+                        stringstream ss;
+                        ss<<tit->second<<" with score "<<score<<" (simple p-distance)\n";
+                        Log_output::write_out(ss.str(),2);
+
+                        if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
+                        {
+                            best_score = score;
+                            best_node.append(" "+tit->second);
+                        }
+                        else if(score>best_score)
+                        {
+                            best_score = score;
+                            best_node = tit->second;
+                        }
+                        tit++;
+                        matching_nodes--;
+                    }
+                }
+                if(best_score<0.05)
+                {
+                    if(Settings_handle::st.is("align-bad-reads-at-root"))
+                    {
+                        Log_output::write_out("Best node aligns with less than 5% of identical sites. Aligning to root instead.\n",2);
+
+                        reads->at(i).node_to_align = root->get_name();
+
+                    }
+                    else
+                    {
+                        Log_output::write_out("Best node aligns with less than 5% of identical sites. Read is discarded.\n",2);
+
+                        reads->at(i).node_to_align = "discarded_read";
+                    }
+                }
+                else
+                {
+                    stringstream ss;
+                    ss<<"best node "<<best_node<<" (score "<<best_score<<").\n";
+                    Log_output::write_out(ss.str(),2);
+
+                    reads->at(i).node_score = best_score;
+                    reads->at(i).node_to_align = best_node;
+
+                }
+            }
+        }
+
+
+        // no TID, aligning at root
+
+        else
+        {
+            stringstream ss;
+            ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") has no tid. Aligned to root.\n";
+            Log_output::write_out(ss.str(),2);
+
+            reads->at(i).node_to_align = root->get_name();
+
         }
     }
 }
