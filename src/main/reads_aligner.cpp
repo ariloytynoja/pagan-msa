@@ -1034,7 +1034,7 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
             Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
 
             node->align_sequences_this_node(mf,true,false);
-            this->compute_read_overlap(node,reads_for_this->at(i).name,ref_root_name,current_root->get_name(),&read_overlap,&read_identity);
+            this->compute_read_overlap(node,reads_for_this.at(i).name,ref_node_name,current_root->get_name(),&read_overlap,&read_identity);
 
             /*HERE*/
 
