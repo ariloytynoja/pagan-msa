@@ -850,27 +850,14 @@ void Fasta_reader::get_DNA_seqs(Node *root, const vector<Fasta_entry> *org_seqs,
 void Fasta_reader::backtranslate_dna(const vector<Fasta_entry> & seqs, const map<string,string> *dna_seqs, vector<Fasta_entry> &outseqs) const throw (Exception)
 {
     bool dna_seq_missing = false;
-    /*map<string,string> dna_seqs*/;
-
-//    vector<Fasta_entry>::const_iterator it = org_seqs.begin();
 
     map<string,string>::const_iterator it = dna_seqs->begin();
-
-    Text_utils tu;
 
     for (; it != dna_seqs->end(); it++)
     {
         if( it->second.length() == 0 )
             dna_seq_missing = true;
-
-//        string seq = it->second;
-//        tu.replace_all(seq,"-","");
-
-//        dna_seqs->insert(pair<string,string>(it->first,seq));
     }
-
-
-
 
     if(dna_seq_missing)
     {
@@ -886,7 +873,6 @@ void Fasta_reader::backtranslate_dna(const vector<Fasta_entry> & seqs, const map
         Fasta_entry os;
         os.name = vi->name;
         os.comment = vi->comment;
-
 
         map<string,string>::const_iterator it2 = dna_seqs->find(vi->name);
         if(it2 == dna_seqs->end())
@@ -905,7 +891,6 @@ void Fasta_reader::backtranslate_dna(const vector<Fasta_entry> & seqs, const map
 
         outseqs.push_back(os);
     }
-
 }
 
 void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs, const vector<Fasta_entry> & org_seqs, Node *root, int output_type) const throw (Exception)

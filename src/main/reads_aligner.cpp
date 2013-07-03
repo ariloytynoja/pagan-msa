@@ -365,8 +365,8 @@ void Reads_aligner::loop_translated_placement(Node *root, vector<Fasta_entry> *r
 
                     best_node->get_right_child()->set_Orf(best_orf);
 
-                    cout<<best_orf->translation<<endl<<best_orf->dna_sequence<<endl;
-                    cout<<best_orf->start<<endl<<best_orf->end<<endl<<best_orf->frame<<endl;
+//                    cout<<best_orf->translation<<endl<<best_orf->dna_sequence<<endl;
+//                    cout<<best_orf->start<<endl<<best_orf->end<<endl<<best_orf->frame<<endl;
 
                     stringstream ss;
                     ss<<"#"<<count<<"#";
@@ -423,11 +423,7 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
                     o.dna_sequence = dna.substr(start_site,end_site-start_site+1);
 
                     open_frames->push_back(o);                    
-
-                    cout<<codon<<" "<<start_site<<" "<<end_site<<endl;
                 }
-
-//                cout<<codon_to_aa.find(codon)->second<<" "<<start_site<<" "<<end_site<<endl;
 
                 prot = "";
                 start_site = j+i+3;
@@ -450,8 +446,6 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
             o.dna_sequence = dna.substr(start_site,end_site-start_site+1);
 
             open_frames->push_back(o);
-
-            cout<<" "<<start_site<<" "<<end_site<<endl;
         }
     }
 
@@ -479,11 +473,7 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
                     o.dna_sequence = dna.substr(start_site,end_site-start_site+1);
 
                     open_frames->push_back(o);
-
-                    cout<<codon<<" "<<start_site<<" "<<end_site<<endl;
                 }
-//                cout<<codon_to_aa.find(codon)->second<<" "<<start_site<<" "<<end_site<<endl;
-
 
                 prot = "";
                 start_site = j+i+3;
@@ -505,8 +495,6 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
             o.dna_sequence = dna.substr(start_site,end_site-start_site+1);
 
             open_frames->push_back(o);
-
-            cout<<" "<<start_site<<" "<<end_site<<endl;
         }
     }
 }
