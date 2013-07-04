@@ -628,7 +628,7 @@ void Fasta_reader::write(ostream & output, const vector<Fasta_entry> & seqs, str
         }
     }
 
-     vector<Fasta_entry> seqs2;
+    vector<Fasta_entry> seqs2;
 
     vector<Fasta_entry>::const_iterator vi = seqs.begin();
     for (; vi != seqs.end(); vi++)
@@ -637,7 +637,9 @@ void Fasta_reader::write(ostream & output, const vector<Fasta_entry> & seqs, str
         multimap<string,int>::iterator cit = copy_num.find(vi->name);
         if(cit!=copy_num.end())
         {
-            e.name.append("/"+cit->second);
+            stringstream ss;
+            ss << e.name << "/" << cit->second;
+            e.name = ss.str();
             copy_num.erase(cit);
         }
         seqs2.push_back(e);
@@ -1582,13 +1584,13 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
     if((int)sequences->size() > overlap && overlap == (int)leaf_nodes->size())
     {
         Log_output::write_out("\nWarning: "+Log_output::itos(leaf_nodes->size())+" leaf nodes but "+
-                              Log_output::itos(sequences->size())+" sequences! Excess sequences will be removed.\n\n",1);
+                              Log_output::itos(sequences->size())+" sequences! Excess sequences will be removed.\n\n",0);
         return true;
     }
     if(overlap < (int)leaf_nodes->size())
     {
         Log_output::write_out("\nWarning: "+Log_output::itos(leaf_nodes->size())+" leaf nodes but "+
-                              Log_output::itos(overlap)+" matching sequences! Excess branches will be removed.\n\n",1);
+                              Log_output::itos(overlap)+" matching sequences! Excess branches will be removed.\n\n",0);
         return false;
     }
     return true;

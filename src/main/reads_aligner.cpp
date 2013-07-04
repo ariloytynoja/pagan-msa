@@ -141,6 +141,7 @@ void Reads_aligner::loop_pileup_alignment(Node *root, vector<Fasta_entry> *reads
     if(min_identity<0)
         min_identity = 0;
 
+    bool compare_reverse = Settings_handle::st.is("compare-reverse") && mf->get_sequence_data_type()==Model_factory::dna;
 
     for(int j=0; j < max_attempts; j++)
     {
@@ -170,7 +171,7 @@ void Reads_aligner::loop_pileup_alignment(Node *root, vector<Fasta_entry> *reads
             float read_overlap_rc = -1;
             float read_identity_rc = -1;
 
-            if(Settings_handle::st.is("compare-reverse"))
+            if(compare_reverse)
             {
                 node_rc = new Node();
                 this->create_temp_node(node_rc,ss.str(), global_root, &reads->at(i),true);
@@ -195,7 +196,7 @@ void Reads_aligner::loop_pileup_alignment(Node *root, vector<Fasta_entry> *reads
                 count++;
                 global_root = node;
 
-                if(Settings_handle::st.is("compare-reverse"))
+                if(compare_reverse)
                 {
                     node_rc->has_left_child(false);
                     delete node_rc;
@@ -222,7 +223,7 @@ void Reads_aligner::loop_pileup_alignment(Node *root, vector<Fasta_entry> *reads
                 node->has_left_child(false);
                 delete node;
 
-                if(Settings_handle::st.is("compare-reverse"))
+                if(compare_reverse)
                 {
                     node_rc->has_left_child(false);
                     delete node_rc;
@@ -912,6 +913,7 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
         single_ref_sequence = true;
 
     global_root = root;
+    bool compare_reverse = Settings_handle::st.is("compare-reverse") && mf->get_sequence_data_type()==Model_factory::dna;
 
     this->find_nodes_for_queries(root, reads, mf);
 
@@ -992,19 +994,23 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
             ss<<"#"<<count<<"#";
             node->set_name(ss.str());
 
-            this->create_temp_node(node,ss.str(), current_root, &reads_for_this.at(i),false);
+            if(reads_for_this.at(i).query_strand != Fasta_entry::reverse_strand)
+            {
+                this->create_temp_node(node,ss.str(), current_root, &reads_for_this.at(i),false);
 
-            Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
+                Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
 
-            node->align_sequences_this_node(mf,true,false);
-            this->compute_read_overlap(node,reads_for_this.at(i).name,ref_node_name,current_root->get_name(),&read_overlap,&read_identity);
-
+                node->align_sequences_this_node(mf,true,false);
+                this->compute_read_overlap(node,reads_for_this.at(i).name,ref_node_name,current_root->get_name(),&read_overlap,&read_identity);
+            }
 
             Node * node_rc;
             float read_overlap_rc = -1;
             float read_identity_rc = -1;
 
-            if(Settings_handle::st.is("compare-reverse"))
+            bool reverse_computed = false;
+
+            if(compare_reverse && reads_for_this.at(i).query_strand != Fasta_entry::forward_strand)
             {
                 node_rc = new Node();
                 this->create_temp_node(node_rc,ss.str(), current_root, &reads_for_this.at(i),true);
@@ -1012,14 +1018,13 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
                 Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read (rc): "+reads_for_this.at(i).name+".",0);
 
                 node_rc->align_sequences_this_node(mf,true,false);
-                this->compute_read_overlap(node_rc,reads->at(i).name,ref_node_name,current_root->get_name(),&read_overlap_rc,&read_identity_rc);
+                this->compute_read_overlap(node_rc,reads_for_this.at(i).name,ref_node_name,current_root->get_name(),&read_overlap_rc,&read_identity_rc);
 
-                Log_output::write_out("forward overlap/identity: "+Log_output::ftos(read_overlap)+"/"+Log_output::ftos(read_identity)+"; backward: "+Log_output::ftos(read_overlap_rc)+"/"+Log_output::ftos(read_identity_rc)+"\n",1);
+                reverse_computed = true;
             }
-            else
-            {
-                Log_output::write_out("forward overlap/identity: "+Log_output::ftos(read_overlap)+"/"+Log_output::ftos(read_identity)+"\n",1);
-            }
+
+            Log_output::write_out("forward overlap/identity: "+Log_output::ftos(read_overlap)+"/"+Log_output::ftos(read_identity)+"; backward: "+Log_output::ftos(read_overlap_rc)+"/"+Log_output::ftos(read_identity_rc)+"\n",1);
+
 
             if(read_overlap > read_overlap_rc && read_overlap > min_overlap && read_identity > min_identity)
             {
@@ -1032,7 +1037,7 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
                 alignment_done = true;
                 alignments_done++;
 
-                if(Settings_handle::st.is("compare-reverse"))
+                if(reverse_computed)
                 {
                     node_rc->has_left_child(false);
                     delete node_rc;
@@ -1059,7 +1064,7 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
                 node->has_left_child(false);
                 delete node;
 
-                if(Settings_handle::st.is("compare-reverse"))
+                if(reverse_computed)
                 {
                     node_rc->has_left_child(false);
                     delete node_rc;
@@ -1776,22 +1781,22 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
     //
     multimap<string,string> tid_nodes;
     bool ignore_tid_tags = true;
+    bool compare_reverse = Settings_handle::st.is("compare-reverse") && mf->get_sequence_data_type()==Model_factory::dna;
 
     this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
-
-
 
     // Handle one read at time
     //
     for(int i=0;i<(int)reads->size();i++)
     {
         reads->at(i).node_score = -1.0;
+        reads->at(i).query_strand = Fasta_entry::unknown_strand;
 
         string tid = reads->at(i).tid;
         if( ignore_tid_tags )
             tid = "<empty>";
 
-        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping read: '"+reads->at(i).name+"'",0);
+        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping read: '"+reads->at(i).name+" "+reads->at(i).comment+"'",0);
 
         // Call Exonerate to reduce the search space
         //
@@ -1806,6 +1811,14 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                 er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits, true,ignore_tid_tags);
 
             if(tid_nodes.size()>1 && Settings_handle::st.is("use-exonerate-gapped"))
+                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
+        }
+        else if(has_exonerate && Settings_handle::st.is("use-exonerate-gapped") )
+        {
+            tid_nodes.clear();
+            this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+
+            if(tid_nodes.size()>1)
                 er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
         }
 
@@ -1893,6 +1906,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
             {
                 double best_score = -HUGE_VAL;
                 string best_node = root->get_name();
+                int query_strand = Fasta_entry::forward_strand;
 
                 map<string,Node*> nodes;
                 root->get_all_nodes(&nodes);
@@ -1938,11 +1952,12 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                             best_node = tit->second;
                         }
 
-                        if(Settings_handle::st.is("compare-reverse"))
+                        if(compare_reverse)
                         {
                             Fasta_entry rev_seq = reads->at(i);
                             rev_seq.sequence = this->reverse_complement(rev_seq.sequence);
-                            double score = this->read_match_score( nit->second, &reads->at(i), mf, best_score);
+
+                            double score = this->read_match_score( nit->second, &rev_seq, mf, best_score);
 
                             stringstream ss;
                             ss<<tit->second<<"(rc) with score "<<score<<" (simple p-distance)\n";
@@ -1952,11 +1967,13 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                             {
                                 best_score = score;
                                 best_node.append(" "+tit->second);
+                                query_strand = Fasta_entry::reverse_strand;
                             }
                             else if(score>best_score)
                             {
                                 best_score = score;
                                 best_node = tit->second;
+                                query_strand = Fasta_entry::reverse_strand;
                             }
                         }
 
@@ -1964,6 +1981,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                         matching_nodes--;
                     }
                 }
+
                 if(best_score<0.05)
                 {
                     if(Settings_handle::st.is("align-bad-reads-at-root"))
@@ -1988,7 +2006,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
 
                     reads->at(i).node_score = best_score;
                     reads->at(i).node_to_align = best_node;
-
+                    reads->at(i).query_strand = query_strand;
                 }
             }
             // All done; continue

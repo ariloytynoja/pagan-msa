@@ -105,7 +105,7 @@ void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence, 
     {
         ss.str(string());
         ss<<" anchoring coverage "<<tunnel_coverage<<" is below the threshold. Skipping the full alignment.";
-        Log_output::write_msg(ss.str(),0);
+        Log_output::write_msg(ss.str(),1);
     }
 
     ss.str(string());

@@ -38,6 +38,8 @@ struct Seq_edge
 
 struct Fasta_entry
 {
+    enum Strand {unknown_strand, forward_strand, reverse_strand};
+
     string name;
     string comment;
     string sequence;
@@ -63,6 +65,7 @@ struct Fasta_entry
     int cluster_attempts;
     bool reversed;
     int num_duplicates;
+    int query_strand;
 };
 
 }

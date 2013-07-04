@@ -484,7 +484,6 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
     Log_output::clean_output();
 
-
     // See if any sequences were placed
     //
     if(Settings_handle::st.is("queryfile") && (int)sequences->size() == (int)aligned_sequences.size())
