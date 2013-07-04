@@ -915,6 +915,13 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
 
     this->find_nodes_for_queries(root, reads, mf);
 
+    float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
+    float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
+
+    if(min_overlap<0)
+        min_overlap = 0;
+    if(min_identity<0)
+        min_identity = 0;
 
     Log_output::write_header("Aligning query sequences",0);
 
@@ -964,49 +971,6 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
 
         this->sort_reads_vector(&reads_for_this);
 
-        /*
-        // remove fully overlapping reads that are mapped to this node
-        //
-        if(Settings_handle::st.is("rank-reads-for-nodes"))
-        {
-            bool print_log = false;
-
-            if(Settings_handle::st.is("discard-overlapping-identical-reads"))
-            {
-                this->remove_target_overlapping_identical_reads(&reads_for_this,mf);
-                print_log = true;
-            }
-            else if(Settings_handle::st.is("discard-overlapping-reads"))
-            {
-                this->remove_target_overlapping_reads(&reads_for_this);
-                print_log = true;
-            }
-            else if(Settings_handle::st.is("discard-pairwise-overlapping-reads"))
-            {
-                this->remove_overlapping_reads(&reads_for_this,mf);
-                print_log = true;
-            }
-
-            if(print_log && Settings::noise>1)
-            {
-                stringstream ss;
-                ss<<"After removing overlapping ones, for node "<<*sit<<" reads remaining:\n";
-                for(int i=0;i<(int)reads_for_this.size();i++)
-                    ss<<" "<<reads_for_this.at(i).name<<" "<<reads_for_this.at(i).node_score<<endl;
-                ss<<endl;
-                Log_output::write_out(ss.str(),2);
-            }
-
-        }
-        else
-        {
-            if( Settings_handle::st.is("discard-overlapping-identical-reads") ||
-                     Settings_handle::st.is("discard-overlapping-reads") )
-            {
-                Log_output::write_out("\nWarning: without ranking the reads for nodes, one cannot resolve overlap between reads. The flag has no effect!\n\n",2);
-            }
-        }
-        */
 
         string ref_node_name = *sit;
 
@@ -1030,19 +994,34 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
 
             this->create_temp_node(node,ss.str(), current_root, &reads_for_this.at(i),false);
 
-
             Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
 
             node->align_sequences_this_node(mf,true,false);
             this->compute_read_overlap(node,reads_for_this.at(i).name,ref_node_name,current_root->get_name(),&read_overlap,&read_identity);
 
-            /*HERE*/
 
-            // check if the alignment significantly overlaps with the reference alignment
-            //
-            bool read_overlaps = this->read_alignment_overlaps(node, reads_for_this.at(i).name, ref_node_name);
+            Node * node_rc;
+            float read_overlap_rc = -1;
+            float read_identity_rc = -1;
 
-            if(read_overlaps)
+            if(Settings_handle::st.is("compare-reverse"))
+            {
+                node_rc = new Node();
+                this->create_temp_node(node_rc,ss.str(), current_root, &reads_for_this.at(i),true);
+
+                Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read (rc): "+reads_for_this.at(i).name+".",0);
+
+                node_rc->align_sequences_this_node(mf,true,false);
+                this->compute_read_overlap(node_rc,reads->at(i).name,ref_node_name,current_root->get_name(),&read_overlap_rc,&read_identity_rc);
+
+                Log_output::write_out("forward overlap/identity: "+Log_output::ftos(read_overlap)+"/"+Log_output::ftos(read_identity)+"; backward: "+Log_output::ftos(read_overlap_rc)+"/"+Log_output::ftos(read_identity_rc)+"\n",1);
+            }
+            else
+            {
+                Log_output::write_out("forward overlap/identity: "+Log_output::ftos(read_overlap)+"/"+Log_output::ftos(read_identity)+"\n",1);
+            }
+
+            if(read_overlap > read_overlap_rc && read_overlap > min_overlap && read_identity > min_identity)
             {
                 count++;
                 current_root = node;
@@ -1052,18 +1031,43 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
 
                 alignment_done = true;
                 alignments_done++;
+
+                if(Settings_handle::st.is("compare-reverse"))
+                {
+                    node_rc->has_left_child(false);
+                    delete node_rc;
+                }
             }
-            // else delete the node; do not use the read
-            else
+
+            else if( read_overlap_rc > min_overlap && read_identity_rc > min_identity )
             {
+                count++;
+                current_root = node_rc;
+
+                if( orig_dist > current_root->get_distance_to_parent() )
+                    orig_dist -= current_root->get_distance_to_parent();
+
+                alignment_done = true;
+                alignments_done++;
+
                 node->has_left_child(false);
                 delete node;
             }
 
+            else
+            {
+                node->has_left_child(false);
+                delete node;
+
+                if(Settings_handle::st.is("compare-reverse"))
+                {
+                    node_rc->has_left_child(false);
+                    delete node_rc;
+                }
+            }
         }
 
         current_root->set_distance_to_parent(orig_dist);
-
 
         if(alignment_done)
         {
