@@ -153,7 +153,6 @@ class Reads_aligner
         global_root->set_distance_to_parent(0.001);
         node->add_left_child(global_root);
 
-
         Node * reads_node = new Node();
 
         Fasta_entry orf;

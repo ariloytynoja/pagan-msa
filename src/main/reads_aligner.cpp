@@ -1120,9 +1120,10 @@ void Reads_aligner::loop_translated_query_placement(Node *root, vector<Fasta_ent
 
     global_root = root;
 
-
     float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
     float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
+
+    double r_dist = Settings_handle::st.get("query-distance").as<float>();
 
     if(min_overlap<0)
         min_overlap = 0;
@@ -1143,6 +1144,7 @@ void Reads_aligner::loop_translated_query_placement(Node *root, vector<Fasta_ent
             stringstream ss;
             ss<<reads->at(i).name<<".orf."<<open_frames.at(j).frame<<"."<<open_frames.at(j).start<<"."<<open_frames.at(j).end;
             fe.name = ss.str();
+            fe.comment = reads->at(i).comment;
             fe.sequence = open_frames.at(j).translation;
             fe.dna_sequence = open_frames.at(j).dna_sequence;
             fe.data_type = Model_factory::protein;
@@ -1159,14 +1161,11 @@ void Reads_aligner::loop_translated_query_placement(Node *root, vector<Fasta_ent
     }
 
 
-    cout<<endl<<endl;
-    for(int j=0;j<(int)orfs.size();j++)
-        cout<<orfs.at(j).name<<" "<<orfs.at(j).node_to_align<<endl;
-
-//    exit(-1);
+//    cout<<endl<<endl;
+//    for(int j=0;j<(int)orfs.size();j++)
+//        cout<<orfs.at(j).name<<" "<<orfs.at(j).node_to_align<<endl;
 
     Log_output::write_header("Aligning query sequences",0);
-
 
     set<string> unique_nodeset;
     for(int i=0;i<(int)orfs.size();i++)
@@ -1248,6 +1247,7 @@ void Reads_aligner::loop_translated_query_placement(Node *root, vector<Fasta_ent
                 count++;
                 current_root = node;
 
+//                cout<<"\nis read "<<current_root->get_right_child()->get_sequence()->is_read_sequence()<<"\n\n";
                 if( orig_dist > current_root->get_distance_to_parent() )
                     orig_dist -= current_root->get_distance_to_parent();
 
@@ -1634,6 +1634,14 @@ void Reads_aligner::copy_node_details(Node *reads_node,Fasta_entry *read,bool tu
     reads_node->add_sequence( *read, read->data_type, false, true, turn_revcomp);
     reads_node->get_sequence()->is_read_sequence(true);
 
+    if(read->dna_sequence.length()>0)
+    {
+        Orf o;
+        o.dna_sequence = read->dna_sequence;
+        o.translation = read->sequence;
+
+        reads_node->set_Orf(&o);
+    }
 }
 
 

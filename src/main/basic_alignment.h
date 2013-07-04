@@ -678,6 +678,9 @@ protected:
     void debug_print_input_sequences(int noise_level)
     {
 
+        if(Settings::noise<noise_level)
+            return;
+
         vector<string> *full_char_alphabet = Model_factory::get_dna_full_character_alphabet();
 
         if(model->get_data_type() == Model_factory::protein)

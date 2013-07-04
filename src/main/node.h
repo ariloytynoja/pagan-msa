@@ -323,10 +323,14 @@ public:
 
     void get_read_nodes_below(vector<Node*> *nodes)
     {
-        if(this->get_sequence()->is_read_sequence() && !this->is_leaf())
+        if(!this->is_leaf())
         {
             left_child->get_read_nodes_below(nodes);
-            nodes->push_back(right_child);
+            right_child->get_read_nodes_below(nodes);
+        }
+        else if(this->get_sequence()->is_read_sequence() )
+        {
+            nodes->push_back(this);
         }
         return;
     }
