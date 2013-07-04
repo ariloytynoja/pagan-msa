@@ -79,7 +79,7 @@ void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence, 
     if(not is_overlap_alignment && ( Settings_handle::st.is("use-anchors") || Settings_handle::st.is("use-prefix-anchors") ))
         tunnel_coverage = va.define_tunnel(left_child->get_sequence(),right_child->get_sequence(),&model,true);
 
-    float threshold = Settings_handle::st.get("anchoring-coverage-threshold").as<float>();
+    float threshold = Settings::tunneling_coverage;
 
     if(tunnel_coverage <= threshold)
     {
@@ -104,7 +104,7 @@ void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence, 
     else
     {
         ss.str(string());
-        ss<<" anchoring coverage "<<tunnel_coverage<<" is below the threshold. Skipping the full alignment.";
+        ss<<" anchoring coverage "<<tunnel_coverage<<" is above the threshold. Skipping the full alignment.";
         Log_output::write_msg(ss.str(),1);
     }
 

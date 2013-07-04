@@ -80,25 +80,35 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     //////////////////////////////////////////////////////////////////
 
 
-    // Alignment of translated RNA-seq clusters; can be reverse (currently just pileup)
-    if( Settings_handle::st.is("pileup-alignment") && Settings_handle::st.is("find-best-orf"))
+    bool has_dna_seqs = true;
+    for(vector<Fasta_entry>::iterator it = reads.begin();it!=reads.end();it++)
     {
-        Log_output::write_header("Aligning reads: placement with ORF search",0);
+        if(it->dna_sequence.length()==0)
+        {
+            has_dna_seqs = false;
+            break;
+        }
+    }
+
+    // Pileup: translated DNA with ORF search
+    if( Settings_handle::st.is("pileup-alignment") && Settings_handle::st.is("find-best-orf") && has_dna_seqs)
+    {
+        Log_output::write_header("Aligning reads: pileup with ORF search",0);
         this->loop_translated_pileup_alignment(root,&reads,mf,count);
     }
 
     // Pileup: no search for optimal node or TID tags in the tree; can compare reverse strand
     else if( Settings_handle::st.is("pileup-alignment") || Settings_handle::st.is("align-reads-at-root") )
     {
-        Log_output::write_header("Aligning reads: simple placement",0);
+        Log_output::write_header("Aligning reads: simple pileup",0);
         this->loop_pileup_alignment(root,&reads,mf,count);
     }
 
-    // Query placement: search for optimal node or TID tags in the tree; can compare reverse strand
-    else if( Settings_handle::st.is("new-placement") )
+    // Old placement routines
+    else if( Settings_handle::st.is("old-placement") )
     {
-        Log_output::write_header("Aligning reads: new placement",0);
-        this->loop_query_placement(root,&reads,mf,count);
+        Log_output::write_header("Aligning reads: old placement",0);
+        this->loop_default_placement(root,&reads,mf,count);
     }
 
 //    // NEW!
@@ -115,11 +125,18 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
 //        this->do_upwards_search(root,&reads,mf,count);
 //    }
 
-    // Default placement
+    // Query placement: search for optimal node or TID tags in the tree; can compare reverse strand
+    else if(Settings_handle::st.is("find-best-orf") && has_dna_seqs)
+    {
+        Log_output::write_header("Aligning reads: placement with ORF search",0);
+        this->loop_translated_query_placement(root,&reads,mf,count);
+    }
+
+    // Query placement: search for optimal node or TID tags in the tree; can compare reverse strand
     else
     {
-        Log_output::write_header("Aligning reads: default placement",0);
-        this->loop_default_placement(root,&reads,mf,count);
+        Log_output::write_header("Aligning reads: simpple placement",0);
+        this->loop_query_placement(root,&reads,mf,count);
     }
 }
 
@@ -339,7 +356,7 @@ void Reads_aligner::loop_translated_pileup_alignment(Node *root, vector<Fasta_en
 void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
 {
 
-    int min_orf_length = int (Settings_handle::st.get("min-orf-coverage").as<float>() * read->sequence.length() / 3 );
+    int min_orf_length = int (Settings_handle::st.get("min-orf-coverage").as<float>() * read->dna_sequence.length() / 3);
 
     string dna = read->dna_sequence;
     int length = dna.length()-1;
@@ -1093,6 +1110,178 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
     }
 }
 
+void Reads_aligner::loop_translated_query_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
+{
+    this->define_translation_tables();
+
+    bool single_ref_sequence = false;
+    if(root->get_number_of_leaves()==1)
+        single_ref_sequence = true;
+
+    global_root = root;
+
+
+    float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
+    float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
+
+    if(min_overlap<0)
+        min_overlap = 0;
+    if(min_identity<0)
+        min_identity = 0;
+
+    vector<Fasta_entry> orfs;
+    vector<Fasta_entry> potential_orfs;
+
+    for(int i=0;i<(int)reads->size();i++)
+    {
+        vector<Orf> open_frames;
+        this->find_orfs(&reads->at(i),&open_frames);
+
+        for(int j=0;j<(int)open_frames.size();j++)
+        {
+            Fasta_entry fe;
+            stringstream ss;
+            ss<<reads->at(i).name<<".orf."<<open_frames.at(j).frame<<"."<<open_frames.at(j).start<<"."<<open_frames.at(j).end;
+            fe.name = ss.str();
+            fe.sequence = open_frames.at(j).translation;
+            fe.dna_sequence = open_frames.at(j).dna_sequence;
+            fe.data_type = Model_factory::protein;
+
+            potential_orfs.push_back(fe);
+        }
+    }
+    this->find_nodes_for_queries(root, &potential_orfs, mf);
+
+    for(int j=0;j<(int)potential_orfs.size();j++)
+    {
+        if(potential_orfs.at(j).node_to_align != "discarded_read")
+            orfs.push_back(potential_orfs.at(j));
+    }
+
+
+    cout<<endl<<endl;
+    for(int j=0;j<(int)orfs.size();j++)
+        cout<<orfs.at(j).name<<" "<<orfs.at(j).node_to_align<<endl;
+
+//    exit(-1);
+
+    Log_output::write_header("Aligning query sequences",0);
+
+
+    set<string> unique_nodeset;
+    for(int i=0;i<(int)orfs.size();i++)
+    {
+        stringstream nodestream;
+        nodestream << orfs.at(i).node_to_align;
+        string val;
+        while(nodestream >> val)
+        {
+            unique_nodeset.insert(val);
+        }
+    }
+
+    if(unique_nodeset.find("discarded_read") != unique_nodeset.end())
+        unique_nodeset.erase(unique_nodeset.find("discarded_read"));
+
+    vector<string> unique_nodes;
+    for(set<string>::iterator sit = unique_nodeset.begin(); sit != unique_nodeset.end(); sit++)
+    {
+        unique_nodes.push_back(*sit);
+    }
+    sort(unique_nodes.begin(),unique_nodes.end(),Reads_aligner::nodeIsSmaller);
+
+    map<string,Node*> nodes_map;
+    root->get_all_nodes(&nodes_map);
+
+    // do one tagged node at time
+    //
+    for(vector<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
+    {
+        vector<Fasta_entry> reads_for_this;
+
+        for(int i=0;i<(int)orfs.size();i++)
+        {
+            stringstream nodestream;
+            nodestream << orfs.at(i).node_to_align;
+            string val;
+            while(nodestream >> val)
+            {
+                if(val == *sit)
+                    reads_for_this.push_back(orfs.at(i));
+            }
+        }
+
+        this->sort_reads_vector(&reads_for_this);
+
+
+        string ref_node_name = *sit;
+
+        Node *current_root = nodes_map.find(ref_node_name)->second;
+        double orig_dist = current_root->get_distance_to_parent();
+
+        bool alignment_done = false;
+        int alignments_done = 0;
+
+        // align the remaining reads to this node
+        //
+        for(int i=0;i<(int)reads_for_this.size();i++)
+        {
+            Node * node = new Node();
+            float read_overlap = -1;
+            float read_identity = -1;
+
+            stringstream ss;
+            ss<<"#"<<count<<"#";
+            node->set_name(ss.str());
+
+            this->create_temp_node(node,ss.str(), current_root, &reads_for_this.at(i),false);
+
+            Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
+
+            node->align_sequences_this_node(mf,true,false);
+            this->compute_read_overlap(node,reads_for_this.at(i).name,ref_node_name,current_root->get_name(),&read_overlap,&read_identity);
+
+            Log_output::write_out("forward overlap/identity: "+Log_output::ftos(read_overlap)+"/"+Log_output::ftos(read_identity)+"\n",1);
+
+            if(read_overlap > min_overlap && read_identity > min_identity)
+            {
+                count++;
+                current_root = node;
+
+                if( orig_dist > current_root->get_distance_to_parent() )
+                    orig_dist -= current_root->get_distance_to_parent();
+
+                alignment_done = true;
+                alignments_done++;
+            }
+
+            else
+            {
+                node->has_left_child(false);
+                delete node;
+            }
+        }
+
+        current_root->set_distance_to_parent(orig_dist);
+
+        if(alignment_done)
+        {
+            if(single_ref_sequence)
+            {
+                global_root = current_root;
+            }
+            else
+            {
+                bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
+
+                if(!parent_found)
+                {
+                    global_root = current_root;
+                }
+            }
+        }
+    }
+}
 
 void Reads_aligner::merge_reads_only()
 {
@@ -1766,6 +1955,7 @@ void Reads_aligner::get_target_node_names(Node *root,multimap<string,string> *ti
     }
 }
 
+
 void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
 {
     Exonerate_queries er;
@@ -1796,7 +1986,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
         if( ignore_tid_tags )
             tid = "<empty>";
 
-        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping read: '"+reads->at(i).name+" "+reads->at(i).comment+"'",0);
+        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping query: '"+reads->at(i).name+" "+reads->at(i).comment+"'",0);
 
         // Call Exonerate to reduce the search space
         //
@@ -2060,7 +2250,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
         if( ignore_tid_tags )
             tid = "<empty>";
 
-        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping read: '"+reads->at(i).name+"'",0);
+        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping query: '"+reads->at(i).name+"'",0);
 
         // Call Exonerate to reduce the search space
 
@@ -2380,7 +2570,7 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
 
 
 
-        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping read: '"+reads->at(i).name+"'",0);
+        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping query: '"+reads->at(i).name+"'",0);
 
 
         int matches = tid_nodes.size();
@@ -2598,7 +2788,7 @@ void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_e
 
 
 
-        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping read: '"+reads->at(i).name+"'",0);
+        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping query: '"+reads->at(i).name+"'",0);
 
 
         int matches = tid_nodes.size();

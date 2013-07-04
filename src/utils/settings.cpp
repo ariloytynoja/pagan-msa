@@ -175,8 +175,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("align-bad-reads-at-root", "align non-matching reads at root")
         ("use-identity-score", "choose target based on identity score")
         ("use-target-normalised-score", "choose target based on target-normalised substitution score")
-        ("anchoring-coverage-threshold",po::value<float>()->default_value(1.0,"1.00"),"anchoring coverage threshold for skipping")
-        ("new-placement","new placement")
+        ("anchoring-threshold",po::value<float>()->default_value(1.0,"1.00"),"anchoring coverage threshold for skipping")
+        ("old-placement","old placement")
     ;
 
     boost::program_options::options_description graph("Graph options",100);
@@ -336,6 +336,15 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
                               "If the latter is true, this warning can be ignored.\n",0);
     }
 
+    // this heuristic only works for placement
+    //
+    tunneling_coverage = get("anchoring-threshold").as<float>();
+
+    if(not is("queryfile"))
+    {
+        tunneling_coverage = 1;
+    }
+
     if (vm.count("help")) {
         this->help();
         return 1;
@@ -484,3 +493,5 @@ float Settings::resize_factor     = 1.5;
 
 int   Settings::exonerate_local_keep_best = 1;
 int   Settings::exonerate_gapped_keep_best = 1;
+
+float Settings::tunneling_coverage = 1;

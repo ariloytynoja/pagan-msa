@@ -57,6 +57,7 @@ public:
     static int exonerate_local_keep_best;
     static int exonerate_gapped_keep_best;
 
+    static float tunneling_coverage;
 };
 
 }

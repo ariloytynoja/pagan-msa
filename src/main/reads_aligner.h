@@ -48,6 +48,7 @@ class Reads_aligner
     void loop_pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_translated_pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_query_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void loop_translated_query_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
 
     void do_upwards_search(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
 
