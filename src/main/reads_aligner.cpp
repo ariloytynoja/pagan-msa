@@ -88,13 +88,13 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     }
 
     // Pileup: no search for optimal node or TID tags in the tree; can compare reverse strand
-    else if( Settings_handle::st.is("align-reads-at-root") || Settings_handle::st.is("pileup-alignment") )
+    else if( Settings_handle::st.is("pileup-alignment") || Settings_handle::st.is("align-reads-at-root") )
     {
         Log_output::write_header("Aligning reads: simple placement",0);
         this->loop_pileup_alignment(root,&reads,mf,count);
     }
 
-    // New stuff
+    // Query placement: search for optimal node or TID tags in the tree; can compare reverse strand
     else if( Settings_handle::st.is("new-placement") )
     {
         Log_output::write_header("Aligning reads: new placement",0);
@@ -1763,12 +1763,6 @@ void Reads_aligner::get_target_node_names(Node *root,multimap<string,string> *ti
 
 void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
 {
-    multimap<string,string> tid_nodes;
-    bool ignore_tid_tags = true;
-
-    this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
-
-
     Exonerate_queries er;
     bool has_exonerate = true;
     if(!er.test_executable())
@@ -1777,6 +1771,18 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
         Log_output::write_out("The executable for Exonerate not found! The fast placement search not used!",0);
     }
 
+
+    // Get the original target nodes
+    //
+    multimap<string,string> tid_nodes;
+    bool ignore_tid_tags = true;
+
+    this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+
+
+
+    // Handle one read at time
+    //
     for(int i=0;i<(int)reads->size();i++)
     {
         reads->at(i).node_score = -1.0;
@@ -1788,10 +1794,9 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
         Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping read: '"+reads->at(i).name+"'",0);
 
         // Call Exonerate to reduce the search space
-
+        //
         map<string,hit> exonerate_hits;
 
-        int best_reverse_hit = 0;
         if(has_exonerate && Settings_handle::st.is("use-exonerate-local") )
         {
             tid_nodes.clear();
@@ -1802,44 +1807,11 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
 
             if(tid_nodes.size()>1 && Settings_handle::st.is("use-exonerate-gapped"))
                 er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
-
-            /*
-            int best_forward_hit = 0;
-            multimap<string,hit>::iterator ith = exonerate_hits.begin();
-            for(;ith != exonerate_hits.end();ith++)
-            {
-                hit h = ith->second;
-                cout<<h.score<<endl;
-                if(h.score > best_forward_hit)
-                    best_forward_hit = h.score;
-            }
-
-            cout<<best_reverse_hit<<" "<<best_forward_hit<<endl;
-            if(best_reverse_hit>best_forward_hit)
-            {
-                Fasta_entry revseq =reads->at(i);
-                revseq.sequence = this->reverse_complement(revseq.sequence);
-
-                tid_nodes.clear();
-                this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
-
-                if(tid_nodes.size()>1)
-                    er.local_alignment(root,&revseq,&tid_nodes,&exonerate_hits, true,ignore_tid_tags,&best_reverse_hit);
-
-                if(tid_nodes.size()>1 && Settings_handle::st.is("use-exonerate-gapped"))
-                    er.local_alignment(root,&revseq,&tid_nodes,&exonerate_hits,false,ignore_tid_tags,&best_reverse_hit);
-
-                 if(best_reverse_hit>best_forward_hit)
-                 {
-                    reads->at(i) = revseq;
-                 }
-            }
-            */
         }
 
 
-        // Discarded by Exonerate
-
+        // Handle (or reject) reads discarded by Exonerate
+        //
         if(reads->at(i).node_to_align == "discarded_read")
         {
             if(Settings_handle::st.is("exhaustive-placement"))
@@ -1859,7 +1831,9 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
             }
         }
 
-        // Has TID or exhaustive search
+
+        // Has TID or exhaustive search: now find the one with the best match
+        //
         if(tid != "")
         {
             int matches = tid_nodes.count(tid);
@@ -1868,8 +1842,8 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                 matches = tid_nodes.size();
 
 
-            // has TID but no matching node
-
+            // Has TID but no matching node
+            //
             if(matches == 0)
             {
                 stringstream ss;
@@ -1878,10 +1852,11 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
 
                 reads->at(i).node_to_align = root->get_name();
             }
+            // All done; continue
 
 
-            // has only one matching node and no need for ranking
-
+            // Has only one matching node and no need for ranking
+            //
             else if(matches == 1 && !Settings_handle::st.is("rank-reads-for-nodes") )
             {
                 multimap<string,string>::iterator tit = tid_nodes.find(tid);
@@ -1909,10 +1884,11 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                     }
                 }
             }
+            // All done; continue
 
 
-            // has TID and matching nodes, or exhaustive search
-
+            // Has TID and matching nodes, or exhaustive search
+            //
             else
             {
                 double best_score = -HUGE_VAL;
@@ -1961,6 +1937,29 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                             best_score = score;
                             best_node = tit->second;
                         }
+
+                        if(Settings_handle::st.is("compare-reverse"))
+                        {
+                            Fasta_entry rev_seq = reads->at(i);
+                            rev_seq.sequence = this->reverse_complement(rev_seq.sequence);
+                            double score = this->read_match_score( nit->second, &reads->at(i), mf, best_score);
+
+                            stringstream ss;
+                            ss<<tit->second<<"(rc) with score "<<score<<" (simple p-distance)\n";
+                            Log_output::write_out(ss.str(),2);
+
+                            if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
+                            {
+                                best_score = score;
+                                best_node.append(" "+tit->second);
+                            }
+                            else if(score>best_score)
+                            {
+                                best_score = score;
+                                best_node = tit->second;
+                            }
+                        }
+
                         tit++;
                         matching_nodes--;
                     }
@@ -1992,6 +1991,8 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
 
                 }
             }
+            // All done; continue
+
         }
 
 
@@ -2739,86 +2740,91 @@ double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_fact
 
     node->set_distance_to_parent(org_dist);
 
-    // For scoring (below)
-    Evol_model model = mf->alignment_model(r_dist+0.001,false);
+    double score = 0;
 
-    int matching = 0;
-    int aligned = 0;
-
-    float subst_score = 0;
-    float max_subst_score_l = 0;
-    float max_subst_score_r = 0;
-
-    int node_start_pos1 = -1;
-    int node_end_pos1 = -1;
-    int node_start_pos2 = -1;
-    int node_end_pos2 = -1;
-    for( int k=1; k < tmpnode->get_sequence()->sites_length()-1; k++ )
+    if(tmpnode->node_has_sequence_object)
     {
-        Site *site = tmpnode->get_sequence()->get_site_at(k);
 
-        if(site->get_children()->right_index == 1)
+        // For scoring (below)
+        Evol_model model = mf->alignment_model(r_dist+0.001,false);
+
+        int matching = 0;
+        int aligned = 0;
+
+        float subst_score = 0;
+        float max_subst_score_l = 0;
+        float max_subst_score_r = 0;
+
+        int node_start_pos1 = -1;
+        int node_end_pos1 = -1;
+        int node_start_pos2 = -1;
+        int node_end_pos2 = -1;
+        for( int k=1; k < tmpnode->get_sequence()->sites_length()-1; k++ )
         {
-            node_start_pos1 = k;
+            Site *site = tmpnode->get_sequence()->get_site_at(k);
+
+            if(site->get_children()->right_index == 1)
+            {
+                node_start_pos1 = k;
+            }
+            else if(site->get_children()->right_index == read->first_read_length)
+            {
+                node_end_pos1 = k;
+            }
+            else if(site->get_children()->right_index == read->first_read_length+1)
+            {
+                node_start_pos2 = k;
+            }
+            else if(site->get_children()->right_index > 0)
+            {
+                node_end_pos2 = k;
+            }
+
+            if(site->get_children()->right_index>=0 && site->get_children()->left_index>=0)
+            {
+
+                Site *site1 = tmpnode->get_right_child()->get_sequence()->get_site_at(site->get_children()->right_index);
+                Site *site2 = tmpnode->get_left_child()->get_sequence()->get_site_at(site->get_children()->left_index);
+
+                if(site1->get_state() == site2->get_state())
+                    matching++;
+
+                subst_score += model.score(site1->get_state(),site2->get_state());
+                max_subst_score_l += model.score(site2->get_state(),site2->get_state());
+
+                aligned++;
+            }
+
+            if(site->get_children()->right_index>=0)
+            {
+                Site *site1 = tmpnode->get_right_child()->get_sequence()->get_site_at(site->get_children()->right_index);
+                max_subst_score_r += model.score(site1->get_state(),site1->get_state());
+            }
+
         }
-        else if(site->get_children()->right_index == read->first_read_length)
+
+        double score_s = (double) matching/ (double) reads_node1->get_sequence()->sites_length();
+        double score_l = (double) subst_score/ (double) max_subst_score_l;
+        double score_r = (double) subst_score/ (double) max_subst_score_r;
+
+        score = score_r;
+
+        if(Settings_handle::st.is("use-identity-score"))
+            score = score_s;
+        else if(Settings_handle::st.is("use-target-normalised-score"))
+            score = score_l;
+
+        if(score>best_score)
         {
-            node_end_pos1 = k;
+            read->node_start_pos1 = node_start_pos1;
+            read->node_end_pos1 =   node_end_pos1;
+            read->node_start_pos2 = node_start_pos2;
+            read->node_end_pos2 =   node_end_pos2;
         }
-        else if(site->get_children()->right_index == read->first_read_length+1)
-        {
-            node_start_pos2 = k;
-        }
-        else if(site->get_children()->right_index > 0)
-        {
-            node_end_pos2 = k;
-        }
-
-        if(site->get_children()->right_index>=0 && site->get_children()->left_index>=0)
-        {
-
-            Site *site1 = tmpnode->get_right_child()->get_sequence()->get_site_at(site->get_children()->right_index);
-            Site *site2 = tmpnode->get_left_child()->get_sequence()->get_site_at(site->get_children()->left_index);
-
-            if(site1->get_state() == site2->get_state())
-                matching++;
-
-            subst_score += model.score(site1->get_state(),site2->get_state());
-            max_subst_score_l += model.score(site2->get_state(),site2->get_state());
-
-            aligned++;
-        }
-
-        if(site->get_children()->right_index>=0)
-        {
-            Site *site1 = tmpnode->get_right_child()->get_sequence()->get_site_at(site->get_children()->right_index);
-            max_subst_score_r += model.score(site1->get_state(),site1->get_state());
-        }
-
     }
-
-    double score_s = (double) matching/ (double) reads_node1->get_sequence()->sites_length();
-    double score_l = (double) subst_score/ (double) max_subst_score_l;
-    double score_r = (double) subst_score/ (double) max_subst_score_r;
-
 
     tmpnode->has_left_child(false);
     delete tmpnode;
-
-    double score = score_r;
-
-    if(Settings_handle::st.is("use-identity-score"))
-        score = score_s;
-    else if(Settings_handle::st.is("use-target-normalised-score"))
-        score = score_l;
-
-    if(score>best_score)
-    {
-        read->node_start_pos1 = node_start_pos1;
-        read->node_end_pos1 =   node_end_pos1;
-        read->node_start_pos2 = node_start_pos2;
-        read->node_end_pos2 =   node_end_pos2;
-    }
 
     return score;
 }
