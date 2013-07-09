@@ -94,10 +94,10 @@ float Viterbi_alignment::define_tunnel(Sequence *left_sequence,Sequence *right_s
     if(compute_coverage)
     {
         int sum = 0;
-        for(int i=0;i<s1.length();i++)
+        for(int i=0;i<(int)s1.length();i++)
             sum += lower_bound.at(i)-upper_bound.at(i);
 
-        coverage = ((float)sum/(s1.length()*s2.length()));
+        coverage = ((float)sum/((int)s1.length()*(int)s2.length()));
 
         stringstream s;
         s.precision(4);

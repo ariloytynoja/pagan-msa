@@ -1230,7 +1230,7 @@ void Fasta_reader::remove_gap_only_columns(vector<Fasta_entry> *sequences)  thro
 
 void Fasta_reader::remove_gaps(string *seq) const throw (Exception)
 {
-    for(int i=0;i<seq->length();)
+    for(int i=0;i<(int)seq->length();)
     {
         if(seq->at(i) == '-')
             seq->erase(i,1);
@@ -1241,7 +1241,7 @@ void Fasta_reader::remove_gaps(string *seq) const throw (Exception)
 
 void Fasta_reader::remove_gaps(vector<Fasta_entry> *seqs) const throw (Exception)
 {
-    for(int i=0;i<seqs->size();i++)
+    for(int i=0;i<(int)seqs->size();i++)
         this->remove_gaps(&seqs->at(i).sequence);
 
 }

@@ -184,7 +184,7 @@ void Reads_aligner::loop_pileup_alignment(Node *root, vector<Fasta_entry> *reads
             this->compute_read_overlap(node,reads->at(i).name,ref_root_name,global_root->get_name(),&read_overlap,&read_identity);
 
 
-            Node * node_rc;
+            Node * node_rc = 0;
             float read_overlap_rc = -1;
             float read_identity_rc = -1;
 
@@ -1021,7 +1021,7 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
                 this->compute_read_overlap(node,reads_for_this.at(i).name,ref_node_name,current_root->get_name(),&read_overlap,&read_identity);
             }
 
-            Node * node_rc;
+            Node * node_rc = 0;
             float read_overlap_rc = -1;
             float read_identity_rc = -1;
 
