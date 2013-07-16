@@ -434,6 +434,19 @@ public:
 
     }
 
+    void get_all_terminal_node_names(set<string> *node_names)
+    {
+        if(this->is_leaf())
+        {
+            node_names->insert(this->get_name());
+        }
+        else
+        {
+            left_child->get_all_terminal_node_names(node_names);
+            right_child->get_all_terminal_node_names(node_names);
+        }
+    }
+
     void get_read_node_names(set<string> *read_names)
     {
         if(this->is_leaf())
@@ -1238,9 +1251,9 @@ public:
         }
     }
 
-    void write_nhx_tree(string path, bool overwrite=true) const throw (Exception)
+    void write_nhx_tree(string path, string suffix, bool overwrite=true) const throw (Exception)
     {
-        ofstream output( (path+".nhx_tree").c_str(), overwrite ? (ios::out) : (ios::out|ios::app));
+        ofstream output( (path+"."+suffix).c_str(), overwrite ? (ios::out) : (ios::out|ios::app));
 
         if (! output) { throw IOException ("Node::write_nhx_tree. Failed to open file"); }
 

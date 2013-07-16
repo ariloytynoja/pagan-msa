@@ -20,6 +20,9 @@
 
 #include "utils/bppphysamp_tree.h"
 #include "utils/log_output.h"
+#include "utils/fasta_reader.h"
+#include "utils/newick_reader.h"
+#include "utils/tree_node.h"
 
 using namespace std;
 using namespace ppa;
@@ -78,7 +81,7 @@ bool BppPhySamp_tree::test_executable()
     #endif
 }
 
-void BppPhySamp_tree::reduce_sequences(set<string> *remove,bool is_protein)
+void BppPhySamp_tree::reduce_sequences(set<string> *toremove,bool is_protein)
 {
     string seqfile = "";
     string treefile = "";
@@ -90,8 +93,57 @@ void BppPhySamp_tree::reduce_sequences(set<string> *remove,bool is_protein)
 
     if(seqfile != "" && treefile != "")
     {
+        // Copy fasta file
+        //
+        string tmpseqfile = seqfile+".clean";
+        try
+        {
+            Fasta_reader fr;
+            vector<Fasta_entry> sequences;
+            fr.read(seqfile, sequences, true, false);
+
+            int datatype = fr.check_sequence_data_type(&sequences);
+            fr.check_alphabet(&sequences,datatype);
+
+            for(int i=0;i<sequences.size();i++)
+                sequences.at(i).comment="";
+            fr.write(tmpseqfile,sequences,"fasta");
+        }
+        catch (ppa::IOException& e) {
+            Log_output::write_out("Error writing a temporary sequence file for BppPhySamp: '"+seqfile+"' or '"+tmpseqfile+"' fails.\nExiting.\n\n",0);
+            exit(1);
+        }
+        tmpseqfile.append(".fas");
+
+        // Copy newick file
+        //
+        Newick_reader nr;
+        string tree;
+        Node *tmp_root;
+        try
+        {
+            tree = nr.read_tree(treefile);
+        }
+        catch (ppa::IOException& e) {
+            Log_output::write_out("Error reading the tree file '"+treefile+"'.\n",0);
+            return;
+        }
+        try {
+            tmp_root = nr.parenthesis_to_tree(tree);
+        }
+        catch(exception e)
+        {
+            Tree_node tn;
+            tree = tn.get_rooted_tree(tree);
+            tmp_root = nr.parenthesis_to_tree(tree);
+        }
+        string tmptreefile = treefile+".clean";
+        tmp_root->write_nhx_tree(tmptreefile,"tre");
+        tmptreefile.append(".tre");
+        //
+
         stringstream command;
-        command << bppdistpath<<"bppphysamp input.tree.file="<<treefile<<" input.sequence.file="<<seqfile<<" input.method=tree "
+        command << bppdistpath<<"bppphysamp input.tree.file="<<tmptreefile<<" input.sequence.file="<<tmpseqfile<<" input.method=tree "
                    << " input.sequence.format=Fasta input.tree.format=Newick choice_criterion=length output.sequence.format=Fasta ";
 
         if(is_protein)
@@ -110,6 +162,7 @@ void BppPhySamp_tree::reduce_sequences(set<string> *remove,bool is_protein)
             command <<  " sample_size="<<number<<" deletion_method=sample";
         }
 
+//        cout<<endl<<command.str()<<endl;
         FILE *fpipe;
         if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
         {
@@ -128,11 +181,15 @@ void BppPhySamp_tree::reduce_sequences(set<string> *remove,bool is_protein)
             {
                 linestr = linestr.substr(linestr.find(":")+2);
                 linestr = linestr.substr(0,linestr.find("\n"));
-                remove->insert(linestr);
+                toremove->insert(linestr);
             }
         }
         pclose(fpipe);
 
+        if( remove( tmpseqfile.c_str() ) != 0 )
+           Log_output::write_out( "Error deleting file", 1);
+        if( remove( tmptreefile.c_str() ) != 0 )
+           Log_output::write_out( "Error deleting file", 1);
     }
 }
 

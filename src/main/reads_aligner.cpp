@@ -1014,7 +1014,6 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
             if(reads_for_this.at(i).query_strand != Fasta_entry::reverse_strand)
             {
                 this->create_temp_node(node,ss.str(), current_root, &reads_for_this.at(i),false);
-
                 Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
 
                 node->align_sequences_this_node(mf,true,false);
@@ -2020,6 +2019,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                 er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
         }
 
+        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping query: '"+reads->at(i).name+" "+reads->at(i).comment+"'",0);
 
         // Handle (or reject) reads discarded by Exonerate
         //

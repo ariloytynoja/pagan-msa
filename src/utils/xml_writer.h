@@ -39,11 +39,11 @@ class Xml_writer
 public:
     Xml_writer();
 
-    void write(ostream & output, const Node *root, const vector<Fasta_entry> & seqs) const throw (Exception);
-    void write(const string & path, const Node *root, const vector<Fasta_entry> & seqs, bool overwrite=true) const throw (Exception)
+    void write(ostream & output, const Node *root, const vector<Fasta_entry> & seqs, bool append_comment = false) const throw (Exception);
+    void write(const string & path, const Node *root, const vector<Fasta_entry> & seqs, bool append_comment = false, bool overwrite=true) const throw (Exception)
     {
         ofstream output( (path+".xml").c_str(), overwrite ? (ios::out) : (ios::out|ios::app));
-        write(output, root, seqs);
+        write(output, root, seqs, append_comment);
         output.close();
     }
 

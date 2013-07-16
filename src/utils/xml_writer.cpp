@@ -31,7 +31,7 @@ Xml_writer::Xml_writer()
 
 /****************************************************************************************/
 
-void Xml_writer::write(ostream & output, const Node *root, const vector<Fasta_entry> & seqs) const throw (Exception)
+void Xml_writer::write(ostream & output, const Node *root, const vector<Fasta_entry> & seqs, bool append_comment) const throw (Exception)
 {
     // Checking the existence of specified file, and possibility to open it in write mode
     if (! output) { throw IOException ("Xml_writer::write. Failed to open file"); }
@@ -58,7 +58,10 @@ void Xml_writer::write(ostream & output, const Node *root, const vector<Fasta_en
         }
         else
         {
-            output << "<leaf id=\"" << id <<"\" name=\"" << vi->name << "\">\n";
+            string name = vi->name;
+            if(append_comment)
+                name.append(vi->comment);
+            output << "<leaf id=\"" << id <<"\" name=\"" << name << "\">\n";
             output << "  <sequence>\n    " << vi->sequence << "\n  </sequence>\n</leaf>\n";
         }
     }
