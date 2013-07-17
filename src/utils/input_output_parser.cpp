@@ -677,6 +677,39 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             }
             fr->remove_gap_only_columns(&pruned_sequences);
 
+            if(Settings_handle::st.is("trim-extended-alignment"))
+            {
+                cout<<"trim "<<endl;
+                int last_site = 0;
+                int first_site = pruned_sequences.at(0).sequence.length();
+
+                vector<Fasta_entry>::iterator fit = pruned_sequences.begin();
+                for(;fit!=pruned_sequences.end();fit++)
+                {
+                    if(readnames.find(fit->name)!=readnames.end())
+                    {
+                        for(int i=0;i<fit->sequence.length();i++)
+                        {
+                            if(fit->sequence.at(i)!='-' && i < first_site)
+                                first_site = i;
+                            if(fit->sequence.at(i)!='-' && i > last_site)
+                                last_site = i;
+                        }
+
+                    }
+                }
+
+                first_site = max(first_site-Settings_handle::st.get("trim-keep-sites").as<int>(),0);
+                last_site  = min(last_site+Settings_handle::st.get("trim-keep-sites").as<int>(),(int)pruned_sequences.at(0).sequence.length());
+
+                fit = pruned_sequences.begin();
+                for(;fit!=pruned_sequences.end();fit++)
+                {
+                    fit->sequence = fit->sequence.substr(first_site,last_site-first_site);
+                }
+                cout<<"trim "<<first_site<<" "<<last_site<<endl;
+            }
+
             fr->set_chars_by_line(70);
             fr->write(outfile, pruned_sequences, format, true);
 

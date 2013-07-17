@@ -1356,6 +1356,34 @@ public:
         return false;
     }
 
+    bool site_in_read(int i)
+    {
+        if(this->get_sequence()->is_read_sequence())
+        {
+            return true;
+        }
+        else
+        {
+            if(!is_leaf())
+            {
+                Site_children *offspring = sequence->get_site_at(i)->get_children();
+                int li = offspring->left_index;
+                if(li>=0)
+                {
+                    if(left_child->site_in_read(li))
+                        return true;
+                }
+                int ri = offspring->right_index;
+                if(ri>=0)
+                {
+                    if(right_child->site_in_read(ri))
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
 
     string find_first_nonread_left_parent()
     {

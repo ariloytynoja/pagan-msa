@@ -86,6 +86,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("prune-keep-number",po::value<int>()->default_value(15),"keep N most distantly related sequences (default)")
         ("prune-keep-threshold",po::value<float>(),"remove sequences with distance below threshold")
         ("prune-all","remove all reference sequences")
+        ("trim-extended-alignment","remove terminal reference sequences")
+        ("trim-keep-sites",po::value<int>()->default_value(15),"trim distance around queries")
     ;
 
     boost::program_options::options_description reads_alignment2("Additional alignment extension options",100);
