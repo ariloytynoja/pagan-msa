@@ -50,6 +50,7 @@ class Reads_aligner
     void loop_query_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_translated_query_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
 
+    void do_upwards_search(Node *root, Fasta_entry *read, Model_factory *mf);
     void do_upwards_search(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
 
     void find_orfs(Fasta_entry *read,vector<Orf> *open_frames);

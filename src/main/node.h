@@ -495,7 +495,7 @@ public:
 
     /************************************/
 
-    void get_state_identity(int pos,int query_state,vector<int> *scores,bool visit_leaves_first=false)
+    void get_state_identity(int pos,int query_state,vector<int> *scores,bool visit_leaves_first=false,bool visit_leaves_only=false)
     {
         if(leaf)
         {
@@ -519,7 +519,7 @@ public:
                      scores->push_back(0);
             }
 
-            if(not visit_leaves_first)
+            if(not visit_leaves_first && not visit_leaves_only)
             {
                 if(this->get_sequence()->get_site_at(pos)->get_state() == query_state)
                     scores->push_back(1);
@@ -538,7 +538,7 @@ public:
                      scores->push_back(0);
             }
 
-            if(visit_leaves_first)
+            if(visit_leaves_first && not visit_leaves_only)
             {
                 if(this->get_sequence()->get_site_at(pos)->get_state() == query_state)
                     scores->push_back(1);
@@ -549,7 +549,7 @@ public:
     }
 
 
-    void get_subst_distance(int pos,int query_state,vector<float> *scores,Evol_model *model,bool visit_leaves_first=false)
+    void get_subst_distance(int pos,int query_state,vector<float> *scores,Evol_model *model,bool visit_leaves_first=false,bool visit_leaves_only=false)
     {
         if(leaf)
         {
@@ -570,7 +570,7 @@ public:
                      scores->push_back(0);
             }
 
-            if(not visit_leaves_first)
+            if(not visit_leaves_first && not visit_leaves_only)
             {
                 scores->push_back( model->score(this->get_sequence()->get_site_at(pos)->get_state(), query_state) );
             }
@@ -586,7 +586,7 @@ public:
                      scores->push_back(0);
             }
 
-            if(visit_leaves_first)
+            if(visit_leaves_first && not visit_leaves_only)
             {
                 scores->push_back( model->score(this->get_sequence()->get_site_at(pos)->get_state(), query_state) );
             }
@@ -1215,6 +1215,29 @@ public:
     void set_number_of_nodes(int i) { number_of_nodes = i; }
 
     /************************************/
+
+    int get_number_of_gaps_at_site(int i)
+    {
+        int ng = 0;
+
+        if(!leaf)
+        {
+            Site_children *offspring = sequence->get_site_at(i)->get_children();
+            int lj = offspring->left_index;
+            if(lj>=0)
+                ng += left_child->get_number_of_gaps_at_site(lj);
+            else
+                ng += left_child->get_number_of_leaves();
+
+            int rj = offspring->right_index;
+            if(rj>=0)
+                ng += right_child->get_number_of_gaps_at_site(rj);
+            else
+                ng += right_child->get_number_of_leaves();
+        }
+
+        return ng;
+    }
 
 
     /************************************/

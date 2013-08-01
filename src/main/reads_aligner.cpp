@@ -135,7 +135,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     // Query placement: search for optimal node or TID tags in the tree; can compare reverse strand
     else
     {
-        Log_output::write_header("Aligning reads: simpple placement",0);
+        Log_output::write_header("Aligning reads: simple placement",0);
         this->loop_query_placement(root,&reads,mf,count);
     }
 }
@@ -542,6 +542,189 @@ void Reads_aligner::loop_tagged_placement(Node *root, vector<Fasta_entry> *reads
 
 }
 
+void Reads_aligner::do_upwards_search(Node *root, Fasta_entry *read, Model_factory *mf)
+{
+
+    bool single_ref_sequence = false;
+    if(root->get_number_of_leaves()==1)
+        single_ref_sequence = true;
+
+    global_root = root;
+
+    double r_dist = Settings_handle::st.get("query-distance").as<float>();
+    Evol_model model = mf->alignment_model(r_dist+0.001,false);
+
+    Node * current_root = root;
+    string previous_hit = "";
+
+    while(true)
+    {
+        Log_output::write_msg(" aligning read: '"+read->name+"'",0);
+
+        Node * temp_node = new Node();
+        temp_node->set_name("temp");
+
+        Node * left_node = current_root;
+        float org_distance = left_node->get_distance_to_parent();
+        left_node->set_distance_to_parent(0.001);
+        temp_node->add_left_child(left_node);
+
+        Node * right_node = new Node();
+        this->copy_node_details(right_node,read);
+        temp_node->add_right_child(right_node);
+
+        temp_node->align_sequences_this_node(mf,true,false);
+
+
+        vector<int> one_score;
+        vector<int> all_scores;
+        int read_length = 0;
+        vector<float> all_dists;
+        vector<float> one_dist;
+        float read_max_dist = 0;
+
+        vector<Node*> score_nodes;
+
+        bool leaves_only = true;
+        if(leaves_only)
+        {
+            for(int j=0;j<current_root->get_number_of_leaves();j++)
+            {
+                all_scores.push_back(0);
+            }
+
+            for(int j=0;j<current_root->get_number_of_leaves();j++)
+            {
+                all_dists.push_back(0);
+            }
+            current_root->get_all_nodes(&score_nodes,true);
+        }
+        else
+        {
+            for(int j=0;j<current_root->get_number_of_nodes();j++)
+            {
+                all_scores.push_back(0);
+            }
+
+            for(int j=0;j<current_root->get_number_of_nodes();j++)
+            {
+                all_dists.push_back(0);
+            }
+            current_root->get_leaf_nodes(&score_nodes);
+        }
+
+
+        for(int j=1;j<temp_node->get_sequence()->sites_length()-1;j++)
+        {
+            Site_children *offspring = temp_node->get_sequence()->get_site_at(j)->get_children();
+
+            int lj = offspring->left_index;
+            int rj = offspring->right_index;
+            if(rj>=0)
+            {
+                int qs = temp_node->get_right_child()->get_sequence()->get_site_at(rj)->get_state();
+
+                if(lj>=0)
+                {
+                    one_score.clear();
+                    current_root->get_state_identity(lj,qs,&one_score,true,leaves_only);
+
+                    for(int l=0;l<(int)all_scores.size();l++)
+                        all_scores.at(l)+=one_score.at(l);
+
+                    //
+
+                    one_dist.clear();
+                    current_root->get_subst_distance(lj,qs,&one_dist,&model,true,leaves_only);
+
+                    for(int l=0;l<(int)all_scores.size();l++)
+                        all_dists.at(l)+=one_dist.at(l);
+                }
+                read_length++;
+
+                read_max_dist += model.score(qs,qs);
+            }
+        }
+
+
+        double max_score = -1;
+        string max_node = current_root->get_name();
+        int max_node_index = 0;
+
+        double max_dist = -1;
+        string max_dist_node = current_root->get_name();
+        int max_dist_node_index = 0;
+
+
+        for(int l=0;l<(int)all_scores.size();l++)
+        {
+            float score = (float)all_scores.at(l)/(float)read_length;
+            if(score>=max_score)
+            {
+                max_score = score;
+                max_node = score_nodes.at(l)->get_name();
+                max_node_index = l;
+            }
+            float dist = (float)all_dists.at(l)/(float)read_max_dist;
+            if(dist>=max_dist)
+            {
+                max_dist = dist;
+                max_dist_node = score_nodes.at(l)->get_name();
+                max_dist_node_index = l;
+            }
+//            cout<<score_nodes.at(l)->get_name()<<" "<<score<<" "<<dist<<endl;
+        }
+
+        cout<<endl;
+        cout<<"s1 "<<read->name<<": "<<max_node<<" ("<<max_score<<")\n";
+        cout<<"s2 "<<read->name<<": "<<max_dist_node<<" ("<<max_dist<<")\n";
+
+
+//            if(previous_hit=="")
+////            if(true)
+//            {
+//                vector<Fasta_entry> aligned_seqs;
+//                temp_node->get_alignment(&aligned_seqs,true);
+//                ofstream out(reads->at(i).name.c_str());
+//                for(int j=0;j<aligned_seqs.size();j++)
+//                    out<<">"<<aligned_seqs.at(j).name<<"\n"<<aligned_seqs.at(j).sequence<<endl;
+//            }
+
+        left_node->set_distance_to_parent(org_distance);
+        temp_node->has_left_child(false);
+        delete temp_node;
+
+
+        if(max_dist_node == previous_hit)
+        {
+            read->node_score = max_dist;
+            read->node_to_align = max_dist_node;
+
+            break;
+        }
+        else
+        {
+            previous_hit = max_dist_node;
+            Node *temp = current_root->get_parent_node(max_dist_node);
+            if(temp != 0)
+            {
+                current_root = temp;
+//                    cout<<"new root "<<current_root->get_name()<<endl;
+            }
+            else
+            {
+                read->node_score = max_dist;
+                read->node_to_align = max_dist_node;
+                break;
+            }
+        }
+
+    }
+
+
+    cout<<"placement "<<read->name<<": "<<read->node_to_align<<" ("<<read->node_score <<")\n";
+}
+
 void Reads_aligner::do_upwards_search(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
 {
     bool single_ref_sequence = false;
@@ -578,60 +761,97 @@ void Reads_aligner::do_upwards_search(Node *root, vector<Fasta_entry> *reads, Mo
 
             temp_node->align_sequences_this_node(mf,true,false);
 
-
-            vector<int> all_scores;
-            for(int j=0;j<current_root->get_number_of_nodes();j++)
-            {
-                all_scores.push_back(0);
-            }
-
             vector<int> one_score;
+            vector<int> all_scores;
             int read_length = 0;
-
-            //
-
             vector<float> all_dists;
-            for(int j=0;j<current_root->get_number_of_nodes();j++)
-            {
-                all_dists.push_back(0);
-            }
-
             vector<float> one_dist;
             float read_max_dist = 0;
 
+            vector<Node*> score_nodes;
 
-            for(int j=1;j<temp_node->get_sequence()->sites_length()-1;j++)
+            bool leaves_only = true;
+            if(leaves_only)
             {
-                Site_children *offspring = temp_node->get_sequence()->get_site_at(j)->get_children();
-
-                int lj = offspring->left_index;
-                int rj = offspring->right_index;
-                if(rj>=0)
+                for(int j=0;j<current_root->get_number_of_leaves();j++)
                 {
-                    int qs = temp_node->get_right_child()->get_sequence()->get_site_at(rj)->get_state();
-
-                    if(lj>=0)
-                    {
-                        one_score.clear();
-                        current_root->get_state_identity(lj,qs,&one_score,true);
-
-                        for(int l=0;l<(int)all_scores.size();l++)
-                            all_scores.at(l)+=one_score.at(l);
-
-                        //
-
-                        one_dist.clear();
-                        current_root->get_subst_distance(lj,qs,&one_dist,&model,true);
-
-                        for(int l=0;l<(int)all_scores.size();l++)
-                            all_dists.at(l)+=one_dist.at(l);
-                    }
-                    read_length++;
-
-                    read_max_dist += model.score(qs,qs);
+                    all_scores.push_back(0);
                 }
+
+                for(int j=0;j<current_root->get_number_of_leaves();j++)
+                {
+                    all_dists.push_back(0);
+                }
+                current_root->get_leaf_nodes(&score_nodes);
+            }
+            else
+            {
+                for(int j=0;j<current_root->get_number_of_nodes();j++)
+                {
+                    all_scores.push_back(0);
+                }
+
+                for(int j=0;j<current_root->get_number_of_nodes();j++)
+                {
+                    all_dists.push_back(0);
+                }
+                current_root->get_all_nodes(&score_nodes,true);
             }
 
+            vector<bool> scored_sites;
+            if(Settings_handle::st.is("score-only-ungapped"))
+            {
+                float limit = Settings_handle::st.get("score-ungapped-limit").as<float>();
+                int num_leaves = temp_node->get_number_of_leaves();
+                scored_sites.push_back(false);
+                for(int j=1;j<temp_node->get_sequence()->sites_length()-1;j++)
+                {
+                    int gaps_this_site = temp_node->get_number_of_gaps_at_site(j);
+                    if((float)gaps_this_site/float(num_leaves)>=limit)
+                        scored_sites.push_back(false);
+                    else
+                        scored_sites.push_back(true);
+                }
+                scored_sites.push_back(false);
+            }
+//            for(int j=1;j<temp_node->get_sequence()->sites_length()-1;j++)
+//            {
+//                cout<<j<<" "<<scored_sites.at(j)<<endl;
+//            }
+            for(int j=1;j<temp_node->get_sequence()->sites_length()-1;j++)
+            {
+                if(not Settings_handle::st.is("score-only-ungapped") || scored_sites.at(j))
+                {
+                    Site_children *offspring = temp_node->get_sequence()->get_site_at(j)->get_children();
+
+                    int lj = offspring->left_index;
+                    int rj = offspring->right_index;
+                    if(rj>=0)
+                    {
+                        int qs = temp_node->get_right_child()->get_sequence()->get_site_at(rj)->get_state();
+
+                        if(lj>=0)
+                        {
+                            one_score.clear();
+                            current_root->get_state_identity(lj,qs,&one_score,true);
+
+                            for(int l=0;l<(int)all_scores.size();l++)
+                                all_scores.at(l)+=one_score.at(l);
+
+                            //
+
+                            one_dist.clear();
+                            current_root->get_subst_distance(lj,qs,&one_dist,&model,true);
+
+                            for(int l=0;l<(int)all_scores.size();l++)
+                                all_dists.at(l)+=one_dist.at(l);
+                        }
+                        read_length++;
+
+                        read_max_dist += model.score(qs,qs);
+                    }
+                }
+            }
 
             double max_score = -1;
             string max_node = current_root->get_name();
@@ -641,8 +861,6 @@ void Reads_aligner::do_upwards_search(Node *root, vector<Fasta_entry> *reads, Mo
             string max_dist_node = current_root->get_name();
             int max_dist_node_index = 0;
 
-            vector<Node*> score_nodes;
-            current_root->get_all_nodes(&score_nodes,true);
             for(int l=0;l<(int)all_scores.size();l++)
             {
                 float score = (float)all_scores.at(l)/(float)read_length;
@@ -661,9 +879,9 @@ void Reads_aligner::do_upwards_search(Node *root, vector<Fasta_entry> *reads, Mo
                 }
             }
 
-//            cout<<endl;
-//            cout<<"s1 "<<reads->at(i).name<<": "<<max_node<<" ("<<max_score<<")\n";
-//            cout<<"s2 "<<reads->at(i).name<<": "<<max_dist_node<<" ("<<max_dist<<")\n";
+            cout<<endl;
+            cout<<"s1 "<<reads->at(i).name<<": "<<max_node<<" ("<<max_score<<")\n";
+            cout<<"s2 "<<reads->at(i).name<<": "<<max_dist_node<<" ("<<max_dist<<")\n";
 
 
 //            if(previous_hit=="")
@@ -708,7 +926,7 @@ void Reads_aligner::do_upwards_search(Node *root, vector<Fasta_entry> *reads, Mo
         }
 
 
-//        cout<<"placement "<<reads->at(i).name<<": "<<reads->at(i).node_to_align<<" ("<<reads->at(i).node_score <<")\n";
+        cout<<"placement "<<reads->at(i).name<<": "<<reads->at(i).node_to_align<<" ("<<reads->at(i).node_score <<")\n";
     }
 
 }
@@ -932,7 +1150,10 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
     global_root = root;
     bool compare_reverse = Settings_handle::st.is("compare-reverse") && mf->get_sequence_data_type()==Model_factory::dna;
 
-    this->find_nodes_for_queries(root, reads, mf);
+    if(Settings_handle::st.is("upwards-search"))
+        this->do_upwards_search(root, reads, mf);
+    else
+        this->find_nodes_for_queries(root, reads, mf);
 
     float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
     float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
@@ -1962,6 +2183,10 @@ void Reads_aligner::get_target_node_names(Node *root,multimap<string,string> *ti
     }
 }
 
+//void Reads_aligner::upwards_search_nodes_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
+//{
+
+//}
 
 void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
 {
@@ -2136,7 +2361,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                         double score = this->read_match_score( nit->second, &reads->at(i), mf, best_score);
 
                         stringstream ss;
-                        ss<<tit->second<<" with score "<<score<<" (simple p-distance)\n";
+                        ss<<tit->second<<" with p-distance "<<score<<"\n";
                         Log_output::write_out(ss.str(),2);
 
                         if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
@@ -2158,7 +2383,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                             double score = this->read_match_score( nit->second, &rev_seq, mf, best_score);
 
                             stringstream ss;
-                            ss<<tit->second<<"(rc) with score "<<score<<" (simple p-distance)\n";
+                            ss<<tit->second<<"(rc) with p-distance "<<score<<"\n";
                             Log_output::write_out(ss.str(),2);
 
                             if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
@@ -2407,7 +2632,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                         double score = this->read_match_score( nit->second, &reads->at(i), mf, best_score);
 
                         stringstream ss;
-                        ss<<tit->second<<" with score "<<score<<" (simple p-distance)\n";
+                        ss<<tit->second<<" with p-distance "<<score<<"\n";
                         Log_output::write_out(ss.str(),2);
 
                         if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
@@ -2651,7 +2876,7 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
                     double score = this->read_match_score( nit->second, &reads->at(i), mf, best_score);
 
                     stringstream ss;
-                    ss<<tit->second<<" with score "<<score<<" (simple p-distance)\n";
+                    ss<<tit->second<<" with p-distance "<<score<<"\n";
                     Log_output::write_out(ss.str(),2);
 
                     if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
@@ -2869,7 +3094,7 @@ void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_e
                     double score = this->read_match_score( nit->second, &reads->at(i), mf, best_score);
 
                     stringstream ss;
-                    ss<<tit->second<<" with score "<<score<<" (simple p-distance)\n";
+                    ss<<tit->second<<" with p-distance "<<score<<"\n";
                     Log_output::write_out(ss.str(),2);
 
                     if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))

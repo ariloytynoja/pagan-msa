@@ -679,7 +679,6 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
             if(Settings_handle::st.is("trim-extended-alignment"))
             {
-                cout<<"trim "<<endl;
                 int last_site = 0;
                 int first_site = pruned_sequences.at(0).sequence.length();
 
@@ -707,7 +706,6 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
                 {
                     fit->sequence = fit->sequence.substr(first_site,last_site-first_site);
                 }
-                cout<<"trim "<<first_site<<" "<<last_site<<endl;
             }
 
             fr->set_chars_by_line(70);
