@@ -578,7 +578,8 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             vector<Fasta_entry> dna_sequences;
             fr->backtranslate_dna(aligned_sequences,&dna_seqs,dna_sequences);
 
-            fr->write(outfile, dna_sequences, format, true);
+            if( aligned_sequences.size() == dna_sequences.size() )
+                fr->write(outfile, dna_sequences, format, true);
 
             if(Settings_handle::st.is("build-contigs"))
             {

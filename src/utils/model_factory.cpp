@@ -1243,7 +1243,7 @@ void Model_factory::dna_model(float *char_pi,Settings *st)
     float char_rho = 1.0;
     float ins_rate = 0.01;
     float del_rate = 0.01;
-    float gap_ext = 0.9;
+    float gap_ext = 0.8;
     float end_gap_ext = 0.95;
     float break_gap_ext = 0.99;
 
@@ -1429,7 +1429,7 @@ void Model_factory::protein_model(Settings *st)
     if(st->is("indel-rate"))
         ins_rate =  del_rate =  st->get("indel-rate").as<float>();
 
-    float gap_ext = 0.7;
+    float gap_ext = 0.5;
     if(st->is("gap-extension"))
         gap_ext =  st->get("gap-extension").as<float>();
 
@@ -1550,7 +1550,7 @@ void Model_factory::codon_model(Settings *st)
     if(st->is("indel-rate"))
         ins_rate =  del_rate =  st->get("indel-rate").as<float>();
 
-    float gap_ext = 0.7;
+    float gap_ext = 0.5;
     if(st->is("gap-extension"))
         gap_ext =  st->get("gap-extension").as<float>();
 

@@ -863,7 +863,7 @@ void Fasta_reader::backtranslate_dna(const vector<Fasta_entry> & seqs, const map
 
     if(dna_seq_missing)
     {
-        Log_output::write_out("No DNA for all sequences. Back-translation failed.\n",1);
+        Log_output::write_out("No DNA for all sequences. Back-translation failed.\n",0);
         return;
     }
 

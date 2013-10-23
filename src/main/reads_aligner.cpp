@@ -321,8 +321,10 @@ void Reads_aligner::loop_translated_pileup_alignment(Node *root, vector<Fasta_en
                 {
                     reads->at(i).cluster_attempts = max_attempts;
                     stringstream cs;
-                    cs<<"["<<best_orf->frame<<" "<<best_orf->start+1<<"-"<<best_orf->end+1<<"]";
-                    best_node->get_right_child()->add_name_comment(best_node->get_right_child()->get_name_comment()+cs.str());
+//                    cs<<"["<<best_orf->frame<<" "<<best_orf->start+1<<"-"<<best_orf->end+1<<"]";
+                    cs<<reads->at(i).name<<".orf."<<best_orf->frame<<"."<<best_orf->start+1<<"."<<best_orf->end+1;
+                    best_node->get_right_child()->set_name(best_node->get_right_child()->get_name()+cs.str());
+//                    best_node->get_right_child()->add_name_comment(best_node->get_right_child()->get_name_comment()+cs.str());
 
                     best_node->set_nhx_tid(best_node->get_left_child()->get_nhx_tid());
                     best_node->get_right_child()->set_nhx_tid(best_node->get_left_child()->get_nhx_tid());
@@ -383,7 +385,7 @@ void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
                     o.end = end_site;
                     o.dna_sequence = dna.substr(start_site,end_site-start_site+1);
 
-                    open_frames->push_back(o);                    
+                    open_frames->push_back(o);
                 }
 
                 prot = "";
@@ -1362,7 +1364,7 @@ void Reads_aligner::loop_translated_query_placement(Node *root, vector<Fasta_ent
         {
             Fasta_entry fe;
             stringstream ss;
-            ss<<reads->at(i).name<<".orf."<<open_frames.at(j).frame<<"."<<open_frames.at(j).start<<"."<<open_frames.at(j).end;
+            ss<<reads->at(i).name<<".orf."<<open_frames.at(j).frame<<"."<<open_frames.at(j).start+1<<"."<<open_frames.at(j).end+1;
             fe.name = ss.str();
             fe.comment = reads->at(i).comment;
             fe.sequence = open_frames.at(j).translation;
