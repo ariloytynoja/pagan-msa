@@ -554,7 +554,7 @@ protected:
         max_allowed_match_skip_branches = 5;
 
         branch_skip_weight = 1;
-        branch_skip_probability = 0.2;
+        branch_skip_probability = 0.9; // 0.2
 
         weight_edges = false;
         compute_full_score = false;
@@ -575,7 +575,7 @@ protected:
         branch_skip_weight = 1;
         branch_skip_probability = 1;
 
-        branch_skip_probability = 0.2;
+        //branch_skip_probability = 0.2;
 
         if(Settings_handle::st.is("pair-end"))
             pair_end_reads = true;
