@@ -1371,6 +1371,7 @@ void Reads_aligner::loop_translated_query_placement(Node *root, vector<Fasta_ent
             fe.sequence = open_frames.at(j).translation;
             fe.dna_sequence = open_frames.at(j).dna_sequence;
             fe.data_type = Model_factory::protein;
+            fe.tid = reads->at(i).tid;
 
             potential_orfs.push_back(fe);
         }
