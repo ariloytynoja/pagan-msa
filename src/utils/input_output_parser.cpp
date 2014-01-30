@@ -31,7 +31,6 @@
 #include "utils/xml_writer.h"
 #include "utils/model_factory.h"
 #include "utils/evol_model.h"
-#include "utils/optimal_reference.h"
 #include "main/node.h"
 #include "utils/tree_node.h"
 #include "main/reads_aligner.h"
@@ -52,24 +51,6 @@ Input_output_parser::Input_output_parser()
 
 void Input_output_parser::parse_input_sequences(Fasta_reader *fr,vector<Fasta_entry> *sequences, bool *reference_alignment)
 {
-
-    /***********************************************************************/
-    /*  Overlapping paired-end read merge only                             */
-    /***********************************************************************/
-
-    if (Settings_handle::st.is("overlap-merge-only")) {
-
-        if (!Settings_handle::st.is("queryfile")) {
-            Log_output::write_out("No reads file given. Exiting.\n\n",0);
-            exit(1);
-        }
-
-        Reads_aligner ra;
-        ra.merge_reads_only();
-
-        exit(0);
-    }
-
 
     /***********************************************************************/
     /*  Read the sequences                                                 */
@@ -106,26 +87,6 @@ void Input_output_parser::parse_input_sequences(Fasta_reader *fr,vector<Fasta_en
         }
 
         *reference_alignment = true;
-    }
-    else if(Settings_handle::st.is("queryfile") && Settings_handle::st.is("find-cluster-reference") && !Settings_handle::st.is("ref-seqfile"))
-    {
-        string seqfile =  Settings_handle::st.get("queryfile").as<string>();
-        Log_output::write_out("Optimal reference sequence from: "+seqfile+"\n",1);
-
-        try
-        {
-            fr->read(seqfile, *sequences, true,true);
-        }
-        catch (ppa::IOException& e) {
-            Log_output::write_out("Error reading the queryfile '"+seqfile+"'.\nExiting.\n\n",0);
-            exit(1);
-        }
-
-        Optimal_reference ore;
-        ore.find_optimal_reference(sequences);
-
-        *reference_alignment = true;
-
     }
     else if(Settings_handle::st.is("queryfile") && !Settings_handle::st.is("ref-seqfile"))
     {
@@ -688,7 +649,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
                 {
                     if(readnames.find(fit->name)!=readnames.end())
                     {
-                        for(int i=0;i<fit->sequence.length();i++)
+                        for(int i=0;i<(int)fit->sequence.length();i++)
                         {
                             if(fit->sequence.at(i)!='-' && i < first_site)
                                 first_site = i;

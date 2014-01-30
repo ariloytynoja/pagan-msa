@@ -63,18 +63,12 @@ class Reads_aligner
     void find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
     void find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
     void find_nodes_for_all_reads_together(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
-    void remove_overlapping_reads(vector<Fasta_entry> *reads, Model_factory *mf);
-    void remove_target_overlapping_identical_reads(vector<Fasta_entry> *reads_for_this, Model_factory *mf);
-    void remove_target_overlapping_reads(vector<Fasta_entry> *reads_for_this);
-    void align_two_reads(Node *node, Fasta_entry *ri1, Fasta_entry *ri2, Model_factory *mf);
-    int reads_pairwise_matching_sites(Node *node);
 
     double read_match_score(Node *node, Fasta_entry *read, Model_factory *mf, float best_score);
     void read_alignment_scores(Node * node, string read_name, string ref_node_name, float *overlap, float *identity);
     bool read_alignment_overlaps(Node * node, string read_name, string ref_node_name);
     float read_alignment_overlap(Node * node, string read_name, string ref_node_name);
-    void merge_and_trim_and_sort(Model_factory *mf, Fasta_reader *fr, vector<Fasta_entry> *reads);
-    void merge_paired_reads(vector<Fasta_entry> *reads, Model_factory *mf);
+    void pair_and_sort(vector<Fasta_entry> *reads);
     void find_paired_reads(vector<Fasta_entry> *reads);
     void copy_node_details(Node *reads_node,Fasta_entry *read,bool turn_revcomp = false);
 
@@ -163,8 +157,6 @@ class Reads_aligner
         orf.dna_sequence = open_frame->dna_sequence;
         orf.quality = "";
         orf.first_read_length = -1;
-        orf.trim_start = 0;
-        orf.trim_end = 0;
         orf.tid = read->tid;
         orf.cluster_attempts = 0;
         orf.data_type = Model_factory::protein;
@@ -190,8 +182,6 @@ class Reads_aligner
 public:
     Reads_aligner();
     void align(Node *root, Model_factory *mf,int count);
-
-    void merge_reads_only();
 
     Node *get_global_root() { return global_root; }
 };

@@ -30,7 +30,6 @@ SOURCES += main.cpp \
     utils/evol_model.cpp \
     utils/check_version.cpp \
     utils/exonerate_queries.cpp \
-    utils/optimal_reference.cpp \
     utils/log_output.cpp \
     utils/find_anchors.cpp \
     utils/codon_translation.cpp \
@@ -61,7 +60,6 @@ HEADERS += utils/text_utils.h \
     utils/evol_model.h \
     utils/check_version.h \
     utils/exonerate_queries.h \
-    utils/optimal_reference.h \
     utils/log_output.h \
     utils/find_anchors.h \
     utils/substring_hit.h \
@@ -74,9 +72,9 @@ HEADERS += utils/text_utils.h \
     utils/bppphysamp_tree.h
 LIBS += -lboost_program_options -lboost_regex -lboost_thread  -lboost_system -lrt
 INCLUDEPATH += /usr/include
-OTHER_FILES += missing_things.txt \
-    ../VERSION_HISTORY \
-    Makefile.no_Qt
+OTHER_FILES +=  ../VERSION_HISTORY
+
+
 
 
 

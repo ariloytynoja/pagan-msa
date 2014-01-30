@@ -166,8 +166,6 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
                 fe.sequence = sequence;
                 fe.quality = "";
                 fe.first_read_length = -1;
-                fe.trim_start = 0;
-                fe.trim_end = 0;
                 fe.tid = tmp_tid;
                 fe.cluster_attempts = 0;
                 fe.num_duplicates = tmp_ndup;
@@ -231,8 +229,6 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
         fe.sequence = sequence;
         fe.quality = "";
         fe.first_read_length = -1;
-        fe.trim_start = 0;
-        fe.trim_end = 0;
         fe.tid = tmp_tid;
         fe.cluster_attempts = 0;
         fe.num_duplicates = tmp_ndup;
@@ -329,8 +325,6 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
 
             fe.quality = Text_utils::remove_last_whitespaces(temp);
             fe.first_read_length = -1;
-            fe.trim_start = 0;
-            fe.trim_end = 0;
             fe.cluster_attempts = 0;
 
             seqs.push_back(fe);
@@ -342,96 +336,6 @@ void Fasta_reader::read_fastq(istream & input, vector<Fasta_entry> & seqs) const
         }
     }
 
-}
-
-void Fasta_reader::trim_fastq_reads(vector<Fasta_entry> * seqs) const throw (Exception)
-{
-    Log_output::write_out("Trimming read ends.\n",2);
-
-    int mean_score = Settings_handle::st.get("trim-mean-qscore").as<int>();
-    int window_width = Settings_handle::st.get("trim-window-width").as<int>();
-    int minimum_length = Settings_handle::st.get("minimum-trimmed-length").as<int>();
-
-    if(window_width<1)
-        return;
-
-    vector<Fasta_entry>::iterator fit = seqs->begin();
-    for( ;fit != seqs->end();)
-    {
-        // fwd trim
-        string sequence = fit->sequence;
-        string quality = fit->quality;
-
-        int trim_site = -1;
-        int i = 0;
-        for(;i < (int)quality.length();i++)
-        {
-            int j=i;
-            int score = 0;
-            int sites = 0;
-            for(;j<i+window_width && j< (int) quality.length();j++)
-            {
-                score += static_cast<int>(quality.at(j))-33;
-                sites++;
-            }
-
-            if( (float)score/(float)sites < mean_score )
-                trim_site = j;
-            else
-                break;
-        }
-
-        if(trim_site>=0)
-        {
-            fit->sequence = sequence.substr(trim_site);
-            fit->quality = quality.substr(trim_site);
-            fit->trim_start = trim_site;
-        }
-
-
-        // bwd trim
-
-        sequence = fit->sequence;
-        quality = fit->quality;
-
-        trim_site = -1;
-
-        i = quality.length()-1;
-        for(;i>=0 ;i--)
-        {
-            int j=i;
-            int score = 0;
-            int sites = 0;
-            for(;j>i-window_width && j>=0;j--)
-            {
-                score += static_cast<int>(quality.at(j))-33;
-                sites++;
-            }
-            if( (float)score/(float)sites < mean_score )
-                trim_site = j;
-            else
-                break;
-        }
-
-
-        if(trim_site>=0)
-        {
-            fit->sequence = sequence.substr(0,trim_site+1);
-            fit->quality = quality.substr(0,trim_site+1);
-            fit->trim_end = quality.length()-(trim_site+1);
-        }
-
-
-        if((int)fit->sequence.length()<minimum_length)
-        {
-            Log_output::write_out("After trimming, sequence "+fit->name+" is below the minimum length of "
-                    +Log_output::itos(minimum_length)+"; the read is discarded.\n",2);
-            seqs->erase(fit);
-        }
-        else
-            fit++;
-
-    }
 }
 
 void Fasta_reader::read_graph(istream & input, vector<Fasta_entry> & seqs, bool short_names = false) const throw (Exception)
@@ -1273,7 +1177,6 @@ bool Fasta_reader::check_alphabet(vector<Fasta_entry> * sequences,int data_type)
         // Main loop : for all sequences in vector container
         for (; vi != sequences->end(); vi++)
         {
-            vi->use_local = false;
             vi->data_type = Model_factory::dna;
 
             // Convert U -> T and all uppercase
@@ -1339,7 +1242,6 @@ bool Fasta_reader::check_alphabet(vector<Fasta_entry> * sequences,int data_type)
         // Main loop : for all sequences in vector container
         for (; vi != sequences->end(); vi++)
         {
-            vi->use_local = false;
             vi->data_type = Model_factory::protein;
 
             string::iterator si = vi->sequence.begin();

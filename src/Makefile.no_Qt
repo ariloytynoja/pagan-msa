@@ -16,7 +16,7 @@ YACCFLAGS= -d
 INCPATH  = -I/usr/include -I. -I./utils -I./main -I../boost/include
 LINK     = /usr/bin/g++
 LFLAGS   =
-LIBS     = $(SUBLIBS)  -Wl,-rpath, -lboost_program_options -lboost_regex -lboost_thread -lm -L../boost/lib
+LIBS     = $(SUBLIBS)  -Wl,-rpath, -lboost_program_options -lboost_regex -lboost_thread -lboost_system  -lm -L../boost/lib
 ifneq ($(UNAME), Darwin)
 LIBS    += -lrt
 endif
@@ -58,7 +58,6 @@ HEADERS       = main/node.h \
 		utils/xml_writer.h \
 		utils/evol_model.h \
 		utils/check_version.h \
-		utils/optimal_reference.h \
 		utils/log_output.h \
 		utils/find_anchors.h \
 		utils/codon_translation.h \
@@ -88,7 +87,6 @@ SOURCES       = main.cpp \
 		utils/evol_model.cpp \
 		utils/check_version.cpp \
 		utils/exonerate_queries.cpp \
-		utils/optimal_reference.cpp \
 		utils/log_output.cpp \
 		utils/find_anchors.cpp \
 		utils/codon_translation.cpp \
@@ -118,7 +116,6 @@ OBJECTS       = main.o \
 		evol_model.o \
 		check_version.o \
 		exonerate_queries.o \
-		optimal_reference.o \
 		log_output.o \
 		find_anchors.o \
 		codon_translation.o \
@@ -189,7 +186,6 @@ main.o: main.cpp utils/settings.h \
 		utils/model_factory.h \
 		main/reference_alignment.h \
 		utils/codon_translation.h \
-		utils/optimal_reference.h \
 		main/reads_aligner.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
@@ -416,24 +412,6 @@ exonerate_queries.o: utils/exonerate_queries.cpp utils/exonerate_queries.h \
 		main/reference_alignment.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o exonerate_queries.o utils/exonerate_queries.cpp
 
-optimal_reference.o: utils/optimal_reference.cpp utils/optimal_reference.h \
-		utils/fasta_entry.h \
-		main/node.h \
-		utils/exceptions.h \
-		utils/settings.h \
-		utils/settings_handle.h \
-		main/sequence.h \
-		main/viterbi_alignment.h \
-		utils/evol_model.h \
-		utils/db_matrix.h \
-		utils/log_output.h \
-		utils/int_matrix.h \
-		main/basic_alignment.h \
-		utils/model_factory.h \
-		main/reference_alignment.h \
-		utils/fasta_reader.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o optimal_reference.o utils/optimal_reference.cpp
-
 log_output.o: utils/log_output.cpp utils/log_output.h \
 		utils/settings_handle.h \
 		utils/settings.h
@@ -473,7 +451,6 @@ input_output_parser.o: utils/input_output_parser.cpp utils/input_output_parser.h
 		utils/exonerate_queries.h \
 		utils/substring_hit.h \
 		utils/xml_writer.h \
-		utils/optimal_reference.h \
 		utils/tree_node.h \
 		main/reads_aligner.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o input_output_parser.o utils/input_output_parser.cpp

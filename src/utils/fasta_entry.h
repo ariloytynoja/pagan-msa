@@ -51,17 +51,7 @@ struct Fasta_entry
     float node_score;
     string node_to_align;
     int first_read_length; // for pair-end reads
-    int node_start_pos1;   // to check overlapping reads
-    int node_end_pos1;
-    int node_start_pos2;   // for pair-end reads
-    int node_end_pos2;
-    int trim_start;
-    int trim_end;
-    int local_qstart;      // local alignment query start
-    int local_qend;        // local alignment query end
-    int local_tstart;      // local alignment target start
-    int local_tend;        // local alignment target end
-    bool use_local;
+
     int cluster_attempts;
     bool reversed;
     int num_duplicates;

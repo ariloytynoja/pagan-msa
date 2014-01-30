@@ -28,7 +28,6 @@
 #include "utils/fasta_reader.h"
 #include "main/node.h"
 #include "utils/model_factory.h"
-#include "utils/optimal_reference.h"
 #include "main/reads_aligner.h"
 
 #ifdef __MACH__
@@ -211,19 +210,6 @@ int main(int argc, char *argv[])
         /***********************************************************************/
         ss.str(string());
         ss << "Time main::reads_align: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
-        Log_output::write_out(ss.str(),"time");
-        /***********************************************************************/
-    }
-    else if( Settings_handle::st.is("cluster-pileup") )
-    {
-        Optimal_reference ore;
-        ore.align(root,&mf,count);
-
-        root = ore.get_global_root();
-
-        /***********************************************************************/
-        ss.str(string());
-        ss << "Time main::cluster_pileup: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
         Log_output::write_out(ss.str(),"time");
         /***********************************************************************/
     }

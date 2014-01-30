@@ -34,8 +34,8 @@ Settings::Settings(){}
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.53;
-    date = "23 October, 2013";
+    version = 0.54;
+    date = "30 January, 2014";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -111,25 +111,11 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("pair-read-gap-extension", po::value<float>(), "paired read spacer extension probability (DNA)")
     ;
 
-    boost::program_options::options_description reads_alignment3("Overlapping paired reads options (FASTQ)",100);
-    reads_alignment3.add_options()
-        ("overlap-pair-end","merge overlapping paired reads")
-        ("overlap-minimum", po::value<int>()->default_value(15), "minimum overlapping sites")
-        ("overlap-identity", po::value<float>()->default_value(0.75,"0.75"), "minimum identity at overlap")
-        ("overlap-identical-minimum", po::value<int>()->default_value(10), "minimum identical overlapping sites")
-        ("overlap-merge-file", po::value<string>(), "output file for merged reads")
-        ("overlap-merge-only","only merge overlapping paired reads")
-        ("trim-before-merge", "trim read ends with low Q-scores before merging")
-    ;
 
     boost::program_options::options_description reads_alignment4("Trimming and quality options (FASTQ)",100);
     reads_alignment4.add_options()
         ("no-fastq", "do not use Q-scores")
-        ("trim-read-ends", "trim read ends with low Q-scores")
-        ("trim-mean-qscore", po::value<int>()->default_value(15), "sliding window trimming threshold")
-        ("trim-window-width", po::value<int>()->default_value(5), "sliding window width")
         ("qscore-minimum", po::value<int>()->default_value(10), "threshold to mask low Q-score sites")
-        ("minimum-trimmed-length", po::value<int>()->default_value(20), "minimum trimmed read length")
         ("perfect-reference", "assume perfect reference alignment")
     ;
 
@@ -173,9 +159,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     boost::program_options::options_description obscure("Additional obscure options",100);
     obscure.add_options()
         ("rank-reads-for-nodes","rank reads within nodes for alignment")
-        ("discard-overlapping-identical-reads", "discard embedded identical reads")
-        ("discard-overlapping-reads", "discard embedded reads")
-        ("discard-pairwise-overlapping-reads", "discard embedded reads (pairwise alignment)")
         ("align-reads-at-root", "ignore tags and align reads at root")
         ("align-bad-reads-at-root", "align non-matching reads at root")
         ("use-identity-score", "choose target based on identity score")
@@ -252,15 +235,14 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("sample-additional-paths", po::value<int>()->default_value(0), "sample additional paths from posterior probabilities")
         ("readsfile", po::value<string>(), "reads file (FASTA/FASTQ)")
         ("reads-pileup","make pileup alignment")
-        ("cluster-pileup","pileup clustered reads (DNA)")
     ;
 
     po::positional_options_description pd;
     pd.add("config-file", 1);
 
-    full_desc.add(minimal).add(generic).add(anchoring).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(obscure).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken).add(help_update);
-    desc.add(minimal).add(generic).add(anchoring).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(model).add(tree_edit).add(alignment).add(help_update);
-    max_desc.add(minimal).add(generic).add(anchoring).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(reads_alignment4).add(exonerate).add(pileup).add(obscure).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(help_update);
+    full_desc.add(minimal).add(generic).add(anchoring).add(reads_alignment).add(reads_alignment2).add(reads_alignment4).add(exonerate).add(pileup).add(obscure).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken).add(help_update);
+    desc.add(minimal).add(generic).add(anchoring).add(reads_alignment).add(reads_alignment2).add(reads_alignment4).add(exonerate).add(pileup).add(model).add(tree_edit).add(alignment).add(help_update);
+    max_desc.add(minimal).add(generic).add(anchoring).add(reads_alignment).add(reads_alignment2).add(reads_alignment4).add(exonerate).add(pileup).add(obscure).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(help_update);
     min_desc.add(minimal).add(reads_alignment).add(help_update);
 
 
