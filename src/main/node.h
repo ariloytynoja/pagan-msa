@@ -82,6 +82,7 @@ public:
     string name_comment;
     string name_id;
     string nhx_tid;
+    string nhx_tag;
 
     Sequence *sequence;
     
@@ -189,6 +190,12 @@ public:
         nhx_tid = nm;
     }
 
+    void set_nhx_tag(string nm)
+    {
+        nhx_tag = nm;
+    }
+
+
     void set_Orf(Orf *o) { orf = *o; has_orf = true; ;}
     Orf get_Orf() { return orf; }
     bool has_Orf() { return has_orf; }
@@ -198,6 +205,8 @@ public:
     string get_name_id() const { return name_id; }
 
     string get_nhx_tid() const { return nhx_tid; }
+
+    string get_nhx_tag() const { return nhx_tag; }
 
     string get_id_for_name(string query) const
     {
@@ -1287,12 +1296,15 @@ public:
     string print_nhx_tree() const {
         if(!leaf)
         {
-            stringstream tid("");
-            if(this->get_nhx_tid()!="")
-                tid << "[&&NHX:TID="+this->get_nhx_tid()<<"]";
+            string tid = this->get_nhx_tag();
+            if(this->get_nhx_tid() != "")
+                tid += ":TID="+this->get_nhx_tid();
+
+            if(tid != "")
+                tid = "["+tid+"]";
 
             stringstream ss;
-            ss<<"("<<left_child->print_nhx_subtree()<<","<<right_child->print_nhx_subtree()<<"):"<<dist_to_parent<<tid.str()<<";";
+            ss<<"("<<left_child->print_nhx_subtree()<<","<<right_child->print_nhx_subtree()<<"):"<<dist_to_parent<<tid<<";";
             return ss.str();
         } else {
             return "";
@@ -1303,19 +1315,22 @@ public:
 
     string print_nhx_subtree() const {
 
-        stringstream tid("");
-        if(this->get_nhx_tid()!="")
-            tid << "[&&NHX:TID="+this->get_nhx_tid()<<"]";
+        string tid = this->get_nhx_tag();
+        if(this->get_nhx_tid() != "")
+            tid += ":TID="+this->get_nhx_tid();
+
+        if(tid != "")
+            tid = "["+tid+"]";
 
         if(!leaf)
         {
             stringstream ss;
-            ss<<"("<<left_child->print_nhx_subtree()<<","<<right_child->print_nhx_subtree()<<"):"<<dist_to_parent<<tid.str();
+            ss<<"("<<left_child->print_nhx_subtree()<<","<<right_child->print_nhx_subtree()<<"):"<<dist_to_parent<<tid;
             return ss.str();
 
         } else {
             stringstream ss;
-            ss<<name<<":"<<dist_to_parent<<tid.str();
+            ss<<name<<":"<<dist_to_parent<<tid;
             return ss.str();
         }
     }

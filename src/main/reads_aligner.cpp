@@ -970,9 +970,6 @@ void Reads_aligner::loop_default_placement(Node *root, vector<Fasta_entry> *read
     else
         this->find_nodes_for_reads(root, reads, mf);
 
-    if(Settings_handle::st.is("placement-only"))
-        exit(0);
-
     Log_output::write_header("Aligning query sequences",0);
 
 

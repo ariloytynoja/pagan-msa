@@ -102,8 +102,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("test-every-internal-node","test every internal node for each query")
         ("test-every-terminal-node","test every terminal node for each query")
         ("one-placement-only", "place only once despite equally good hits")
-        ("placement-only", "compute query placement only")
-        ("placement-file", po::value<string>(), "query placement file")
         ("query-distance", po::value<float>()->default_value(0.1,"0.1"), "evolutionary distance from pseudo-root")
         ("min-query-overlap", po::value<float>()->default_value(0.5,"0.5"), "overlap threshold for query and reference")
         ("overlap-with-reference","require overlap with reference")
@@ -112,7 +110,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     ;
 
 
-    boost::program_options::options_description reads_alignment4("Trimming and quality options (FASTQ)",100);
+    boost::program_options::options_description reads_alignment4("Quality options (FASTQ)",100);
     reads_alignment4.add_options()
         ("no-fastq", "do not use Q-scores")
         ("qscore-minimum", po::value<int>()->default_value(10), "threshold to mask low Q-score sites")

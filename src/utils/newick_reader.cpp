@@ -112,6 +112,7 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
     else
         node->set_distance_to_parent(0);
 
+    stringstream nhx_tag("");
     if(!Text_utils::is_empty(elt.nhx))
     {
         String_tokenizer * st = new String_tokenizer(elt.nhx, ":", true, false);
@@ -126,11 +127,18 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
                 block = block.substr(4);
                 node->set_nhx_tid(block);
             }
+            else
+            {
+                if(nhx_tag.str().length()==0)
+                    nhx_tag<<block;
+                else
+                    nhx_tag<<":"<<block;
+            }
         }
-
         delete st;
 //        node->set_distance_to_parent(Text_utils::to_double(elt.length));
     }
+    node->set_nhx_tag(nhx_tag.str());
 
     Node_tokenizer nt(elt.content);
     vector<string> elements;
