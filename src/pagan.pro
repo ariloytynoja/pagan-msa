@@ -72,7 +72,7 @@ HEADERS += utils/text_utils.h \
     utils/tree_node.h \
     utils/bppdist_tree.h \
     utils/bppphysamp_tree.h
-LIBS += -lboost_program_options-mt -lboost_regex-mt -lboost_thread-mt -lrt
+LIBS += -lboost_program_options -lboost_regex -lboost_thread  -lboost_system -lrt
 INCLUDEPATH += /usr/include
 OTHER_FILES += missing_things.txt \
     ../VERSION_HISTORY \

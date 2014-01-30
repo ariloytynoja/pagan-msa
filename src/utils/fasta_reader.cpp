@@ -155,6 +155,7 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
             if((name != "") && (sequence != ""))
             {
                 transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
+                sequence.erase( std::remove(sequence.begin(), sequence.end(), '\r'), sequence.end() );
 
                 if(degap)
                     this->remove_gaps(&sequence);
@@ -219,6 +220,7 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
     if((name != "") && (sequence != ""))
     {
         transform( sequence.begin(), sequence.end(), sequence.begin(), (int(*)(int))toupper );
+        sequence.erase( std::remove(sequence.begin(), sequence.end(), '\r'), sequence.end() );
 
         if(degap)
             this->remove_gaps(&sequence);

@@ -2373,7 +2373,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                             best_score = score;
                             best_node.append(" "+tit->second);
                         }
-                        else if(score>best_score)
+                        else if(score>=best_score)
                         {
                             best_score = score;
                             best_node = tit->second;
@@ -2396,7 +2396,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                                 best_node.append(" "+tit->second);
                                 query_strand = Fasta_entry::reverse_strand;
                             }
-                            else if(score>best_score)
+                            else if(score>=best_score)
                             {
                                 best_score = score;
                                 best_node = tit->second;
@@ -2644,7 +2644,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                             best_score = score;
                             best_node.append(" "+tit->second);
                         }
-                        else if(score>best_score)
+                        else if(score>=best_score)
                         {
                             best_score = score;
                             best_node = tit->second;
@@ -2888,7 +2888,7 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
                         best_score = score;
                         best_node.append(" "+tit->second);
                     }
-                    else if(score>best_score)
+                    else if(score>=best_score)
                     {
                         best_score = score;
                         best_node = tit->second;
@@ -3106,7 +3106,7 @@ void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_e
                         best_score = score;
                         best_node.append(" "+tit->second);
                     }
-                    else if(score>best_score)
+                    else if(score>=best_score)
                     {
                         best_score = score;
                         best_node = tit->second;
