@@ -465,7 +465,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
         if(Settings_handle::st.is("outformat"))
             format = Settings_handle::st.get("outformat").as<string>();
 
-        if(Settings_handle::st.is("xml"))
+        if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
             Log_output::write_out("Alignment files: "+outfile+fr->get_format_suffix(format)+", "+outfile+".xml\n",0);
         else
             Log_output::write_out("Alignment file: "+outfile+fr->get_format_suffix(format)+"\n",0);
@@ -481,7 +481,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
         int count = 1;
         root->set_name_ids(&count);
 
-        if(Settings_handle::st.is("xml"))
+        if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
         {
             Xml_writer xw;
             xw.write(outfile, root, aligned_sequences, true);
@@ -621,7 +621,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             if(Settings_handle::st.is("outformat"))
                 format = Settings_handle::st.get("outformat").as<string>();
 
-            if(Settings_handle::st.is("xml"))
+            if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
                 Log_output::write_out("Pruned alignment files: "+outfile+fr->get_format_suffix(format)+", "+outfile+".xml\n",0);
             else
                 Log_output::write_out("Pruned alignment file: "+outfile+fr->get_format_suffix(format)+"\n",0);
@@ -675,7 +675,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
             tmp_root->write_nhx_tree(outfile,"tre");
 
-            if(Settings_handle::st.is("xml"))
+            if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
             {
                 vector<Node*> leaf_nodes;
                 tmp_root->get_leaf_nodes(&leaf_nodes);

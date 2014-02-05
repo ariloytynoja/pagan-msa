@@ -1265,7 +1265,6 @@ public:
         }
     }
 
-    /************************************/
 
     string print_subtree(bool int_names=false) {
         if(!leaf)
@@ -1282,6 +1281,8 @@ public:
             return ss.str();
         }
     }
+
+    /************************************/
 
     void write_nhx_tree(string path, string suffix, bool overwrite=true) const throw (Exception)
     {
@@ -1311,8 +1312,6 @@ public:
         }
     }
 
-    /************************************/
-
     string print_nhx_subtree() const {
 
         string tid = this->get_nhx_tag();
@@ -1335,11 +1334,26 @@ public:
         }
     }
 
+    /************************************/
+
     string print_xml_tree() const {
         if(!leaf)
         {
             stringstream ss;
-            ss<<"("<<left_child->print_xml_subtree()<<","<<right_child->print_xml_subtree()<<")"<<name<<":0;";
+            ss<<"("<<left_child->print_xml_subtree()<<","<<right_child->print_xml_subtree()<<")"<<name<<":0";
+
+            if(Settings_handle::st.is("xml-nhx"))
+            {
+                string tid = this->get_nhx_tag();
+                if(this->get_nhx_tid() != "")
+                    tid += ":TID="+this->get_nhx_tid();
+
+                if(tid != "")
+                    tid = "["+tid+"]";
+                ss<<tid;
+            }
+
+            ss<<";";
             return ss.str();
         } else {
             return "";
@@ -1351,10 +1365,34 @@ public:
         {
             stringstream ss;
             ss<<"("<<left_child->print_xml_subtree()<<","<<right_child->print_xml_subtree()<<")"<<name<<":"<<dist_to_parent;
+
+            if(Settings_handle::st.is("xml-nhx"))
+            {
+                string tid = this->get_nhx_tag();
+                if(this->get_nhx_tid() != "")
+                    tid += ":TID="+this->get_nhx_tid();
+
+                if(tid != "")
+                    tid = "["+tid+"]";
+                ss<<tid;
+            }
+
             return ss.str();
         } else {
             stringstream ss;
             ss<<name_id<<":"<<dist_to_parent;
+
+            if(Settings_handle::st.is("xml-nhx"))
+            {
+                string tid = this->get_nhx_tag();
+                if(this->get_nhx_tid() != "")
+                    tid += ":TID="+this->get_nhx_tid();
+
+                if(tid != "")
+                    tid = "["+tid+"]";
+                ss<<tid;
+            }
+
             return ss.str();
         }
     }

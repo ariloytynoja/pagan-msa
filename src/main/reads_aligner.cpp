@@ -359,7 +359,9 @@ void Reads_aligner::loop_translated_pileup_alignment(Node *root, vector<Fasta_en
 void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
 {
 
-    int min_orf_length = int (Settings_handle::st.get("min-orf-coverage").as<float>() * read->dna_sequence.length() / 3);
+    int min_orf_length = Settings_handle::st.get("min-orf-length").as<int>();
+    if(Settings_handle::st.is("min-orf-coverage"))
+        min_orf_length = int (Settings_handle::st.get("min-orf-coverage").as<float>() * read->dna_sequence.length() / 3);
 
     string dna = read->dna_sequence;
     int length = dna.length()-1;
