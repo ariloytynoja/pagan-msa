@@ -22,6 +22,7 @@
 #define BPPANCESTORS_H
 
 #include "utils/fasta_entry.h"
+#include "main/node.h"
 #include "utils/settings_handle.h"
 
 #include <sys/stat.h>
@@ -52,7 +53,7 @@ class BppAncestors
 public:
     BppAncestors();
     bool test_executable();
-    void infer_ancestors(vector<Fasta_entry> *aligned_sequences,string tree,bool isDna);
+    void infer_ancestors(Node *root,vector<Fasta_entry> *aligned_sequences);
 };
 }
 

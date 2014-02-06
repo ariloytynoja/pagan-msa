@@ -91,7 +91,7 @@ bool BppAncestors::test_executable()
     #endif
 }
 
-void BppAncestors::infer_ancestors(vector<Fasta_entry> *aligned_sequences,string tree,bool isDna)
+void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_sequences)
 {
 
     string tmp_dir = this->get_temp_dir();
@@ -132,9 +132,13 @@ void BppAncestors::infer_ancestors(vector<Fasta_entry> *aligned_sequences,string
     }
 
 
-
     ////////////
 
+
+    int add = root->get_number_of_leaves();
+
+    string tree = root->print_bppa_tree(&add);
+    bool isDna = root->get_sequence()->get_data_type() == Model_factory::dna;
 
 
     ofstream f_output;
@@ -146,11 +150,13 @@ void BppAncestors::infer_ancestors(vector<Fasta_entry> *aligned_sequences,string
     f_output.close();
 
 
-
     ofstream t_output;
     t_output.open( t_name.str().c_str(), (ios::out) );
     t_output<<tree<<endl;
     t_output.close();
+
+
+    ////////////
 
 
     stringstream command;
@@ -183,6 +189,10 @@ void BppAncestors::infer_ancestors(vector<Fasta_entry> *aligned_sequences,string
     }
     pclose(fpipe);
 
+
+    ////////////
+
+
     map<string,string> bppa_sequences;
 
     Fasta_reader fr;
@@ -204,7 +214,55 @@ void BppAncestors::infer_ancestors(vector<Fasta_entry> *aligned_sequences,string
 
     this->delete_files(r);
 
+
+    ////////////
+
+
+    bool copy_left =
+        root->get_left_child()->get_distance_to_parent() < root->get_right_child()->get_distance_to_parent();
+
+    string left_seq,right_seq,root_seq;
+
+    si = aligned_sequences->begin();
+    for(;si!=aligned_sequences->end();si++)
+    {
+        if(si->name == root->get_left_child()->get_name())
+            left_seq = si->sequence;
+        if(si->name == root->get_right_child()->get_name())
+            right_seq = si->sequence;
+        if(si->name == root->get_name())
+            root_seq = si->sequence;
+    }
+
+    for(int i=0;i<root_seq.length();i++)
+    {
+        bool left_gap  = left_seq.at(i)=='-'  || left_seq.at(i)=='.';
+        bool right_gap = right_seq.at(i)=='-' || right_seq.at(i)=='.';
+
+        if(left_gap && right_gap)
+            ;
+        else if(left_gap && !right_gap)
+            root_seq.at(i) = right_seq.at(i);
+        else if(!left_gap && right_gap)
+            root_seq.at(i) = left_seq.at(i);
+        else if(!left_gap && !right_gap)
+        {
+            if(copy_left)
+                root_seq.at(i) = left_seq.at(i);
+            else
+                root_seq.at(i) = right_seq.at(i);
+        }
+    }
+
+    si = aligned_sequences->begin();
+    for(;si!=aligned_sequences->end();si++)
+    {
+        if(si->name == root->get_name())
+            si->sequence = root_seq;
+    }
+
 }
+
 
 void BppAncestors::delete_files(int r)
 {

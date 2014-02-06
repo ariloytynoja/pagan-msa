@@ -446,13 +446,9 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
     if(Settings_handle::st.is("output-ancestors"))
     {
-        int add = root->get_number_of_leaves();
-
-        string tree = root->print_bppa_tree(&add);
-        bool isDna = root->get_sequence()->get_data_type() == Model_factory::dna;
 
         BppAncestors bppa;
-        bppa.infer_ancestors(&aligned_sequences,tree,isDna);
+        bppa.infer_ancestors(root,&aligned_sequences);
 
     }
 
