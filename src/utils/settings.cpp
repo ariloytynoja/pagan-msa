@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2012 by Ari Loytynoja                              *
+ *   Copyright (C) 2010-2014 by Ari Loytynoja                              *
  *   ari.loytynoja@gmail.com                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -420,7 +420,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 void Settings::print_msg()
 {
     stringstream ss;
-    ss<<"\nPAGAN v."<<version<<" ("<<date<<"). (C) 2010-2012 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
+    ss<<"\nPAGAN v."<<version<<" ("<<date<<"). (C) 2010-2014 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
     ss<<" This program is provided \"as-is\", with NO WARRANTY whatsoever; this is a development version\n and may contain bugs.\n";
     Log_output::write_out(ss.str(),0);
 }
@@ -428,7 +428,7 @@ void Settings::print_msg()
 string Settings::print_log_msg()
 {
     stringstream tmp;
-    tmp<<"\n# PAGAN v."<<version<<" ("<<date<<"). (C) 2010-2012 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
+    tmp<<"\n# PAGAN v."<<version<<" ("<<date<<"). (C) 2010-2014 by Ari Löytynoja <ari.loytynoja@gmail.com>.\n";
     tmp<<"# This program is provided \"as-is\", with NO WARRANTY whatsoever; this is a development version\n# and may contain bugs.\n";
     return tmp.str();
 }

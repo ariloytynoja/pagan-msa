@@ -160,7 +160,7 @@ void BppAncestors::infer_ancestors(vector<Fasta_entry> *aligned_sequences,string
         command << " alphabet=Protein model=WAG01";
     else
     {
-        if(Settings_handle::st.is("codon"))
+        if(Settings_handle::st.is("codons"))
             command << " alphabet=Codon\\(letter=DNA,type=Standard\\) model=YN98\\(kappa=2,omega=0.5\\)";
         else
             command << " alphabet=DNA model=HKY85";
