@@ -91,7 +91,7 @@ bool BppAncestors::test_executable()
     #endif
 }
 
-void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_sequences)
+void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_sequences,bool isCodon)
 {
 
     string tmp_dir = this->get_temp_dir();
@@ -162,14 +162,22 @@ void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_seque
     stringstream command;
     command << bppdistpath<<"bppancestor input.sequence.file="<<f_name.str()<<" input.sequence.format=Fasta input.sequence.sites_to_use=all input.tree.file="<<t_name.str()<<
             " input.tree.format=NHX input.sequence.max_gap_allowed=100% initFreqs=observed output.sequence.file="<<o_name.str()<<" output.sequence.format=Phylip";
-    if(!isDna)
-        command << " alphabet=Protein model=WAG01";
+
+    if(isCodon)
+    {
+        command << " alphabet=Codon\\(letter=DNA,type=Standard\\) model=YN98\\(kappa=2,omega=0.5\\)";
+    }
     else
     {
-        if(Settings_handle::st.is("codons"))
-            command << " alphabet=Codon\\(letter=DNA,type=Standard\\) model=YN98\\(kappa=2,omega=0.5\\)";
+        if(!isDna)
+            command << " alphabet=Protein model=WAG01";
         else
-            command << " alphabet=DNA model=HKY85";
+        {
+            if(Settings_handle::st.is("codons") )
+                command << " alphabet=Codon\\(letter=DNA,type=Standard\\) model=YN98\\(kappa=2,omega=0.5\\)";
+            else
+                command << " alphabet=DNA model=HKY85";
+        }
     }
 
     Log_output::write_out("BppAncestors: command: "+command.str()+"\n",2);

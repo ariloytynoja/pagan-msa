@@ -46,6 +46,7 @@ class Fasta_reader
     void define_translation_tables();
 
     string DNA_to_protein(string *sequence) const;
+    string protein_to_mockDNA(string *prot) const;
     string protein_to_DNA(string *dna,string *prot) const;
 public:
 
@@ -95,7 +96,7 @@ public:
     }
 
     void get_DNA_seqs(Node *root, const vector<Fasta_entry> *org_seqs, map<string,string> *dna_seqs);
-    void backtranslate_dna(const vector<Fasta_entry> & seqs, const map<string,string> *dna_seqs, vector<Fasta_entry> &outseqs) const throw (Exception);
+    void backtranslate_dna(const vector<Fasta_entry> & seqs, const map<string,string> *dna_seqs, vector<Fasta_entry> &outseqs, bool include_mock_ancestors=false) const throw (Exception);
 
     void print_fasta_entry(ostream & output, const Fasta_entry *entry) const;
 

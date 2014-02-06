@@ -40,6 +40,9 @@ public:
     void match_sequences_and_tree(ppa::Fasta_reader *fr,vector<Fasta_entry> *sequences, Node *root, bool reference_alignment,int *data_type);
     void define_alignment_model(ppa::Fasta_reader *fr,Model_factory *mf, int data_type);
     void output_aligned_sequences(ppa::Fasta_reader *fr,vector<Fasta_entry> *sequences, Node *root);
+    void prune_extended_alignment(Fasta_reader *fr,Node *root,vector<Fasta_entry> *aligned_sequences);
+
+
     void translate_codons(vector<Fasta_entry> *sequences, vector<Fasta_entry> *translated)
     {
         Codon_translation ct;

@@ -53,7 +53,7 @@ class BppAncestors
 public:
     BppAncestors();
     bool test_executable();
-    void infer_ancestors(Node *root,vector<Fasta_entry> *aligned_sequences);
+    void infer_ancestors(Node *root,vector<Fasta_entry> *aligned_sequences,bool isCodon=false);
 };
 }
 

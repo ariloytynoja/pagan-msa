@@ -1202,11 +1202,19 @@ public:
             return left_child->get_weighted_number_of_leaves()+right_child->get_weighted_number_of_leaves();
     }
 
-    int get_number_of_read_leaves()
+    int get_number_of_read_leaves_for_read_node()
     {
         if(!this->get_sequence()->is_read_sequence())
             return 0;
 
+        if(leaf)
+             return 1;
+        else
+            return left_child->get_number_of_read_leaves()+right_child->get_number_of_read_leaves();
+    }
+
+    int get_number_of_read_leaves()
+    {
         if(leaf)
              return 1;
         else
@@ -1519,7 +1527,7 @@ public:
 
             if(Settings_handle::st.is("inlude-parent-in-contig"))
             {
-                if(this->get_number_of_leaves() == this->get_number_of_read_leaves()+1)
+                if(this->get_number_of_leaves() == this->get_number_of_read_leaves_for_read_node()+1)
                 {
                     int seq_length = this->get_sequence()->sites_length();
                     string parent_name = this->find_first_nonread_left_parent();

@@ -438,25 +438,18 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
     /*  Collect the results and output them                                */
     /***********************************************************************/
 
+    fr->set_chars_by_line(70);
 
 //    root->show_seqs();
 
     vector<Fasta_entry> aligned_sequences;
-    root->get_alignment(&aligned_sequences,Settings_handle::st.is("output-ancestors"));
-
-    if(Settings_handle::st.is("output-ancestors"))
-    {
-
-        BppAncestors bppa;
-        bppa.infer_ancestors(root,&aligned_sequences);
-
-    }
+    root->get_alignment(&aligned_sequences,true);
 
     Log_output::clean_output();
 
     // See if any sequences were placed
     //
-    if(Settings_handle::st.is("queryfile") && (int)sequences->size() == (int)aligned_sequences.size())
+    if(Settings_handle::st.is("queryfile") && root->get_number_of_read_leaves()==0)
     {
         Log_output::write_out("Failed to extend the alignment. No output created.\n",0);
     }
@@ -484,8 +477,31 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
 
 
-        fr->set_chars_by_line(70);
-        fr->write(outfile, aligned_sequences, format, true);
+        if(Settings_handle::st.is("output-ancestors"))
+        {
+            BppAncestors bppa;
+            if(bppa.test_executable())
+                bppa.infer_ancestors(root,&aligned_sequences);
+
+        }
+
+        if(Settings_handle::st.is("output-ancestors"))
+        {
+            fr->write(outfile, aligned_sequences, format, true);
+        }
+        else
+        {
+            vector<Fasta_entry> leaf_sequences;
+            set<string> names;
+            root->get_leaf_node_names(&names);
+            vector<Fasta_entry>::iterator si = aligned_sequences.begin();
+            for(;si!=aligned_sequences.end();si++)
+            {
+                if(names.find(si->name) != names.end())
+                    leaf_sequences.push_back(*si);
+            }
+            fr->write(outfile, leaf_sequences, format, true);
+        }
 
         int count = 1;
         root->set_name_ids(&count);
@@ -495,6 +511,98 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             Xml_writer xw;
             xw.write(outfile, root, aligned_sequences, true);
         }
+
+        if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate") || Settings_handle::st.is("find-best-orf"))
+        {
+            string outfile =  "outfile";
+            if(Settings_handle::st.is("outfile"))
+                outfile =  Settings_handle::st.get("outfile").as<string>();
+
+            outfile.append(".dna");
+            if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
+                Log_output::write_out("Back-translated alignment files: "+outfile+fr->get_format_suffix(format)+", "+outfile+".xml\n",0);
+            else
+                Log_output::write_out("Back-translated alignment file: "+outfile+fr->get_format_suffix(format)+"\n",0);
+
+
+            map<string,string> dna_seqs;
+
+            fr->get_DNA_seqs(root, sequences, &dna_seqs);
+
+            BppAncestors bppa;
+            bool include_mock_ancestors = bppa.test_executable();
+
+            vector<Fasta_entry> dna_sequences;
+            fr->backtranslate_dna(aligned_sequences,&dna_seqs,dna_sequences,include_mock_ancestors);
+
+            bppa.infer_ancestors(root,&dna_sequences,true);
+
+            if( aligned_sequences.size() == dna_sequences.size() )
+                fr->write(outfile, dna_sequences, format, true);
+
+            if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
+            {
+                Xml_writer xw;
+                xw.write(outfile, root, dna_sequences, true);
+            }
+
+
+
+            /***************************************************/
+
+            if(Settings_handle::st.is("build-contigs"))
+            {
+                string outfile =  "outfile";
+                if(Settings_handle::st.is("outfile"))
+                    outfile =  Settings_handle::st.get("outfile").as<string>();
+
+                outfile.append("_contigs.dna");
+                Log_output::write_out("Back-translated contig file: "+outfile+".fas\n",1);
+
+                fr->set_chars_by_line(70);
+                fr->write_dna(outfile, aligned_sequences, *sequences,root,true,Fasta_reader::contig_alignment);
+            }
+            if(Settings_handle::st.is("output-consensus"))
+            {
+                string outfile =  "outfile";
+                if(Settings_handle::st.is("outfile"))
+                    outfile =  Settings_handle::st.get("outfile").as<string>();
+
+                outfile.append("_consensus.dna");
+                Log_output::write_out("Back-translated consensus file: "+outfile+".fas\n",1);
+
+                fr->set_chars_by_line(70);
+                fr->write_dna(outfile, aligned_sequences, *sequences,root,true,Fasta_reader::consensus_only);
+            }
+
+            /***************************************************/
+
+        }
+
+        if( Settings_handle::st.is("prune-extended-alignment"))
+        {
+            this->prune_extended_alignment(fr,root,&aligned_sequences);
+        }
+
+        if(Settings_handle::st.is("output-ancestors"))
+        {
+            fr->write_anctree(outfile, root);
+        }
+
+        if(Settings_handle::st.is("output-nhx-tree"))
+        {
+            root->write_nhx_tree(outfile,"nhx_tree");
+        }
+
+        if( Settings_handle::st.is("scale-branches") ||
+             Settings_handle::st.is("truncate-branches") ||
+              Settings_handle::st.is("fixed-branches") )
+        {
+            Log_output::write_out("Modified guide tree: " +root->print_tree()+"\n",2);
+        }
+
+
+        /***************************************************/
 
         if(Settings_handle::st.is("build-contigs"))
         {
@@ -530,211 +638,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             fr->write(outfile, contigs, "fasta", true);
         }
 
-        if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate") || Settings_handle::st.is("find-best-orf"))
-        {
-            string outfile =  "outfile";
-            if(Settings_handle::st.is("outfile"))
-                outfile =  Settings_handle::st.get("outfile").as<string>();
-
-            outfile.append(".dna");
-            Log_output::write_out("Back-translated alignment file: "+outfile+fr->get_format_suffix(format)+"\n",0);
-
-            fr->set_chars_by_line(70);
-
-            map<string,string> dna_seqs;
-
-            fr->get_DNA_seqs(root, sequences, &dna_seqs);
-
-            vector<Fasta_entry> dna_sequences;
-            fr->backtranslate_dna(aligned_sequences,&dna_seqs,dna_sequences);
-
-            if( aligned_sequences.size() == dna_sequences.size() )
-                fr->write(outfile, dna_sequences, format, true);
-
-            if(Settings_handle::st.is("build-contigs"))
-            {
-                string outfile =  "outfile";
-                if(Settings_handle::st.is("outfile"))
-                    outfile =  Settings_handle::st.get("outfile").as<string>();
-
-                outfile.append("_contigs.dna");
-                Log_output::write_out("Back-translated contig file: "+outfile+".fas\n",1);
-
-                fr->set_chars_by_line(70);
-                fr->write_dna(outfile, aligned_sequences, *sequences,root,true,Fasta_reader::contig_alignment);
-            }
-            if(Settings_handle::st.is("output-consensus"))
-            {
-                string outfile =  "outfile";
-                if(Settings_handle::st.is("outfile"))
-                    outfile =  Settings_handle::st.get("outfile").as<string>();
-
-                outfile.append("_consensus.dna");
-                Log_output::write_out("Back-translated consensus file: "+outfile+".fas\n",1);
-
-                fr->set_chars_by_line(70);
-                fr->write_dna(outfile, aligned_sequences, *sequences,root,true,Fasta_reader::consensus_only);
-            }
-        }
-
-        if( Settings_handle::st.is("prune-extended-alignment"))
-        {
-            bool is_protein = root->get_sequence()->get_data_type()==Model_factory::protein;
-
-            set<string> removenames;
-            root->get_all_terminal_node_names(&removenames);
-
-            BppPhySamp_tree bppphys;
-            if(bppphys.test_executable()) {
-                if(Settings_handle::st.get("prune-keep-number").as<int>()>1 && not Settings_handle::st.is("prune-all"))
-                {
-                    removenames.clear();
-                    bppphys.reduce_sequences(&removenames,is_protein);
-                }
-            }
-            else
-            {
-                Log_output::write_out("The executable for BppPhySamp not found! The alignment cannot be pruned!",0);
-            }
-
-            set<string> readnames;
-            root->get_read_node_names(&readnames);
-
-            set<string> keepnames;
-            if(not Settings_handle::st.is("prune-all"))
-                root->get_closest_reference_leaves(&keepnames);
-
-            Newick_reader nr;
-            string tree = root->print_tree();
-            Node *tmp_root = nr.parenthesis_to_tree(tree);
-
-            tmp_root->set_has_sequence();
-            tmp_root->unset_has_sequence(&removenames);
-            tmp_root->set_has_sequence(&readnames);
-            tmp_root->set_has_sequence(&keepnames);
-            tmp_root->prune_tree();
-
-            tree = tmp_root->print_tree();
-
-            set<string> leaves_kept;
-            tmp_root->get_leaf_node_names(&leaves_kept);
-
-            string outfile =  "outfile";
-
-            if(Settings_handle::st.is("outfile"))
-                outfile =  Settings_handle::st.get("outfile").as<string>();
-
-            outfile.append(".pruned");
-
-            string format = "fasta";
-            if(Settings_handle::st.is("outformat"))
-                format = Settings_handle::st.get("outformat").as<string>();
-
-            if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
-                Log_output::write_out("Pruned alignment files: "+outfile+fr->get_format_suffix(format)+", "+outfile+".xml\n",0);
-            else
-                Log_output::write_out("Pruned alignment file: "+outfile+fr->get_format_suffix(format)+"\n",0);
-            Log_output::write_out("Pruned tree file: "+outfile+".tre\n",0);
-
-
-            vector<Fasta_entry> pruned_sequences;
-            vector<Fasta_entry>::iterator fit = aligned_sequences.begin();
-            for(;fit!=aligned_sequences.end();fit++)
-            {
-                if(leaves_kept.find(fit->name)!=leaves_kept.end())
-                {
-                    pruned_sequences.push_back(*fit);
-                }
-            }
-            fr->remove_gap_only_columns(&pruned_sequences);
-
-            if(Settings_handle::st.is("trim-extended-alignment"))
-            {
-                int last_site = 0;
-                int first_site = pruned_sequences.at(0).sequence.length();
-
-                vector<Fasta_entry>::iterator fit = pruned_sequences.begin();
-                for(;fit!=pruned_sequences.end();fit++)
-                {
-                    if(readnames.find(fit->name)!=readnames.end())
-                    {
-                        for(int i=0;i<(int)fit->sequence.length();i++)
-                        {
-                            if(fit->sequence.at(i)!='-' && i < first_site)
-                                first_site = i;
-                            if(fit->sequence.at(i)!='-' && i > last_site)
-                                last_site = i;
-                        }
-
-                    }
-                }
-
-                first_site = max(first_site-Settings_handle::st.get("trim-keep-sites").as<int>(),0);
-                last_site  = min(last_site+Settings_handle::st.get("trim-keep-sites").as<int>(),(int)pruned_sequences.at(0).sequence.length());
-
-                fit = pruned_sequences.begin();
-                for(;fit!=pruned_sequences.end();fit++)
-                {
-                    fit->sequence = fit->sequence.substr(first_site,last_site-first_site);
-                }
-            }
-
-            fr->set_chars_by_line(70);
-            fr->write(outfile, pruned_sequences, format, true);
-
-            tmp_root->write_nhx_tree(outfile,"tre");
-
-            if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
-            {
-                vector<Node*> leaf_nodes;
-                tmp_root->get_leaf_nodes(&leaf_nodes);
-
-                bool tree_branches_ok = fr->check_sequence_names(&pruned_sequences,&leaf_nodes);
-                if(!tree_branches_ok)
-                {
-                    Log_output::write_out("Attempting to prune the tree: ",2);
-                    Log_output::flush();
-
-                    root->prune_tree();
-                    Log_output::write_out("pruning done.\n",2);
-                    Log_output::write_out("New tree:\n"+root->print_tree()+"\n\n",3);
-                }
-
-                leaf_nodes.clear();
-                tmp_root->get_leaf_nodes(&leaf_nodes);
-
-                //  Place the sequences to nodes
-                fr->place_sequences_to_nodes(&pruned_sequences,&leaf_nodes,true);
-                int count = 1;
-                tmp_root->name_internal_nodes(&count);
-
-                count = 1;
-                tmp_root->set_name_ids(&count);
-
-                Xml_writer xw;
-                xw.write(outfile, tmp_root, pruned_sequences, true, true);
-            }
-
-//            cout<<tree<<endl;
-
-        }
-
-        if(Settings_handle::st.is("output-ancestors"))
-        {
-            fr->write_anctree(outfile, root);
-        }
-
-        if(Settings_handle::st.is("output-nhx-tree"))
-        {
-            root->write_nhx_tree(outfile,"nhx_tree");
-        }
-
-        if( Settings_handle::st.is("scale-branches") ||
-             Settings_handle::st.is("truncate-branches") ||
-              Settings_handle::st.is("fixed-branches") )
-        {
-            Log_output::write_out("Modified guide tree: " +root->print_tree()+"\n",2);
-        }
+        /***************************************************/
 
         if(Settings_handle::st.is("output-graph"))
         {
@@ -744,6 +648,148 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
         if(Settings_handle::st.is("mpost-graph-file")){
             root->write_sequence_graphs();
         }
+
+        /***************************************************/
     }
 
+}
+
+
+void Input_output_parser::prune_extended_alignment(Fasta_reader *fr,Node *root,vector<Fasta_entry> *aligned_sequences)
+{
+    bool is_protein = root->get_sequence()->get_data_type()==Model_factory::protein;
+
+    set<string> removenames;
+    root->get_all_terminal_node_names(&removenames);
+
+    BppPhySamp_tree bppphys;
+    if(bppphys.test_executable()) {
+        if(Settings_handle::st.get("prune-keep-number").as<int>()>1 && not Settings_handle::st.is("prune-all"))
+        {
+            removenames.clear();
+            bppphys.reduce_sequences(&removenames,is_protein);
+        }
+    }
+    else
+    {
+        Log_output::write_out("The executable for BppPhySamp not found! The alignment cannot be pruned!",0);
+    }
+
+    set<string> readnames;
+    root->get_read_node_names(&readnames);
+
+    set<string> keepnames;
+    if(not Settings_handle::st.is("prune-all"))
+        root->get_closest_reference_leaves(&keepnames);
+
+    Newick_reader nr;
+    string tree = root->print_tree();
+    Node *tmp_root = nr.parenthesis_to_tree(tree);
+
+    tmp_root->set_has_sequence();
+    tmp_root->unset_has_sequence(&removenames);
+    tmp_root->set_has_sequence(&readnames);
+    tmp_root->set_has_sequence(&keepnames);
+    tmp_root->prune_tree();
+
+    tree = tmp_root->print_tree();
+
+    set<string> leaves_kept;
+    tmp_root->get_leaf_node_names(&leaves_kept);
+
+    string outfile =  "outfile";
+
+    if(Settings_handle::st.is("outfile"))
+        outfile =  Settings_handle::st.get("outfile").as<string>();
+
+    outfile.append(".pruned");
+
+    string format = "fasta";
+    if(Settings_handle::st.is("outformat"))
+        format = Settings_handle::st.get("outformat").as<string>();
+
+    if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
+        Log_output::write_out("Pruned alignment files: "+outfile+fr->get_format_suffix(format)+", "+outfile+".xml\n",0);
+    else
+        Log_output::write_out("Pruned alignment file: "+outfile+fr->get_format_suffix(format)+"\n",0);
+    Log_output::write_out("Pruned tree file: "+outfile+".tre\n",0);
+
+
+    vector<Fasta_entry> pruned_sequences;
+    vector<Fasta_entry>::iterator fit = aligned_sequences->begin();
+    for(;fit!=aligned_sequences->end();fit++)
+    {
+        if(leaves_kept.find(fit->name)!=leaves_kept.end())
+        {
+            pruned_sequences.push_back(*fit);
+        }
+    }
+    fr->remove_gap_only_columns(&pruned_sequences);
+
+    if(Settings_handle::st.is("trim-extended-alignment"))
+    {
+        int last_site = 0;
+        int first_site = pruned_sequences.at(0).sequence.length();
+
+        vector<Fasta_entry>::iterator fit = pruned_sequences.begin();
+        for(;fit!=pruned_sequences.end();fit++)
+        {
+            if(readnames.find(fit->name)!=readnames.end())
+            {
+                for(int i=0;i<(int)fit->sequence.length();i++)
+                {
+                    if(fit->sequence.at(i)!='-' && i < first_site)
+                        first_site = i;
+                    if(fit->sequence.at(i)!='-' && i > last_site)
+                        last_site = i;
+                }
+
+            }
+        }
+
+        first_site = max(first_site-Settings_handle::st.get("trim-keep-sites").as<int>(),0);
+        last_site  = min(last_site+Settings_handle::st.get("trim-keep-sites").as<int>(),(int)pruned_sequences.at(0).sequence.length());
+
+        fit = pruned_sequences.begin();
+        for(;fit!=pruned_sequences.end();fit++)
+        {
+            fit->sequence = fit->sequence.substr(first_site,last_site-first_site);
+        }
+    }
+
+    fr->set_chars_by_line(70);
+    fr->write(outfile, pruned_sequences, format, true);
+
+    tmp_root->write_nhx_tree(outfile,"tre");
+
+    if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
+    {
+        vector<Node*> leaf_nodes;
+        tmp_root->get_leaf_nodes(&leaf_nodes);
+
+        bool tree_branches_ok = fr->check_sequence_names(&pruned_sequences,&leaf_nodes);
+        if(!tree_branches_ok)
+        {
+            Log_output::write_out("Attempting to prune the tree: ",2);
+            Log_output::flush();
+
+            root->prune_tree();
+            Log_output::write_out("pruning done.\n",2);
+            Log_output::write_out("New tree:\n"+root->print_tree()+"\n\n",3);
+        }
+
+        leaf_nodes.clear();
+        tmp_root->get_leaf_nodes(&leaf_nodes);
+
+        //  Place the sequences to nodes
+        fr->place_sequences_to_nodes(&pruned_sequences,&leaf_nodes,true);
+        int count = 1;
+        tmp_root->name_internal_nodes(&count);
+
+        count = 1;
+        tmp_root->set_name_ids(&count);
+
+        Xml_writer xw;
+        xw.write(outfile, tmp_root, pruned_sequences, true, true);
+    }
 }

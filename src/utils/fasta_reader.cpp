@@ -755,7 +755,7 @@ void Fasta_reader::get_DNA_seqs(Node *root, const vector<Fasta_entry> *org_seqs,
 
 }
 
-void Fasta_reader::backtranslate_dna(const vector<Fasta_entry> & seqs, const map<string,string> *dna_seqs, vector<Fasta_entry> &outseqs) const throw (Exception)
+void Fasta_reader::backtranslate_dna(const vector<Fasta_entry> & seqs, const map<string,string> *dna_seqs, vector<Fasta_entry> &outseqs, bool include_mock_ancestors) const throw (Exception)
 {
     bool dna_seq_missing = false;
 
@@ -785,8 +785,17 @@ void Fasta_reader::backtranslate_dna(const vector<Fasta_entry> & seqs, const map
         map<string,string>::const_iterator it2 = dna_seqs->find(vi->name);
         if(it2 == dna_seqs->end())
         {
-            Log_output::write_out("No matching DNA sequence for "+vi->name+". Back-translation failed.\n",1);
-            return;
+            if(include_mock_ancestors)
+            {
+                string prot = vi->sequence;
+                os.sequence = protein_to_mockDNA(&prot);
+                os.num_duplicates = 1;
+            }
+            else
+            {
+                Log_output::write_out("No matching DNA sequence for "+vi->name+". Back-translation failed.\n",1);
+                return;
+            }
         }
         else
         {
@@ -1403,6 +1412,23 @@ string Fasta_reader::protein_to_DNA(string *dna,string *prot) const
         {
             out += dna->substr(pos,3);
             pos += 3;
+        }
+    }
+
+    return out;
+}
+
+string Fasta_reader::protein_to_mockDNA(string *prot) const
+{
+    string out;
+    for (unsigned int j=0; j<prot->length(); j++)
+    {
+        string aa = prot->substr(j,1);
+        if(aa=="-")
+            out += "---";
+        else
+        {
+            out += "NNN";
         }
     }
 
