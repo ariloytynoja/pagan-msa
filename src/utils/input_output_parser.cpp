@@ -24,6 +24,7 @@
 #include "utils/newick_reader.h"
 #include "utils/fasta_reader.h"
 #include "utils/mafft_alignment.h"
+#include "utils/bppancestors.h"
 #include "utils/bppdist_tree.h"
 #include "utils/bppphysamp_tree.h"
 #include "utils/raxml_tree.h"
@@ -442,6 +443,18 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
     vector<Fasta_entry> aligned_sequences;
     root->get_alignment(&aligned_sequences,Settings_handle::st.is("output-ancestors"));
+
+    if(Settings_handle::st.is("output-ancestors"))
+    {
+        int add = root->get_number_of_leaves();
+
+        string tree = root->print_bppa_tree(&add);
+        bool isDna = root->get_sequence()->get_data_type() == Model_factory::dna;
+
+        BppAncestors bppa;
+        bppa.infer_ancestors(&aligned_sequences,tree,isDna);
+
+    }
 
     Log_output::clean_output();
 

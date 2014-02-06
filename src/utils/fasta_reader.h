@@ -135,6 +135,10 @@ public:
     int check_sequence_data_type(const vector<Fasta_entry> * sequences) const;
 
     void place_sequences_to_nodes(const vector<Fasta_entry> *sequences,vector<Node*> *leaf_nodes, bool gapped = false, int data_type = -1);
+
+    int read_bpp_phylip(const char* filename,map<string,string> *sequences);
+    void read_bpp_phylip(istream & input,map<string,string> *sequences);
+
 };
 }
 

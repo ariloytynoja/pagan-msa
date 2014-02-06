@@ -1,3 +1,10 @@
+v.0.54
+- cleaning up: many unused options removed
+- xml output with nhx tags
+- changed search order of external tools
+- now using BppAncestors for ancestor reconstruction
+
+
 v.0.53
 - TID tags now considered also for ORFs
 - fixing the double naming of ORFs

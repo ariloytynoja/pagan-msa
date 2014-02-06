@@ -38,7 +38,8 @@ SOURCES += main.cpp \
     utils/raxml_tree.cpp \
     utils/tree_node.cpp \
     utils/bppdist_tree.cpp \
-    utils/bppphysamp_tree.cpp
+    utils/bppphysamp_tree.cpp \
+    utils/bppancestors.cpp
 HEADERS += utils/text_utils.h \
     main/node.h \
     main/sequence.h \
@@ -69,10 +70,13 @@ HEADERS += utils/text_utils.h \
     utils/raxml_tree.h \
     utils/tree_node.h \
     utils/bppdist_tree.h \
-    utils/bppphysamp_tree.h
+    utils/bppphysamp_tree.h \
+    utils/bppancestors.h
 LIBS += -lboost_program_options -lboost_regex -lboost_thread  -lboost_system -lrt
 INCLUDEPATH += /usr/include
 OTHER_FILES +=  ../VERSION_HISTORY
+
+
 
 
 

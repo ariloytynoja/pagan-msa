@@ -39,7 +39,8 @@ bool BppDist_tree::test_executable()
     int length = readlink("/proc/self/exe",path,200-1);
 
     string epath = string(path).substr(0,length);
-    epath.replace(epath.rfind("pagan"),string("pagan").size(),string(""));
+    if (epath.find("/")!=std::string::npos)
+        epath = epath.substr(0,epath.rfind("/")+1);
     bppdistpath = epath;
     epath = epath+"bppdist >/dev/null 2>/dev/null";
     int status = system(epath.c_str());
@@ -47,10 +48,6 @@ bool BppDist_tree::test_executable()
     return WEXITSTATUS(status) == 0;
 
     # else
-    int status = system("bppdist >/dev/null 2>/dev/null");
-
-    if(WEXITSTATUS(status) == 0)
-        return true;
 
     char path[200];
     string epath;
@@ -59,19 +56,27 @@ bool BppDist_tree::test_executable()
     uint32_t size = sizeof(path);
     _NSGetExecutablePath(path, &size);
     epath = string(path);
-    epath.replace(epath.rfind("pagan"),string("pagan").size(),string(""));
+    if (epath.find("/")!=std::string::npos)
+        epath = epath.substr(0,epath.rfind("/")+1);
     //epath = "DYLD_LIBRARY_PATH="+epath+" "+epath;
 
     #else
     int length = readlink("/proc/self/exe",path,200-1);
     epath = string(path).substr(0,length);
-    epath.replace(epath.rfind("pagan"),string("pagan").size(),string(""));
+    if (epath.find("/")!=std::string::npos)
+        epath = epath.substr(0,epath.rfind("/")+1);
 
     #endif
 
     bppdistpath = epath;
     epath = epath+"bppdist >/dev/null 2>/dev/null";
-    status = system(epath.c_str());
+    int status = system(epath.c_str());
+
+    if(WEXITSTATUS(status) == 0)
+        return true;
+
+    bppdistpath = "";
+    status = system("bppdist >/dev/null 2>/dev/null");
 
     return WEXITSTATUS(status) == 0;
 

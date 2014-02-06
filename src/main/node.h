@@ -1336,6 +1336,43 @@ public:
 
     /************************************/
 
+    string print_bppa_tree(int *add) const {
+        if(!leaf)
+        {
+            stringstream ss;
+            char b,e; int n;
+            ss >> b >> n >> e;
+            ss.clear();
+            ss.str("");
+            ss<<"("<<left_child->print_bppa_subtree(add)<<","<<right_child->print_bppa_subtree(add)<<")"<<":0[&&NHX:ND="<<n<<"];";
+            return ss.str();
+        } else {
+            return "";
+        }
+    }
+
+    string print_bppa_subtree(int *add) const {
+        if(!leaf)
+        {
+            stringstream ss(name);
+            char b,e; int n;
+            ss >> b >> n >> e;
+            ss.clear();
+            ss.str("");
+            ss<<"("<<left_child->print_bppa_subtree(add)<<","<<right_child->print_bppa_subtree(add)<<"):"<<dist_to_parent<<"[&&NHX:ND="<<n<<"]";
+            return ss.str();
+
+        } else {
+            stringstream ss;
+            ss<<name<<":"<<dist_to_parent<<"[&&NHX:ND="<<*add<<"]";
+            (*add)++;
+            return ss.str();
+        }
+    }
+
+
+    /************************************/
+
     string print_xml_tree() const {
         if(!leaf)
         {

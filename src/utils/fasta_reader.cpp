@@ -1524,3 +1524,51 @@ void Fasta_reader::place_sequences_to_nodes(const vector<Fasta_entry> *sequences
         }
     }
 }
+
+/****************************************************************************************/
+
+int Fasta_reader::read_bpp_phylip(const char* filename,map<string,string> *sequences)
+{
+    ifstream input(filename, ios::in);
+
+    if (! input) { throw IOException ("Fasta_reader::read_bpp_phylip. Failed to open file"); }
+
+    this->read_bpp_phylip(input,sequences);
+}
+
+void Fasta_reader::read_bpp_phylip(istream & input,map<string,string> *sequences)
+{
+    int nseq = -1;
+    int length = -1;
+
+    string temp, name, sequence = "";
+    getline(input, temp, '\n');
+
+    stringstream nums(temp);
+    nums>>nseq>>length;
+
+    if (nseq<1 || length<1) { throw IOException ("Fasta_reader::read_bpp_phylip. Error reading the file"); }
+
+    for (int i=0; i<nseq; i++)
+    {
+        getline(input, temp, '\n');
+
+        stringstream rows(temp);
+        rows>>name>>sequence;
+
+        name = Text_utils::remove_last_whitespaces(name);
+        sequence = Text_utils::remove_whitespaces(sequence);
+
+        do
+        {
+            getline(input, temp, '\n');
+
+            temp = Text_utils::remove_whitespaces(temp);
+            sequence += temp;
+        }
+        while (temp.length()>0);
+
+
+        sequences->insert(sequences->begin(),pair<string,string>("#"+name+"#",sequence) );
+    }
+}
