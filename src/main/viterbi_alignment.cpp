@@ -611,7 +611,7 @@ void Viterbi_alignment::initialise_array_corner_bwd()
         double left_edge_wght = this->get_edge_weight(left_edge);
         int left_index = left_edge->get_start_site_index();
 
-        (*xgap)[left_index][j_max-1].bwd_score = model->gap_close() * left_edge_wght;
+        (*xgap)[left_index][j_max-1].bwd_score = model->gap_close();// * left_edge_wght;
 
         while(left_site->has_next_bwd_edge())
         {
@@ -620,7 +620,7 @@ void Viterbi_alignment::initialise_array_corner_bwd()
             left_edge_wght = this->get_edge_weight(left_edge);
             left_index = left_edge->get_start_site_index();
 
-            (*xgap)[left_index][j_max-1].bwd_score = model->gap_close() * left_edge_wght;
+            (*xgap)[left_index][j_max-1].bwd_score = model->gap_close();// * left_edge_wght;
         }
     }
 
@@ -631,7 +631,7 @@ void Viterbi_alignment::initialise_array_corner_bwd()
         double right_edge_wght = this->get_edge_weight(right_edge);
         int right_index = right_edge->get_start_site_index();
 
-        (*ygap)[i_max-1][right_index].bwd_score = model->gap_close() * right_edge_wght;
+        (*ygap)[i_max-1][right_index].bwd_score = model->gap_close();// * right_edge_wght;
 
         while(right_site->has_next_bwd_edge())
         {
@@ -640,7 +640,7 @@ void Viterbi_alignment::initialise_array_corner_bwd()
             right_edge_wght = this->get_edge_weight(right_edge);
             right_index = right_edge->get_start_site_index();
 
-            (*ygap)[i_max-1][right_index].bwd_score = model->gap_close() * right_edge_wght;
+            (*ygap)[i_max-1][right_index].bwd_score = model->gap_close();// * right_edge_wght;
         }
     }
 }
@@ -1849,20 +1849,20 @@ void Viterbi_alignment::score_y_match(Edge * left_edge,Edge * right_edge,double 
 
 void Viterbi_alignment::score_gap_ext(Edge *edge,align_slice *z_slice,Matrix_pointer *max,bool is_x_matrix,int gap_type)
 {
-    double edge_wght = this->get_log_edge_weight(edge);
+//    double edge_wght = this->get_log_edge_weight(edge);
     int prev_index = edge->get_start_site_index();
 
-    double this_score =  (*z_slice)[prev_index].score + model->log_gap_ext() + edge_wght;
+    double this_score =  (*z_slice)[prev_index].score + model->log_gap_ext();// + edge_wght;
 
     // this reduces the terminal and pair-end read gap extension cost.
     //
     if(gap_type != Viterbi_alignment::normal_gap)
     {
         if(gap_type == Viterbi_alignment::end_gap)
-            this_score =  (*z_slice)[prev_index].score + model->log_gap_end_ext() + edge_wght;
+            this_score =  (*z_slice)[prev_index].score + model->log_gap_end_ext();// + edge_wght;
 
         else if(gap_type == Viterbi_alignment::pair_break_gap)
-            this_score =  (*z_slice)[prev_index].score + model->log_gap_break_ext() + edge_wght;
+            this_score =  (*z_slice)[prev_index].score + model->log_gap_break_ext();// + edge_wght;
     }
 
     if(this->first_is_bigger(this_score,max->score) )
@@ -1884,17 +1884,17 @@ void Viterbi_alignment::score_gap_ext(Edge *edge,align_slice *z_slice,Matrix_poi
 
     if(compute_full_score)
     {
-        double this_full_score =  (*z_slice)[prev_index].fwd_score * model->gap_ext() * this->get_edge_weight(edge);
+        double this_full_score =  (*z_slice)[prev_index].fwd_score * model->gap_ext();// * this->get_edge_weight(edge);
         max->fwd_score += this_full_score;
     }
 }
 
 void Viterbi_alignment::score_gap_double(Edge *edge,align_slice *w_slice,Matrix_pointer *max,bool is_x_matrix)
 {
-    double edge_wght = this->get_log_edge_weight(edge);
+//    double edge_wght = this->get_log_edge_weight(edge);
     int prev_index = edge->get_start_site_index();
 
-    double this_score =  (*w_slice)[prev_index].score + model->log_gap_close() + model->log_gap_open() + edge_wght;
+    double this_score =  (*w_slice)[prev_index].score + model->log_gap_close() + model->log_gap_open();// + edge_wght;
 
     if(this->first_is_bigger(this_score,max->score) )
     {
@@ -1915,7 +1915,7 @@ void Viterbi_alignment::score_gap_double(Edge *edge,align_slice *w_slice,Matrix_
 
     if(compute_full_score)
     {
-        double this_full_score =  (*w_slice)[prev_index].fwd_score * model->gap_close() * model->gap_open() * this->get_edge_weight(edge);
+        double this_full_score =  (*w_slice)[prev_index].fwd_score * model->gap_close() * model->gap_open();// * this->get_edge_weight(edge);
         max->fwd_score += this_full_score;
     }
 
@@ -1923,10 +1923,10 @@ void Viterbi_alignment::score_gap_double(Edge *edge,align_slice *w_slice,Matrix_
 
 void Viterbi_alignment::score_gap_open(Edge *edge,align_slice *m_slice,Matrix_pointer *max,bool is_x_matrix)
 {
-    double edge_wght = this->get_log_edge_weight(edge);
+//    double edge_wght = this->get_log_edge_weight(edge);
     int prev_index = edge->get_start_site_index();
 
-    double this_score =  (*m_slice)[prev_index].score + model->log_non_gap() + this->get_log_gap_open_penalty(prev_index,is_x_matrix) + edge_wght;
+    double this_score =  (*m_slice)[prev_index].score + model->log_non_gap() + this->get_log_gap_open_penalty(prev_index,is_x_matrix);// + edge_wght;
 
 
     if(this->first_is_bigger(this_score,max->score) )
@@ -1947,7 +1947,7 @@ void Viterbi_alignment::score_gap_open(Edge *edge,align_slice *m_slice,Matrix_po
 
     if(compute_full_score)
     {
-        double this_full_score =  (*m_slice)[prev_index].fwd_score * model->non_gap() * model->gap_open() * this->get_edge_weight(edge);
+        double this_full_score =  (*m_slice)[prev_index].fwd_score * model->non_gap() * model->gap_open();// * this->get_edge_weight(edge);
         max->fwd_score += this_full_score;
     }
 
@@ -1955,11 +1955,11 @@ void Viterbi_alignment::score_gap_open(Edge *edge,align_slice *m_slice,Matrix_po
 
 void Viterbi_alignment::score_gap_close(Edge *edge,align_slice *z_slice,Matrix_pointer *max,bool is_x_matrix)
 {
-    double edge_wght = this->get_log_edge_weight(edge);
+//    double edge_wght = this->get_log_edge_weight(edge);
     int prev_index = edge->get_start_site_index();
     int this_index = edge->get_end_site_index();
 
-    double this_score =  (*z_slice)[prev_index].score + this->get_log_gap_close_penalty(this_index,is_x_matrix) + edge_wght;
+    double this_score =  (*z_slice)[prev_index].score + this->get_log_gap_close_penalty(this_index,is_x_matrix);// + edge_wght;
 
 
     if(this->first_is_bigger(this_score,max->score) )
@@ -1983,7 +1983,7 @@ void Viterbi_alignment::score_gap_close(Edge *edge,align_slice *z_slice,Matrix_p
 
     if(compute_full_score)
     {
-        double this_full_score =  (*z_slice)[prev_index].fwd_score * model->gap_close() * this->get_edge_weight(edge);
+        double this_full_score =  (*z_slice)[prev_index].fwd_score * model->gap_close();// * this->get_edge_weight(edge);
         max->fwd_score += this_full_score;
     }
 
@@ -2019,7 +2019,7 @@ void Viterbi_alignment::score_gap_ext_bwd(Edge *edge,align_slice *z_slice,Matrix
 {
     int prev_index = edge->get_end_site_index();
 
-    double this_full_score =  (*z_slice)[prev_index].bwd_score * model->gap_ext() * this->get_edge_weight(edge);
+    double this_full_score =  (*z_slice)[prev_index].bwd_score * model->gap_ext();// * this->get_edge_weight(edge);
     max->bwd_score += this_full_score;
 }
 
@@ -2027,7 +2027,7 @@ void Viterbi_alignment::score_gap_double_bwd(Edge *edge,align_slice *w_slice,Mat
 {
     int prev_index = edge->get_end_site_index();
 
-    double this_full_score =  (*w_slice)[prev_index].bwd_score * model->gap_close() * model->gap_open() * this->get_edge_weight(edge);
+    double this_full_score =  (*w_slice)[prev_index].bwd_score * model->gap_close() * model->gap_open();// * this->get_edge_weight(edge);
     max->bwd_score += this_full_score;
 }
 
@@ -2035,7 +2035,7 @@ void Viterbi_alignment::score_gap_open_bwd(Edge *edge,align_slice *m_slice,Matri
 {
     int prev_index = edge->get_end_site_index();
 
-    double this_full_score =  (*m_slice)[prev_index].bwd_score * model->non_gap() * model->gap_open() * this->get_edge_weight(edge);
+    double this_full_score =  (*m_slice)[prev_index].bwd_score * model->non_gap() * model->gap_open();// * this->get_edge_weight(edge);
     max->bwd_score += this_full_score;
 }
 
