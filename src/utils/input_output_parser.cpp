@@ -478,15 +478,25 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
 
         BppAncestors bppa;
-        if(bppa.test_executable())
+        bool bppa_found = bppa.test_executable();
+        if(bppa_found)
         {
             bppa.infer_ancestors(root,&aligned_sequences);
             bppa.count_events(root,&aligned_sequences,outfile);
+
+            if(Settings_handle::st.is("events"))
+            {
+                if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate") || Settings_handle::st.is("find-best-orf"))
+                    Log_output::write_out("Inferred evolutionary events: "+outfile+".events, "+outfile+".codon.events\n",0);
+                else
+                    Log_output::write_out("Inferred evolutionary events: "+outfile+".events\n",0);
+            }
         }
         else
         {
             Log_output::write_out("\nWarning: BppAncestors not found. Performing approximate ancestor reconstruction.\n\n",0);
         }
+
 
         if(Settings_handle::st.is("output-ancestors"))
         {
@@ -531,9 +541,6 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             map<string,string> dna_seqs;
 
             fr->get_DNA_seqs(root, sequences, &dna_seqs);
-
-            BppAncestors bppa;
-            bool bppa_found = bppa.test_executable();
 
             vector<Fasta_entry> dna_sequences;
             fr->backtranslate_dna(aligned_sequences,&dna_seqs,dna_sequences,bppa_found);
