@@ -136,7 +136,7 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
     this->set_additional_settings();
 
     // mark sites where no gap open/close penalty. Important for paired reads
-    if(no_terminal_edges)
+    if(reduced_terminal_gap_penalties)
     {
         this->mark_no_gap_penalty_sites(left, right);
     }
@@ -655,7 +655,8 @@ void Viterbi_alignment::compute_fwd_scores(int i,int j)
 
     if( j==0 || j == (int) match->shape()[1]-1 )
     {
-        j_gap_type = Viterbi_alignment::end_gap;
+        if(!Settings_handle::st.is("no-terminal-edges"))
+            j_gap_type = Viterbi_alignment::end_gap;
     }
 
     if(pair_end_reads && j==y_read1_length)
@@ -665,7 +666,8 @@ void Viterbi_alignment::compute_fwd_scores(int i,int j)
 
     if( i==0 || i == (int) match->shape()[0]-1 )
     {
-        i_gap_type = Viterbi_alignment::end_gap;
+        if(!Settings_handle::st.is("no-terminal-edges"))
+            i_gap_type = Viterbi_alignment::end_gap;
     }
 
     if(pair_end_reads && i==x_read1_length)
@@ -1927,7 +1929,6 @@ void Viterbi_alignment::score_gap_open(Edge *edge,align_slice *m_slice,Matrix_po
     int prev_index = edge->get_start_site_index();
 
     double this_score =  (*m_slice)[prev_index].score + model->log_non_gap() + this->get_log_gap_open_penalty(prev_index,is_x_matrix);// + edge_wght;
-
 
     if(this->first_is_bigger(this_score,max->score) )
     {

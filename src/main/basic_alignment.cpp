@@ -490,7 +490,7 @@ void Basic_alignment::delete_edge_range(Sequence *sequence,int edge_ind,int skip
 }
 
 void Basic_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vector<int> *child_index, float branch_length,
-                                           bool connects_neighbour_site, bool adjust_posterior_weight, float branch_weight)
+                                           bool adjust_posterior_weight, float branch_weight)
 {
     float edge_weight = 1.0;
     if(weight_edges)
@@ -501,11 +501,11 @@ void Basic_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vector
         weight2 = this->get_transformed_edge_weight( weight2 );
 
         edge_weight =  weight1 * weight2;
-
     }
+
     Edge edge( child_index->at( child->get_start_site_index() ), child_index->at( child->get_end_site_index() ), edge_weight );
 
-    if( no_terminal_edges )
+    if( reduced_terminal_gap_penalties )
     {
         if( sequence->get_site_at( edge.get_start_site_index() )->get_site_type() == Site::start_site &&
             edge.get_end_site_index() - edge.get_start_site_index() > 1 )
@@ -524,7 +524,6 @@ void Basic_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vector
 
     if( pair_end_reads )
     {
-
         if( sequence->get_site_at( edge.get_start_site_index() )->get_site_type() == Site::break_start_site &&
             edge.get_end_site_index() - edge.get_start_site_index() > 1 )
         {
@@ -536,31 +535,34 @@ void Basic_alignment::transfer_child_edge(Sequence *sequence,Edge *child, vector
             //
             edge.set_end_site_index(edge.get_start_site_index()+1);
 
-            this->transfer_child_edge(sequence, edge, child, branch_length, connects_neighbour_site, adjust_posterior_weight, branch_weight);
+            this->transfer_child_edge(sequence, edge, child, branch_length, adjust_posterior_weight, branch_weight);
 
             edge.set_start_site_index( child_index->at( child->get_end_site_index() )-1 );
             edge.set_end_site_index( child_index->at( child->get_end_site_index() ) );
 
-            this->transfer_child_edge(sequence, edge, child, branch_length, connects_neighbour_site, adjust_posterior_weight, branch_weight);
+            this->transfer_child_edge(sequence, edge, child, branch_length, adjust_posterior_weight, branch_weight);
 
             return;
         }
     }
 
 
-    this->transfer_child_edge(sequence, edge, child, branch_length, connects_neighbour_site, adjust_posterior_weight, branch_weight);
+    this->transfer_child_edge(sequence, edge, child, branch_length, adjust_posterior_weight, branch_weight);
 }
 
 
 void Basic_alignment::transfer_child_edge(Sequence *sequence, Edge edge, Edge *child, float branch_length,
-                                           bool connects_neighbour_site, bool adjust_posterior_weight, float branch_weight)
+                                           bool adjust_posterior_weight, float branch_weight)
 {
+
+//    cout<<edge.get_start_site_index()<<" "<<edge.get_end_site_index()<<": used "<<child->is_used()<<", since last used "<<child->get_branch_count_since_last_used()<<endl;
 
     // No identical copies
     if(sequence->get_site_at( edge.get_end_site_index() )->contains_bwd_edge( &edge ) )
+    {
+        sequence->get_site_at( edge.get_end_site_index() )->update_bwd_edge_details( &edge );
         return;
-
-//    cout<<edge.get_start_site_index()<<" "<<edge.get_end_site_index()<<": used "<<child->is_used()<<", since last used "<<child->get_branch_count_since_last_used()<<endl;
+    }
 
     // Limits for copying old edges:
     //  first, number of nodes since last used

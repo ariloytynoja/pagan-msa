@@ -446,6 +446,58 @@ public:
         return false;
     }
 
+    void update_bwd_edge_details(Edge *copy, bool thorough=false)
+    {
+        if( this->has_bwd_edge() )
+        {
+            Edge *edge = this->get_first_bwd_edge();
+            if(thorough)
+            {
+                if(*copy == *edge && copy->get_posterior_weight()==edge->get_posterior_weight())
+                {
+                    edge->set_branch_count_as_skipped_edge( copy->get_branch_count_as_skipped_edge() );
+                    edge->set_branch_count_since_last_used( copy->get_branch_count_since_last_used() );
+                    edge->set_branch_distance_since_last_used( copy->get_branch_distance_since_last_used() );
+                    edge->set_weight( copy->get_posterior_weight() );
+                }
+            }
+            else
+            {
+                if(*copy == *edge)
+                {
+                    edge->set_branch_count_as_skipped_edge( copy->get_branch_count_as_skipped_edge() );
+                    edge->set_branch_count_since_last_used( copy->get_branch_count_since_last_used() );
+                    edge->set_branch_distance_since_last_used( copy->get_branch_distance_since_last_used() );
+                    edge->set_weight( copy->get_posterior_weight() );
+                }
+            }
+            while(this->has_next_bwd_edge())
+            {
+                edge = this->get_next_bwd_edge();
+                if(thorough)
+                {
+                    if(*copy == *edge && copy->get_posterior_weight()==edge->get_posterior_weight())
+                    {
+                        edge->set_branch_count_as_skipped_edge( copy->get_branch_count_as_skipped_edge() );
+                        edge->set_branch_count_since_last_used( copy->get_branch_count_since_last_used() );
+                        edge->set_branch_distance_since_last_used( copy->get_branch_distance_since_last_used() );
+                        edge->set_weight( copy->get_posterior_weight() );
+                    }
+                }
+                else
+                {
+                    if(*copy == *edge)
+                    {
+                        edge->set_branch_count_as_skipped_edge( copy->get_branch_count_as_skipped_edge() );
+                        edge->set_branch_count_since_last_used( copy->get_branch_count_since_last_used() );
+                        edge->set_branch_distance_since_last_used( copy->get_branch_distance_since_last_used() );
+                        edge->set_weight( copy->get_posterior_weight() );
+                    }
+                }
+            }
+        }
+    }
+
     bool contains_fwd_edge(Edge *copy, bool thorough=false)
     {
         if( this->has_fwd_edge() )

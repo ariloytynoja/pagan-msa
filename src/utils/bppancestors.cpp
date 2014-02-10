@@ -195,7 +195,7 @@ void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_seque
     }
     while ( fgets( line, sizeof line, fpipe))
     {
-        Log_output::write_out("BppAncestors: command: "+string(line)+"\n",3);
+        Log_output::write_out("BppAncestors: "+string(line),3);
     }
     pclose(fpipe);
 

@@ -131,7 +131,7 @@ protected:
     float branch_skip_probability;
     bool  weighted_branch_skip_penalty;
 
-    bool no_terminal_edges;
+    bool reduced_terminal_gap_penalties;
     bool pair_end_reads;
     bool edges_for_skipped_flanked_by_gaps;
     int x_length;
@@ -152,9 +152,9 @@ protected:
     void delete_edge_range(Sequence *sequence,int edge_ind,int skip_start_site);
 
     void transfer_child_edge(Sequence *sequence, Edge *child, vector<int> *child_index, float branch_length,
-                             bool connects_neighbour_site = false, bool adjust_posterior_weight = true, float branch_weight = 1.0);
+                             bool adjust_posterior_weight = true, float branch_weight = 1.0);
     void transfer_child_edge(Sequence *sequence, Edge edge, Edge *child, float branch_length,
-                             bool connects_neighbour_site = false, bool adjust_posterior_weight = true, float branch_weight = 1.0);
+                             bool adjust_posterior_weight = true, float branch_weight = 1.0);
 
     /*********************************/
 
@@ -486,7 +486,7 @@ protected:
 
     float get_log_gap_open_penalty(int prev_site, bool is_x_matrix)
     {
-        if(no_terminal_edges)
+        if(reduced_terminal_gap_penalties)
         {
             if(prev_site==0)
             {
@@ -511,7 +511,7 @@ protected:
 
     float get_log_gap_close_penalty(int this_site, bool is_x_matrix)
     {
-        if(no_terminal_edges)
+        if(reduced_terminal_gap_penalties)
         {
             if(is_x_matrix && this_site==x_length)
             {
@@ -558,15 +558,13 @@ protected:
 
         weight_edges = false;
         compute_full_score = false;
-        no_terminal_edges = false;
+        reduced_terminal_gap_penalties = false;
         pair_end_reads = false;
 
     }
 
     void set_reads_alignment_settings()
     {
-
-        no_terminal_edges = true;
 
         max_allowed_skip_distance = 5;
         max_allowed_skip_branches = 50000;
@@ -620,8 +618,8 @@ protected:
             Settings_handle::st.get("sample-additional-paths").as<int>() > 0 )
             compute_full_score = true;
 
-        if( Settings_handle::st.is("no-terminal-edges") )
-            no_terminal_edges = true;
+        if( !Settings_handle::st.is("no-reduced-terminal-penalties") )
+            reduced_terminal_gap_penalties = true;
     }
 
     /********************************************/
