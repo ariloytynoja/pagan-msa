@@ -1259,6 +1259,19 @@ public:
 
     /************************************/
 
+    void get_parent_child_pairs(vector<pair<string,string> > *pairs)
+    {
+        if(!leaf)
+        {
+            left_child->get_parent_child_pairs(pairs);
+            right_child->get_parent_child_pairs(pairs);
+            pairs->push_back(pair<string,string>(this->get_name(),left_child->get_name()));
+            pairs->push_back(pair<string,string>(this->get_name(),right_child->get_name()));
+        }
+        else
+            return;
+    }
+
     string print_tree(bool int_names=false) {
         if(!leaf)
         {
@@ -1439,6 +1452,30 @@ public:
             }
 
             return ss.str();
+        }
+    }
+
+    /************************************/
+
+    string print_tagged_topology() const {
+        if(!leaf)
+        {
+            stringstream ss;
+            ss<<"("<<left_child->print_tagged_subtopology()<<","<<right_child->print_tagged_subtopology()<<")"<<name<<";";
+            return ss.str();
+        } else {
+            return "";
+        }
+    }
+
+    string print_tagged_subtopology() const {
+        if(!leaf)
+        {
+            stringstream ss;
+            ss<<"("<<left_child->print_tagged_subtopology()<<","<<right_child->print_tagged_subtopology()<<")"<<name;
+            return ss.str();
+        } else {
+            return name;
         }
     }
 

@@ -34,7 +34,17 @@ public:
     Codon_translation();
     void define_translation_tables();
     std::string gapped_DNA_to_protein(std::string *sequence) const;
-
+    std::string codon_to_amino(std::string codon) const
+    {
+        if (codon_to_aa.find(codon) == codon_to_aa.end())
+        {
+            return "X";
+        }
+        else
+        {
+            return codon_to_aa.find(codon)->second;
+        }
+    }
 };
 }
 

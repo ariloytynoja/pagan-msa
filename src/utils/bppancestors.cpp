@@ -29,6 +29,8 @@
 #include "utils/fasta_entry.h"
 #include "utils/fasta_reader.h"
 #include "utils/settings_handle.h"
+#include "utils/model_factory.h"
+#include "utils/codon_translation.h"
 
 #if defined (__APPLE__)
 #include <mach-o/dyld.h>
@@ -271,6 +273,158 @@ void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_seque
 
 }
 
+void BppAncestors::count_events(Node *root,vector<Fasta_entry> *aligned_sequences,string outfile,bool isCodon)
+{
+
+    bool isDna = root->get_sequence()->get_data_type() == Model_factory::dna;
+
+    if( isDna && Settings_handle::st.is("codons") )
+        isCodon = true;
+
+    // make map of sequences
+    map<string,string> sequences;
+    for(int j=0;j<aligned_sequences->size();j++)
+    {
+        sequences.insert( sequences.begin(),pair<string,string>(aligned_sequences->at(j).name,aligned_sequences->at(j).sequence) );
+    }
+
+
+    // list states
+    map<string,int> alphabet;
+
+    int wordsize = 1;
+    if( isCodon )
+    {
+        std::vector<std::string> *a = Model_factory::get_codon_full_character_alphabet();
+
+        for(int i=0;i<a->size();i++)
+            alphabet.insert(alphabet.begin(),pair<string,int>(a->at(i),i));
+
+        alphabet.insert(alphabet.begin(),pair<string,int>("---",-1));
+        alphabet.insert(alphabet.begin(),pair<string,int>("...",-1));
+        wordsize = 3;
+    }
+    else
+    {
+        std::vector<std::string> *a;
+        if(isDna)
+            a = Model_factory::get_dna_full_character_alphabet();
+        else
+            a = Model_factory::get_protein_full_character_alphabet();
+
+        for(int i=0;i<a->size();i++)
+            alphabet.insert(alphabet.begin(),pair<string,int>(a->at(i),i));
+
+        alphabet.insert(alphabet.begin(),pair<string,int>("-",-1));
+        alphabet.insert(alphabet.begin(),pair<string,int>(".",-1));
+    }
+
+
+    // list parent-child pairs
+    vector<pair<string,string> > pairs;
+    root->get_parent_child_pairs(&pairs);
+
+    Codon_translation ct;
+    ct.define_translation_tables();
+
+
+    ofstream output;
+    if(Settings_handle::st.is("events"))
+    {
+        output.open( (outfile+".events").c_str() );
+
+        output<<"Alignment topology with node labels:"<<endl<<endl;
+        output<<root->print_tagged_topology()<<endl<<endl;
+
+        output<<"Inferred evolutionary events per branch:"<<endl;
+    }
+
+    // go through all pairs, count/list events
+    for(int j=0;j<pairs.size();j++)
+    {
+        string p = pairs.at(j).first;
+        string c = pairs.at(j).second;
+
+        string ps = sequences.find(p)->second;
+        string cs = sequences.find(c)->second;
+
+        stringstream subs;
+        stringstream ins;
+        stringstream dels;
+
+        bool pg = false;
+        bool cg = false;
+
+        if(Settings_handle::st.is("events"))
+            output<<endl<<"branch "<<c<<endl;
+
+        for(int i=0;i<ps.length();i+=wordsize)
+        {
+            int site = i+1;
+            if(isCodon)
+                site = i/3+1;
+
+            string pc = ps.substr(i,wordsize);
+            string cc = cs.substr(i,wordsize);
+
+            int pi = alphabet.find(pc)->second;
+            int ci = alphabet.find(cc)->second;
+
+            if(pi>=0 && ci<0)
+            {
+                if(not cg)
+                {
+                    cg = true;
+                    if(isCodon)
+                        dels << " "<<i/3+1;
+                    else
+                        dels << " "<<i+1;
+                }
+            }
+            if(pi<0 && ci>=0)
+            {
+                if(not pg)
+                {
+                    pg = true;
+                    if(isCodon)
+                        ins << " "<<i/3+1;
+                    else
+                        ins << " "<<i+1;
+                }
+            }
+            if(pi>=0 && pg)
+            {
+                pg = false;
+                ins << ".."<<site-1<<" insertion"<<endl;
+            }
+            if(ci>=0 && cg)
+            {
+                cg = false;
+                dels << ".."<<site-1<<" deletion"<<endl;
+            }
+            if(pi>=0 && ci>=0 && pi != ci)
+            {
+                subs<<" "<<site<<" "<<pc<<" -> "<<cc;
+                if(isCodon)
+                {
+                    if(ct.codon_to_amino(pc) == ct.codon_to_amino(cc))
+                        subs<<" ("<<ct.codon_to_amino(pc)<<")";
+                    else
+                        subs<<" ("<<ct.codon_to_amino(pc) << " -> " << ct.codon_to_amino(cc)<<")";
+                }
+                subs<<endl;
+            }
+
+        }
+        if(Settings_handle::st.is("events"))
+        {
+            output<<subs.str();
+            output<<ins.str();
+            output<<dels.str();
+        }
+    }
+
+}
 
 void BppAncestors::delete_files(int r)
 {

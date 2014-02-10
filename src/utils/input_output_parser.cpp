@@ -477,12 +477,15 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
 
 
-        if(Settings_handle::st.is("output-ancestors"))
+        BppAncestors bppa;
+        if(bppa.test_executable())
         {
-            BppAncestors bppa;
-            if(bppa.test_executable())
-                bppa.infer_ancestors(root,&aligned_sequences);
-
+            bppa.infer_ancestors(root,&aligned_sequences);
+            bppa.count_events(root,&aligned_sequences,outfile);
+        }
+        else
+        {
+            Log_output::write_out("\nWarning: BppAncestors not found. Performing approximate ancestor reconstruction.\n\n",0);
         }
 
         if(Settings_handle::st.is("output-ancestors"))
@@ -518,7 +521,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             if(Settings_handle::st.is("outfile"))
                 outfile =  Settings_handle::st.get("outfile").as<string>();
 
-            outfile.append(".dna");
+            outfile.append(".codon");
             if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
                 Log_output::write_out("Back-translated alignment files: "+outfile+fr->get_format_suffix(format)+", "+outfile+".xml\n",0);
             else
@@ -530,22 +533,42 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             fr->get_DNA_seqs(root, sequences, &dna_seqs);
 
             BppAncestors bppa;
-            bool include_mock_ancestors = bppa.test_executable();
+            bool bppa_found = bppa.test_executable();
 
             vector<Fasta_entry> dna_sequences;
-            fr->backtranslate_dna(aligned_sequences,&dna_seqs,dna_sequences,include_mock_ancestors);
+            fr->backtranslate_dna(aligned_sequences,&dna_seqs,dna_sequences,bppa_found);
 
-            bppa.infer_ancestors(root,&dna_sequences,true);
+            if(bppa_found)
+            {
+                bppa.infer_ancestors(root,&dna_sequences,true);
+                bppa.count_events(root,&dna_sequences,outfile,true);
+            }
 
-            if( aligned_sequences.size() == dna_sequences.size() )
-                fr->write(outfile, dna_sequences, format, true);
+            if(Settings_handle::st.is("output-ancestors") && bppa_found)
+            {
+                if( aligned_sequences.size() == dna_sequences.size() )
+                    fr->write(outfile, dna_sequences, format, true);
+            }
+            else
+            {
+                vector<Fasta_entry> leaf_sequences;
+                set<string> names;
+                root->get_leaf_node_names(&names);
+                vector<Fasta_entry>::iterator si = dna_sequences.begin();
+                for(;si!=dna_sequences.end();si++)
+                {
+                    if(names.find(si->name) != names.end())
+                        leaf_sequences.push_back(*si);
+                }
+                fr->write(outfile, leaf_sequences, format, true);
+            }
+
 
             if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
             {
                 Xml_writer xw;
                 xw.write(outfile, root, dna_sequences, true);
             }
-
 
 
             /***************************************************/
