@@ -877,7 +877,7 @@ void Fasta_reader::write_dna(ostream & output, const vector<Fasta_entry> & seqs,
         multimap<string,int>::iterator cit = copy_num.find(vi->name);
         if(cit!=copy_num.end())
         {
-            os.name += "/"+cit->second;
+            os.name += "/"+Text_utils::to_string(cit->second);
             copy_num.erase(cit);
         }
         if(vi->comment != "")
@@ -1553,7 +1553,7 @@ void Fasta_reader::place_sequences_to_nodes(const vector<Fasta_entry> *sequences
 
 /****************************************************************************************/
 
-int Fasta_reader::read_bpp_phylip(const char* filename,map<string,string> *sequences)
+void Fasta_reader::read_bpp_phylip(const char* filename,map<string,string> *sequences)
 {
     ifstream input(filename, ios::in);
 

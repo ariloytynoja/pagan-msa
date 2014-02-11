@@ -1940,7 +1940,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
         {
             if(Settings_handle::st.is("exhaustive-placement"))
             {
-                reads->at(i).node_to_align == "";
+                reads->at(i).node_to_align = "";
                 tid_nodes.clear();
 
                 this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
@@ -2197,7 +2197,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
         {
             if(Settings_handle::st.is("exhaustive-placement"))
             {
-                reads->at(i).node_to_align == "";
+                reads->at(i).node_to_align = "";
                 tid_nodes.clear();
 
                 this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);

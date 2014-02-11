@@ -100,7 +100,7 @@ void Find_anchors::find_long_substrings(std::string *seq1,std::string *seq2,std:
     for(;it1!=hits->end();)
     {
         bool overlap = false;
-        for(int i=it1->start_site_1,j=it1->start_site_2;i<it1->start_site_1+it1->length,j<it1->start_site_2+it1->length;i++,j++)
+        for(int i=it1->start_site_1,j=it1->start_site_2;i<it1->start_site_1+it1->length && j<it1->start_site_2+it1->length;i++,j++)
         {
             if(hit_site1.at(i) || hit_site2.at(j))
             {
@@ -116,7 +116,7 @@ void Find_anchors::find_long_substrings(std::string *seq1,std::string *seq2,std:
         }
         else
         {
-            for(int i=it1->start_site_1,j=it1->start_site_2;i<it1->start_site_1+it1->length,j<it1->start_site_2+it1->length;i++,j++)
+            for(int i=it1->start_site_1,j=it1->start_site_2;i<it1->start_site_1+it1->length && j<it1->start_site_2+it1->length;i++,j++)
             {
                 hit_site1.at(i)=true;
                 hit_site2.at(j)=true;
@@ -149,7 +149,7 @@ void Find_anchors::check_hits_order_conflict(std::string *seq1,std::string *seq2
     for(;it1!=hits->end();)
     {
         bool overlap = false;
-        for(int i=it1->start_site_1,j=it1->start_site_2;i<it1->start_site_1+it1->length,j<it1->start_site_2+it1->length;i++,j++)
+        for(int i=it1->start_site_1,j=it1->start_site_2;i<it1->start_site_1+it1->length && j<it1->start_site_2+it1->length;i++,j++)
         {
             if(hit_site1.at(i) || hit_site2.at(j))
             {
@@ -165,7 +165,7 @@ void Find_anchors::check_hits_order_conflict(std::string *seq1,std::string *seq2
         }
         else
         {
-            for(int i=it1->start_site_1,j=it1->start_site_2;i<it1->start_site_1+it1->length,j<it1->start_site_2+it1->length;i++,j++)
+            for(int i=it1->start_site_1,j=it1->start_site_2;i<it1->start_site_1+it1->length && j<it1->start_site_2+it1->length;i++,j++)
             {
                 hit_site1.at(i)=true;
                 hit_site2.at(j)=true;
