@@ -66,7 +66,8 @@ HEADERS       = main/node.h \
 		utils/raxml_tree.h \
 		utils/tree_node.h \
 		utils/bppdist_tree.h \
-		utils/bppphysamp_tree.h
+		utils/bppphysamp_tree.h \
+		utils/bppancestors.h 
 SOURCES       = main.cpp \
 		main/node.cpp \
 		main/sequence.cpp \
@@ -95,7 +96,8 @@ SOURCES       = main.cpp \
 		utils/raxml_tree.cpp \
 		utils/tree_node.cpp \
 		utils/bppdist_tree.cpp \
-		utils/bppphysamp_tree.cpp 
+		utils/bppphysamp_tree.cpp \
+		utils/bppancestors.cpp 
 OBJECTS       = main.o \
 		node.o \
 		sequence.o \
@@ -124,7 +126,8 @@ OBJECTS       = main.o \
 		raxml_tree.o \
 		tree_node.o \
 		bppdist_tree.o \
-		bppphysamp_tree.o
+		bppphysamp_tree.o \
+		bppancestors.o
 TARGET        = pagan
 
 first: all
@@ -446,7 +449,9 @@ input_output_parser.o: utils/input_output_parser.cpp utils/input_output_parser.h
 		utils/codon_translation.h \
 		utils/newick_reader.h \
 		utils/mafft_alignment.h \
+		utils/bppancestors.h \
 		utils/bppdist_tree.h \
+		utils/bppphysamp_tree.h \
 		utils/raxml_tree.h \
 		utils/exonerate_queries.h \
 		utils/substring_hit.h \
@@ -487,8 +492,44 @@ bppdist_tree.o: utils/bppdist_tree.cpp utils/bppdist_tree.h \
 		utils/evol_model.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o bppdist_tree.o utils/bppdist_tree.cpp
 
-bppphysamp_tree.o: utils/bppphysamp_tree.cpp utils/bppphysamp_tree.h
+bppphysamp_tree.o: utils/bppphysamp_tree.cpp utils/bppphysamp_tree.h \
+		utils/settings_handle.h \
+		utils/settings.h \
+		utils/fasta_entry.h \
+		utils/log_output.h \
+		utils/fasta_reader.h \
+		utils/exceptions.h \
+		main/node.h \
+		main/sequence.h \
+		main/viterbi_alignment.h \
+		utils/evol_model.h \
+		utils/db_matrix.h \
+		utils/int_matrix.h \
+		main/basic_alignment.h \
+		utils/model_factory.h \
+		main/reference_alignment.h \
+		utils/newick_reader.h \
+		utils/tree_node.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o bppphysamp_tree.o utils/bppphysamp_tree.cpp
+
+bppancestors.o: utils/bppancestors.cpp utils/bppancestors.h \
+		utils/fasta_entry.h \
+		main/node.h \
+		utils/exceptions.h \
+		utils/settings.h \
+		utils/settings_handle.h \
+		main/sequence.h \
+		main/viterbi_alignment.h \
+		utils/evol_model.h \
+		utils/db_matrix.h \
+		utils/log_output.h \
+		utils/int_matrix.h \
+		main/basic_alignment.h \
+		utils/model_factory.h \
+		main/reference_alignment.h \
+		utils/fasta_reader.h \
+		utils/codon_translation.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o bppancestors.o utils/bppancestors.cpp
 
 ####### Install
 
