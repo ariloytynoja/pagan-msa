@@ -1303,8 +1303,6 @@ void Reads_aligner::loop_translated_query_placement(Node *root, vector<Fasta_ent
     float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
     float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
 
-    double r_dist = Settings_handle::st.get("query-distance").as<float>();
-
     if(min_overlap<0)
         min_overlap = 0;
     if(min_identity<0)
@@ -1912,7 +1910,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
         //
         map<string,hit> exonerate_hits;
 
-        if(has_exonerate && Settings_handle::st.is("use-exonerate-local") )
+        if(has_exonerate && ( Settings_handle::st.is("fast-placement") || Settings_handle::st.is("use-exonerate-local") ) )
         {
             tid_nodes.clear();
             this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
@@ -1923,7 +1921,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
             if(tid_nodes.size()>1 && Settings_handle::st.is("use-exonerate-gapped"))
                 er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
         }
-        else if(has_exonerate && Settings_handle::st.is("use-exonerate-gapped") )
+        else if(has_exonerate && ( Settings_handle::st.is("fast-placement") || Settings_handle::st.is("use-exonerate-gapped") ) )
         {
             tid_nodes.clear();
             this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
