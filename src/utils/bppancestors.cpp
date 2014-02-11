@@ -214,7 +214,7 @@ void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_seque
         map<string,string>::iterator fi = bppa_sequences.find(si->name);
         if(fi != bppa_sequences.end())
         {
-            for(int i=0;i<si->sequence.length();i++)
+            for(int i=0;i<(int)si->sequence.length();i++)
             {
                 if( si->sequence.at(i)!='-' && si->sequence.at(i)!='.' )
                     si->sequence.at(i) = fi->second.at(i);
@@ -244,7 +244,7 @@ void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_seque
             root_seq = si->sequence;
     }
 
-    for(int i=0;i<root_seq.length();i++)
+    for(int i=0;i<(int)root_seq.length();i++)
     {
         bool left_gap  = left_seq.at(i)=='-'  || left_seq.at(i)=='.';
         bool right_gap = right_seq.at(i)=='-' || right_seq.at(i)=='.';
@@ -283,7 +283,7 @@ void BppAncestors::count_events(Node *root,vector<Fasta_entry> *aligned_sequence
 
     // make map of sequences
     map<string,string> sequences;
-    for(int j=0;j<aligned_sequences->size();j++)
+    for(int j=0;j<(int)aligned_sequences->size();j++)
     {
         sequences.insert( sequences.begin(),pair<string,string>(aligned_sequences->at(j).name,aligned_sequences->at(j).sequence) );
     }
@@ -297,7 +297,7 @@ void BppAncestors::count_events(Node *root,vector<Fasta_entry> *aligned_sequence
     {
         std::vector<std::string> *a = Model_factory::get_codon_full_character_alphabet();
 
-        for(int i=0;i<a->size();i++)
+        for(int i=0;i<(int)a->size();i++)
             alphabet.insert(alphabet.begin(),pair<string,int>(a->at(i),i));
 
         alphabet.insert(alphabet.begin(),pair<string,int>("---",-1));
@@ -312,7 +312,7 @@ void BppAncestors::count_events(Node *root,vector<Fasta_entry> *aligned_sequence
         else
             a = Model_factory::get_protein_full_character_alphabet();
 
-        for(int i=0;i<a->size();i++)
+        for(int i=0;i<(int)a->size();i++)
             alphabet.insert(alphabet.begin(),pair<string,int>(a->at(i),i));
 
         alphabet.insert(alphabet.begin(),pair<string,int>("-",-1));
@@ -340,7 +340,7 @@ void BppAncestors::count_events(Node *root,vector<Fasta_entry> *aligned_sequence
     }
 
     // go through all pairs, count/list events
-    for(int j=0;j<pairs.size();j++)
+    for(int j=0;j<(int)pairs.size();j++)
     {
         string p = pairs.at(j).first;
         string c = pairs.at(j).second;
@@ -358,7 +358,7 @@ void BppAncestors::count_events(Node *root,vector<Fasta_entry> *aligned_sequence
         if(Settings_handle::st.is("events"))
             output<<endl<<"branch "<<c<<endl;
 
-        for(int i=0;i<ps.length();i+=wordsize)
+        for(int i=0;i<(int)ps.length();i+=wordsize)
         {
             int site = i+1;
             if(isCodon)

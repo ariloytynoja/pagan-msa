@@ -110,7 +110,7 @@ void BppPhySamp_tree::reduce_sequences(set<string> *toremove,bool is_protein)
             int datatype = fr.check_sequence_data_type(&sequences);
             fr.check_alphabet(&sequences,datatype);
 
-            for(int i=0;i<sequences.size();i++)
+            for(int i=0;i<(int)sequences.size();i++)
                 sequences.at(i).comment="";
             fr.write(tmpseqfile,sequences,"fasta");
         }
