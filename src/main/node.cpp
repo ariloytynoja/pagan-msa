@@ -48,7 +48,7 @@ boost::mutex Node::log_mutex;
 
 /*******************************************************************************/
 
-void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence, bool is_overlap_alignment)
+void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence)
 {
 
     if(!Settings_handle::st.is("silent"))
@@ -67,7 +67,7 @@ void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence, 
     clock_t t_start=clock();
 
     double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
-    Evol_model model = mf->alignment_model(dist,is_overlap_alignment);
+    Evol_model model = mf->alignment_model(dist);
 
     stringstream ss;
     ss << "Time node::model: "<<double(clock()-t_start)/CLOCKS_PER_SEC<<"\n";
@@ -76,7 +76,7 @@ void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence, 
     Viterbi_alignment va;
     float tunnel_coverage = 0;
 
-    if(not is_overlap_alignment && ( Settings_handle::st.is("use-anchors") || Settings_handle::st.is("use-prefix-anchors") ))
+    if( ! Settings_handle::st.is("no-anchors") )
         tunnel_coverage = va.define_tunnel(left_child->get_sequence(),right_child->get_sequence(),&model,true);
 
     float threshold = Settings::tunneling_coverage;
@@ -84,7 +84,7 @@ void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence, 
     if(tunnel_coverage <= threshold)
     {
         va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
-                 left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence,is_overlap_alignment);
+                 left_child->get_distance_to_parent(),right_child->get_distance_to_parent(), is_reads_sequence);
 
         ss.str(string());
         ss << "Time node::viterbi: "<< double(clock()-t_start)/CLOCKS_PER_SEC <<"\n";
@@ -249,7 +249,7 @@ void Node::align_sequences_this_node_threaded(Model_factory *mf)
     Viterbi_alignment va;
     float tunnel_coverage = 0;
 
-    if( Settings_handle::st.is("use-anchors") || Settings_handle::st.is("use-prefix-anchors") )
+    if( ! Settings_handle::st.is("no-anchors") )
         tunnel_coverage = va.define_tunnel(left_child->get_sequence(),right_child->get_sequence(),&model,false);
 
     va.align(left_child->get_sequence(),right_child->get_sequence(),&model,

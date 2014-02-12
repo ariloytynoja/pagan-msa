@@ -1809,7 +1809,7 @@ void Model_factory::build_model(int s,Db_matrix *pi,Db_matrix *q,Db_matrix *wU,D
 
 /*******************************************/
 
-Evol_model Model_factory::alignment_model(double distance, bool is_local_alignment)
+Evol_model Model_factory::alignment_model(double distance)
 {
 
     // Compute the P matrix for regular DNA alphabet (four bases).
@@ -1837,62 +1837,27 @@ Evol_model Model_factory::alignment_model(double distance, bool is_local_alignme
 
     Evol_model model(sequence_data_type, distance);
 
-    if(is_local_alignment)
+    model.log_ext_prob = log(char_ext_prob);
+    model.ext_prob = char_ext_prob;
+
+    if( (Settings_handle::st.is("454") || Settings_handle::st.is("homopolymer"))&& Settings_handle::st.is("pileup-alignment"))
     {
-        // these are for reads alignment
-
-        float ext = 0.75;
-
-        if(Settings_handle::st.is("gap-extension"))
-            ext =  Settings_handle::st.get("gap-extension").as<float>();
-
-        model.log_ext_prob = log(ext);
-        model.ext_prob = ext;
-
-        float rate = 0.005;
-
-        if(Settings_handle::st.is("indel-rate"))
-            rate =  Settings_handle::st.get("indel-rate").as<float>();
-
-
-        model.ins_rate = rate;
-        model.del_rate = rate;
-
-        model.ins_prob = (1.0-exp(-1.0*rate*distance));
-        model.del_prob = (1.0-exp(-1.0*rate*distance));
-
-        double t = (1.0-exp(-1*rate*distance));
-
-        model.log_id_prob = log(t);
-        model.log_match_prob = log(1.0-2*t);
-        model.id_prob = t;
-        model.match_prob = 1.0-2*t;
+        char_ins_rate = 0.25;
+        char_del_rate = 0.25;
     }
-    else
-    {
 
-        model.log_ext_prob = log(char_ext_prob);
-        model.ext_prob = char_ext_prob;
+    model.ins_rate = char_ins_rate;
+    model.del_rate = char_del_rate;
 
-        if( (Settings_handle::st.is("454") || Settings_handle::st.is("homopolymer"))&& Settings_handle::st.is("pileup-alignment"))
-        {
-            char_ins_rate = 0.25;
-            char_del_rate = 0.25;
-        }
+    model.ins_prob = (1.0-exp(-1.0*char_ins_rate*distance));
+    model.del_prob = (1.0-exp(-1.0*char_del_rate*distance));
 
-        model.ins_rate = char_ins_rate;
-        model.del_rate = char_del_rate;
+    double t = (1.0-exp(-0.5*(char_ins_rate+char_del_rate)*distance));
 
-        model.ins_prob = (1.0-exp(-1.0*char_ins_rate*distance));
-        model.del_prob = (1.0-exp(-1.0*char_del_rate*distance));
-
-        double t = (1.0-exp(-0.5*(char_ins_rate+char_del_rate)*distance));
-
-        model.log_id_prob = log(t);
-        model.log_match_prob = log(1.0-2*t);
-        model.id_prob = t;
-        model.match_prob = 1.0-2*t;
-    }
+    model.log_id_prob = log(t);
+    model.log_match_prob = log(1.0-2*t);
+    model.id_prob = t;
+    model.match_prob = 1.0-2*t;
 
 
     model.log_end_ext_prob = log(char_end_ext_prob);

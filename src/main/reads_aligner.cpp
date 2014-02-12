@@ -180,7 +180,7 @@ void Reads_aligner::loop_pileup_alignment(Node *root, vector<Fasta_entry> *reads
 
             Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") aligning read: "+reads->at(i).name+" "+reads->at(i).comment+".",0);
 
-            node->align_sequences_this_node(mf,true,false);
+            node->align_sequences_this_node(mf,true);
             this->compute_read_overlap(node,reads->at(i).name,ref_root_name,global_root->get_name(),&read_overlap,&read_identity);
 
 
@@ -195,7 +195,7 @@ void Reads_aligner::loop_pileup_alignment(Node *root, vector<Fasta_entry> *reads
 
                 Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") aligning read (rc): "+reads->at(i).name+" "+reads->at(i).comment+".",0);
 
-                node_rc->align_sequences_this_node(mf,true,false);
+                node_rc->align_sequences_this_node(mf,true);
                 this->compute_read_overlap(node_rc,reads->at(i).name,ref_root_name,global_root->get_name(),&read_overlap_rc,&read_identity_rc);
 
                 Log_output::write_out("forward overlap: "+Log_output::ftos(read_overlap)+"; backward overlap: "+Log_output::ftos(read_overlap_rc)+"\n",1);
@@ -300,7 +300,7 @@ void Reads_aligner::loop_translated_pileup_alignment(Node *root, vector<Fasta_en
 
                     this->create_temp_orf_node(node,global_root, &reads->at(i), &open_frames.at(h));
 
-                    node->align_sequences_this_node(mf,true,false);
+                    node->align_sequences_this_node(mf,true);
                     this->compute_read_overlap(node,reads->at(i).name,ref_root_name,global_root->get_name(),&read_overlap,&read_identity);
 
                     if(read_overlap > best_overlap || (read_overlap == best_overlap && read_overlap > read_identity) )
@@ -557,7 +557,7 @@ void Reads_aligner::do_upwards_search(Node *root, Fasta_entry *read, Model_facto
     global_root = root;
 
     double r_dist = Settings_handle::st.get("query-distance").as<float>();
-    Evol_model model = mf->alignment_model(r_dist+0.001,false);
+    Evol_model model = mf->alignment_model(r_dist+0.001);
 
     Node * current_root = root;
     string previous_hit = "";
@@ -578,7 +578,7 @@ void Reads_aligner::do_upwards_search(Node *root, Fasta_entry *read, Model_facto
         this->copy_node_details(right_node,read);
         temp_node->add_right_child(right_node);
 
-        temp_node->align_sequences_this_node(mf,true,false);
+        temp_node->align_sequences_this_node(mf,true);
 
 
         vector<int> one_score;
@@ -739,7 +739,7 @@ void Reads_aligner::do_upwards_search(Node *root, vector<Fasta_entry> *reads, Mo
     global_root = root;
 
     double r_dist = Settings_handle::st.get("query-distance").as<float>();
-    Evol_model model = mf->alignment_model(r_dist+0.001,false);
+    Evol_model model = mf->alignment_model(r_dist+0.001);
 
 
     for(int i=0;i<(int)reads->size();i++)
@@ -764,7 +764,7 @@ void Reads_aligner::do_upwards_search(Node *root, vector<Fasta_entry> *reads, Mo
             this->copy_node_details(right_node,&reads->at(i));
             temp_node->add_right_child(right_node);
 
-            temp_node->align_sequences_this_node(mf,true,false);
+            temp_node->align_sequences_this_node(mf,true);
 
             vector<int> one_score;
             vector<int> all_scores;
@@ -1052,7 +1052,7 @@ void Reads_aligner::loop_default_placement(Node *root, vector<Fasta_entry> *read
 
             Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
 
-            node->align_sequences_this_node(mf,true,false);
+            node->align_sequences_this_node(mf,true);
 
 
             // check if the alignment significantly overlaps with the reference alignment
@@ -1197,7 +1197,7 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
                 this->create_temp_node(node,ss.str(), current_root, &reads_for_this.at(i),false);
                 Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
 
-                node->align_sequences_this_node(mf,true,false);
+                node->align_sequences_this_node(mf,true);
                 this->compute_read_overlap(node,reads_for_this.at(i).name,ref_node_name,current_root->get_name(),&read_overlap,&read_identity);
             }
 
@@ -1214,7 +1214,7 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
 
                 Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read (rc): "+reads_for_this.at(i).name+".",0);
 
-                node_rc->align_sequences_this_node(mf,true,false);
+                node_rc->align_sequences_this_node(mf,true);
                 this->compute_read_overlap(node_rc,reads_for_this.at(i).name,ref_node_name,current_root->get_name(),&read_overlap_rc,&read_identity_rc);
 
                 reverse_computed = true;
@@ -1418,7 +1418,7 @@ void Reads_aligner::loop_translated_query_placement(Node *root, vector<Fasta_ent
 
             Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
 
-            node->align_sequences_this_node(mf,true,false);
+            node->align_sequences_this_node(mf,true);
             this->compute_read_overlap(node,reads_for_this.at(i).name,ref_node_name,current_root->get_name(),&read_overlap,&read_identity);
 
             Log_output::write_out("forward overlap/identity: "+Log_output::ftos(read_overlap)+"/"+Log_output::ftos(read_identity)+"\n",1);
@@ -2047,7 +2047,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                     while(tit != tid_nodes.end() && matching_nodes>0)
                     {
                         map<string,Node*>::iterator nit = nodes.find(tit->second);
-                        double score = this->read_match_score( nit->second, &reads->at(i), mf, best_score);
+                        double score = this->read_match_score( nit->second, &reads->at(i), mf);
 
                         stringstream ss;
                         ss<<tit->second<<" with p-distance "<<score<<"\n";
@@ -2069,7 +2069,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                             Fasta_entry rev_seq = reads->at(i);
                             rev_seq.sequence = this->reverse_complement(rev_seq.sequence);
 
-                            double score = this->read_match_score( nit->second, &rev_seq, mf, best_score);
+                            double score = this->read_match_score( nit->second, &rev_seq, mf);
 
                             stringstream ss;
                             ss<<tit->second<<"(rc) with p-distance "<<score<<"\n";
@@ -2289,7 +2289,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                     while(tit != tid_nodes.end() && matching_nodes>0)
                     {
                         map<string,Node*>::iterator nit = nodes.find(tit->second);
-                        double score = this->read_match_score( nit->second, &reads->at(i), mf, best_score);
+                        double score = this->read_match_score( nit->second, &reads->at(i), mf);
 
                         stringstream ss;
                         ss<<tit->second<<" with p-distance "<<score<<"\n";
@@ -2495,7 +2495,7 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
                 while(tit != tid_nodes.end() && matching_nodes>0)
                 {
                     map<string,Node*>::iterator nit = nodes.find(tit->second);
-                    double score = this->read_match_score( nit->second, &reads->at(i), mf, best_score);
+                    double score = this->read_match_score( nit->second, &reads->at(i), mf);
 
                     stringstream ss;
                     ss<<tit->second<<" with p-distance "<<score<<"\n";
@@ -2678,7 +2678,7 @@ void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_e
                 while(tit != tid_nodes.end() && matching_nodes>0)
                 {
                     map<string,Node*>::iterator nit = nodes.find(tit->second);
-                    double score = this->read_match_score( nit->second, &reads->at(i), mf, best_score);
+                    double score = this->read_match_score( nit->second, &reads->at(i), mf);
 
                     stringstream ss;
                     ss<<tit->second<<" with p-distance "<<score<<"\n";
@@ -2728,7 +2728,7 @@ void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_e
     }
 }
 
-double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_factory *mf, float best_score)
+double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_factory *mf)
 {
 
     double r_dist = Settings_handle::st.get("query-distance").as<float>();
@@ -2758,7 +2758,7 @@ double Reads_aligner::read_match_score(Node *node, Fasta_entry *read, Model_fact
     {
 
         // For scoring (below)
-        Evol_model model = mf->alignment_model(r_dist+0.001,false);
+        Evol_model model = mf->alignment_model(r_dist+0.001);
 
         int matching = 0;
         int aligned = 0;

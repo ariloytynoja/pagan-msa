@@ -64,7 +64,7 @@ class Reads_aligner
     void find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
     void find_nodes_for_all_reads_together(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
 
-    double read_match_score(Node *node, Fasta_entry *read, Model_factory *mf, float best_score);
+    double read_match_score(Node *node, Fasta_entry *read, Model_factory *mf);
     void read_alignment_scores(Node * node, string read_name, string ref_node_name, float *overlap, float *identity);
     bool read_alignment_overlaps(Node * node, string read_name, string ref_node_name);
     float read_alignment_overlap(Node * node, string read_name, string ref_node_name);

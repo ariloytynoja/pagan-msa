@@ -391,7 +391,7 @@ void Input_output_parser::match_sequences_and_tree(Fasta_reader *fr, std::vector
     //  Place the sequences to nodes
     fr->place_sequences_to_nodes(sequences,&leaf_nodes,reference_alignment,*data_type);
 
-    if(Settings_handle::st.is("use-anchors"))
+    if( ! ( Settings_handle::st.is("no-anchors") || Settings_handle::st.is("use-prefix-anchors") ) )
     {
         Exonerate_queries er;
         if(!er.test_executable())

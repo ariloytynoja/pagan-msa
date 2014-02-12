@@ -121,10 +121,11 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description anchoring("Anchoring options",100);
     anchoring.add_options()
-        ("use-anchors","use Exonerate to anchor alignment")
+        ("no-anchors","no anchoring (default: use Exonerate to anchor alignment)")
         ("exonerate-hit-length", po::value<int>()->default_value(30), "Exonerate hit length for anchor (default)")
         ("exonerate-hit-score", po::value<int>(), "Exonerate hit score for anchor")
         ("anchors-offset", po::value<int>()->default_value(15), "anchors offset for alignment")
+        ("anchoring-threshold",po::value<float>()->default_value(0.5,"0.50"),"anchoring coverage threshold for skipping")
         ("use-prefix-anchors","use prefix approach to anchor alignment")
         ("prefix-hit-length", po::value<int>()->default_value(30), "prefix hit length for anchor")
         ("keep-temp-files","keep temporary files (mainly for debugging)")
@@ -163,7 +164,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("align-bad-reads-at-root", "align non-matching reads at root")
         ("use-identity-score", "choose target based on identity score")
         ("use-target-normalised-score", "choose target based on target-normalised substitution score")
-        ("anchoring-threshold",po::value<float>()->default_value(1.0,"1.00"),"anchoring coverage threshold for skipping")
         ("old-placement","old placement")
     ;
 

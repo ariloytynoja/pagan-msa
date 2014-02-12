@@ -110,9 +110,8 @@ float Viterbi_alignment::define_tunnel(Sequence *left_sequence,Sequence *right_s
     return coverage;
 }
 
-void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,
-                             Evol_model *evol_model,float l_branch_length,float r_branch_length,
-                             bool is_reads_sequence, bool is_overlap_alignment)
+void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,Evol_model *evol_model,
+                              float l_branch_length,float r_branch_length,bool is_reads_sequence)
 {
 
     left = left_sequence;
