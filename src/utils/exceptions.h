@@ -68,6 +68,7 @@ knowledge of the CeCILL license and that you accept its terms.
 #define EXCEPTIONS_H
 
 #include <stdexcept>
+#include <string>
 
 using namespace std;
 

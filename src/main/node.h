@@ -1360,7 +1360,7 @@ public:
     string print_bppa_tree(int *add) const {
         if(!leaf)
         {
-            stringstream ss;
+            stringstream ss(name);
             char b,e; int n;
             ss >> b >> n >> e;
             ss.clear();
