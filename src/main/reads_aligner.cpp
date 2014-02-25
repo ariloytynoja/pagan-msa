@@ -1115,6 +1115,7 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
     else
         this->find_nodes_for_queries(root, reads, mf);
 
+
     float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
     float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
 
@@ -1150,6 +1151,8 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
 
     map<string,Node*> nodes_map;
     root->get_all_nodes(&nodes_map);
+
+    map<string,int> nodes_number;
 
     // do one tagged node at time
     //
@@ -1239,6 +1242,19 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
                     node_rc->has_left_child(false);
                     delete node_rc;
                 }
+
+                map<string,int>::iterator it = nodes_number.find(reads_for_this.at(i).name);
+                if(it!=nodes_number.end())
+                {
+                    stringstream n;
+                    n<<node->right_child->get_name()<<"."<<it->second;
+                    node->right_child->set_name(n.str());
+                    it->second = it->second+1;
+                }
+                else
+                {
+                    nodes_number.insert(pair<string,int>(reads_for_this.at(i).name,1));
+                }
             }
 
             else if( read_overlap_rc > min_overlap && read_identity_rc > min_identity )
@@ -1254,6 +1270,19 @@ void Reads_aligner::loop_query_placement(Node *root, vector<Fasta_entry> *reads,
 
                 node->has_left_child(false);
                 delete node;
+
+                map<string,int>::iterator it = nodes_number.find(reads_for_this.at(i).name);
+                if(it!=nodes_number.end())
+                {
+                    stringstream n;
+                    n<<node->right_child->get_name()<<"."<<it->second;
+                    node->right_child->set_name(n.str());
+                    it->second = it->second+1;
+                }
+                else
+                {
+                    nodes_number.insert(pair<string,int>(reads_for_this.at(i).name,1));
+                }
             }
 
             else
@@ -1373,6 +1402,8 @@ void Reads_aligner::loop_translated_query_placement(Node *root, vector<Fasta_ent
     map<string,Node*> nodes_map;
     root->get_all_nodes(&nodes_map);
 
+    map<string,int> nodes_number;
+
     // do one tagged node at time
     //
     for(vector<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
@@ -1434,6 +1465,20 @@ void Reads_aligner::loop_translated_query_placement(Node *root, vector<Fasta_ent
 
                 alignment_done = true;
                 alignments_done++;
+
+                map<string,int>::iterator it = nodes_number.find(reads_for_this.at(i).name);
+                if(it!=nodes_number.end())
+                {
+                    stringstream n;
+                    n<<node->right_child->get_name()<<"."<<it->second;
+                    node->right_child->set_name(n.str());
+                    it->second = it->second+1;
+                }
+                else
+                {
+                    nodes_number.insert(pair<string,int>(reads_for_this.at(i).name,1));
+                }
+
             }
 
             else
@@ -2403,7 +2448,7 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
             {
                 stringstream ss;
                 ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" was discarded by Exonerate.\n";
-                Log_output::write_out(ss.str(),2);
+                Log_output::write_out(ss.str(),1);
 
                 continue;
             }

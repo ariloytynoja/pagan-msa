@@ -206,7 +206,13 @@ void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_seque
     map<string,string> bppa_sequences;
 
     Fasta_reader fr;
-    fr.read_bpp_phylip(o_name.str().c_str(),&bppa_sequences);
+    try {
+        fr.read_bpp_phylip(o_name.str().c_str(),&bppa_sequences);
+    } catch(Exception e)
+    {
+        Log_output::write_out("Reconstructing ancestral sequences failed. Exiting.\n\n",0);
+        exit(0);
+    }
 
     si = aligned_sequences->begin();
     for(;si!=aligned_sequences->end();si++)
@@ -222,7 +228,8 @@ void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_seque
         }
     }
 
-    this->delete_files(r);
+    if(!Settings_handle::st.is("keep-temp-files"))
+        this->delete_files(r);
 
 
     ////////////
