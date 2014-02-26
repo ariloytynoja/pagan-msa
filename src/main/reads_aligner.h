@@ -44,7 +44,6 @@ class Reads_aligner
     map<string,string> aa_to_codon;
 
     void loop_default_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
-    void loop_tagged_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_translated_pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void loop_query_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
@@ -57,8 +56,6 @@ class Reads_aligner
     void define_translation_tables();
     string reverse_complement(string dna);
 
-    void get_target_node_names(Node *root,multimap<string,string> *tid_nodes, bool *ignore_tid_tags);
-
     void find_nodes_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
     void find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
     void find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
@@ -67,10 +64,9 @@ class Reads_aligner
     double read_match_score(Node *node, Fasta_entry *read, Model_factory *mf);
     void read_alignment_scores(Node * node, string read_name, string ref_node_name, float *overlap, float *identity);
     bool read_alignment_overlaps(Node * node, string read_name, string ref_node_name);
-    float read_alignment_overlap(Node * node, string read_name, string ref_node_name);
+
     void pair_and_sort(vector<Fasta_entry> *reads);
     void find_paired_reads(vector<Fasta_entry> *reads);
-    void copy_node_details(Node *reads_node,Fasta_entry *read,bool turn_revcomp = false);
 
     bool correct_sites_index(Node *current_root, string ref_node_name, int alignments_done, map<string,Node*> *nodes_map);
 
@@ -125,6 +121,26 @@ class Reads_aligner
 
     }
 
+    void copy_node_details(Node *reads_node,Fasta_entry *read,bool turn_revcomp=false)
+    {
+        double r_dist = Settings_handle::st.get("query-distance").as<float>();
+
+        reads_node->set_distance_to_parent(r_dist);
+        reads_node->set_name(read->name);
+        reads_node->add_name_comment(read->comment);
+        reads_node->add_sequence( *read, read->data_type, false, true, turn_revcomp);
+        reads_node->get_sequence()->is_read_sequence(true);
+
+        if(read->dna_sequence.length()>0)
+        {
+            Orf o;
+            o.dna_sequence = read->dna_sequence;
+            o.translation = read->sequence;
+
+            reads_node->set_Orf(&o);
+        }
+    }
+
     void create_temp_node(Node *node,string ss, Node *global_root, Fasta_entry *read,bool is_reverse)
     {
         global_root->set_distance_to_parent(0.001);
@@ -167,7 +183,6 @@ class Reads_aligner
 
     }
 
-
     void compute_read_overlap(Node *node,string read_name,string ref_root_name,string global_root_name,float *read_overlap,float *read_identity)
     {
         if(node->node_has_sequence_object)
@@ -176,6 +191,37 @@ class Reads_aligner
                 this->read_alignment_scores(node, read_name,ref_root_name,read_overlap,read_identity);
             else
                 this->read_alignment_scores(node, read_name,global_root_name,read_overlap,read_identity);
+        }
+    }
+
+    void get_target_node_names(Node *root,multimap<string,string> *tid_nodes, bool *ignore_tid_tags)
+    {
+
+        if(Settings_handle::st.is("test-every-internal-node"))
+        {
+            root->get_internal_node_names(tid_nodes);
+        }
+        else if(Settings_handle::st.is("test-every-terminal-node"))
+        {
+            root->get_terminal_node_names(tid_nodes);
+        }
+        else if(Settings_handle::st.is("test-every-node"))
+        {
+            root->get_node_names(tid_nodes);
+        }
+        else
+        {
+            root->get_node_names_with_tid_tag(tid_nodes);
+            if((int)tid_nodes->size()>0)
+            {
+                *ignore_tid_tags = false;
+            }
+            else
+            {
+                Log_output::write_out("No tagged nodes found. Considering all nodes!\n\n",0);
+                tid_nodes->clear();
+                root->get_node_names(tid_nodes);
+            }
         }
     }
 

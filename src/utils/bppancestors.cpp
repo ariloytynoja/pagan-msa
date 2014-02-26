@@ -208,24 +208,24 @@ void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_seque
     Fasta_reader fr;
     try {
         fr.read_bpp_phylip(o_name.str().c_str(),&bppa_sequences);
-    } catch(Exception e)
-    {
-        Log_output::write_out("Reconstructing ancestral sequences failed. Exiting.\n\n",0);
-        exit(0);
-    }
 
-    si = aligned_sequences->begin();
-    for(;si!=aligned_sequences->end();si++)
-    {
-        map<string,string>::iterator fi = bppa_sequences.find(si->name);
-        if(fi != bppa_sequences.end())
+        si = aligned_sequences->begin();
+        for(;si!=aligned_sequences->end();si++)
         {
-            for(int i=0;i<(int)si->sequence.length();i++)
+            map<string,string>::iterator fi = bppa_sequences.find(si->name);
+            if(fi != bppa_sequences.end())
             {
-                if( si->sequence.at(i)!='-' && si->sequence.at(i)!='.' )
-                    si->sequence.at(i) = fi->second.at(i);
+                for(int i=0;i<(int)si->sequence.length();i++)
+                {
+                    if( si->sequence.at(i)!='-' && si->sequence.at(i)!='.' )
+                        si->sequence.at(i) = fi->second.at(i);
+                }
             }
         }
+
+    } catch(Exception e)
+    {
+        Log_output::write_out("Reconstructing ancestral sequences failed. Outputting parsimony ancestors.\n\n",0);
     }
 
     if(!Settings_handle::st.is("keep-temp-files"))
