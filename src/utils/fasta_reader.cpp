@@ -245,12 +245,14 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
             vector<Fasta_entry>::iterator it = seqs.begin();
             for(;it != seqs.end(); it++)
             {
-                it->dna_sequence = it->sequence;
+//                it->dna_sequence = it->sequence;
 
                 string dna = it->sequence;
                 this->rna_to_DNA(&dna);
 
                 it->sequence = this->DNA_to_protein(&dna);
+
+                it->dna_sequence = dna;
             }
         }
         else
@@ -1410,7 +1412,10 @@ string Fasta_reader::protein_to_DNA(string *dna,string *prot) const
             out += "---";
         else
         {
-            out += dna->substr(pos,3);
+            if(pos+3<=dna->length())
+                out += dna->substr(pos,3);
+            else
+                out += "NNN";
             pos += 3;
         }
     }

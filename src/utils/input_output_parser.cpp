@@ -57,6 +57,11 @@ void Input_output_parser::parse_input_sequences(Fasta_reader *fr,vector<Fasta_en
     /*  Read the sequences                                                 */
     /***********************************************************************/
 
+    if(Settings_handle::st.is("seqfile") && Settings_handle::st.is("queryfile"))
+    {
+        Log_output::write_out("Incorrect command: extension ('--queryfile') requires a reference alignment ('--ref-seqfile').\nExiting.\n\n",0);
+        exit(1);
+    }
 
     if(Settings_handle::st.is("seqfile"))
     {
@@ -192,7 +197,14 @@ Node *Input_output_parser::parse_input_tree(Fasta_reader *fr,vector<Fasta_entry>
             exit(1);
         }
 
-        root = nr.parenthesis_to_tree(tree);
+        try {
+            root = nr.parenthesis_to_tree(tree);
+        }
+        catch(exception e)
+        {
+            Log_output::write_out("The reference guide tree should be a rooted binary tree. \nExiting.\n\n",0);
+            exit(1);
+        }
     }
     else if(reference_alignment && sequences->size()==1)
     {
@@ -319,7 +331,6 @@ Node *Input_output_parser::parse_input_tree(Fasta_reader *fr,vector<Fasta_entry>
                 ma.align_sequences(input);
 
                 Log_output::write_msg("Computing BppDist guidetree for the initial alignment.",0);
-//                string tree = rt.infer_phylogeny(input,is_protein,n_threads);
                 string tree = rt.infer_phylogeny(input,is_protein,n_threads);
 
                 Tree_node tn;

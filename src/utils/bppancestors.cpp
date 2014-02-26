@@ -182,6 +182,8 @@ void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_seque
         }
     }
 
+    command << " 2>&1";
+
     Log_output::write_out("BppAncestors: command: "+command.str()+"\n",2);
 
 
@@ -225,7 +227,7 @@ void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_seque
 
     } catch(Exception e)
     {
-        Log_output::write_out("Reconstructing ancestral sequences failed. Outputting parsimony ancestors.\n\n",0);
+        Log_output::write_out("\nReconstructing ancestral sequences failed. Outputting parsimony ancestors.\n\n",0);
     }
 
     if(!Settings_handle::st.is("keep-temp-files"))
