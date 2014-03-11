@@ -102,7 +102,7 @@ float Viterbi_alignment::define_tunnel(Sequence *left_sequence,Sequence *right_s
         stringstream s;
         s.precision(4);
         s<<"Anchoring: Computing "<<coverage*100.0<<"% of DP matrix.\n";
-        Log_output::write_out(s.str(),1);
+        Log_output::write_out(s.str(),2);
     }
 
     tunnel_defined = true;

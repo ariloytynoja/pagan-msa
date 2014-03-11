@@ -1221,6 +1221,19 @@ public:
             return left_child->get_number_of_read_leaves()+right_child->get_number_of_read_leaves();
     }
 
+    int get_number_of_query_leaves()
+    {
+        if(leaf)
+        {
+            if(this->get_sequence()->is_read_sequence())
+                return 1;
+            else
+                return 0;
+        }
+        else
+            return left_child->get_number_of_query_leaves()+right_child->get_number_of_query_leaves();
+    }
+
     int get_number_of_nodes()
     {
         if(leaf)

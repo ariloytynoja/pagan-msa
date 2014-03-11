@@ -39,6 +39,7 @@ class Log_output
     static int header_length;
     static int msg_length;
     static int msg2_length;
+    static string prev_header;
     static string prev_msg;
     static string prev_msg2;
 public:
@@ -48,6 +49,8 @@ public:
     static void write_msg(const string str,const int priority);
     static void append_msg(const string str,const int priority);
     static void write_header(const string str,const int priority);
+    static void write_new_header(const string str,const int priority);
+    static void write_warning(const string str,const int priority);
     static void flush() {os->flush();}
     static void write_out(const string str,const string option);
     static void clean_output();

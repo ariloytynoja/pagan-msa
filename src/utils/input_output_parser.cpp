@@ -460,7 +460,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
     // See if any sequences were placed
     //
-    if(Settings_handle::st.is("queryfile") && root->get_number_of_read_leaves()==0)
+    if(Settings_handle::st.is("queryfile") && root->get_number_of_query_leaves()==0)
     {
         Log_output::write_out("Failed to extend the alignment. No output created.\n",0);
     }

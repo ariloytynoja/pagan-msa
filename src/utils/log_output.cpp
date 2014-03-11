@@ -41,6 +41,7 @@ int Log_output::header_length = 0;
 int Log_output::msg_length = 0;
 int Log_output::msg2_length = 0;
 
+string Log_output::prev_header;
 string Log_output::prev_msg;
 string Log_output::prev_msg2;
 
@@ -165,7 +166,52 @@ void Log_output::write_header(const string str,const int priority)
 
 
         header_length = str.length();
+        prev_header = str;
     }
+}
+
+void Log_output::write_new_header(const string str,const int priority)
+{
+    if(priority>Settings::noise)
+        return;
+
+    if(newline || Settings::noise > 0)
+    {
+        Log_output::write_out(str+"\n",priority);
+    }
+    else
+    {
+        Log_output::clean_output();
+
+        prev_msg = " ";
+        msg_length = 1;
+        prev_msg2 = "";
+        msg2_length = 0;
+
+
+        *os<<str<<"\n"<<prev_msg;
+
+
+        header_length = str.length();
+        prev_header = str;
+    }
+}
+
+void Log_output::write_warning(const string str,const int priority)
+{
+    if(priority>Settings::noise)
+        return;
+
+    if(newline || Settings::noise > 0)
+    {
+        Log_output::write_out(str+"\n",priority);
+    }
+    else
+    {
+        Log_output::clean_output();
+        *os<<str<<"\n"<<prev_header<<"\n"<<prev_msg<<prev_msg2;
+    }
+
 }
 
 void Log_output::clean_output()

@@ -228,7 +228,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("no-score-scaling","no subsistitution score scaling")
         ("plot-anchors-for-R","plot for R")
         ("no-reduced-terminal-penalties", "no reduced terminal penalties")
-
+        ("one-at-time", "place one query at time")
     ;
 
     boost::program_options::options_description broken("Broken options",100);

@@ -44,10 +44,11 @@ class Reads_aligner
     map<string,string> aa_to_codon;
 
     void loop_default_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
-    void loop_pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
-    void loop_translated_pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
-    void loop_query_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
-    void loop_translated_query_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void translated_pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void query_placement_all(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void query_placement_one(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void translated_query_placement_all(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
 
     void do_upwards_search(Node *root, Fasta_entry *read, Model_factory *mf);
     void do_upwards_search(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
@@ -57,6 +58,7 @@ class Reads_aligner
     string reverse_complement(string dna);
 
     void find_nodes_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
+    void find_nodes_for_query(Node *root, Fasta_entry *read, Model_factory *mf,bool warnings=false);
     void find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
     void find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
     void find_nodes_for_all_reads_together(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
@@ -218,7 +220,7 @@ class Reads_aligner
             }
             else
             {
-                Log_output::write_out("No tagged nodes found. Considering all nodes!\n\n",0);
+//                Log_output::write_out("No tagged nodes found. Considering all nodes!\n\n",0);
                 tid_nodes->clear();
                 root->get_node_names(tid_nodes);
             }
