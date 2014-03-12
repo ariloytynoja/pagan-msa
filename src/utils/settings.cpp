@@ -34,8 +34,8 @@ Settings::Settings(){}
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.54;
-    date = "5 February, 2014";
+    version = 0.55;
+    date = "12 March, 2014";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -47,20 +47,20 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     generic.add_options()
         ("outfile", po::value<string>(), "alignment outfile")
         ("outformat", po::value<string>(), "alignment format [fasta,nexus,paml,phylipi,phylips,raxml]")
-        ("raxml-tree","use RAxML for guide tree computation [default BppDist]")
-        ("translate", "translate DNA input to protein")
-        ("mt-translate", "translate mtDNA input to protein")
-        ("output-ancestors", "include ancestors in outfile")
-        ("config-file",po::value<string>(),"config file with additional arguments")
-        ("config-log-file",po::value<string>(),"log file for given arguments")
-        ("no-terminal-edges", "assume terminal gaps as missing data")
-        ("silent","minimal output")
-        ("noise", po::value<int>(), "output noise level")
-        ("log-output-file",po::value<string>(),"output to file instead of stdout")
         ("xml","output XML alignment")
         ("xml-nhx","output XML alignment with NHX tree")
         ("events","output inferred evolutionary events")
         ("output-nhx-tree", "output alignment tree (with NHX TID tags)")
+        ("output-ancestors", "include ancestors in outfile")
+        ("translate", "translate DNA input to protein")
+        ("mt-translate", "translate mtDNA input to protein")
+        ("raxml-tree","use RAxML for guide tree computation [default BppDist]")
+        ("no-terminal-edges", "assume terminal gaps as missing data")
+        ("silent","minimal output")
+        ("noise", po::value<int>(), "output noise level")
+        ("config-file",po::value<string>(),"config file with additional arguments")
+        ("config-log-file",po::value<string>(),"log file for given arguments")
+        ("log-output-file",po::value<string>(),"output to file instead of stdout")
         ("temp-folder",po::value<string>(),"non-standard place for temp files")
         ("threads",po::value<int>(),"number of threads")
     ;
@@ -75,22 +75,19 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("ref-seqfile", po::value<string>(), "reference alignment file (FASTA)")
         ("ref-treefile", po::value<string>(), "reference tree file (NH/NHX)")
         ("queryfile", po::value<string>(), "query file (FASTA/FASTQ)")
+        ("fragments", "place short queries together")
         ("454", "correct homopolymer error (DNA)")
         ("homopolymer", "correct homopolymer error (more agressively)")
         ("use-consensus", "use consensus for query ancestors")
         ("build-contigs", "build contigs of query clusters")
-        ("test-every-node","test every node for each query")
         ("fast-placement","use Exonerate to quickly assign queries to nodes")
-        ("very-fast-placement","shorthand for fast heuristic settings")
+        ("very-fast-placement","shorthand for very fast heuristic settings")
+        ("test-every-node","test every node for each query")
+        ("test-every-internal-node","test every internal node for each query")
+        ("test-every-terminal-node","test every terminal node for each query")
         ("upwards-search","stepwise search from root")
         ("score-only-ungapped","score query placement only on ungapped sites")
         ("score-ungapped-limit",po::value<float>()->default_value(0.1,"0.1"),"max. ungapped proportion")
-        ("prune-extended-alignment","remove closely related sequences")
-        ("prune-keep-number",po::value<int>()->default_value(15),"keep N most distantly related sequences (default)")
-        ("prune-keep-threshold",po::value<float>(),"remove sequences with distance below threshold")
-        ("prune-all","remove all reference sequences")
-        ("trim-extended-alignment","remove terminal reference sequences")
-        ("trim-keep-sites",po::value<int>()->default_value(15),"trim distance around queries")
     ;
 
     boost::program_options::options_description reads_alignment2("Additional alignment extension options",100);
@@ -100,14 +97,36 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("show-contig-ancestor", "fill contig gaps with ancestral sequence")
         ("consensus-minimum", po::value<int>()->default_value(5), "threshold for inclusion in contig")
         ("consensus-minimum-proportion", po::value<float>()->default_value(0.5,"0.5"), "threshold for inclusion in contig")
-        ("test-every-internal-node","test every internal node for each query")
-        ("test-every-terminal-node","test every terminal node for each query")
         ("one-placement-only", "place only once despite equally good hits")
         ("query-distance", po::value<float>()->default_value(0.1,"0.1"), "evolutionary distance from pseudo-root")
         ("min-query-overlap", po::value<float>()->default_value(0.5,"0.5"), "overlap threshold for query and reference")
         ("overlap-with-reference","require overlap with reference")
         ("min-query-identity", po::value<float>()->default_value(0.5,"0.5"), "identity threshold for aligned sites")
         ("pair-read-gap-extension", po::value<float>(), "paired read spacer extension probability (DNA)")
+    ;
+
+    boost::program_options::options_description reads_alignment3("Alignment extension output options",100);
+    reads_alignment3.add_options()
+        ("prune-extended-alignment","remove closely related sequences")
+        ("prune-keep-number",po::value<int>()->default_value(15),"keep N most distantly related sequences (default)")
+        ("prune-keep-threshold",po::value<float>(),"remove sequences with distance below threshold")
+        ("prune-all","remove all reference sequences")
+        ("trim-extended-alignment","remove terminal reference sequences")
+        ("trim-keep-sites",po::value<int>()->default_value(15),"trim distance around queries")
+    ;
+
+    boost::program_options::options_description pileup("Pileup alignment options",100);
+    pileup.add_options()
+        ("pileup-alignment","make pileup alignment")
+        ("compare-reverse","test also reverse-complement and keep better (DNA)")
+        ("find-best-orf", "translate and use best ORF (DNA)")
+        ("min-orf-length", po::value<int>()->default_value(100),"minimum ORF length to be considered (DNA)")
+        ("min-orf-coverage", po::value<float>(),"minimum ORF coverage to be considered (DNA)")
+        ("query-cluster-attempts", po::value<int>()->default_value(1),"attempts to find overlap")
+        ("inlude-parent-in-contig", "include also ancestral parent in contigs")
+        ("use-duplicate-weights", "use NumDuplicates=# to weight consensus counts")
+        ("no-read-ordering","do not order reads by duplicate number")
+        ("output-consensus", "output contig consensus alone")
     ;
 
 
@@ -132,7 +151,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description exonerate("Exonerate options",100);
     exonerate.add_options()
-        ("exhaustive-placement","if Exonrate fails, use PAGAN to place the query")
+        ("exhaustive-placement","if Exonerate fails, use PAGAN to place the query")
         ("use-exonerate-local","use Exonerate local to map queries to nodes")
         ("exonerate-local-keep-best",po::value<int>()->default_value(5),"keep best # of local matches")
         ("exonerate-local-keep-above",po::value<float>(),"keep local matches above #% of the best score")
@@ -140,20 +159,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("exonerate-gapped-keep-best",po::value<int>()->default_value(1),"keep best # of gapped matches")
         ("exonerate-gapped-keep-above",po::value<float>(),"keep gapped matches above #% of the best score")
         ("keep-despite-exonerate-fails", "keep queries that Exonerate fails to align")
-    ;
-
-    boost::program_options::options_description pileup("Pileup alignment options",100);
-    pileup.add_options()
-        ("pileup-alignment","make pileup alignment")
-        ("compare-reverse","test also reverse-complement and keep better (DNA)")
-        ("find-best-orf", "translate and use best ORF (DNA)")
-        ("min-orf-length", po::value<int>()->default_value(100),"minimum ORF length to be considered (DNA)")
-        ("min-orf-coverage", po::value<float>(),"minimum ORF coverage to be considered (DNA)")
-        ("query-cluster-attempts", po::value<int>()->default_value(1),"attempts to find overlap")
-        ("inlude-parent-in-contig", "include also ancestral parent in contigs")
-        ("use-duplicate-weights", "use NumDuplicates=# to weight consensus counts")
-        ("no-read-ordering","do not order reads by duplicate number")
-        ("output-consensus", "output contig consensus alone")
     ;
 
     boost::program_options::options_description obscure("Additional obscure options",100);
@@ -228,7 +233,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("no-score-scaling","no subsistitution score scaling")
         ("plot-anchors-for-R","plot for R")
         ("no-reduced-terminal-penalties", "no reduced terminal penalties")
-        ("one-at-time", "place one query at time")
     ;
 
     boost::program_options::options_description broken("Broken options",100);
@@ -301,19 +305,39 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     if(is("exonerate-local-keep-best") && get("exonerate-local-keep-best").as<int>() > 0 )
         exonerate_local_keep_best = get("exonerate-local-keep-best").as<int>();
 
+    if(is("use-exonerate-local") && get("exonerate-local-keep-best").as<int>() > 0 )
+        exonerate_local_keep_best = get("exonerate-local-keep-best").as<int>();
+
     if(is("exonerate-gapped-keep-best") && get("exonerate-gapped-keep-best").as<int>() > 0 )
+        exonerate_gapped_keep_best = get("exonerate-gapped-keep-best").as<int>();
+
+    if(is("use-exonerate-gapped") && get("exonerate-gapped-keep-best").as<int>() > 0 )
         exonerate_gapped_keep_best = get("exonerate-gapped-keep-best").as<int>();
 
     if(is("very-fast-placement"))
     {
         exonerate_local_keep_best = 1;
-        exonerate_gapped_keep_best = 1;
+//        exonerate_gapped_keep_best = 1;
 
         if( is("use-exonerate-local") || /*is("exonerate-local-keep-best") ||*/ is("exonerate-local-keep-above") ||
             is("use-exonerate-gapped") || /*is("exonerate-gapped-keep-best") ||*/ is("exonerate-gapped-keep-above") ||
             is("exhaustive-placement") || is("keep-despite-exonerate-fails") )
         {
             Log_output::write_out("Please disable Exonerate-related options if using '--very-fast-placement'. Exiting.\n",0);
+            exit(1);
+        }
+    }
+
+    if(is("fast-placement"))
+    {
+        exonerate_local_keep_best = 10;
+        exonerate_gapped_keep_best = 3;
+
+        if( is("use-exonerate-local") || is("exonerate-local-keep-above") ||
+            is("use-exonerate-gapped") || is("exonerate-gapped-keep-above") ||
+            is("exhaustive-placement") || is("keep-despite-exonerate-fails") )
+        {
+            Log_output::write_out("Please disable Exonerate-related options if using '--fast-placement'. Exiting.\n",0);
             exit(1);
         }
     }
@@ -479,7 +503,7 @@ void Settings::check_version()
 int   Settings::noise             = 0;
 float Settings::resize_factor     = 1.5;
 
-int   Settings::exonerate_local_keep_best = 1;
-int   Settings::exonerate_gapped_keep_best = 1;
+int   Settings::exonerate_local_keep_best = 0;
+int   Settings::exonerate_gapped_keep_best = 0;
 
 float Settings::tunneling_coverage = 1;

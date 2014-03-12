@@ -49,6 +49,7 @@ class Reads_aligner
     void query_placement_all(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void query_placement_one(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void translated_query_placement_all(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void translated_query_placement_one(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
 
     void do_upwards_search(Node *root, Fasta_entry *read, Model_factory *mf);
     void do_upwards_search(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);

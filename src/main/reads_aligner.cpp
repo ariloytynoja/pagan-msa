@@ -122,16 +122,19 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
         if(Settings_handle::st.is("find-best-orf") && has_dna_seqs)
         {
             Log_output::write_header("Aligning reads: placement with ORF search",0);
-            this->translated_query_placement_all(root,&reads,mf,count);
+            if(Settings_handle::st.is("fragments"))
+                this->translated_query_placement_all(root,&reads,mf,count);
+            else
+                this->translated_query_placement_one(root,&reads,mf,count);
         }
         // default; can compare reverse strand
         else
         {
             Log_output::write_header("Aligning reads: simple placement",0);
-            if(Settings_handle::st.is("one-at-time"))
-                this->query_placement_one(root,&reads,mf,count);
-            else
+            if(Settings_handle::st.is("fragments"))
                 this->query_placement_all(root,&reads,mf,count);
+            else
+                this->query_placement_one(root,&reads,mf,count);
         }
     }
 
@@ -858,10 +861,6 @@ void Reads_aligner::fix_branch_lengths(Node *root,Node *current_root)
             }
         }
 
-//        cout<<"12 "<<ident12<<" "<<share12<<endl;
-//        cout<<"13 "<<ident13<<" "<<share13<<endl;
-//        cout<<"23 "<<ident23<<" "<<share23<<endl;
-
         float d12 = 1-(float)ident12/(float)share12;
         float d13 = 1-(float)ident13/(float)share13;
         float d23 = 1-(float)ident23/(float)share23;
@@ -877,11 +876,6 @@ void Reads_aligner::fix_branch_lengths(Node *root,Node *current_root)
         l1*=mult;
         l2*=mult;
         l3*=mult;
-
-//        cout<<"mult "<<mult<<endl;
-//        cout<<"l1 "<<l1<<endl;
-//        cout<<"l2 "<<l2<<endl;
-//        cout<<"l3 "<<l3<<endl;
 
         current_root->set_distance_to_parent(l1);
         current_root->left_child->set_distance_to_parent(l2);
@@ -918,8 +912,6 @@ void Reads_aligner::fix_branch_lengths(Node *root,Node *current_root)
         }
 
         float d = (1-(float)ident/(float)share)/2;
-
-//       cout<<"2 "<<ident<<" "<<share<<" "<<d<<endl;
 
         current_root->left_child->set_distance_to_parent(d);
         current_root->right_child->set_distance_to_parent(d);
@@ -1135,6 +1127,216 @@ void Reads_aligner::translated_query_placement_all(Node *root, vector<Fasta_entr
     }
 }
 
+
+void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
+{
+    this->define_translation_tables();
+
+    bool single_ref_sequence = false;
+    if(root->get_number_of_leaves()==1)
+        single_ref_sequence = true;
+
+    global_root = root;
+
+    float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
+    float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
+
+    if(min_overlap<0)
+        min_overlap = 0;
+    if(min_identity<0)
+        min_identity = 0;
+
+    Log_output::write_header("Aligning query sequences",0);
+
+    for(int i=0;i<(int)reads->size();i++)
+    {
+        cout<<"loop0\n";
+
+
+        vector<Fasta_entry> orfs;
+        vector<Fasta_entry> potential_orfs;
+
+        vector<Orf> open_frames;
+        this->find_orfs(&reads->at(i),&open_frames);
+
+        for(int j=0;j<(int)open_frames.size();j++)
+        {
+            Fasta_entry fe;
+            stringstream ss;
+            ss<<reads->at(i).name<<"_orf"<<j+1;
+            fe.name = ss.str();
+            ss.str("");
+            ss<<" ["<<open_frames.at(j).frame<<"."<<open_frames.at(j).start+1<<"."<<open_frames.at(j).end+1<<"]";
+            fe.comment = reads->at(i).comment+ss.str();
+            fe.sequence = open_frames.at(j).translation;
+            fe.dna_sequence = open_frames.at(j).dna_sequence;
+            fe.data_type = Model_factory::protein;
+            fe.tid = reads->at(i).tid;
+
+            potential_orfs.push_back(fe);
+        }
+
+        this->find_nodes_for_queries(root, &potential_orfs, mf);
+
+        for(int j=0;j<(int)potential_orfs.size();j++)
+        {
+            if(potential_orfs.at(j).node_to_align != "discarded_read")
+                orfs.push_back(potential_orfs.at(j));
+        }
+
+
+        vector<string> unique_nodes;
+
+        for(int i=0;i<(int)orfs.size();i++)
+        {
+            stringstream nodestream;
+            nodestream << orfs.at(i).node_to_align;
+            string val;
+            while(nodestream >> val)
+            {
+                if(val != "discarded_read")
+                    unique_nodes.push_back(val);
+            }
+        }
+
+
+        if((int)unique_nodes.size()==0)
+        {
+            stringstream msg;
+            if(potential_orfs.size()==0)
+                msg<<"\nNo long enough ORFs and nothing to align\n";
+            else
+                msg<<"\nNone of the ORFs matched and nothing to align\n";
+
+            Log_output::write_warning(msg.str(),0);
+
+            continue;
+        }
+
+
+        sort(unique_nodes.begin(),unique_nodes.end(),Reads_aligner::nodeIsSmaller);
+
+        map<string,Node*> nodes_map;
+        root->get_all_nodes(&nodes_map);
+
+        map<string,int> nodes_number;
+
+        // do one tagged node at time
+        //
+        for(vector<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
+        {
+            cout<<"loop1\n";
+            vector<Fasta_entry> reads_for_this;
+
+            for(int i=0;i<(int)orfs.size();i++)
+            {
+                stringstream nodestream;
+                nodestream << orfs.at(i).node_to_align;
+                string val;
+                while(nodestream >> val)
+                {
+                    if(val == *sit)
+                        reads_for_this.push_back(orfs.at(i));
+                }
+            }
+
+            this->sort_reads_vector(&reads_for_this);
+
+
+            string ref_node_name = *sit;
+
+            Node *current_root = nodes_map.find(ref_node_name)->second;
+            double orig_dist = current_root->get_distance_to_parent();
+
+            bool alignment_done = false;
+            int alignments_done = 0;
+
+            // align the remaining reads to this node
+            //
+            for(int i=0;i<(int)reads_for_this.size();i++)
+            {
+                cout<<"loop2\n";
+
+                Node * node = new Node();
+                float read_overlap = -1;
+                float read_identity = -1;
+
+                stringstream ss;
+                ss<<"#"<<count<<"#";
+                node->set_name(ss.str());
+
+                this->create_temp_node(node,ss.str(), current_root, &reads_for_this.at(i),false);
+
+                Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
+
+                node->align_sequences_this_node(mf,true);
+                this->compute_read_overlap(node,reads_for_this.at(i).name,ref_node_name,current_root->get_name(),&read_overlap,&read_identity);
+
+                Log_output::write_out("forward overlap/identity: "+Log_output::ftos(read_overlap)+"/"+Log_output::ftos(read_identity)+"\n",1);
+
+                if(read_overlap > min_overlap && read_identity > min_identity)
+                {
+                    count++;
+                    current_root = node;
+
+    //                cout<<"\nis read "<<current_root->get_right_child()->get_sequence()->is_read_sequence()<<"\n\n";
+                    if( orig_dist > current_root->get_distance_to_parent() )
+                        orig_dist -= current_root->get_distance_to_parent();
+
+                    alignment_done = true;
+                    alignments_done++;
+
+                    map<string,int>::iterator it = nodes_number.find(reads_for_this.at(i).name);
+                    if(it!=nodes_number.end())
+                    {
+                        stringstream n;
+                        n<<node->right_child->get_name()<<"."<<it->second;
+                        node->right_child->set_name(n.str());
+                        it->second = it->second+1;
+                    }
+                    else
+                    {
+                        nodes_number.insert(pair<string,int>(reads_for_this.at(i).name,1));
+                    }
+
+                }
+
+                else
+                {
+                    node->has_left_child(false);
+                    delete node;
+                }
+            }
+
+            current_root->set_distance_to_parent(orig_dist);
+
+            if(alignment_done)
+            {
+                if(single_ref_sequence)
+                {
+                    root = current_root;
+                    single_ref_sequence = false;
+                }
+                else
+                {
+                    bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
+
+                    if(!parent_found)
+                    {
+                        root = current_root;
+                    }
+                }
+            }
+
+            this->fix_branch_lengths(root,current_root);
+
+            global_root = root;
+
+        }
+    }
+}
+
+
 /**********************************************************************/
 
 void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_factory *mf,bool warnings)
@@ -1179,7 +1381,7 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
     //
     map<string,hit> exonerate_hits;
 
-    if(has_exonerate && ( Settings_handle::st.is("fast-placement") || Settings_handle::st.is("use-exonerate-local") ) )
+    if(has_exonerate && Settings::exonerate_local_keep_best > 0 )
     {
         tid_nodes.clear();
         this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
@@ -1187,10 +1389,10 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
         if(tid_nodes.size()>1)
             er.local_alignment(root,read,&tid_nodes,&exonerate_hits, true,ignore_tid_tags);
 
-        if(tid_nodes.size()>1 && ( Settings_handle::st.is("fast-placement") || Settings_handle::st.is("use-exonerate-gapped") ) )
+        if(tid_nodes.size()>1 && Settings::exonerate_gapped_keep_best > 0 )
             er.local_alignment(root,read,&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
     }
-    else if(has_exonerate && Settings_handle::st.is("use-exonerate-gapped" ) )
+    else if(has_exonerate && Settings::exonerate_gapped_keep_best > 0 )
     {
         tid_nodes.clear();
         this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
@@ -1304,7 +1506,7 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
                     double score = this->read_match_score( nit->second, read, mf);
 
                     stringstream ss;
-                    ss<<tit->second<<" with p-distance "<<score<<"\n";
+                    ss<<tit->second<<" with score "<<score<<"\n";
                     Log_output::write_out(ss.str(),2);
 
                     if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
@@ -1326,7 +1528,7 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
                         double score = this->read_match_score( nit->second, &rev_seq, mf);
 
                         stringstream ss;
-                        ss<<tit->second<<"(rc) with p-distance "<<score<<"\n";
+                        ss<<tit->second<<"(rc) with score "<<score<<"\n";
                         Log_output::write_out(ss.str(),2);
 
                         if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
@@ -1436,7 +1638,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
         //
         map<string,hit> exonerate_hits;
 
-        if(has_exonerate && ( Settings_handle::st.is("fast-placement") || Settings_handle::st.is("use-exonerate-local") ) )
+        if(has_exonerate && Settings::exonerate_local_keep_best > 0 )
         {
             tid_nodes.clear();
             this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
@@ -1444,10 +1646,10 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
             if(tid_nodes.size()>1)
                 er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits, true,ignore_tid_tags);
 
-            if(tid_nodes.size()>1 && ( Settings_handle::st.is("fast-placement") || Settings_handle::st.is("use-exonerate-gapped") ) )
+            if(tid_nodes.size()>1 && Settings::exonerate_gapped_keep_best > 0 )
                 er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
         }
-        else if(has_exonerate && Settings_handle::st.is("use-exonerate-gapped" ) )
+        else if(has_exonerate && Settings::exonerate_gapped_keep_best > 0 )
         {
             tid_nodes.clear();
             this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
@@ -1562,7 +1764,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                         double score = this->read_match_score( nit->second, &reads->at(i), mf);
 
                         stringstream ss;
-                        ss<<tit->second<<" with p-distance "<<score<<"\n";
+                        ss<<tit->second<<" with score "<<score<<"\n";
                         Log_output::write_out(ss.str(),2);
 
                         if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
@@ -1584,7 +1786,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                             double score = this->read_match_score( nit->second, &rev_seq, mf);
 
                             stringstream ss;
-                            ss<<tit->second<<"(rc) with p-distance "<<score<<"\n";
+                            ss<<tit->second<<"(rc) with score "<<score<<"\n";
                             Log_output::write_out(ss.str(),2);
 
                             if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
@@ -2972,7 +3174,7 @@ void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads,
                         double score = this->read_match_score( nit->second, &reads->at(i), mf);
 
                         stringstream ss;
-                        ss<<tit->second<<" with p-distance "<<score<<"\n";
+                        ss<<tit->second<<" with score "<<score<<"\n";
                         Log_output::write_out(ss.str(),2);
 
                         if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
@@ -3178,7 +3380,7 @@ void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *re
                     double score = this->read_match_score( nit->second, &reads->at(i), mf);
 
                     stringstream ss;
-                    ss<<tit->second<<" with p-distance "<<score<<"\n";
+                    ss<<tit->second<<" with score "<<score<<"\n";
                     Log_output::write_out(ss.str(),2);
 
                     if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
@@ -3361,7 +3563,7 @@ void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_e
                     double score = this->read_match_score( nit->second, &reads->at(i), mf);
 
                     stringstream ss;
-                    ss<<tit->second<<" with p-distance "<<score<<"\n";
+                    ss<<tit->second<<" with score "<<score<<"\n";
                     Log_output::write_out(ss.str(),2);
 
                     if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
