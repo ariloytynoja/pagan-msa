@@ -115,11 +115,11 @@ public:
 
     /**************************************/
 
-    void set_distance_to_parent(double d)
+    void set_distance_to_parent(double d, bool correct = true)
     {
         dist_to_parent = d;
 
-        if(dist_to_parent<=0)
+        if(dist_to_parent<=0 && correct)
         {
             if( Settings_handle::st.is("min-branch-length") && Settings_handle::st.get("min-branch-length").as<float>() > 0 )
             {
@@ -130,7 +130,7 @@ public:
                 dist_to_parent = 0.001;
             }
         }
-        if( !Settings_handle::st.is("real-branches") &&
+        if(correct && !Settings_handle::st.is("real-branches") &&
                 ( Settings_handle::st.is("scale-branches") || Settings_handle::st.is("truncate-branches") )  )
         {
             if( Settings_handle::st.is("scale-branches") &&
@@ -148,7 +148,7 @@ public:
                 dist_to_parent = Settings_handle::st.get("truncate-branches").as<float>();
             }
         }
-        if( Settings_handle::st.is("fixed-branches") )
+        if(correct &&  Settings_handle::st.is("fixed-branches") )
         {
             dist_to_parent = Settings_handle::st.get("fixed-branches").as<float>();
         }

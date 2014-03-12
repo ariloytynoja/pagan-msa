@@ -53,6 +53,8 @@ class Reads_aligner
     void do_upwards_search(Node *root, Fasta_entry *read, Model_factory *mf);
     void do_upwards_search(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
 
+    void fix_branch_lengths(Node *root,Node *current_root);
+
     void find_orfs(Fasta_entry *read,vector<Orf> *open_frames);
     void define_translation_tables();
     string reverse_complement(string dna);

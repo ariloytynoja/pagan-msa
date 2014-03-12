@@ -662,7 +662,6 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
             double orig_dist = current_root->get_distance_to_parent();
 
             bool alignment_done = false;
-            int alignments_done = 0;
 
 
             Node * node = new Node();
@@ -713,7 +712,6 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
                     orig_dist -= current_root->get_distance_to_parent();
 
                 alignment_done = true;
-                alignments_done++;
 
                 if(reverse_computed)
                 {
@@ -745,7 +743,6 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
                     orig_dist -= current_root->get_distance_to_parent();
 
                 alignment_done = true;
-                alignments_done++;
 
                 node->has_left_child(false);
                 delete node;
@@ -776,27 +773,156 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
                     delete node_rc;
                 }
             }
-//        }
 
-        current_root->set_distance_to_parent(orig_dist);
+            current_root->set_distance_to_parent(orig_dist);
 
-        if(alignment_done)
-        {
-            if(single_ref_sequence)
+            if(alignment_done)
             {
-                global_root = current_root;
-            }
-            else
-            {
-                bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
-
-                if(!parent_found)
+                if(single_ref_sequence)
                 {
-                    global_root = current_root;
+                    root = current_root;
+                    single_ref_sequence = false;
+                }
+                else
+                {
+                    bool parent_found = this->correct_sites_index(current_root, ref_node_name, 1, &nodes_map);
+
+                    if(!parent_found)
+                    {
+                        root = current_root;
+                    }
                 }
             }
+
+
+            this->fix_branch_lengths(root,current_root);
+
+            global_root = root;
+
+//            cout<<endl;
+////            root->print_alignment();
+//            cout<<endl;
+//            cout<<root->print_tree()<<endl<<endl;
         }
+    }
+}
+
+void Reads_aligner::fix_branch_lengths(Node *root,Node *current_root)
+{
+    if(root->get_parent_node(current_root->get_name()) != 0)
+    {
+        Node *subroot = root->get_parent_node(current_root->get_name());
+        vector<Fasta_entry> subalignment;
+        subroot->get_alignment(&subalignment,true);
+        vector<Fasta_entry>::iterator it = subalignment.begin();
+
+        Fasta_entry lnode,rnode,pnode;
+
+        for(;it!=subalignment.end();it++)
+        {
+            if(it->name == current_root->left_child->get_name())
+                lnode = *it;
+            if(it->name == current_root->right_child->get_name())
+                rnode = *it;
+            if(it->name == subroot->get_name())
+                pnode = *it;
         }
+
+        int share12=0; int share13=0; int share23=0;
+        int ident12=0; int ident13=0; int ident23=0;
+
+        for(int i=0;i<(int)pnode.sequence.length();i++)
+        {
+            if(pnode.sequence.at(i)!='-' && pnode.sequence.at(i)!='.')
+            {
+                if(lnode.sequence.at(i)!='-' && lnode.sequence.at(i)!='.')
+                {
+                    share12++;
+                    if(pnode.sequence.at(i)==lnode.sequence.at(i))
+                        ident12++;
+                }
+
+                if(rnode.sequence.at(i)!='-' && rnode.sequence.at(i)!='.')
+                {
+                    share13++;
+                    if(pnode.sequence.at(i)==rnode.sequence.at(i))
+                        ident13++;
+                }
+            }
+            if(lnode.sequence.at(i)!='-' && lnode.sequence.at(i)!='.' &&
+                    rnode.sequence.at(i)!='-' && rnode.sequence.at(i)!='.')
+            {
+                share23++;
+                if(lnode.sequence.at(i)==rnode.sequence.at(i))
+                    ident23++;
+            }
+        }
+
+//        cout<<"12 "<<ident12<<" "<<share12<<endl;
+//        cout<<"13 "<<ident13<<" "<<share13<<endl;
+//        cout<<"23 "<<ident23<<" "<<share23<<endl;
+
+        float d12 = 1-(float)ident12/(float)share12;
+        float d13 = 1-(float)ident13/(float)share13;
+        float d23 = 1-(float)ident23/(float)share23;
+
+        float l2 = 0.5*d23 + 0.5*(d12-d13);
+        float l3 = 0.5*d23 + 0.5*(d13-d12);
+        float l1 = 0.5*(d12+d13-d23);
+
+        float mult = 1;
+        if(Settings_handle::st.is("ref-guidetree"))
+            mult = (l1+l2)/(current_root->dist_to_parent+current_root->left_child->dist_to_parent);
+
+        l1*=mult;
+        l2*=mult;
+        l3*=mult;
+
+//        cout<<"mult "<<mult<<endl;
+//        cout<<"l1 "<<l1<<endl;
+//        cout<<"l2 "<<l2<<endl;
+//        cout<<"l3 "<<l3<<endl;
+
+        current_root->set_distance_to_parent(l1);
+        current_root->left_child->set_distance_to_parent(l2);
+        current_root->right_child->set_distance_to_parent(l3);
+    }
+    else
+    {
+        vector<Fasta_entry> subalignment;
+        current_root->get_alignment(&subalignment,true);
+        vector<Fasta_entry>::iterator it = subalignment.begin();
+
+        Fasta_entry lnode,rnode;
+
+        for(;it!=subalignment.end();it++)
+        {
+            if(it->name == current_root->left_child->get_name())
+                lnode = *it;
+            if(it->name == current_root->right_child->get_name())
+                rnode = *it;
+        }
+
+        int share=0;
+        int ident=0;
+
+        for(int i=0;i<(int)lnode.sequence.length();i++)
+        {
+            if(lnode.sequence.at(i)!='-' && lnode.sequence.at(i)!='.' &&
+                    rnode.sequence.at(i)!='-' && rnode.sequence.at(i)!='.')
+            {
+                share++;
+                if(lnode.sequence.at(i)==rnode.sequence.at(i))
+                    ident++;
+            }
+        }
+
+        float d = (1-(float)ident/(float)share)/2;
+
+//       cout<<"2 "<<ident<<" "<<share<<" "<<d<<endl;
+
+        current_root->left_child->set_distance_to_parent(d);
+        current_root->right_child->set_distance_to_parent(d);
     }
 }
 
