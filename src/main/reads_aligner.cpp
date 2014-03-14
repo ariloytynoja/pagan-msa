@@ -577,26 +577,48 @@ void Reads_aligner::query_placement_all(Node *root, vector<Fasta_entry> *reads, 
                     delete node_rc;
                 }
             }
-        }
 
-        current_root->set_distance_to_parent(orig_dist);
+            current_root->set_distance_to_parent(orig_dist);
 
-        if(alignment_done)
-        {
-            if(single_ref_sequence)
+            if(alignment_done)
             {
-                global_root = current_root;
-            }
-            else
-            {
-                bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
-
-                if(!parent_found)
+                if(single_ref_sequence)
                 {
                     global_root = current_root;
                 }
+                else
+                {
+                    bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
+
+                    if(!parent_found)
+                    {
+                        global_root = current_root;
+                    }
+                }
+
+                this->fix_branch_lengths(root,current_root);
             }
+
         }
+
+//        current_root->set_distance_to_parent(orig_dist);
+
+//        if(alignment_done)
+//        {
+//            if(single_ref_sequence)
+//            {
+//                global_root = current_root;
+//            }
+//            else
+//            {
+//                bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
+
+//                if(!parent_found)
+//                {
+//                    global_root = current_root;
+//                }
+//            }
+//        }
     }
 }
 
@@ -795,17 +817,12 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
                         root = current_root;
                     }
                 }
+
+                this->fix_branch_lengths(root,current_root);
             }
 
 
-            this->fix_branch_lengths(root,current_root);
-
             global_root = root;
-
-//            cout<<endl;
-////            root->print_alignment();
-//            cout<<endl;
-//            cout<<root->print_tree()<<endl<<endl;
         }
     }
 }
@@ -1104,26 +1121,49 @@ void Reads_aligner::translated_query_placement_all(Node *root, vector<Fasta_entr
                 node->has_left_child(false);
                 delete node;
             }
-        }
 
-        current_root->set_distance_to_parent(orig_dist);
 
-        if(alignment_done)
-        {
-            if(single_ref_sequence)
+            current_root->set_distance_to_parent(orig_dist);
+
+            if(alignment_done)
             {
-                global_root = current_root;
-            }
-            else
-            {
-                bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
-
-                if(!parent_found)
+                if(single_ref_sequence)
                 {
                     global_root = current_root;
                 }
+                else
+                {
+                    bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
+
+                    if(!parent_found)
+                    {
+                        global_root = current_root;
+                    }
+                }
+
+                this->fix_branch_lengths(root,current_root);
             }
+
         }
+
+//        current_root->set_distance_to_parent(orig_dist);
+
+//        if(alignment_done)
+//        {
+//            if(single_ref_sequence)
+//            {
+//                global_root = current_root;
+//            }
+//            else
+//            {
+//                bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
+
+//                if(!parent_found)
+//                {
+//                    global_root = current_root;
+//                }
+//            }
+//        }
     }
 }
 
@@ -1148,13 +1188,10 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
 
     Log_output::write_header("Aligning query sequences",0);
 
+    vector<Fasta_entry> potential_orfs;
+
     for(int i=0;i<(int)reads->size();i++)
     {
-        cout<<"loop0\n";
-
-
-        vector<Fasta_entry> orfs;
-        vector<Fasta_entry> potential_orfs;
 
         vector<Orf> open_frames;
         this->find_orfs(&reads->at(i),&open_frames);
@@ -1175,75 +1212,33 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
 
             potential_orfs.push_back(fe);
         }
-
-        this->find_nodes_for_queries(root, &potential_orfs, mf);
-
-        for(int j=0;j<(int)potential_orfs.size();j++)
-        {
-            if(potential_orfs.at(j).node_to_align != "discarded_read")
-                orfs.push_back(potential_orfs.at(j));
-        }
+    }
 
 
-        vector<string> unique_nodes;
+    for(int i=0;i<(int)potential_orfs.size();i++)
+    {
 
-        for(int i=0;i<(int)orfs.size();i++)
-        {
-            stringstream nodestream;
-            nodestream << orfs.at(i).node_to_align;
-            string val;
-            while(nodestream >> val)
-            {
-                if(val != "discarded_read")
-                    unique_nodes.push_back(val);
-            }
-        }
+        Fasta_entry potential_orf = potential_orfs.at(i);
 
+        this->find_nodes_for_query(root, &potential_orf, mf);
 
-        if((int)unique_nodes.size()==0)
-        {
-            stringstream msg;
-            if(potential_orfs.size()==0)
-                msg<<"\nNo long enough ORFs and nothing to align\n";
-            else
-                msg<<"\nNone of the ORFs matched and nothing to align\n";
-
-            Log_output::write_warning(msg.str(),0);
-
+        if(potential_orf.node_to_align == "discarded_read")
             continue;
-        }
 
+        stringstream nodestream;
+        nodestream << potential_orf.node_to_align;
 
-        sort(unique_nodes.begin(),unique_nodes.end(),Reads_aligner::nodeIsSmaller);
+        string ref_node_name;
 
-        map<string,Node*> nodes_map;
-        root->get_all_nodes(&nodes_map);
-
-        map<string,int> nodes_number;
-
-        // do one tagged node at time
-        //
-        for(vector<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
+        while(nodestream >> ref_node_name)
         {
-            cout<<"loop1\n";
-            vector<Fasta_entry> reads_for_this;
 
-            for(int i=0;i<(int)orfs.size();i++)
-            {
-                stringstream nodestream;
-                nodestream << orfs.at(i).node_to_align;
-                string val;
-                while(nodestream >> val)
-                {
-                    if(val == *sit)
-                        reads_for_this.push_back(orfs.at(i));
-                }
-            }
+//            cout<<"ref "<<ref_node_name<<endl;
 
-            this->sort_reads_vector(&reads_for_this);
+            map<string,Node*> nodes_map;
+            root->get_all_nodes(&nodes_map);
 
-
-            string ref_node_name = *sit;
+            map<string,int> nodes_number;
 
             Node *current_root = nodes_map.find(ref_node_name)->second;
             double orig_dist = current_root->get_distance_to_parent();
@@ -1251,61 +1246,54 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
             bool alignment_done = false;
             int alignments_done = 0;
 
-            // align the remaining reads to this node
-            //
-            for(int i=0;i<(int)reads_for_this.size();i++)
+
+            Node * node = new Node();
+            float read_overlap = -1;
+            float read_identity = -1;
+
+            stringstream ss;
+            ss<<"#"<<count<<"#";
+            node->set_name(ss.str());
+
+            this->create_temp_node(node,ss.str(), current_root, &potential_orf,false);
+
+            Log_output::write_msg(" aligning read: '"+potential_orf.name+"'",0);
+
+            node->align_sequences_this_node(mf,true);
+            this->compute_read_overlap(node,potential_orf.name,ref_node_name,current_root->get_name(),&read_overlap,&read_identity);
+
+            Log_output::write_out("forward overlap/identity: "+Log_output::ftos(read_overlap)+"/"+Log_output::ftos(read_identity)+"\n",1);
+
+            if(read_overlap > min_overlap && read_identity > min_identity)
             {
-                cout<<"loop2\n";
+                count++;
+                current_root = node;
 
-                Node * node = new Node();
-                float read_overlap = -1;
-                float read_identity = -1;
+                if( orig_dist > current_root->get_distance_to_parent() )
+                    orig_dist -= current_root->get_distance_to_parent();
 
-                stringstream ss;
-                ss<<"#"<<count<<"#";
-                node->set_name(ss.str());
+                alignment_done = true;
+                alignments_done++;
 
-                this->create_temp_node(node,ss.str(), current_root, &reads_for_this.at(i),false);
-
-                Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
-
-                node->align_sequences_this_node(mf,true);
-                this->compute_read_overlap(node,reads_for_this.at(i).name,ref_node_name,current_root->get_name(),&read_overlap,&read_identity);
-
-                Log_output::write_out("forward overlap/identity: "+Log_output::ftos(read_overlap)+"/"+Log_output::ftos(read_identity)+"\n",1);
-
-                if(read_overlap > min_overlap && read_identity > min_identity)
+                map<string,int>::iterator it = nodes_number.find(potential_orf.name);
+                if(it!=nodes_number.end())
                 {
-                    count++;
-                    current_root = node;
-
-    //                cout<<"\nis read "<<current_root->get_right_child()->get_sequence()->is_read_sequence()<<"\n\n";
-                    if( orig_dist > current_root->get_distance_to_parent() )
-                        orig_dist -= current_root->get_distance_to_parent();
-
-                    alignment_done = true;
-                    alignments_done++;
-
-                    map<string,int>::iterator it = nodes_number.find(reads_for_this.at(i).name);
-                    if(it!=nodes_number.end())
-                    {
-                        stringstream n;
-                        n<<node->right_child->get_name()<<"."<<it->second;
-                        node->right_child->set_name(n.str());
-                        it->second = it->second+1;
-                    }
-                    else
-                    {
-                        nodes_number.insert(pair<string,int>(reads_for_this.at(i).name,1));
-                    }
-
+                    stringstream n;
+                    n<<node->right_child->get_name()<<"."<<it->second;
+                    node->right_child->set_name(n.str());
+                    it->second = it->second+1;
                 }
-
                 else
                 {
-                    node->has_left_child(false);
-                    delete node;
+                    nodes_number.insert(pair<string,int>(potential_orf.name,1));
                 }
+
+            }
+
+            else
+            {
+                node->has_left_child(false);
+                delete node;
             }
 
             current_root->set_distance_to_parent(orig_dist);
@@ -1326,9 +1314,10 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
                         root = current_root;
                     }
                 }
+
+                this->fix_branch_lengths(root,current_root);
             }
 
-            this->fix_branch_lengths(root,current_root);
 
             global_root = root;
 
