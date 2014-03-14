@@ -102,7 +102,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     else if( Settings_handle::st.is("pileup-alignment") || Settings_handle::st.is("align-reads-at-root") )
         {
             // translated DNA with ORF search
-            if(Settings_handle::st.is("find-best-orf") && has_dna_seqs)
+            if( ( Settings_handle::st.is("find-best-orf") || Settings_handle::st.is("find-orfs") ) && has_dna_seqs)
             {
                 Log_output::write_header("Aligning reads: pileup with ORF search",0);
                 this->translated_pileup_alignment(root,&reads,mf,count);
@@ -119,7 +119,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     else
     {
         // translated DNA with ORF search
-        if(Settings_handle::st.is("find-best-orf") && has_dna_seqs)
+        if( ( Settings_handle::st.is("find-best-orf") || Settings_handle::st.is("find-orfs") ) && has_dna_seqs)
         {
             Log_output::write_header("Aligning reads: placement with ORF search",0);
             if(Settings_handle::st.is("fragments"))
@@ -161,7 +161,8 @@ void Reads_aligner::pileup_alignment(Node *root, vector<Fasta_entry> *reads, Mod
     if(min_identity<0)
         min_identity = 0;
 
-    bool compare_reverse = Settings_handle::st.is("compare-reverse") && mf->get_sequence_data_type()==Model_factory::dna;
+    bool compare_reverse = ( Settings_handle::st.is("compare-reverse") || Settings_handle::st.is("both-strands") )
+                        && mf->get_sequence_data_type()==Model_factory::dna;
 
     for(int j=0; j < max_attempts; j++)
     {
@@ -223,6 +224,8 @@ void Reads_aligner::pileup_alignment(Node *root, vector<Fasta_entry> *reads, Mod
                 }
 
                 reads->at(i).cluster_attempts = max_attempts;
+
+                this->fix_branch_lengths(root,node);
             }
 
             else if( read_overlap_rc > min_overlap && read_identity_rc > min_identity )
@@ -234,6 +237,8 @@ void Reads_aligner::pileup_alignment(Node *root, vector<Fasta_entry> *reads, Mod
                 delete node;
 
                 reads->at(i).cluster_attempts = max_attempts;
+
+                this->fix_branch_lengths(root,node_rc);
             }
 
             else
@@ -366,7 +371,8 @@ void Reads_aligner::query_placement_all(Node *root, vector<Fasta_entry> *reads, 
         single_ref_sequence = true;
 
     global_root = root;
-    bool compare_reverse = Settings_handle::st.is("compare-reverse") && mf->get_sequence_data_type()==Model_factory::dna;
+    bool compare_reverse = ( Settings_handle::st.is("compare-reverse") || Settings_handle::st.is("both-strands") )
+                        && mf->get_sequence_data_type()==Model_factory::dna;
 
     if(Settings_handle::st.is("upwards-search"))
         this->do_upwards_search(root, reads, mf);
@@ -629,7 +635,8 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
         single_ref_sequence = true;
 
     global_root = root;
-    bool compare_reverse = Settings_handle::st.is("compare-reverse") && mf->get_sequence_data_type()==Model_factory::dna;
+    bool compare_reverse = ( Settings_handle::st.is("compare-reverse") || Settings_handle::st.is("both-strands") )
+                        && mf->get_sequence_data_type()==Model_factory::dna;
 
 
     float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
@@ -1343,11 +1350,15 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
     //
     multimap<string,string> tid_nodes;
     bool ignore_tid_tags = true;
-    bool compare_reverse = Settings_handle::st.is("compare-reverse") && mf->get_sequence_data_type()==Model_factory::dna;
+    bool compare_reverse = ( Settings_handle::st.is("compare-reverse") || Settings_handle::st.is("both-strands") )
+                        && mf->get_sequence_data_type()==Model_factory::dna;
 
     this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
 
-    if( !Settings_handle::st.is("test-every-internal-node") &&
+    if( !Settings_handle::st.is("all-nodes") &&
+        !Settings_handle::st.is("internal-nodes") &&
+        !Settings_handle::st.is("terminal-nodes") &&
+        !Settings_handle::st.is("test-every-internal-node") &&
         !Settings_handle::st.is("test-every-terminal-node") &&
         !Settings_handle::st.is("test-every-node") && ignore_tid_tags)
     {
@@ -1598,11 +1609,15 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
     //
     multimap<string,string> tid_nodes;
     bool ignore_tid_tags = true;
-    bool compare_reverse = Settings_handle::st.is("compare-reverse") && mf->get_sequence_data_type()==Model_factory::dna;
+    bool compare_reverse = ( Settings_handle::st.is("compare-reverse") || Settings_handle::st.is("both-strands") )
+                        && mf->get_sequence_data_type()==Model_factory::dna;
 
     this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
 
-    if( !Settings_handle::st.is("test-every-internal-node") &&
+    if( !Settings_handle::st.is("all-nodes") &&
+        !Settings_handle::st.is("internal-nodes") &&
+        !Settings_handle::st.is("terminal-nodes") &&
+        !Settings_handle::st.is("test-every-internal-node") &&
         !Settings_handle::st.is("test-every-terminal-node") &&
         !Settings_handle::st.is("test-every-node") && ignore_tid_tags)
     {

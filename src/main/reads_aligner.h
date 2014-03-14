@@ -202,15 +202,15 @@ class Reads_aligner
     void get_target_node_names(Node *root,multimap<string,string> *tid_nodes, bool *ignore_tid_tags)
     {
 
-        if(Settings_handle::st.is("test-every-internal-node"))
+        if(Settings_handle::st.is("test-every-internal-node") || Settings_handle::st.is("internal-nodes"))
         {
             root->get_internal_node_names(tid_nodes);
         }
-        else if(Settings_handle::st.is("test-every-terminal-node"))
+        else if(Settings_handle::st.is("test-every-terminal-node") || Settings_handle::st.is("terminal-nodes"))
         {
             root->get_terminal_node_names(tid_nodes);
         }
-        else if(Settings_handle::st.is("test-every-node"))
+        else if(Settings_handle::st.is("test-every-node") || Settings_handle::st.is("all-nodes"))
         {
             root->get_node_names(tid_nodes);
         }

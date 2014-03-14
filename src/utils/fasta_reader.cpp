@@ -237,8 +237,9 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
     }
 
     if(Settings_handle::st.is("translate")
-            || Settings_handle::st.is("mt-translate")
-                || Settings_handle::st.is("find-best-orf"))
+    || Settings_handle::st.is("mt-translate")
+    || Settings_handle::st.is("find-best-orf")
+    || Settings_handle::st.is("find-orfs") )
     {
         if(this->check_sequence_data_type(&seqs) == Model_factory::dna)
         {

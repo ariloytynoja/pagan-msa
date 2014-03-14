@@ -497,7 +497,8 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
             if(Settings_handle::st.is("events"))
             {
-                if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate") || Settings_handle::st.is("find-best-orf"))
+                if( Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate")
+                    || Settings_handle::st.is("find-best-orf") || Settings_handle::st.is("find-orfs") )
                     Log_output::write_out("Inferred evolutionary events: "+outfile+".events, "+outfile+".codon.events\n",0);
                 else
                     Log_output::write_out("Inferred evolutionary events: "+outfile+".events\n",0);
@@ -536,7 +537,8 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             xw.write(outfile, root, aligned_sequences, true);
         }
 
-        if(Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate") || Settings_handle::st.is("find-best-orf"))
+        if( Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate")
+            || Settings_handle::st.is("find-best-orf") || Settings_handle::st.is("find-orfs") )
         {
             string outfile =  "outfile";
             if(Settings_handle::st.is("outfile"))
@@ -630,7 +632,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             fr->write_anctree(outfile, root);
         }
 
-        if(Settings_handle::st.is("output-nhx-tree"))
+        if(Settings_handle::st.is("output-nhx-tree") || Settings_handle::st.is("guidetree"))
         {
             root->write_nhx_tree(outfile,"nhx_tree");
         }

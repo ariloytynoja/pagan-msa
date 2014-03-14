@@ -43,66 +43,69 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("treefile", po::value<string>(), "tree file")
     ;
 
-    boost::program_options::options_description generic("Generic options",100);
-    generic.add_options()
-        ("outfile", po::value<string>(), "alignment outfile")
-        ("outformat", po::value<string>(), "alignment format [fasta,nexus,paml,phylipi,phylips,raxml]")
-        ("xml","output XML alignment")
-        ("xml-nhx","output XML alignment with NHX tree")
-        ("events","output inferred evolutionary events")
-        ("output-nhx-tree", "output alignment tree (with NHX TID tags)")
-        ("output-ancestors", "include ancestors in outfile")
-        ("translate", "translate DNA input to protein")
-        ("mt-translate", "translate mtDNA input to protein")
-        ("raxml-tree","use RAxML for guide tree computation [default BppDist]")
-        ("no-terminal-edges", "assume terminal gaps as missing data")
-        ("silent","minimal output")
-        ("noise", po::value<int>(), "output noise level")
-        ("config-file",po::value<string>(),"config file with additional arguments")
-        ("config-log-file",po::value<string>(),"log file for given arguments")
-        ("log-output-file",po::value<string>(),"output to file instead of stdout")
-        ("temp-folder",po::value<string>(),"non-standard place for temp files")
-        ("threads",po::value<int>(),"number of threads")
-    ;
     boost::program_options::options_description help_update("Help and updates",100);
     help_update.add_options()
         ("help", "display all program options")
         ("version","show program version and check for updates")
     ;
 
-    boost::program_options::options_description reads_alignment("Basic alignment extension options",100);
+    boost::program_options::options_description generic("Generic options",100);
+    generic.add_options()
+        ("outfile", po::value<string>(), "alignment outfile")
+        ("outformat", po::value<string>(), "alignment format [fasta,nexus,paml,phylipi,phylips,raxml]")
+        ("xml","output XML alignment")
+        ("events","output inferred evolutionary events")
+        ("guidetree", "output alignment guidetree (with NHX tags)")
+        ("ancestors", "include ancestors in outfile")
+        ("translate", "translate DNA input to protein")
+        ("mt-translate", "translate mtDNA input to protein")
+        ("silent","minimal output")
+        ("config-file",po::value<string>(),"config file with additional arguments")
+        ("config-log-file",po::value<string>(),"log file for given arguments")
+        ("threads",po::value<int>(),"number of threads")
+    ;
+
+    boost::program_options::options_description generic2("More generic options",100);
+    generic2.add_options()
+        ("xml-nhx","output XML alignment with NHX tree")
+        ("raxml-tree","use RAxML for guide tree computation [default BppDist]")
+        ("no-terminal-edges", "assume terminal gaps as missing data")
+        ("noise", po::value<int>(), "output noise level")
+        ("log-output-file",po::value<string>(),"output to file instead of stdout")
+        ("temp-folder",po::value<string>(),"non-standard place for temp files")
+    ;
+
+    boost::program_options::options_description reads_alignment("Alignment extension options",100);
     reads_alignment.add_options()
         ("ref-seqfile", po::value<string>(), "reference alignment file (FASTA)")
         ("ref-treefile", po::value<string>(), "reference tree file (NH/NHX)")
         ("queryfile", po::value<string>(), "query file (FASTA/FASTQ)")
-        ("fragments", "place short queries together")
-        ("454", "correct homopolymer error (DNA)")
-        ("homopolymer", "correct homopolymer error (more agressively)")
-        ("use-consensus", "use consensus for query ancestors")
-        ("build-contigs", "build contigs of query clusters")
+        ("fragments", "short queries: place together")
+        ("both-strands","consider both strands, keep better (DNA)")
+        ("find-orfs", "find ORFs, keep good (DNA)")
+        ("score-as-dna", "score protein/ORFs as DNA (translated placement)")
         ("fast-placement","use Exonerate to quickly assign queries to nodes")
         ("very-fast-placement","shorthand for very fast heuristic settings")
-        ("test-every-node","test every node for each query")
-        ("test-every-internal-node","test every internal node for each query")
-        ("test-every-terminal-node","test every terminal node for each query")
-        ("upwards-search","stepwise search from root")
-        ("score-only-ungapped","score query placement only on ungapped sites")
-        ("score-ungapped-limit",po::value<float>()->default_value(0.1,"0.1"),"max. ungapped proportion")
+        ("all-nodes","place query to any node (default)")
+        ("internal-nodes","place query to an internal node")
+        ("terminal-nodes","place query to a terminal node")
+        ("one-placement-only", "place only once despite equally good hits")
+        ("454", "correct homopolymer error (DNA)")
     ;
 
     boost::program_options::options_description reads_alignment2("Additional alignment extension options",100);
     reads_alignment2.add_options()
-        ("pair-end","connect paired reads (FASTQ)")
+        ("homopolymer", "correct homopolymer error (more agressively)")
         ("pacbio","correct for missing data in PacBio reads (DNA)")
-        ("show-contig-ancestor", "fill contig gaps with ancestral sequence")
-        ("consensus-minimum", po::value<int>()->default_value(5), "threshold for inclusion in contig")
-        ("consensus-minimum-proportion", po::value<float>()->default_value(0.5,"0.5"), "threshold for inclusion in contig")
-        ("one-placement-only", "place only once despite equally good hits")
+        ("pair-end","connect paired reads (FASTQ)")
         ("query-distance", po::value<float>()->default_value(0.1,"0.1"), "evolutionary distance from pseudo-root")
         ("min-query-overlap", po::value<float>()->default_value(0.5,"0.5"), "overlap threshold for query and reference")
         ("overlap-with-reference","require overlap with reference")
         ("min-query-identity", po::value<float>()->default_value(0.5,"0.5"), "identity threshold for aligned sites")
         ("pair-read-gap-extension", po::value<float>(), "paired read spacer extension probability (DNA)")
+        ("upwards-search","stepwise search from root")
+        ("score-only-ungapped","score query placement only on ungapped sites")
+        ("score-ungapped-limit",po::value<float>()->default_value(0.1,"0.1"),"max. ungapped proportion")
     ;
 
     boost::program_options::options_description reads_alignment3("Alignment extension output options",100);
@@ -113,13 +116,17 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("prune-all","remove all reference sequences")
         ("trim-extended-alignment","remove terminal reference sequences")
         ("trim-keep-sites",po::value<int>()->default_value(15),"trim distance around queries")
+        ("use-consensus", "use consensus for query ancestors")
+        ("build-contigs", "build contigs of query clusters")
+        ("pair-end","connect paired reads (FASTQ)")
+        ("show-contig-ancestor", "fill contig gaps with ancestral sequence")
+        ("consensus-minimum", po::value<int>()->default_value(5), "threshold for inclusion in contig")
+        ("consensus-minimum-proportion", po::value<float>()->default_value(0.5,"0.5"), "threshold for inclusion in contig")
     ;
 
     boost::program_options::options_description pileup("Pileup alignment options",100);
     pileup.add_options()
         ("pileup-alignment","make pileup alignment")
-        ("compare-reverse","test also reverse-complement and keep better (DNA)")
-        ("find-best-orf", "translate and use best ORF (DNA)")
         ("min-orf-length", po::value<int>()->default_value(100),"minimum ORF length to be considered (DNA)")
         ("min-orf-coverage", po::value<float>(),"minimum ORF coverage to be considered (DNA)")
         ("query-cluster-attempts", po::value<int>()->default_value(1),"attempts to find overlap")
@@ -130,8 +137,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     ;
 
 
-    boost::program_options::options_description reads_alignment4("Quality options (FASTQ)",100);
-    reads_alignment4.add_options()
+    boost::program_options::options_description reads_quality("Quality options (FASTQ)",100);
+    reads_quality.add_options()
         ("no-fastq", "do not use Q-scores")
         ("qscore-minimum", po::value<int>()->default_value(10), "threshold to mask low Q-score sites")
         ("perfect-reference", "assume perfect reference alignment")
@@ -143,7 +150,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("exonerate-hit-length", po::value<int>()->default_value(30), "Exonerate hit length for anchor (default)")
         ("exonerate-hit-score", po::value<int>(), "Exonerate hit score for anchor")
         ("anchors-offset", po::value<int>()->default_value(15), "anchors offset for alignment")
-        ("anchoring-threshold",po::value<float>()->default_value(0.5,"0.50"),"anchoring coverage threshold for skipping")
+        ("anchoring-threshold",po::value<float>()->default_value(0.5,"0.5"),"anchoring coverage threshold for skipping")
         ("use-prefix-anchors","use prefix approach to anchor alignment")
         ("prefix-hit-length", po::value<int>()->default_value(30), "prefix hit length for anchor")
         ("keep-temp-files","keep temporary files (mainly for debugging)")
@@ -219,6 +226,14 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description debug("Debugging and testing options",100);
     debug.add_options()
+        ("output-nhx-tree", "output alignment tree (with NHX TID tags)")
+        ("output-ancestors", "include ancestors in outfile")
+        ("test-every-node","test every node for each query")
+        ("test-every-internal-node","test every internal node for each query")
+        ("test-every-terminal-node","test every terminal node for each query")
+        ("compare-reverse","test also reverse-complement and keep better (DNA)")
+        ("find-best-orf", "translate and use best ORF (DNA)")
+
         ("full-probability", "compute full probability")
         ("output-graph","output ancestral graph")
         ("sample-path", "sample the alignment path from posterior probabilities")
@@ -238,17 +253,20 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     boost::program_options::options_description broken("Broken options",100);
     broken.add_options()
         ("sample-additional-paths", po::value<int>()->default_value(0), "sample additional paths from posterior probabilities")
-        ("readsfile", po::value<string>(), "reads file (FASTA/FASTQ)")
-        ("reads-pileup","make pileup alignment")
     ;
 
     po::positional_options_description pd;
     pd.add("config-file", 1);
 
-    full_desc.add(minimal).add(generic).add(anchoring).add(reads_alignment).add(reads_alignment2).add(reads_alignment4).add(exonerate).add(pileup).add(obscure).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(debug).add(broken).add(help_update);
-    desc.add(minimal).add(generic).add(anchoring).add(reads_alignment).add(reads_alignment2).add(reads_alignment4).add(exonerate).add(pileup).add(model).add(tree_edit).add(alignment).add(help_update);
-    max_desc.add(minimal).add(generic).add(anchoring).add(reads_alignment).add(reads_alignment2).add(reads_alignment4).add(exonerate).add(pileup).add(obscure).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(help_update);
-    min_desc.add(minimal).add(reads_alignment).add(help_update);
+    full_desc.add(minimal).add(help_update).add(generic).add(generic2).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(pileup).add(reads_quality)
+            .add(anchoring).add(exonerate).add(obscure).add(graph).add(model).add(tree_edit).add(alignment).add(output).add(debug).add(broken);
+
+    max_desc.add(minimal).add(generic).add(generic2).add(reads_alignment).add(reads_alignment2).add(reads_alignment3).add(pileup).add(reads_quality)
+            .add(anchoring).add(exonerate).add(obscure).add(model).add(graph).add(tree_edit).add(alignment).add(output).add(help_update);
+
+    desc.add(minimal).add(generic).add(reads_alignment).add(reads_alignment2).add(reads_quality).add(anchoring).add(exonerate).add(pileup).add(model).add(tree_edit).add(alignment).add(help_update);
+
+    min_desc.add(minimal).add(generic).add(reads_alignment).add(help_update);
 
 
 //    po::store(po::parse_command_line(argc, argv, full_desc), vm);
@@ -277,22 +295,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         po::store(po::parse_config_file(cfg, full_desc), vm);
     }
 
-    if(is("readsfile"))
-    {
-        Settings::info_noexit();
-        stringstream ss;
-        ss<<"\nThe program option '--readsfile' has been renamed as '--queryfile'. Please edit your command argument. Exiting.\n\n";
-        Log_output::write_out(ss.str(),0);
-        exit(1);
-    }
-    if(is("reads-pileup"))
-    {
-        Settings::info_noexit();
-        stringstream ss;
-        ss<<"\nThe program option '--reads-pileup' has been renamed as '--pileup-alignment'. Please edit your command argument. Exiting.\n\n";
-        Log_output::write_out(ss.str(),0);
-        exit(1);
-    }
 
     po::notify(vm);
 
@@ -342,9 +344,10 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         }
     }
 
-    if( (is("very-fast-placement") || is("fast-placement")) && !(is("test-every-node") || is("test-every-internal-node") || is("test-every-terminal-node") ) )
+    if( (is("very-fast-placement") || is("fast-placement")) &&
+            !( is("test-every-node") || is("test-every-internal-node") || is("test-every-terminal-node") || is("all-nodes") || is("internal-nodes") || is("terminal-nodes") ) )
     {
-        Log_output::write_out("\nWarning: When using option '--(very-)fast-placement', either option '--test-every-[internal-|terminal-]node'\nor a reference tree with TID tags should be used. "
+        Log_output::write_out("\nWarning: When using option '--(very-)fast-placement', either option '--[all|internal|terminal]-nodes'\nor a reference tree with TID tags should be used. "
                               "If the latter is true, this warning can be ignored.\n",0);
     }
 
