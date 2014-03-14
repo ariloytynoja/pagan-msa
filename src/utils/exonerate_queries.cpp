@@ -227,7 +227,10 @@ void Exonerate_queries::write_exonerate_input(Node *root, vector<Fasta_entry> *r
     vector<Fasta_entry>::iterator it = reads->begin();
     for(;it!=reads->end();it++)
     {
-        q_output<<">"<<it->name<<endl<<it->sequence<<endl;
+        if(Settings_handle::st.is("score-as-dna") && it->dna_sequence.length()>0)
+            q_output<<">"<<it->name<<endl<<it->dna_sequence<<endl;
+        else
+            q_output<<">"<<it->name<<endl<<it->sequence<<endl;
     }
     q_output.close();
 
@@ -238,6 +241,9 @@ void Exonerate_queries::write_exonerate_input(Node *root, vector<Fasta_entry> *r
         if(names->find(it->name) != names->end())
         {
             string seq = it->sequence;
+            if(Settings_handle::st.is("score-as-dna") && it->dna_sequence.length()>0)
+                seq = it->dna_sequence;
+
             for (string::iterator si = seq.begin();si != seq.end();)
                 if(*si == '-')
                     seq.erase(si);
@@ -253,8 +259,6 @@ void Exonerate_queries::write_exonerate_input(Node *root, vector<Fasta_entry> *r
 
 void Exonerate_queries::write_exonerate_input(Node *root, Fasta_entry *read, map<string,string> *names, int *r)
 {
-    vector<Fasta_entry> aligned_sequences;
-    root->get_alignment(&aligned_sequences,true);
 
     // create exonerate input
     //
@@ -285,22 +289,54 @@ void Exonerate_queries::write_exonerate_input(Node *root, Fasta_entry *read, map
         *r = rand();
     }
 
-    q_output<<">"<<read->name<<endl<<read->sequence<<endl;
+    if(Settings_handle::st.is("score-as-dna") && read->dna_sequence.length()>0)
+        q_output<<">"<<read->name<<endl<<read->dna_sequence<<endl;
+    else
+        q_output<<">"<<read->name<<endl<<read->sequence<<endl;
     q_output.close();
 
 
-    vector<Fasta_entry>::iterator it = aligned_sequences.begin();
-    for(;it!=aligned_sequences.end();it++)
+    if(Settings_handle::st.is("score-as-dna"))
     {
-        if(names->find(it->name) != names->end())
+        map<string,string*> dna_seqs;
+        root->get_dna_sequences(&dna_seqs);
+
+        map<string,string*>::iterator it = dna_seqs.begin();
+        for(;it!=dna_seqs.end();it++)
         {
-            string seq = it->sequence;
-            for (string::iterator si = seq.begin();si != seq.end();)
-                if(*si == '-')
-                    seq.erase(si);
-                else
-                    si++;
-            t_output<<">"<<it->name<<endl<<seq<<endl;
+            if(names->find(it->first) != names->end())
+            {
+                string seq = *(it->second);
+
+                for (string::iterator si = seq.begin();si != seq.end();)
+                    if(*si == '-')
+                        seq.erase(si);
+                    else
+                        si++;
+                t_output<<">"<<it->first<<endl<<seq<<endl;
+            }
+        }
+
+    }
+    else
+    {
+        vector<Fasta_entry> aligned_sequences;
+        root->get_alignment(&aligned_sequences,true);
+
+        vector<Fasta_entry>::iterator it = aligned_sequences.begin();
+        for(;it!=aligned_sequences.end();it++)
+        {
+            if(names->find(it->name) != names->end())
+            {
+                string seq = it->sequence;
+
+                for (string::iterator si = seq.begin();si != seq.end();)
+                    if(*si == '-')
+                        seq.erase(si);
+                    else
+                        si++;
+                t_output<<">"<<it->name<<endl<<seq<<endl;
+            }
         }
     }
     t_output.close();

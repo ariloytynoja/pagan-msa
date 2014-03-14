@@ -675,6 +675,7 @@ class Sequence
     bool has_read_descendants;
     bool terminal_sequence;
     string gapped_seq;
+    string dna_seq;
 
     int num_duplicates;
 public:
@@ -808,6 +809,7 @@ public:
     string print_path(){ return this->print_path(this->get_sites()); }
 
     string *get_gapped_sequence() { return &gapped_seq; }
+    string *get_dna_sequence() { return &dna_seq; }
 
 
     void create_default_sequence(Fasta_entry &seq_entry);

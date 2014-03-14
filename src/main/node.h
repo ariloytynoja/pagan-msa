@@ -1181,6 +1181,19 @@ public:
     void get_alignment_for_nodes(vector<Fasta_entry> *aligned_sequences,bool include_internal_nodes);
     void add_root_consensus(vector<Fasta_entry> *aligned_sequences);
 
+    void get_dna_sequences(map<string,string*> *dna_sequences)
+    {
+        if(leaf)
+        {
+            dna_sequences->insert(make_pair( this->get_name(),this->get_sequence()->get_dna_sequence() ) );
+        }
+        else
+        {
+            this->get_left_child()->get_dna_sequences(dna_sequences);
+            this->get_right_child()->get_dna_sequences(dna_sequences);
+        }
+    }
+
     void get_alignment_column_at(int j,vector<string> *column, bool include_internal_nodes);
 
     void get_multiple_alignment_columns_before(int j,vector< vector<string> > *columns, string node_name_wanted,

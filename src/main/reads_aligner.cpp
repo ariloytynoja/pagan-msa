@@ -2225,6 +2225,8 @@ bool Reads_aligner::correct_sites_index(Node *current_root, string ref_node_name
     int is_left_child = true;
     for(;mit != nodes_map->end();mit++)
     {
+        if(!mit->second->is_leaf())
+            cout<<mit->second->get_name()<<" "<<mit->second->get_left_child()->get_name()<<" "<<ref_node_name<<endl;
         if(!mit->second->is_leaf() && mit->second->get_left_child()->get_name() == ref_node_name)
         {
             current_parent = mit->second;
@@ -2232,6 +2234,8 @@ bool Reads_aligner::correct_sites_index(Node *current_root, string ref_node_name
             parent_found = true;
         }
 
+        if(!mit->second->is_leaf())
+            cout<<mit->second->get_name()<<" "<<mit->second->get_right_child()->get_name()<<" "<<ref_node_name<<endl;
         if(!mit->second->is_leaf() && mit->second->get_right_child()->get_name() == ref_node_name)
         {
             current_parent = mit->second;

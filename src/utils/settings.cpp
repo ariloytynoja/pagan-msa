@@ -319,7 +319,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     if(is("very-fast-placement"))
     {
         exonerate_local_keep_best = 1;
-//        exonerate_gapped_keep_best = 1;
 
         if( is("use-exonerate-local") || /*is("exonerate-local-keep-best") ||*/ is("exonerate-local-keep-above") ||
             is("use-exonerate-gapped") || /*is("exonerate-gapped-keep-best") ||*/ is("exonerate-gapped-keep-above") ||
