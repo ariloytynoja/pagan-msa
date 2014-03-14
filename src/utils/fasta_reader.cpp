@@ -1413,7 +1413,7 @@ string Fasta_reader::protein_to_DNA(string *dna,string *prot) const
             out += "---";
         else
         {
-            if(pos+3<=dna->length())
+            if(pos+3<=(int)dna->length())
                 out += dna->substr(pos,3);
             else
                 out += "NNN";

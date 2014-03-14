@@ -54,8 +54,8 @@ Sequence::Sequence(Fasta_entry &seq_entry,const int data_t,bool gapped, bool no_
         gapped_seq = "";
     }
 
-    if(seq_entry.dna_sequence.length()>0 && Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate") ||
-            Settings_handle::st.is("find-best.orf") || Settings_handle::st.is("find-orfs"))
+    if(seq_entry.dna_sequence.length()>0 && ( Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate") ||
+            Settings_handle::st.is("find-best.orf") || Settings_handle::st.is("find-orfs") ) )
         dna_seq = seq_entry.dna_sequence;
 
     if(turn_revcomp)

@@ -603,6 +603,8 @@ void Reads_aligner::query_placement_all(Node *root, vector<Fasta_entry> *reads, 
                 }
 
                 this->fix_branch_lengths(root,current_root);
+
+                ref_node_name = current_root->get_name();
             }
 
         }
@@ -1068,6 +1070,7 @@ void Reads_aligner::translated_query_placement_all(Node *root, vector<Fasta_entr
 
 
         string ref_node_name = *sit;
+//        cout<<"REF "<<ref_node_name<<endl;
 
         Node *current_root = nodes_map.find(ref_node_name)->second;
         double orig_dist = current_root->get_distance_to_parent();
@@ -1149,7 +1152,11 @@ void Reads_aligner::translated_query_placement_all(Node *root, vector<Fasta_entr
                 }
 
                 this->fix_branch_lengths(root,current_root);
+
+                ref_node_name = current_root->get_name();
             }
+
+            global_root = root;
 
         }
 
@@ -1240,7 +1247,7 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
         while(nodestream >> ref_node_name)
         {
 
-//            cout<<"ref "<<ref_node_name<<endl;
+//            cout<<"REF "<<ref_node_name<<endl;
 
             map<string,Node*> nodes_map;
             root->get_all_nodes(&nodes_map);
@@ -2225,8 +2232,8 @@ bool Reads_aligner::correct_sites_index(Node *current_root, string ref_node_name
     int is_left_child = true;
     for(;mit != nodes_map->end();mit++)
     {
-        if(!mit->second->is_leaf())
-            cout<<mit->second->get_name()<<" "<<mit->second->get_left_child()->get_name()<<" "<<ref_node_name<<endl;
+//        if(!mit->second->is_leaf())
+//            cout<<mit->second->get_name()<<" "<<mit->second->get_left_child()->get_name()<<" "<<ref_node_name<<endl;
         if(!mit->second->is_leaf() && mit->second->get_left_child()->get_name() == ref_node_name)
         {
             current_parent = mit->second;
@@ -2234,8 +2241,8 @@ bool Reads_aligner::correct_sites_index(Node *current_root, string ref_node_name
             parent_found = true;
         }
 
-        if(!mit->second->is_leaf())
-            cout<<mit->second->get_name()<<" "<<mit->second->get_right_child()->get_name()<<" "<<ref_node_name<<endl;
+//        if(!mit->second->is_leaf())
+//            cout<<mit->second->get_name()<<" "<<mit->second->get_right_child()->get_name()<<" "<<ref_node_name<<endl;
         if(!mit->second->is_leaf() && mit->second->get_right_child()->get_name() == ref_node_name)
         {
             current_parent = mit->second;
