@@ -1213,7 +1213,7 @@ public:
             if(rv != 0)
                 return rv;
         }
-
+        return 0;
     }
 
     void get_alignment_column_at(int j,vector<string> *column, bool include_internal_nodes);
