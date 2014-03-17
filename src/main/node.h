@@ -1194,6 +1194,28 @@ public:
         }
     }
 
+    string *get_dna_sequence_for_node(string node_name)
+    {
+        if(is_leaf() && this->get_name() == node_name)
+        {
+            return this->get_sequence()->get_dna_sequence();
+        }
+        else if(is_leaf())
+        {
+            return 0;
+        }
+        else
+        {
+            string *rv = this->get_left_child()->get_dna_sequence_for_node(node_name);
+            if(rv != 0)
+                return rv;
+            rv = this->get_right_child()->get_dna_sequence_for_node(node_name);
+            if(rv != 0)
+                return rv;
+        }
+
+    }
+
     void get_alignment_column_at(int j,vector<string> *column, bool include_internal_nodes);
 
     void get_multiple_alignment_columns_before(int j,vector< vector<string> > *columns, string node_name_wanted,

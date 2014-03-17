@@ -192,10 +192,10 @@ class Reads_aligner
     {
         if(node->node_has_sequence_object)
         {
-            if(Settings_handle::st.is("overlap-with-reference"))
-                this->read_alignment_scores(node, read_name,ref_root_name,read_overlap,read_identity);
-            else
+            if(Settings_handle::st.is("overlap-with-any"))
                 this->read_alignment_scores(node, read_name,global_root_name,read_overlap,read_identity);
+            else
+                this->read_alignment_scores(node, read_name,ref_root_name,read_overlap,read_identity);
         }
     }
 

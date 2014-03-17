@@ -100,7 +100,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("pair-end","connect paired reads (FASTQ)")
         ("query-distance", po::value<float>()->default_value(0.1,"0.1"), "evolutionary distance from pseudo-root")
         ("min-query-overlap", po::value<float>()->default_value(0.5,"0.5"), "overlap threshold for query and reference")
-        ("overlap-with-reference","require overlap with reference")
+        ("overlap-with-any","accept query overlap with any sequence")
         ("min-query-identity", po::value<float>()->default_value(0.5,"0.5"), "identity threshold for aligned sites")
         ("pair-read-gap-extension", po::value<float>(), "paired read spacer extension probability (DNA)")
         ("upwards-search","stepwise search from root")
@@ -319,6 +319,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     if(is("very-fast-placement"))
     {
         exonerate_local_keep_best = 1;
+        exonerate_gapped_keep_best = 0;
 
         if( is("use-exonerate-local") || /*is("exonerate-local-keep-best") ||*/ is("exonerate-local-keep-above") ||
             is("use-exonerate-gapped") || /*is("exonerate-gapped-keep-best") ||*/ is("exonerate-gapped-keep-above") ||

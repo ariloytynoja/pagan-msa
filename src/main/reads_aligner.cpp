@@ -2067,48 +2067,127 @@ void Reads_aligner::read_alignment_scores(Node * node, string read_name, string 
     int read_length = 0;
     int matched = 0;
 
-    if(Settings_handle::st.is("overlap-with-reference"))
+    string ref_dna_string = "";
+    string read_dna_string = "";
+    bool as_dna = false;
+    int ref_pos = 0;
+    int read_pos = 0;
+    int step = 1;
+
+    if(Settings_handle::st.is("score-as-dna"))
     {
-        for( int j=0; j < node_sequence->sites_length(); j++ )
+        ref_dna_string = *(node->get_dna_sequence_for_node(ref_node_name));
+        read_dna_string = *(node->get_dna_sequence_for_node(read_name));
+
+        Text_utils tu;
+        tu.replace_all(ref_dna_string,"-","");
+//       cout<<endl<<ref_node_name<<" "<<ref_dna_string<<endl<<read_name<<" "<<read_dna_string<<endl;
+
+        if((int)ref_dna_string.length()>0 && (int)read_dna_string.length()>0)
+        {
+            as_dna = true;
+            step = 3;
+        }
+    }
+
+    if(Settings_handle::st.is("overlap-with-any"))
+    {
+        for( int j=1; j < node_sequence->sites_length(); j++ )
         {
             bool read_has_site = node->has_site_at_alignment_column(j,read_name);
+            bool any_other_has_site = node->any_other_has_site_at_alignment_column(j,read_name);
             bool ref_root_has_site = node->has_site_at_alignment_column(j,ref_node_name);
 
-            if(read_has_site)
-                read_length++;
-
-            if(read_has_site && ref_root_has_site)
+            if(read_has_site && any_other_has_site)
             {
-                aligned++;
 
                 int state_read = node->get_state_at_alignment_column(j,read_name);
                 int state_ref  = node->get_state_at_alignment_column(j,ref_node_name);
-                if(state_read == state_ref)
-                    matched++;
+
+                if(state_read>=0 && state_read == state_ref)
+                {
+                    if(as_dna)
+                    {
+                        if(ref_pos+3 <= (int)ref_dna_string.length() && read_pos+3 <= (int)read_dna_string.length())
+                        {
+                            if(ref_dna_string.at(ref_pos) == read_dna_string.at(read_pos))
+                                matched++;
+                            if(ref_dna_string.at(ref_pos+1) == read_dna_string.at(read_pos+1))
+                                matched++;
+                            if(ref_dna_string.at(ref_pos+2) == read_dna_string.at(read_pos+2))
+                                matched++;
+
+                            aligned += step;
+                        }
+                    }
+                    else
+                    {
+                        matched++;
+                        aligned++;
+                    }
+                }
             }
+
+            if(read_has_site)
+            {
+                read_length += step;
+                if(as_dna)
+                    read_pos += step;
+            }
+
+            if(ref_root_has_site && as_dna)
+                    ref_pos += step;
+
         }
     }
     else
     {
-        for( int j=0; j < node_sequence->sites_length(); j++ )
+        for( int j=1; j < node_sequence->sites_length(); j++ )
         {
             bool read_has_site = node->has_site_at_alignment_column(j,read_name);
-            bool any_other_has_site = node->any_other_has_site_at_alignment_column(j,read_name);
+            bool ref_root_has_site = node->has_site_at_alignment_column(j,ref_node_name);
 
-            if(read_has_site)
-                read_length++;
 
-            if(read_has_site && any_other_has_site)
+            if(read_has_site && ref_root_has_site)
             {
-                aligned++;
-
                 int state_read = node->get_state_at_alignment_column(j,read_name);
                 int state_ref  = node->get_state_at_alignment_column(j,ref_node_name);
-                if(state_read == state_ref)
-                    matched++;
+
+                if(state_read>=0 && state_read == state_ref)
+                {
+                    if(as_dna)
+                    {
+                        if(ref_pos+3 <= (int)ref_dna_string.length() && read_pos+3 <= (int)read_dna_string.length())
+                        {
+                            if(ref_dna_string.at(ref_pos) == read_dna_string.at(read_pos))
+                                matched++;
+                            if(ref_dna_string.at(ref_pos+1) == read_dna_string.at(read_pos+1))
+                                matched++;
+                            if(ref_dna_string.at(ref_pos+2) == read_dna_string.at(read_pos+2))
+                                matched++;
+
+                            aligned += step;
+                        }
+                    }
+                    else
+                    {
+                        matched++;
+                        aligned++;
+                    }
+                }
             }
+
+            if(read_has_site)
+            {
+                read_length += step;
+                if(as_dna)
+                    read_pos += step;
+            }
+
+            if(ref_root_has_site && as_dna)
+                    ref_pos += step;
         }
-     }
+    }
 
     stringstream ss;
     ss<<"aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"]"<<endl;
