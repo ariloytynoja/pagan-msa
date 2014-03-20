@@ -1520,8 +1520,8 @@ bool Fasta_reader::check_sequence_names(const vector<Fasta_entry> *sequences,con
 //    if((int)sequences->size() > overlap && overlap == (int)leaf_nodes->size())
     if((int)sequences->size() > overlap )
     {
-        Log_output::write_out("\nWarning: "+Log_output::itos(leaf_nodes->size())+" leaf nodes but "+
-                              Log_output::itos(sequences->size())+" sequences! Excess sequences will be removed.\n\n",0);
+        Log_output::write_out("\nWarning: "+Log_output::itos(leaf_nodes->size())+" leaf nodes and "+
+                              Log_output::itos(sequences->size())+" sequences! Sequences not matching will be removed.\n\n",0);
 //        return true;
     }
     if(overlap < (int)leaf_nodes->size())

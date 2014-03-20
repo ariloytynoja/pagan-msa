@@ -233,6 +233,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("test-every-terminal-node","test every terminal node for each query")
         ("compare-reverse","test also reverse-complement and keep better (DNA)")
         ("find-best-orf", "translate and use best ORF (DNA)")
+        ("preselect-targets","preselect targets with Exonerate")
+        ("no-bppancestors","no BppAncestors")
 
         ("full-probability", "compute full probability")
         ("output-graph","output ancestral graph")
@@ -315,6 +317,16 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     if(is("use-exonerate-gapped") && get("exonerate-gapped-keep-best").as<int>() > 0 )
         exonerate_gapped_keep_best = get("exonerate-gapped-keep-best").as<int>();
+
+    if(is("preselect-targets"))
+    {
+        exonerate_local_keep_best = 10;
+        exonerate_gapped_keep_best = 0;
+
+        if(is("exonerate-local-keep-best") && get("exonerate-local-keep-best").as<int>() > 0 )
+            exonerate_local_keep_best = get("exonerate-local-keep-best").as<int>();
+    }
+
 
     if(is("very-fast-placement"))
     {

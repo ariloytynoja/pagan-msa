@@ -72,6 +72,54 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     this->pair_and_sort( &reads );
 
 
+    if(Settings_handle::st.is("preselect-targets"))
+    {
+        Log_output::write_header("Preselecting target sequences with Exonerate",0);
+
+        multimap<string,string> all_tid_nodes;
+        bool ignore_tid_tags = true;
+
+        this->get_target_node_names(root,&all_tid_nodes,&ignore_tid_tags);
+
+        //
+        // Call Exonerate to reduce the search space
+        //
+        map<string, multimap<string,hit> > exonerate_hits;
+
+        Exonerate_queries er;
+        if(!er.test_executable())
+        {
+            Log_output::write_out("The executable for Exonerate not found! The fast placement search not used!",0);
+        }
+
+        else if(all_tid_nodes.size()>0)
+            er.all_local_alignments(root,&reads,&all_tid_nodes,&exonerate_hits, true, ignore_tid_tags);
+
+        set<string> keep_nodes;
+        map<string, multimap<string,hit> >::iterator it = exonerate_hits.begin();
+        for(;it != exonerate_hits.end();it++)
+        {
+            Log_output::write_out("Preselect_targets: "+it->first+" has "+Log_output::itos(it->second.size())+" hits\n",2);
+
+            multimap<string,hit>::iterator it2 = it->second.begin();
+
+            for( ;it2 != it->second.end(); it2++ )
+            {
+                Log_output::write_out("  "+it->first+" matches "+it2->first+" with score "+Log_output::itos(it2->second.score)+"\n",2);
+                keep_nodes.insert(it2->first);
+            }
+
+        }
+        Log_output::write_out("Preselect_targets: keeping "+Text_utils::to_string(keep_nodes.size())+" targets\n",1);
+        set<string>::iterator it2 = keep_nodes.begin();
+        for(;it2 != keep_nodes.end();it2++)
+        {
+            Log_output::write_out(" keep "+*it2+"\n",1);
+        }
+
+    }
+
+
 
     //////////////////////////////////////////////////////////////////
     //                                                              //
@@ -1629,7 +1677,6 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
         !Settings_handle::st.is("test-every-node") && ignore_tid_tags)
     {
         Log_output::write_warning("No tagged nodes found. Considering all nodes!",0);
-
     }
 
     // Handle one read at time

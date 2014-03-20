@@ -488,9 +488,12 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
 
 
+
         BppAncestors bppa;
-        bool bppa_found = bppa.test_executable();
-        if(bppa_found)
+        bool infer_bppa_ancestors = ( bppa.test_executable() && not Settings_handle::st.is("no-bppancestors") &&
+                                      ( Settings_handle::st.is("events") || Settings_handle::st.is("output-ancestors") || Settings_handle::st.is("xml")) );
+
+        if(infer_bppa_ancestors)
         {
             bppa.infer_ancestors(root,&aligned_sequences);
             bppa.count_events(root,&aligned_sequences,outfile);
@@ -504,9 +507,9 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
                     Log_output::write_out("Inferred evolutionary events: "+outfile+".events\n",0);
             }
         }
-        else
+        else if(Settings_handle::st.is("events") || Settings_handle::st.is("output-ancestors") || Settings_handle::st.is("xml"))
         {
-            Log_output::write_out("\nWarning: BppAncestors not found. Performing approximate ancestor reconstruction.\n\n",0);
+            Log_output::write_out("\nWarning: BppAncestors not used. Performing approximate ancestor reconstruction.\n\n",0);
         }
 
 
@@ -550,24 +553,45 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             else
                 Log_output::write_out("Back-translated alignment file: "+outfile+fr->get_format_suffix(format)+"\n",0);
 
-
             map<string,string> dna_seqs;
 
             fr->get_DNA_seqs(root, sequences, &dna_seqs);
 
             vector<Fasta_entry> dna_sequences;
-            fr->backtranslate_dna(aligned_sequences,&dna_seqs,dna_sequences,bppa_found);
+            if(infer_bppa_ancestors && (Settings_handle::st.is("events") || Settings_handle::st.is("output-ancestors") || Settings_handle::st.is("xml") ) )
+            {
+                fr->backtranslate_dna(aligned_sequences,&dna_seqs,dna_sequences,infer_bppa_ancestors);
+            }
+            else
+            {
+                vector<Fasta_entry> leaf_sequences;
+                set<string> names;
+                root->get_leaf_node_names(&names);
+                vector<Fasta_entry>::iterator si = aligned_sequences.begin();
+                for(;si!=aligned_sequences.end();si++)
+                {
+                    if(names.find(si->name) != names.end())
+                    {
+                        leaf_sequences.push_back(*si);
+                    }
+                }
+                fr->backtranslate_dna(leaf_sequences,&dna_seqs,dna_sequences,infer_bppa_ancestors);
+            }
 
-            if(bppa_found)
+            if(infer_bppa_ancestors)
             {
                 bppa.infer_ancestors(root,&dna_sequences,true);
                 bppa.count_events(root,&dna_sequences,outfile,true);
             }
 
-            if(Settings_handle::st.is("output-ancestors") && bppa_found)
+            if(Settings_handle::st.is("output-ancestors") && infer_bppa_ancestors)
             {
                 if( aligned_sequences.size() == dna_sequences.size() )
                     fr->write(outfile, dna_sequences, format, true);
+            }
+            else if(Settings_handle::st.is("output-ancestors") )
+            {
+                Log_output::write_out("\nWarning: BppAncestors not used. Codon ancestors not reconstructed.\n\n",0);
             }
             else
             {
