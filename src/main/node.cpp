@@ -81,6 +81,12 @@ void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence)
 
     float threshold = Settings::tunneling_coverage;
 
+//    left_child->print_alignment();
+//    cout<<endl;
+
+//    right_child->print_alignment();
+//    cout<<endl;
+
     if(tunnel_coverage <= threshold)
     {
         va.align(left_child->get_sequence(),right_child->get_sequence(),&model,

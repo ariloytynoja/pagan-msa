@@ -173,6 +173,7 @@ protected:
 //        cout<<"\n"<<l_pos<<" "<<ndl<<"; "<<r_pos<<" "<<ndr<<" "<<left->is_read_sequence()<<" "<<right->is_read_sequence()<<endl;
         if(!is_dna)
         {
+/*
             // old->
             if(l_pos>=0)
             {
@@ -240,6 +241,8 @@ protected:
             }
             site->set_state(max_i);
 
+            return;
+*/
             return;
         }
 

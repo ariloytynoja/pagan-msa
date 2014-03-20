@@ -395,6 +395,12 @@ void Input_output_parser::match_sequences_and_tree(Fasta_reader *fr, std::vector
 
     *data_type = fr->check_sequence_data_type(sequences);
 
+    if(*data_type == Model_factory::protein && Settings_handle::st.is("use-consensus"))
+    {
+        Log_output::write_out("Option '--use-consensus' not supported for proteins. Exiting.\n\n",0);
+        exit(0);
+    }
+
     if(!fr->check_alphabet(sequences,*data_type))
         Log_output::write_out(" Warning: Illegal characters in input sequences removed!\n",2);
 

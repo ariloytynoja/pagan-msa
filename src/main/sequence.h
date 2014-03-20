@@ -242,7 +242,7 @@ struct Site
     float branch_distance_since_last_used;
 
     int sumA, sumC, sumG, sumT, sumAmino;
-    int sumAA[20];
+//    int sumAA[20];
 public:
     Site(vector<Edge> *e,int type=Site::real_site,int p_state=Site::terminal):index(-1),character_state(-1),character_symbol("0"),
             site_type(type),path_state(p_state),edges(e),first_fwd_edge_index(-1),current_fwd_edge_index(-1),
@@ -288,12 +288,12 @@ public:
     void add_sumG(int i) { sumG += i; }
     void add_sumT(int i) { sumT += i; }
 
-    int get_sumAmino() { return sumAmino; }
-    void add_sumAmino(int i) { sumAmino += i; }
+//    int get_sumAmino() { return sumAmino; }
+//    void add_sumAmino(int i) { sumAmino += i; }
 
-    int get_sumAA(int j) { return sumAA[j]; }
-    void set_sumAA(int j,int i) { sumAA[j] = i; }
-    void add_sumAA(int j,int i) { sumAA[j] += i; }
+//    int get_sumAA(int j) { return sumAA[j]; }
+//    void set_sumAA(int j,int i) { sumAA[j] = i; }
+//    void add_sumAA(int j,int i) { sumAA[j] += i; }
 
     /**************************************/
 

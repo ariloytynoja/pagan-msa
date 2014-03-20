@@ -174,6 +174,33 @@ void Find_anchors::check_hits_order_conflict(std::string *seq1,std::string *seq2
         }
     }
 
+    sort(hits->begin(),hits->end(),Find_anchors::sort_by_start_site_1);
+
+    it1 = hits->begin();
+    vector<Substring_hit>::iterator it2 = it1;
+    it2++;
+    for(;it1!=hits->end() && it2!=hits->end();)
+    {
+        if(it1->start_site_2 > it2->start_site_2)
+        {
+            if(it1->score < it2->score)
+            {
+                hits->erase(it1);
+                it2 = it1;
+                it2++;
+            }
+            else
+            {
+                hits->erase(it2);
+                it2 = it1;
+                it2++;
+            }
+            continue;
+        }
+        it1++;it2++;
+    }
+
+
 //    cout<<"Hits "<<hits->size()<<endl;
 
 //    if(hits->size()>0)

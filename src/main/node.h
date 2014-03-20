@@ -1727,6 +1727,7 @@ public:
             }
             else if(seq->get_data_type() == Model_factory::protein)
             {
+/*
                 string alpha = Model_factory::get_protein_full_char_alphabet();
 
                 for(int j=1;j<seq_length-1;j++)
@@ -1768,6 +1769,7 @@ public:
                         entry.sequence.append(1,c);
                     }
                 }
+*/
             }
 
             contigs->push_back(entry);
