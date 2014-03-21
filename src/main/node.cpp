@@ -99,7 +99,10 @@ void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence)
         this->add_ancestral_sequence( va.get_simple_sequence() );
 
         if(is_reads_sequence)
+        {
             this->get_sequence()->is_read_descendants(true);
+            right_child->set_use_for_exonerate(true);
+        }
 
         if(Settings::noise>2)
             this->print_alignment();

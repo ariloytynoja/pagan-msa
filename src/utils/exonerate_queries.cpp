@@ -347,9 +347,11 @@ void Exonerate_queries::write_exonerate_input(Node *root, Fasta_entry *read, map
 void Exonerate_queries::all_local_alignments(Node *root, vector<Fasta_entry> *reads, std::multimap<std::string,std::string> *tid_nodes, std::map<std::string,std::multimap<std::string,hit> > *hits, bool is_local,bool ignore_tid_tags)
 {
     if(is_local)
-        Log_output::write_msg("Running Exonerate with all query sequences (ungapped)",0);
+//        Log_output::write_msg("Running Exonerate with all query sequences (ungapped)",0);
+        Log_output::append_msg(" running Exonerate with all query sequences (ungapped).",0);
     else
-        Log_output::write_msg("Running Exonerate with all query sequences (gapped)",0);
+//        Log_output::write_msg("Running Exonerate with all query sequences (gapped)",0);
+        Log_output::append_msg(" running Exonerate with all query sequences (gapped).",0);
 
     set<string> tid_tags;
     vector<Fasta_entry>::iterator ri = reads->begin();
@@ -568,9 +570,11 @@ void Exonerate_queries::local_alignment(Node *root, Fasta_entry *read, multimap<
 {
 
     if(is_local)
-        Log_output::write_msg("Running Exonerate with one query sequence (ungapped)",0);
+//        Log_output::write_msg("Running Exonerate with one query sequence (ungapped)",0);
+        Log_output::append_msg(" running Exonerate with one query sequence (ungapped).",0);
     else
-        Log_output::write_msg("Running Exonerate with one query sequence (gapped)",0);
+//        Log_output::write_msg("Running Exonerate with one query sequence (gapped)",0);
+        Log_output::append_msg(" running Exonerate with one query sequence (gapped).",0);
 
 
     int r = rand();

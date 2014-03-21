@@ -104,12 +104,13 @@ public:
     Node *right_child;
 
     bool visited;
+    bool use_for_exonarate;
 
     Node() : leaf(true), dist_to_parent(0), name("undefined"), nhx_tid(""),
              node_has_left_child(false), node_has_right_child(false),
              adjust_left_node_site_index(false), adjust_right_node_site_index(false),
              node_has_sequence_object(false), node_has_sequence(false),
-             has_orf(false), visited(false){}
+             has_orf(false), visited(false), use_for_exonarate(false) {}
     ~Node();
 
 
@@ -487,6 +488,35 @@ public:
             right_child->get_read_dna_sequences(dna_seqs);
         }
     }
+
+    void set_node_names_for_exonerate(set<string> *names)
+    {
+        if(!leaf)
+        {
+            this->get_left_child()->set_node_names_for_exonerate(names);
+            this->get_right_child()->set_node_names_for_exonerate(names);
+        }
+
+        if(names->find(this->get_name()) != names->end() )
+            use_for_exonarate = true;
+        else
+            use_for_exonarate = false;
+    }
+
+    void get_node_names_for_exonerate(multimap<string,string> *list)
+    {
+        if(!this->is_leaf())
+        {
+            this->get_left_child()->get_node_names_for_exonerate(list);
+            this->get_right_child()->get_node_names_for_exonerate(list);
+        }
+
+        if(use_for_exonarate)
+            list->insert(pair<string,string>(this->get_name(),this->get_name()));
+    }
+
+    void set_use_for_exonerate(bool v) { use_for_exonarate = v; }
+    bool get_use_for_exonerate() { return use_for_exonarate; }
 
     bool sequence_site_index_needs_correcting()
     {

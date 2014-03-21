@@ -72,14 +72,15 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     this->pair_and_sort( &reads );
 
 
-    if(Settings_handle::st.is("preselect-targets"))
+    // NEW: preselecting targets and save time later
+    //
+    if(!Settings_handle::st.is("keep-all-for-exonerate"))
     {
-        Log_output::write_header("Preselecting target sequences with Exonerate",0);
-
+        Log_output::write_header("Preselecting target sequences",0);
         multimap<string,string> all_tid_nodes;
         bool ignore_tid_tags = true;
 
-        this->get_target_node_names(root,&all_tid_nodes,&ignore_tid_tags);
+        this->get_target_node_names(root,&all_tid_nodes,&ignore_tid_tags,true);
 
         //
         // Call Exonerate to reduce the search space
@@ -112,10 +113,12 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
         }
         Log_output::write_out("Preselect_targets: keeping "+Text_utils::to_string(keep_nodes.size())+" targets\n",1);
         set<string>::iterator it2 = keep_nodes.begin();
+
         for(;it2 != keep_nodes.end();it2++)
         {
-            Log_output::write_out(" keep "+*it2+"\n",1);
+            Log_output::write_out(" keep "+*it2+"\n",2);
         }
+        root->set_node_names_for_exonerate(&keep_nodes);
 
     }
 
@@ -721,8 +724,8 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
         if((int)unique_nodes.size()==0)
         {
             stringstream msg;
-            msg<<"\nRead  "<< reads->at(i).name<<" has no match";
-            Log_output::write_header(msg.str(),0);
+            msg<<"Read  "<< reads->at(i).name<<" has no match";
+            Log_output::write_warning(msg.str(),0);
             continue;
         }
 
@@ -1413,6 +1416,7 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
     if( !Settings_handle::st.is("all-nodes") &&
         !Settings_handle::st.is("internal-nodes") &&
         !Settings_handle::st.is("terminal-nodes") &&
+//        !Settings_handle::st.is("preselect-targets") &&
         !Settings_handle::st.is("test-every-internal-node") &&
         !Settings_handle::st.is("test-every-terminal-node") &&
         !Settings_handle::st.is("test-every-node") && ignore_tid_tags)
@@ -1672,6 +1676,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
     if( !Settings_handle::st.is("all-nodes") &&
         !Settings_handle::st.is("internal-nodes") &&
         !Settings_handle::st.is("terminal-nodes") &&
+//        !Settings_handle::st.is("preselect-targets") &&
         !Settings_handle::st.is("test-every-internal-node") &&
         !Settings_handle::st.is("test-every-terminal-node") &&
         !Settings_handle::st.is("test-every-node") && ignore_tid_tags)

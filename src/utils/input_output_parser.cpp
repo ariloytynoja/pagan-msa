@@ -652,7 +652,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
         }
 
-        if( Settings_handle::st.is("prune-extended-alignment"))
+        if( Settings_handle::st.is("prune-keep-number") || Settings_handle::st.is("prune-keep-threshold") || Settings_handle::st.is("prune-keep-closest"))
         {
             this->prune_extended_alignment(fr,root,&aligned_sequences);
         }
@@ -732,40 +732,89 @@ void Input_output_parser::prune_extended_alignment(Fasta_reader *fr,Node *root,v
 {
     bool is_protein = root->get_sequence()->get_data_type()==Model_factory::protein;
 
-    set<string> removenames;
-    root->get_all_terminal_node_names(&removenames);
 
-    BppPhySamp_tree bppphys;
-    if(bppphys.test_executable()) {
-        if(Settings_handle::st.get("prune-keep-number").as<int>()>1 && not Settings_handle::st.is("prune-all"))
+    if(Settings_handle::st.is("prune-keep-number"))
+    {
+
+        Newick_reader nr;
+        string tree = root->print_tree();
+        Node *tmp_root = nr.parenthesis_to_tree(tree);
+
+        set<string> removenames;
+        root->get_all_terminal_node_names(&removenames);
+
+        set<string> readnames;
+        root->get_read_node_names(&readnames);
+
+        if(Settings_handle::st.get("prune-keep-number").as<int>()>1)
         {
-            removenames.clear();
-            bppphys.reduce_sequences(&removenames,is_protein);
+            BppPhySamp_tree bppphys;
+            if(bppphys.test_executable())
+            {
+                removenames.clear();
+                bppphys.reduce_sequences(&removenames,is_protein);
+
+                tmp_root->set_has_sequence();
+                tmp_root->unset_has_sequence(&removenames);
+                tmp_root->set_has_sequence(&readnames);
+                tmp_root->prune_tree();
+
+                this->output_pruned_alignment(fr,root,tmp_root,aligned_sequences,".pruned");
+            }
+            else
+            {
+                Log_output::write_out("The executable for BppPhySamp not found! The alignment cannot be pruned!",0);
+            }
+        }
+        else
+        {
+            tmp_root->unset_has_sequence();
+            tmp_root->set_has_sequence(&readnames);
+            tmp_root->prune_tree();
+
+            this->output_pruned_alignment(fr,root,tmp_root,aligned_sequences,".pruned");
+
+            delete tmp_root;
         }
     }
-    else
+
+    if(Settings_handle::st.is("prune-keep-closest"))
     {
-        Log_output::write_out("The executable for BppPhySamp not found! The alignment cannot be pruned!",0);
+        Newick_reader nr;
+        string tree = root->print_tree();
+        Node *tmp_root = nr.parenthesis_to_tree(tree);
+
+        set<string> removenames;
+        root->get_all_terminal_node_names(&removenames);
+
+        set<string> readnames;
+        root->get_read_node_names(&readnames);
+
+        set<string> keepnames;
+        root->get_closest_reference_leaves(&keepnames);
+
+        tmp_root->unset_has_sequence();
+
+        tmp_root->set_has_sequence(&keepnames);
+        tmp_root->set_has_sequence(&readnames);
+        tmp_root->prune_tree();
+
+        set<string> leaves_kept;
+        tmp_root->get_leaf_node_names(&leaves_kept);
+
+        this->output_pruned_alignment(fr,root,tmp_root,aligned_sequences,".pruned_closest");
+
+        delete tmp_root;
     }
+
+}
+
+void Input_output_parser::output_pruned_alignment(Fasta_reader *fr,Node *root,Node *tmp_root,vector<Fasta_entry> *aligned_sequences,string prefix)
+{
 
     set<string> readnames;
     root->get_read_node_names(&readnames);
 
-    set<string> keepnames;
-    if(not Settings_handle::st.is("prune-all"))
-        root->get_closest_reference_leaves(&keepnames);
-
-    Newick_reader nr;
-    string tree = root->print_tree();
-    Node *tmp_root = nr.parenthesis_to_tree(tree);
-
-    tmp_root->set_has_sequence();
-    tmp_root->unset_has_sequence(&removenames);
-    tmp_root->set_has_sequence(&readnames);
-    tmp_root->set_has_sequence(&keepnames);
-    tmp_root->prune_tree();
-
-    tree = tmp_root->print_tree();
 
     set<string> leaves_kept;
     tmp_root->get_leaf_node_names(&leaves_kept);
@@ -775,7 +824,7 @@ void Input_output_parser::prune_extended_alignment(Fasta_reader *fr,Node *root,v
     if(Settings_handle::st.is("outfile"))
         outfile =  Settings_handle::st.get("outfile").as<string>();
 
-    outfile.append(".pruned");
+    outfile.append(prefix);
 
     string format = "fasta";
     if(Settings_handle::st.is("outformat"))
