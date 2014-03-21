@@ -72,55 +72,6 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     this->pair_and_sort( &reads );
 
 
-    // NEW: preselecting targets and save time later
-    //
-    if(!Settings_handle::st.is("keep-all-for-exonerate"))
-    {
-        Log_output::write_header("Preselecting target sequences",0);
-        multimap<string,string> all_tid_nodes;
-        bool ignore_tid_tags = true;
-
-        this->get_target_node_names(root,&all_tid_nodes,&ignore_tid_tags,true);
-
-        //
-        // Call Exonerate to reduce the search space
-        //
-        map<string, multimap<string,hit> > exonerate_hits;
-
-        Exonerate_queries er;
-        if(!er.test_executable())
-        {
-            Log_output::write_out("The executable for Exonerate not found! The fast placement search not used!",0);
-        }
-
-        else if(all_tid_nodes.size()>0)
-            er.all_local_alignments(root,&reads,&all_tid_nodes,&exonerate_hits, true, ignore_tid_tags);
-
-        set<string> keep_nodes;
-        map<string, multimap<string,hit> >::iterator it = exonerate_hits.begin();
-        for(;it != exonerate_hits.end();it++)
-        {
-            Log_output::write_out("Preselect_targets: "+it->first+" has "+Log_output::itos(it->second.size())+" hits\n",2);
-
-            multimap<string,hit>::iterator it2 = it->second.begin();
-
-            for( ;it2 != it->second.end(); it2++ )
-            {
-                Log_output::write_out("  "+it->first+" matches "+it2->first+" with score "+Log_output::itos(it2->second.score)+"\n",2);
-                keep_nodes.insert(it2->first);
-            }
-
-        }
-        Log_output::write_out("Preselect_targets: keeping "+Text_utils::to_string(keep_nodes.size())+" targets\n",1);
-        set<string>::iterator it2 = keep_nodes.begin();
-
-        for(;it2 != keep_nodes.end();it2++)
-        {
-            Log_output::write_out(" keep "+*it2+"\n",2);
-        }
-        root->set_node_names_for_exonerate(&keep_nodes);
-
-    }
 
 
 
@@ -425,6 +376,8 @@ void Reads_aligner::query_placement_all(Node *root, vector<Fasta_entry> *reads, 
     bool compare_reverse = ( Settings_handle::st.is("compare-reverse") || Settings_handle::st.is("both-strands") )
                         && mf->get_sequence_data_type()==Model_factory::dna;
 
+    this->preselect_target_sequences(root,reads);
+
     if(Settings_handle::st.is("upwards-search"))
         this->do_upwards_search(root, reads, mf);
     else
@@ -660,24 +613,6 @@ void Reads_aligner::query_placement_all(Node *root, vector<Fasta_entry> *reads, 
 
         }
 
-//        current_root->set_distance_to_parent(orig_dist);
-
-//        if(alignment_done)
-//        {
-//            if(single_ref_sequence)
-//            {
-//                global_root = current_root;
-//            }
-//            else
-//            {
-//                bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
-
-//                if(!parent_found)
-//                {
-//                    global_root = current_root;
-//                }
-//            }
-//        }
     }
 }
 
@@ -699,6 +634,8 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
         min_overlap = 0;
     if(min_identity<0)
         min_identity = 0;
+
+    this->preselect_target_sequences(root,reads);
 
     Log_output::write_header("Aligning query sequences",0);
 
@@ -1038,6 +975,9 @@ void Reads_aligner::translated_query_placement_all(Node *root, vector<Fasta_entr
             potential_orfs.push_back(fe);
         }
     }
+
+    this->preselect_target_sequences(root,reads);
+
     this->find_nodes_for_queries(root, &potential_orfs, mf);
 
     for(int j=0;j<(int)potential_orfs.size();j++)
@@ -1210,25 +1150,6 @@ void Reads_aligner::translated_query_placement_all(Node *root, vector<Fasta_entr
             global_root = root;
 
         }
-
-//        current_root->set_distance_to_parent(orig_dist);
-
-//        if(alignment_done)
-//        {
-//            if(single_ref_sequence)
-//            {
-//                global_root = current_root;
-//            }
-//            else
-//            {
-//                bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
-
-//                if(!parent_found)
-//                {
-//                    global_root = current_root;
-//                }
-//            }
-//        }
     }
 }
 
@@ -1250,8 +1171,6 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
         min_overlap = 0;
     if(min_identity<0)
         min_identity = 0;
-
-    Log_output::write_header("Aligning query sequences",0);
 
     vector<Fasta_entry> potential_orfs;
 
@@ -1279,6 +1198,9 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
         }
     }
 
+    this->preselect_target_sequences(root,reads);
+
+    Log_output::write_header("Aligning query sequences",0);
 
     for(int i=0;i<(int)potential_orfs.size();i++)
     {
@@ -1411,12 +1333,27 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
     bool compare_reverse = ( Settings_handle::st.is("compare-reverse") || Settings_handle::st.is("both-strands") )
                         && mf->get_sequence_data_type()==Model_factory::dna;
 
-    this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+    bool preselected_nodes = false;
+    if(read->node_to_align != "")
+    {
+        stringstream str(read->node_to_align);
+        string nodename;
+        while(str >> nodename)
+        {
+            tid_nodes.insert(make_pair(nodename,nodename));
+        }
+//        cout<<str.str()<<endl;
+
+        preselected_nodes = true;
+    }
+    else
+    {
+        this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+    }
 
     if( !Settings_handle::st.is("all-nodes") &&
         !Settings_handle::st.is("internal-nodes") &&
         !Settings_handle::st.is("terminal-nodes") &&
-//        !Settings_handle::st.is("preselect-targets") &&
         !Settings_handle::st.is("test-every-internal-node") &&
         !Settings_handle::st.is("test-every-terminal-node") &&
         !Settings_handle::st.is("test-every-node") && ignore_tid_tags)
@@ -1440,7 +1377,7 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
     //
     map<string,hit> exonerate_hits;
 
-    if(has_exonerate && Settings::exonerate_local_keep_best > 0 )
+    if(has_exonerate && Settings::exonerate_local_keep_best > 0 && !preselected_nodes)
     {
         tid_nodes.clear();
         this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
@@ -1453,9 +1390,11 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
     }
     else if(has_exonerate && Settings::exonerate_gapped_keep_best > 0 )
     {
-        tid_nodes.clear();
-        this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
-
+        if(!preselected_nodes)
+        {
+            tid_nodes.clear();
+            this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+        }
         if(tid_nodes.size()>1)
             er.local_alignment(root,read,&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
     }
@@ -1671,12 +1610,28 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
     bool compare_reverse = ( Settings_handle::st.is("compare-reverse") || Settings_handle::st.is("both-strands") )
                         && mf->get_sequence_data_type()==Model_factory::dna;
 
-    this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+    bool preselected_nodes = false;
+    for(int i=0;i<(int)reads->size();i++)
+    {
+        if(reads->at(i).node_to_align != "")
+        {
+            stringstream str(reads->at(i).node_to_align);
+            string nodename;
+            while(str >> nodename)
+            {
+                tid_nodes.insert(make_pair(nodename,nodename));
+            }
+            preselected_nodes = true;
+        }
+    }
+    if(!preselected_nodes)
+    {
+        this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+    }
 
     if( !Settings_handle::st.is("all-nodes") &&
         !Settings_handle::st.is("internal-nodes") &&
         !Settings_handle::st.is("terminal-nodes") &&
-//        !Settings_handle::st.is("preselect-targets") &&
         !Settings_handle::st.is("test-every-internal-node") &&
         !Settings_handle::st.is("test-every-terminal-node") &&
         !Settings_handle::st.is("test-every-node") && ignore_tid_tags)
@@ -1701,7 +1656,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
         //
         map<string,hit> exonerate_hits;
 
-        if(has_exonerate && Settings::exonerate_local_keep_best > 0 )
+        if(has_exonerate && Settings::exonerate_local_keep_best > 0  && !preselected_nodes)
         {
             tid_nodes.clear();
             this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
@@ -1714,9 +1669,11 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
         }
         else if(has_exonerate && Settings::exonerate_gapped_keep_best > 0 )
         {
-            tid_nodes.clear();
-            this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
-
+            if(!preselected_nodes)
+            {
+                tid_nodes.clear();
+                this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+            }
             if(tid_nodes.size()>1)
                 er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
         }
@@ -1916,6 +1873,75 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
         }
     }
 }
+
+void Reads_aligner::preselect_target_sequences(Node *root, vector<Fasta_entry> *reads)
+{
+    if(Settings_handle::st.is("keep-all-for-exonerate"))
+        return;
+
+
+    Log_output::write_header("Preselecting target sequences",0);
+    multimap<string,string> all_tid_nodes;
+    bool ignore_tid_tags = true;
+
+    this->get_target_node_names(root,&all_tid_nodes,&ignore_tid_tags,true);
+
+    //
+    // Call Exonerate to reduce the search space
+    //
+    map<string, multimap<string,hit> > exonerate_hits;
+
+    Exonerate_queries er;
+    if(!er.test_executable())
+    {
+        Log_output::write_out("The executable for Exonerate not found! Preselection not done!",0);
+    }
+
+    else if(all_tid_nodes.size()>0)
+        er.all_local_alignments(root,reads,&all_tid_nodes,&exonerate_hits, true, ignore_tid_tags);
+
+    set<string> keep_nodes;
+
+    multimap<string, string> query_target;
+
+    for(map<string, multimap<string,hit> >::iterator it = exonerate_hits.begin();it != exonerate_hits.end();it++)
+    {
+        Log_output::write_out("Preselect_targets: "+it->first+" has "+Log_output::itos(it->second.size())+" hits\n",2);
+
+        multimap<string,hit>::iterator it2 = it->second.begin();
+
+        for( ;it2 != it->second.end(); it2++ )
+        {
+            Log_output::write_out("  "+it->first+" matches "+it2->first+" with score "+Log_output::itos(it2->second.score)+"\n",2);
+            keep_nodes.insert(it2->first);
+            query_target.insert(make_pair(it2->second.query,it2->second.node));
+        }
+
+    }
+    Log_output::write_out("Preselect_targets: keeping "+Text_utils::to_string(keep_nodes.size())+" targets\n",1);
+
+
+    for(set<string>::iterator it = keep_nodes.begin();it != keep_nodes.end();it++)
+    {
+        Log_output::write_out(" keep "+*it+"\n",2);
+    }
+
+    root->set_node_names_for_exonerate(&keep_nodes);
+
+
+    for(vector<Fasta_entry>::iterator it = reads->begin();it!=reads->end();it++)
+    {
+        pair <multimap<string,string>::iterator, multimap<string,string>::iterator> it1 = query_target.equal_range(it->name);
+
+        stringstream node_to_align;
+        for (multimap<string,string>::iterator it2=it1.first; it2!=it1.second; ++it2)
+        {
+            node_to_align <<it2->second<<" ";
+        }
+        it->node_to_align = node_to_align.str();
+    }
+}
+
 
 void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
 {

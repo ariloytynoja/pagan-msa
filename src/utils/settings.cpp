@@ -111,7 +111,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     boost::program_options::options_description reads_alignment3("Alignment extension output options",100);
     reads_alignment3.add_options()
 //        ("prune-extended-alignment","remove closely related sequences")
-        ("prune-keep-number",po::value<int>()->default_value(15),"prune output and keep N most distantly related sequences (default)")
+        ("prune-keep-number",po::value<int>()->default_value(0),"prune output and keep N most distantly related sequences")
         ("prune-keep-threshold",po::value<float>(),"prune output and remove sequences with distance below threshold")
         ("prune-keep-closest","prune output and keep only closest reference sequences")
         ("trim-extended-alignment","remove terminal reference sequences")

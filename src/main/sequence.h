@@ -675,6 +675,7 @@ class Sequence
     bool has_read_descendants;
     bool terminal_sequence;
     string gapped_seq;
+    string unaligned_seq;
     string dna_seq;
 
     int num_duplicates;
@@ -801,6 +802,7 @@ public:
         return true;
     }
 
+    string *get_unaligned_sequence();
     string get_sequence_string(bool with_gaps);
 
     string print_sequence(vector<Site> *sites);

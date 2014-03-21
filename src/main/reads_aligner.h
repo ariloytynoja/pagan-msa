@@ -74,6 +74,7 @@ class Reads_aligner
     void find_paired_reads(vector<Fasta_entry> *reads);
 
     bool correct_sites_index(Node *current_root, string ref_node_name, int alignments_done, map<string,Node*> *nodes_map);
+    void preselect_target_sequences(Node *root, vector<Fasta_entry> *reads);
 
     static bool better_score(const Fasta_entry& a,const Fasta_entry& b)
     {

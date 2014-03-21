@@ -1224,6 +1224,19 @@ public:
         }
     }
 
+    void get_unaligned_sequences(map<string,string*> *unaligned_sequences)
+    {
+        if(leaf)
+        {
+            unaligned_sequences->insert(make_pair( this->get_name(),this->get_sequence()->get_unaligned_sequence() ) );
+        }
+        else
+        {
+            this->get_left_child()->get_unaligned_sequences(unaligned_sequences);
+            this->get_right_child()->get_unaligned_sequences(unaligned_sequences);
+        }
+    }
+
     string *get_dna_sequence_for_node(string node_name)
     {
         if(is_leaf() && this->get_name() == node_name)

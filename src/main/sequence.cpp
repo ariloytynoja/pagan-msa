@@ -54,9 +54,19 @@ Sequence::Sequence(Fasta_entry &seq_entry,const int data_t,bool gapped, bool no_
         gapped_seq = "";
     }
 
+    unaligned_seq = "";
+
     if(seq_entry.dna_sequence.length()>0 && ( Settings_handle::st.is("translate") || Settings_handle::st.is("mt-translate") ||
             Settings_handle::st.is("find-best.orf") || Settings_handle::st.is("find-orfs") ) )
+    {
+        for (string::iterator si = dna_seq.begin();si != dna_seq.end();)
+            if(*si == '-')
+                dna_seq.erase(si);
+            else
+                si++;
+
         dna_seq = seq_entry.dna_sequence;
+    }
 
     if(turn_revcomp)
     {
@@ -572,6 +582,7 @@ Sequence::Sequence(const int length,const int data_t, string gapped_s)
         this->set_gap_symbol("---");
 
     gapped_seq = gapped_s;
+    unaligned_seq = "";
 
     this->initialise_indeces();
 
@@ -658,6 +669,21 @@ string Sequence::print_sequence(vector<Site> *sites)
 }
 
 /***************************************************************************/
+
+string *Sequence::get_unaligned_sequence()
+{
+    if(unaligned_seq.length()>0) { return &unaligned_seq; }
+
+    unaligned_seq = gapped_seq;
+
+    for (string::iterator si = unaligned_seq.begin();si != unaligned_seq.end();)
+        if(*si == '-')
+            unaligned_seq.erase(si);
+        else
+            si++;
+
+    return &unaligned_seq;
+}
 
 string Sequence::get_sequence_string(bool with_gaps)
 {
