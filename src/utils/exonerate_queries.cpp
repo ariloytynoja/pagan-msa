@@ -472,6 +472,8 @@ void Exonerate_queries::preselect_targets(map<string,string> *target_sequences, 
 
     this->find_hits_for_queries(&all_hits, reads, best_hits);
 
+    Log_output::write_out("Exonerate_reads: preselection finds "+Log_output::itos(all_hits.size())+" hits\n",2);
+
 
     for(vector<Fasta_entry>::iterator ri = reads->begin() ;ri != reads->end(); ri++ )
     {
@@ -940,6 +942,7 @@ void Exonerate_queries::local_alignment(map<string,string> *target_sequences, Fa
     pclose(fpipe);
 
 
+    Log_output::write_out("Exonerate_reads: "+read->name+" has "+Log_output::itos(hit_names.size())+" hits\n",2);
 
     Log_output::write_out("Exonerate_reads: "+read->name+" has "+Log_output::itos(hit_names.size())+" hits\n",2);
 

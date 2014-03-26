@@ -161,10 +161,10 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     exonerate.add_options()
         ("exhaustive-placement","if Exonerate fails, use PAGAN to place the query")
         ("use-exonerate-local","use Exonerate local to map queries to nodes")
-        ("exonerate-local-keep-best",po::value<int>()->default_value(5),"keep best # of local matches")
+        ("exonerate-local-keep-best",po::value<int>()->default_value(10),"keep best # of local matches")
         ("exonerate-local-keep-above",po::value<float>(),"keep local matches above #% of the best score")
         ("use-exonerate-gapped","use Exonerate gapped to map queries to nodes")
-        ("exonerate-gapped-keep-best",po::value<int>()->default_value(1),"keep best # of gapped matches")
+        ("exonerate-gapped-keep-best",po::value<int>()->default_value(3),"keep best # of gapped matches")
         ("exonerate-gapped-keep-above",po::value<float>(),"keep gapped matches above #% of the best score")
         ("keep-despite-exonerate-fails", "keep queries that Exonerate fails to align")
     ;
@@ -234,7 +234,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("test-every-terminal-node","test every terminal node for each query")
         ("compare-reverse","test also reverse-complement and keep better (DNA)")
         ("find-best-orf", "translate and use best ORF (DNA)")
-        ("keep-all-for-exonerate","do not preselect targets with Exonerate")
+        ("no-preselection","do not preselect targets with Exonerate")
         ("no-bppancestors","no BppAncestors")
 
         ("full-probability", "compute full probability")
@@ -322,15 +322,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     if(is("use-exonerate-gapped") && get("exonerate-gapped-keep-best").as<int>() > 0 )
         exonerate_gapped_keep_best = get("exonerate-gapped-keep-best").as<int>();
 
-    if(is("preselect-targets"))
-    {
-        exonerate_local_keep_best = 10;
-        exonerate_gapped_keep_best = 0;
-
-        if(is("exonerate-local-keep-best") && get("exonerate-local-keep-best").as<int>() > 0 )
-            exonerate_local_keep_best = get("exonerate-local-keep-best").as<int>();
-    }
-
 
     if(is("very-fast-placement"))
     {
@@ -348,8 +339,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     if(is("fast-placement"))
     {
-        exonerate_local_keep_best = 10;
-        exonerate_gapped_keep_best = 3;
+        exonerate_local_keep_best = 5;
+        exonerate_gapped_keep_best = 1;
 
         if( is("use-exonerate-local") || is("exonerate-local-keep-above") ||
             is("use-exonerate-gapped") || is("exonerate-gapped-keep-above") ||

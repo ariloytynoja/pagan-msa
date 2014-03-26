@@ -381,8 +381,13 @@ void Reads_aligner::query_placement_all(Node *root, vector<Fasta_entry> *reads, 
     this->preselect_target_sequences(root,reads,&target_sequences);
 
 
-    if(Settings_handle::st.is("upwards-search"))
-        this->do_upwards_search(root, reads, mf);
+//    if(Settings_handle::st.is("upwards-search"))
+//        this->do_upwards_search(root, reads, mf);
+//    else
+//        this->find_nodes_for_queries(root, reads, mf);
+
+    if((int)target_sequences.size()>0)
+         this->find_targets_for_queries(root, reads, mf, &target_sequences);
     else
         this->find_nodes_for_queries(root, reads, mf);
 
@@ -424,13 +429,13 @@ void Reads_aligner::query_placement_all(Node *root, vector<Fasta_entry> *reads, 
     if(reads_to_place>0)
     {
         stringstream msg;
-        msg<<"\nAligning reads: "<<(int)reads->size()-reads_discarded<<"/"<<(int)reads->size()<<" with "<<reads_to_place<<" placements";
+        msg<<"Aligning reads: "<<(int)reads->size()-reads_discarded<<"/"<<(int)reads->size()<<" with "<<reads_to_place<<" placements";
         Log_output::write_header(msg.str(),0);
     }
     else
     {
         stringstream msg;
-        msg<<"\nNone of the queries matched and nothing to align\n";
+        msg<<"None of the queries matched and nothing to align\n";
         Log_output::write_warning(msg.str(),0);
     }
 
@@ -985,9 +990,12 @@ void Reads_aligner::translated_query_placement_all(Node *root, vector<Fasta_entr
     }
 
     map<string,string> target_sequences;
-    this->preselect_target_sequences(root,reads,&target_sequences);
+    this->preselect_target_sequences(root,&potential_orfs,&target_sequences);
 
-    this->find_nodes_for_queries(root, &potential_orfs, mf);
+    if((int)target_sequences.size()>0)
+         this->find_targets_for_queries(root, &potential_orfs, mf, &target_sequences);
+    else
+        this->find_nodes_for_queries(root, &potential_orfs, mf);
 
     for(int j=0;j<(int)potential_orfs.size();j++)
     {
@@ -1208,7 +1216,7 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
     }
 
     map<string,string> target_sequences;
-    this->preselect_target_sequences(root,reads,&target_sequences);
+    this->preselect_target_sequences(root,&potential_orfs,&target_sequences);
 
     Log_output::write_header("Aligning query sequences",0);
 
@@ -1217,7 +1225,10 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
 
         Fasta_entry potential_orf = potential_orfs.at(i);
 
-        this->find_nodes_for_query(root, &potential_orf, mf);
+        if((int)target_sequences.size()>0)
+            this->find_targets_for_query(root, &potential_orf, mf, &target_sequences,i==0);
+        else
+            this->find_nodes_for_query(root, &potential_orf, mf);
 
         if(potential_orf.node_to_align == "discarded_read")
             continue;
@@ -1801,7 +1812,7 @@ void Reads_aligner::find_targets_for_queries(Node *root, vector<Fasta_entry> *re
 
         if(reads->at(i).node_to_align == "" || reads->at(i).node_to_align == "discarded_read")
         {
-            Log_output::write_warning("Query "+reads->at(i).name+" has no match. Skipping",0);
+            Log_output::write_warning("Query "+reads->at(i).name+" has no match. Skipping.",1);
             continue;
         }
 
@@ -2244,7 +2255,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
 
 void Reads_aligner::preselect_target_sequences(Node *root, vector<Fasta_entry> *reads, map<string,string> *target_sequences)
 {
-    if(Settings_handle::st.is("keep-all-for-exonerate"))
+    if(Settings_handle::st.is("no-preselection"))
         return;
 
 
@@ -2255,9 +2266,16 @@ void Reads_aligner::preselect_target_sequences(Node *root, vector<Fasta_entry> *
     set<string> node_names;
 
     if(Settings::placement_target_nodes == Settings::tid_nodes)
+    {
         root->get_node_names_with_tid_tag(&node_names);
+        if((int)node_names.size()==0)
+        {
+            Settings::placement_target_nodes = Settings::all_nodes;
+            Log_output::write_warning("No TID tags found. Considering all nodes for placement.",0);
+        }
+    }
 
-    else if(Settings::placement_target_nodes == Settings::internal_nodes)
+    if(Settings::placement_target_nodes == Settings::internal_nodes)
         root->get_internal_node_names(&node_names);
 
     else if(Settings::placement_target_nodes == Settings::all_nodes)
@@ -2318,7 +2336,6 @@ void Reads_aligner::preselect_target_sequences(Node *root, vector<Fasta_entry> *
 
     else if(unaligned_sequences.size()>0)
         er.preselect_targets(&unaligned_sequences,reads,target_sequences,&exonerate_hits);
-
 
     set<string> keep_nodes;
 
