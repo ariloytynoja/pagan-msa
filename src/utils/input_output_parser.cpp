@@ -497,7 +497,8 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
         BppAncestors bppa;
         bool infer_bppa_ancestors = ( bppa.test_executable() && not Settings_handle::st.is("no-bppancestors") &&
-                                      ( Settings_handle::st.is("events") || Settings_handle::st.is("output-ancestors") || Settings_handle::st.is("xml")) );
+                                      ( Settings_handle::st.is("events") || Settings_handle::st.is("output-ancestors") || Settings_handle::st.is("xml")) &&
+                                      (int)sequences->size()<500 );
 
         if(infer_bppa_ancestors)
         {

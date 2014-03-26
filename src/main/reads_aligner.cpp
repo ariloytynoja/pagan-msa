@@ -93,15 +93,16 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     }
 
 
-    // Old placement routines
-    if( Settings_handle::st.is("old-placement") )
-    {
-        Log_output::write_header("Aligning reads: old placement",0);
-        this->loop_default_placement(root,&reads,mf,count);
-    }
+//    // Old placement routines
+//    if( Settings_handle::st.is("old-placement") )
+//    {
+//        Log_output::write_header("Aligning reads: old placement",0);
+//        this->loop_default_placement(root,&reads,mf,count);
+//    }
 
-    // Pileup: no search for optimal node or TID tags in the tree
-    else if( Settings_handle::st.is("pileup-alignment") || Settings_handle::st.is("align-reads-at-root") )
+//    // Pileup: no search for optimal node or TID tags in the tree
+//    else
+    if( Settings_handle::st.is("pileup-alignment") || Settings_handle::st.is("align-reads-at-root") )
         {
             // translated DNA with ORF search
             if( ( Settings_handle::st.is("find-best-orf") || Settings_handle::st.is("find-orfs") ) && has_dna_seqs)
@@ -376,7 +377,9 @@ void Reads_aligner::query_placement_all(Node *root, vector<Fasta_entry> *reads, 
     bool compare_reverse = ( Settings_handle::st.is("compare-reverse") || Settings_handle::st.is("both-strands") )
                         && mf->get_sequence_data_type()==Model_factory::dna;
 
-    this->preselect_target_sequences(root,reads);
+    map<string,string> target_sequences;
+    this->preselect_target_sequences(root,reads,&target_sequences);
+
 
     if(Settings_handle::st.is("upwards-search"))
         this->do_upwards_search(root, reads, mf);
@@ -635,7 +638,9 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
     if(min_identity<0)
         min_identity = 0;
 
-    this->preselect_target_sequences(root,reads);
+
+    map<string,string> target_sequences;
+    this->preselect_target_sequences(root,reads,&target_sequences);
 
     Log_output::write_header("Aligning query sequences",0);
 
@@ -643,7 +648,10 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
     for(int i=0;i<(int)reads->size();i++)
     {
 
-        this->find_nodes_for_query(root, &reads->at(i), mf,i==0);
+        if((int)target_sequences.size()>0)
+            this->find_targets_for_query(root, &reads->at(i), mf, &target_sequences,i==0);
+        else
+            this->find_nodes_for_query(root, &reads->at(i), mf,i==0);
 
         vector<string> unique_nodes;
 
@@ -976,7 +984,8 @@ void Reads_aligner::translated_query_placement_all(Node *root, vector<Fasta_entr
         }
     }
 
-    this->preselect_target_sequences(root,reads);
+    map<string,string> target_sequences;
+    this->preselect_target_sequences(root,reads,&target_sequences);
 
     this->find_nodes_for_queries(root, &potential_orfs, mf);
 
@@ -1198,7 +1207,8 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
         }
     }
 
-    this->preselect_target_sequences(root,reads);
+    map<string,string> target_sequences;
+    this->preselect_target_sequences(root,reads,&target_sequences);
 
     Log_output::write_header("Aligning query sequences",0);
 
@@ -1315,6 +1325,179 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
 
 /**********************************************************************/
 
+void Reads_aligner::find_targets_for_query(Node *root, Fasta_entry *read, Model_factory *mf,map<string,string> *target_sequences,bool warnings)
+{
+    Exonerate_queries er;
+    bool has_exonerate = true;
+    if(!er.test_executable())
+    {
+        has_exonerate = false;
+        if(warnings)
+            Log_output::write_out("The executable for Exonerate not found! The fast placement search not used!",0);
+    }
+
+
+    // Get the original target nodes
+    //
+    bool compare_reverse = ( Settings_handle::st.is("compare-reverse") || Settings_handle::st.is("both-strands") )
+                        && mf->get_sequence_data_type()==Model_factory::dna;
+
+    // Handle one read at time
+    //
+    read->node_score = -1.0;
+    read->query_strand = Fasta_entry::unknown_strand;
+
+    string tid = read->tid;
+    if( tid=="" )
+        tid = "<empty>";
+
+    map<string,string> targets_for_this;
+
+    stringstream str(read->node_to_align);
+    string nodename;
+    while(str >> nodename)
+    {
+        map<string,string>::iterator it = target_sequences->find(nodename);
+        if(it!=target_sequences->end())
+        {
+            targets_for_this.insert(make_pair(it->first,it->second));
+        }
+    }
+
+
+    Log_output::write_msg("mapping query: '"+read->name+" "+read->comment+"'",0);
+
+    // Call Exonerate to reduce the search space
+    //
+    map<string,hit> exonerate_hits;
+
+    if(has_exonerate && Settings::exonerate_gapped_keep_best > 0 )
+    {
+        er.local_alignment(&targets_for_this,read,&exonerate_hits,false);
+    }
+
+
+    // Handle (or reject) reads discarded by Exonerate
+    //
+    if(read->node_to_align == "discarded_read" || exonerate_hits.size()==0)
+    {
+        stringstream ss;
+        ss<<"Read "<<read->name<<" with the tid "<<tid<<" was discarded by Exonerate.\n";
+        Log_output::write_out(ss.str(),2);
+
+        return;
+    }
+
+
+    // Has TID or exhaustive search: now find the one with the best match
+    //
+    int matches = exonerate_hits.size();
+
+
+    // Has only one matching node
+    //
+    if(matches == 1)
+    {
+        string target_node = exonerate_hits.begin()->first;
+
+        stringstream ss;
+        ss<<"Read "<<read->name<<" with the tid "<<tid<<" only matches the node "<<target_node<<"."<<endl;
+        Log_output::write_out(ss.str(),2);
+
+        read->node_to_align = target_node;
+    }
+
+
+    // Has several matching nodes
+    //
+    else
+    {
+        double best_score = -HUGE_VAL;
+        string best_node = root->get_name();
+        int query_strand = Fasta_entry::forward_strand;
+
+        map<string,Node*> nodes;
+        root->get_all_nodes(&nodes);
+
+        int matching_nodes = exonerate_hits.size();
+
+        stringstream ss;
+        ss<<"Read "<<read->name<<" with TID "<<tid<<" matches "<<matching_nodes<<" nodes.\n";
+        Log_output::write_out(ss.str(),2);
+
+        map<string,hit>::iterator it = exonerate_hits.begin();
+
+        for(;it != exonerate_hits.end(); it++)
+        {
+            string target_node = it->first;
+
+            map<string,Node*>::iterator nit = nodes.find(target_node);
+            double score = this->read_match_score( nit->second, read, mf);
+
+            stringstream ss;
+            ss<<target_node<<" with score "<<score<<"\n";
+            Log_output::write_out(ss.str(),2);
+
+            if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
+            {
+                best_score = score;
+                best_node.append(" "+target_node);
+            }
+            else if(score>=best_score)
+            {
+                best_score = score;
+                best_node = target_node;
+            }
+
+            if(compare_reverse)
+            {
+                Fasta_entry rev_seq = *read;
+                rev_seq.sequence = this->reverse_complement(rev_seq.sequence);
+
+                double score = this->read_match_score( nit->second, &rev_seq, mf);
+
+                stringstream ss;
+                ss<<target_node<<"(rc) with score "<<score<<"\n";
+                Log_output::write_out(ss.str(),2);
+
+                if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
+                {
+                    best_score = score;
+                    best_node.append(" "+target_node);
+                    query_strand = Fasta_entry::reverse_strand;
+                }
+                else if(score>=best_score)
+                {
+                    best_score = score;
+                    best_node = target_node;
+                    query_strand = Fasta_entry::reverse_strand;
+                }
+            }
+
+            matching_nodes--;
+        }
+
+        if(best_score<0.05)
+        {
+            Log_output::write_out("Best node aligns with less than 5% of identical sites. Read is discarded.\n",2);
+            read->node_to_align = "discarded_read";
+        }
+        else
+        {
+            stringstream ss;
+            ss<<"best node "<<best_node<<" (score "<<best_score<<").\n";
+            Log_output::write_out(ss.str(),2);
+
+            read->node_score = best_score;
+            read->node_to_align = best_node;
+            read->query_strand = query_strand;
+        }
+    }
+    // All done; continue
+}
+
+
+
 void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_factory *mf,bool warnings)
 {
     Exonerate_queries er;
@@ -1342,7 +1525,6 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
         {
             tid_nodes.insert(make_pair(nodename,nodename));
         }
-//        cout<<str.str()<<endl;
 
         preselected_nodes = true;
     }
@@ -1591,6 +1773,192 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
         read->node_to_align = root->get_name();
     }
 }
+
+/**********************************************************************/
+
+void Reads_aligner::find_targets_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf,map<string,string> *target_sequences)
+{
+    Exonerate_queries er;
+    bool has_exonerate = true;
+    if(!er.test_executable())
+    {
+        has_exonerate = false;
+        Log_output::write_out("The executable for Exonerate not found! The fast placement search not used!",0);
+    }
+
+
+    // Get the original target nodes
+    //
+    bool compare_reverse = ( Settings_handle::st.is("compare-reverse") || Settings_handle::st.is("both-strands") )
+                        && mf->get_sequence_data_type()==Model_factory::dna;
+
+
+
+    // Handle one read at time
+    //
+    for(int i=0;i<(int)reads->size();i++)
+    {
+
+        if(reads->at(i).node_to_align == "" || reads->at(i).node_to_align == "discarded_read")
+        {
+            Log_output::write_warning("Query "+reads->at(i).name+" has no match. Skipping",0);
+            continue;
+        }
+
+        reads->at(i).node_score = -1.0;
+        reads->at(i).query_strand = Fasta_entry::unknown_strand;
+
+        string tid = reads->at(i).tid;
+        if( tid=="" )
+            tid = "<empty>";
+
+        map<string,string> targets_for_this;
+
+        stringstream str(reads->at(i).node_to_align);
+        string nodename;
+        while(str >> nodename)
+        {
+            map<string,string>::iterator it = target_sequences->find(nodename);
+            if(it!=target_sequences->end())
+            {
+                targets_for_this.insert(make_pair(it->first,it->second));
+            }
+        }
+
+
+        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping query: '"+reads->at(i).name+" "+reads->at(i).comment+"'",0);
+
+        // Call Exonerate to reduce the search space
+        //
+        map<string,hit> exonerate_hits;
+
+        if(has_exonerate && Settings::exonerate_gapped_keep_best > 0 )
+        {
+            er.local_alignment(&targets_for_this,&reads->at(i),&exonerate_hits,false);
+        }
+
+
+        // Handle (or reject) reads discarded by Exonerate
+        //
+        if(reads->at(i).node_to_align == "discarded_read" || exonerate_hits.size()==0)
+        {
+            stringstream ss;
+            ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" was discarded by Exonerate.\n";
+            Log_output::write_out(ss.str(),2);
+
+            continue;
+        }
+
+        // Has TID or exhaustive search: now find the one with the best match
+        //
+        int matches = exonerate_hits.size();
+
+
+        // Has only one matching node
+        //
+        if(matches == 1 )
+        {
+            string target_node = exonerate_hits.begin()->first;
+
+            stringstream ss;
+            ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" only matches the node "<<target_node<<"."<<endl;
+            Log_output::write_out(ss.str(),2);
+
+            reads->at(i).node_to_align = target_node;
+        }
+
+
+        // Has several matching nodes
+        //
+        else
+        {
+            double best_score = -HUGE_VAL;
+            string best_node = root->get_name();
+            int query_strand = Fasta_entry::forward_strand;
+
+            map<string,Node*> nodes;
+            root->get_all_nodes(&nodes);
+
+            int matching_nodes = exonerate_hits.size();
+
+            stringstream ss;
+            ss<<"Read "<<reads->at(i).name<<" with TID "<<tid<<" matches "<<matching_nodes<<" nodes.\n";
+            Log_output::write_out(ss.str(),2);
+
+            map<string,hit>::iterator it = exonerate_hits.begin();
+
+            for(;it != exonerate_hits.end(); it++)
+            {
+                string target_node = it->first;
+
+                map<string,Node*>::iterator nit = nodes.find(target_node);
+                double score = this->read_match_score( nit->second, &reads->at(i), mf);
+
+                stringstream ss;
+                ss<<target_node<<" with score "<<score<<"\n";
+                Log_output::write_out(ss.str(),2);
+
+                if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
+                {
+                    best_score = score;
+                    best_node.append(" "+target_node);
+                }
+                else if(score>=best_score)
+                {
+                    best_score = score;
+                    best_node = target_node;
+                }
+
+                if(compare_reverse)
+                {
+                    Fasta_entry rev_seq = reads->at(i);
+                    rev_seq.sequence = this->reverse_complement(rev_seq.sequence);
+
+                    double score = this->read_match_score( nit->second, &rev_seq, mf);
+
+                    stringstream ss;
+                    ss<<target_node<<"(rc) with score "<<score<<"\n";
+                    Log_output::write_out(ss.str(),2);
+
+                    if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
+                    {
+                        best_score = score;
+                        best_node.append(" "+target_node);
+                        query_strand = Fasta_entry::reverse_strand;
+                    }
+                    else if(score>=best_score)
+                    {
+                        best_score = score;
+                        best_node = target_node;
+                        query_strand = Fasta_entry::reverse_strand;
+                    }
+                }
+
+                matching_nodes--;
+            }
+
+            if(best_score<0.05)
+            {
+                Log_output::write_out("Best node aligns with less than 5% of identical sites. Read is discarded.\n",2);
+                reads->at(i).node_to_align = "discarded_read";
+            }
+            else
+            {
+                stringstream ss;
+                ss<<"best node "<<best_node<<" (score "<<best_score<<").\n";
+                Log_output::write_out(ss.str(),2);
+
+                reads->at(i).node_score = best_score;
+                reads->at(i).node_to_align = best_node;
+                reads->at(i).query_strand = query_strand;
+            }
+        }
+        // All done; continue
+
+    }
+}
+
+/**********************************************************************/
 
 void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
 {
@@ -1874,31 +2242,83 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
     }
 }
 
-void Reads_aligner::preselect_target_sequences(Node *root, vector<Fasta_entry> *reads)
+void Reads_aligner::preselect_target_sequences(Node *root, vector<Fasta_entry> *reads, map<string,string> *target_sequences)
 {
     if(Settings_handle::st.is("keep-all-for-exonerate"))
         return;
 
 
     Log_output::write_header("Preselecting target sequences",0);
-    multimap<string,string> all_tid_nodes;
-    bool ignore_tid_tags = true;
 
-    this->get_target_node_names(root,&all_tid_nodes,&ignore_tid_tags,true);
-
+    // Get target node sequences for all nodes; done only once
     //
-    // Call Exonerate to reduce the search space
+    set<string> node_names;
+
+    if(Settings::placement_target_nodes == Settings::tid_nodes)
+        root->get_node_names_with_tid_tag(&node_names);
+
+    else if(Settings::placement_target_nodes == Settings::internal_nodes)
+        root->get_internal_node_names(&node_names);
+
+    else if(Settings::placement_target_nodes == Settings::all_nodes)
+        root->get_node_names(&node_names);
+
+
+    map<string,string> unaligned_sequences;
+
+    if(Settings::placement_target_nodes == Settings::terminal_nodes)
+    {
+        if(Settings_handle::st.is("translate") && Settings_handle::st.is("score-as-dna"))
+            root->get_dna_sequences(&unaligned_sequences);
+        else
+            root->get_unaligned_sequences(&unaligned_sequences);
+    }
+    else
+    {
+        if(Settings_handle::st.is("translate") && Settings_handle::st.is("score-as-dna"))
+        {
+            Log_output::write_warning("combination '--translate' and '--score-as-dna'' can only be used with option '--terminal-nodes'!",0);
+            root->get_dna_sequences(&unaligned_sequences);
+
+            Settings::placement_target_nodes = Settings::terminal_nodes;
+        }
+        else
+        {
+            vector<Fasta_entry> aligned_sequences;
+            root->get_alignment(&aligned_sequences,true);
+
+            vector<Fasta_entry>::iterator it = aligned_sequences.begin();
+            for(;it!=aligned_sequences.end();it++)
+            {
+                if(node_names.find(it->name) != node_names.end())
+                {
+                    string seq = it->sequence;
+                    for (string::iterator si = seq.begin();si != seq.end();)
+                        if(*si == '-')
+                            seq.erase(si);
+                        else
+                            si++;
+
+                    unaligned_sequences.insert(make_pair(it->name,seq));
+                }
+            }
+        }
+    }
+
+    //    multimap<string,string> all_tid_nodes;
+
+
+    // Call Exonerate to reduce the number of target nodes
     //
     map<string, multimap<string,hit> > exonerate_hits;
 
     Exonerate_queries er;
     if(!er.test_executable())
-    {
         Log_output::write_out("The executable for Exonerate not found! Preselection not done!",0);
-    }
 
-    else if(all_tid_nodes.size()>0)
-        er.all_local_alignments(root,reads,&all_tid_nodes,&exonerate_hits, true, ignore_tid_tags);
+    else if(unaligned_sequences.size()>0)
+        er.preselect_targets(&unaligned_sequences,reads,target_sequences,&exonerate_hits);
+
 
     set<string> keep_nodes;
 
@@ -1934,7 +2354,7 @@ void Reads_aligner::preselect_target_sequences(Node *root, vector<Fasta_entry> *
         pair <multimap<string,string>::iterator, multimap<string,string>::iterator> it1 = query_target.equal_range(it->name);
 
         stringstream node_to_align;
-        for (multimap<string,string>::iterator it2=it1.first; it2!=it1.second; ++it2)
+        for (multimap<string,string>::iterator it2=it1.first; it2!=it1.second; it2++)
         {
             node_to_align <<it2->second<<" ";
         }
@@ -2929,857 +3349,857 @@ void Reads_aligner::do_upwards_search(Node *root, vector<Fasta_entry> *reads, Mo
 /**********************************************************************/
 
 
-void Reads_aligner::loop_default_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
-{
-    bool single_ref_sequence = false;
-    if(root->get_number_of_leaves()==1)
-        single_ref_sequence = true;
+//void Reads_aligner::loop_default_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
+//{
+//    bool single_ref_sequence = false;
+//    if(root->get_number_of_leaves()==1)
+//        single_ref_sequence = true;
 
-    global_root = root;
+//    global_root = root;
 
-    // vector of node names giving the best node for each read
-    //
+//    // vector of node names giving the best node for each read
+//    //
 
-    if(Settings_handle::st.is("very-fast-placement"))
-    {
-        Log_output::write_header("Placing query sequences: very fast Exonerate placement",0);
-        this->find_nodes_for_all_reads_together(root, reads, mf);
-    }
-    else if(Settings_handle::st.is("fast-placement"))
-    {
-        Log_output::write_header("Placing query sequences: fast Exonerate placement",0);
-        this->find_nodes_for_all_reads(root, reads, mf);
-    }
-    // NEW!
-    else if(Settings_handle::st.is("upwards-search"))
-    {
-        Log_output::write_header("Placing query sequences: upwards search",0);
-        this->do_upwards_search(root,reads,mf);
-    }
-    else
-        this->find_nodes_for_reads(root, reads, mf);
+//    if(Settings_handle::st.is("very-fast-placement"))
+//    {
+//        Log_output::write_header("Placing query sequences: very fast Exonerate placement",0);
+//        this->find_nodes_for_all_reads_together(root, reads, mf);
+//    }
+//    else if(Settings_handle::st.is("fast-placement"))
+//    {
+//        Log_output::write_header("Placing query sequences: fast Exonerate placement",0);
+//        this->find_nodes_for_all_reads(root, reads, mf);
+//    }
+//    // NEW!
+//    else if(Settings_handle::st.is("upwards-search"))
+//    {
+//        Log_output::write_header("Placing query sequences: upwards search",0);
+//        this->do_upwards_search(root,reads,mf);
+//    }
+//    else
+//        this->find_nodes_for_reads(root, reads, mf);
 
-    Log_output::write_header("Aligning query sequences",0);
-
-
-    set<string> unique_nodeset;
-    for(int i=0;i<(int)reads->size();i++)
-    {
-        stringstream nodestream;
-        nodestream << reads->at(i).node_to_align;
-        string val;
-        while(nodestream >> val)
-        {
-            unique_nodeset.insert(val);
-        }
-    }
-
-    if(unique_nodeset.find("discarded_read") != unique_nodeset.end())
-        unique_nodeset.erase(unique_nodeset.find("discarded_read"));
-
-    vector<string> unique_nodes;
-    for(set<string>::iterator sit = unique_nodeset.begin(); sit != unique_nodeset.end(); sit++)
-    {
-        unique_nodes.push_back(*sit);
-    }
-    sort(unique_nodes.begin(),unique_nodes.end(),Reads_aligner::nodeIsSmaller);
-
-    map<string,Node*> nodes_map;
-    root->get_all_nodes(&nodes_map);
-
-    // do one tagged node at time
-    //
-    for(vector<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
-    {
-        vector<Fasta_entry> reads_for_this;
-
-        for(int i=0;i<(int)reads->size();i++)
-        {
-            stringstream nodestream;
-            nodestream << reads->at(i).node_to_align;
-            string val;
-            while(nodestream >> val)
-            {
-                if(val == *sit)
-                    reads_for_this.push_back(reads->at(i));
-            }
-        }
-
-        this->sort_reads_vector(&reads_for_this);
-
-        string ref_node_name = *sit;
-
-        Node *current_root = nodes_map.find(ref_node_name)->second;
-        double orig_dist = current_root->get_distance_to_parent();
-
-        bool alignment_done = false;
-        int alignments_done = 0;
-
-        // align the remaining reads to this node
-        //
-        for(int i=0;i<(int)reads_for_this.size();i++)
-        {
-            Node * node = new Node();
-
-            stringstream ss;
-            ss<<"#"<<count<<"#";
-            node->set_name(ss.str());
-
-            current_root->set_distance_to_parent(0.001);
-            node->add_left_child(current_root);
-
-            Node * reads_node = new Node();
-            this->copy_node_details(reads_node,&reads_for_this.at(i));
+//    Log_output::write_header("Aligning query sequences",0);
 
 
-            node->add_right_child(reads_node);
+//    set<string> unique_nodeset;
+//    for(int i=0;i<(int)reads->size();i++)
+//    {
+//        stringstream nodestream;
+//        nodestream << reads->at(i).node_to_align;
+//        string val;
+//        while(nodestream >> val)
+//        {
+//            unique_nodeset.insert(val);
+//        }
+//    }
 
-            node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
-            node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+//    if(unique_nodeset.find("discarded_read") != unique_nodeset.end())
+//        unique_nodeset.erase(unique_nodeset.find("discarded_read"));
 
-            Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
+//    vector<string> unique_nodes;
+//    for(set<string>::iterator sit = unique_nodeset.begin(); sit != unique_nodeset.end(); sit++)
+//    {
+//        unique_nodes.push_back(*sit);
+//    }
+//    sort(unique_nodes.begin(),unique_nodes.end(),Reads_aligner::nodeIsSmaller);
 
-            node->align_sequences_this_node(mf,true);
+//    map<string,Node*> nodes_map;
+//    root->get_all_nodes(&nodes_map);
+
+//    // do one tagged node at time
+//    //
+//    for(vector<string>::iterator sit = unique_nodes.begin(); sit != unique_nodes.end(); sit++)
+//    {
+//        vector<Fasta_entry> reads_for_this;
+
+//        for(int i=0;i<(int)reads->size();i++)
+//        {
+//            stringstream nodestream;
+//            nodestream << reads->at(i).node_to_align;
+//            string val;
+//            while(nodestream >> val)
+//            {
+//                if(val == *sit)
+//                    reads_for_this.push_back(reads->at(i));
+//            }
+//        }
+
+//        this->sort_reads_vector(&reads_for_this);
+
+//        string ref_node_name = *sit;
+
+//        Node *current_root = nodes_map.find(ref_node_name)->second;
+//        double orig_dist = current_root->get_distance_to_parent();
+
+//        bool alignment_done = false;
+//        int alignments_done = 0;
+
+//        // align the remaining reads to this node
+//        //
+//        for(int i=0;i<(int)reads_for_this.size();i++)
+//        {
+//            Node * node = new Node();
+
+//            stringstream ss;
+//            ss<<"#"<<count<<"#";
+//            node->set_name(ss.str());
+
+//            current_root->set_distance_to_parent(0.001);
+//            node->add_left_child(current_root);
+
+//            Node * reads_node = new Node();
+//            this->copy_node_details(reads_node,&reads_for_this.at(i));
 
 
-            // check if the alignment significantly overlaps with the reference alignment
-            //
-            bool read_overlaps = this->read_alignment_overlaps(node, reads_for_this.at(i).name, ref_node_name);
+//            node->add_right_child(reads_node);
 
-            if(read_overlaps)
-            {
-                count++;
-                current_root = node;
+//            node->set_nhx_tid(node->get_left_child()->get_nhx_tid());
+//            node->get_right_child()->set_nhx_tid(node->get_left_child()->get_nhx_tid());
 
-                if( orig_dist > current_root->get_distance_to_parent() )
-                    orig_dist -= current_root->get_distance_to_parent();
+//            Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads_for_this.size())+") aligning read: '"+reads_for_this.at(i).name+"'",0);
 
-                alignment_done = true;
-                alignments_done++;
-            }
-            // else delete the node; do not use the read
-            else
-            {
-                node->has_left_child(false);
-                delete node;
-            }
-
-        }
-
-        current_root->set_distance_to_parent(orig_dist);
+//            node->align_sequences_this_node(mf,true);
 
 
-        if(alignment_done)
-        {
-            if(single_ref_sequence)
-            {
-                global_root = current_root;
-            }
-            else
-            {
-                bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
+//            // check if the alignment significantly overlaps with the reference alignment
+//            //
+//            bool read_overlaps = this->read_alignment_overlaps(node, reads_for_this.at(i).name, ref_node_name);
 
-                if(!parent_found)
-                {
-                    global_root = current_root;
-                }
-            }
-        }
-    }
-}
+//            if(read_overlaps)
+//            {
+//                count++;
+//                current_root = node;
+
+//                if( orig_dist > current_root->get_distance_to_parent() )
+//                    orig_dist -= current_root->get_distance_to_parent();
+
+//                alignment_done = true;
+//                alignments_done++;
+//            }
+//            // else delete the node; do not use the read
+//            else
+//            {
+//                node->has_left_child(false);
+//                delete node;
+//            }
+
+//        }
+
+//        current_root->set_distance_to_parent(orig_dist);
+
+
+//        if(alignment_done)
+//        {
+//            if(single_ref_sequence)
+//            {
+//                global_root = current_root;
+//            }
+//            else
+//            {
+//                bool parent_found = this->correct_sites_index(current_root, ref_node_name, alignments_done, &nodes_map);
+
+//                if(!parent_found)
+//                {
+//                    global_root = current_root;
+//                }
+//            }
+//        }
+//    }
+//}
 
 /***********************************************************************************************/
 
-bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, string ref_node_name)
-{
-    float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
-    float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
+//bool Reads_aligner::read_alignment_overlaps(Node * node, string read_name, string ref_node_name)
+//{
+//    float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
+//    float min_identity = Settings_handle::st.get("min-query-identity").as<float>();
 
-    Sequence *node_sequence = node->get_sequence();
+//    Sequence *node_sequence = node->get_sequence();
 
-    int aligned = 0;
-    int read_length = 0;
-    int matched = 0;
+//    int aligned = 0;
+//    int read_length = 0;
+//    int matched = 0;
 
-    if(Settings_handle::st.is("pileup-alignment") && !Settings_handle::st.is("overlap-with-reference"))
-    {
-        for( int j=0; j < node_sequence->sites_length(); j++ )
-        {
-            bool read_has_site = node->has_site_at_alignment_column(j,read_name);
-            bool any_other_has_site = node->any_other_has_site_at_alignment_column(j,read_name);
+//    if(Settings_handle::st.is("pileup-alignment") && !Settings_handle::st.is("overlap-with-reference"))
+//    {
+//        for( int j=0; j < node_sequence->sites_length(); j++ )
+//        {
+//            bool read_has_site = node->has_site_at_alignment_column(j,read_name);
+//            bool any_other_has_site = node->any_other_has_site_at_alignment_column(j,read_name);
 
-            if(read_has_site)
-                read_length++;
+//            if(read_has_site)
+//                read_length++;
 
-            if(read_has_site && any_other_has_site)
-            {
-                aligned++;
-            }
-        }
-    }
-    else
-    {
-        for( int j=0; j < node_sequence->sites_length(); j++ )
-        {
-            bool read_has_site = node->has_site_at_alignment_column(j,read_name);
-            bool ref_root_has_site = node->has_site_at_alignment_column(j,ref_node_name);
+//            if(read_has_site && any_other_has_site)
+//            {
+//                aligned++;
+//            }
+//        }
+//    }
+//    else
+//    {
+//        for( int j=0; j < node_sequence->sites_length(); j++ )
+//        {
+//            bool read_has_site = node->has_site_at_alignment_column(j,read_name);
+//            bool ref_root_has_site = node->has_site_at_alignment_column(j,ref_node_name);
 
-            if(read_has_site)
-                read_length++;
+//            if(read_has_site)
+//                read_length++;
 
-            if(read_has_site && ref_root_has_site)
-            {
-                aligned++;
+//            if(read_has_site && ref_root_has_site)
+//            {
+//                aligned++;
 
-                int state_read = node->get_state_at_alignment_column(j,read_name);
-                int state_ref  = node->get_state_at_alignment_column(j,ref_node_name);
-                if(state_read == state_ref)
-                    matched++;
-            }
-        }
-    }
+//                int state_read = node->get_state_at_alignment_column(j,read_name);
+//                int state_ref  = node->get_state_at_alignment_column(j,ref_node_name);
+//                if(state_read == state_ref)
+//                    matched++;
+//            }
+//        }
+//    }
 
-    if( !Settings_handle::st.is("pileup-alignment") )
-    {
-        stringstream ss;
-        ss<<"aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"];"<<
-            " identical positions "<<(float)matched/(float)aligned<<" ["<<matched<<"/"<<aligned<<"]"<<endl;
-        Log_output::write_out(ss.str(),2);
-    }
+//    if( !Settings_handle::st.is("pileup-alignment") )
+//    {
+//        stringstream ss;
+//        ss<<"aligned positions "<<(float)aligned/(float)read_length<<" ["<<aligned<<"/"<<read_length<<"];"<<
+//            " identical positions "<<(float)matched/(float)aligned<<" ["<<matched<<"/"<<aligned<<"]"<<endl;
+//        Log_output::write_out(ss.str(),2);
+//    }
 
-    if(Settings_handle::st.is("pileup-alignment") && !Settings_handle::st.is("overlap-with-reference"))
-    {
-        if( (float)aligned/(float)read_length >= min_overlap )
-            return true;
-        else
-            return false;
-    }
+//    if(Settings_handle::st.is("pileup-alignment") && !Settings_handle::st.is("overlap-with-reference"))
+//    {
+//        if( (float)aligned/(float)read_length >= min_overlap )
+//            return true;
+//        else
+//            return false;
+//    }
 
-    if( (float)aligned/(float)read_length >= min_overlap && (float)matched/(float)aligned >= min_identity)
-    {
-        return true;
-    }
-    else if( (float)aligned/(float)read_length < min_overlap && (float)matched/(float)aligned < min_identity )
-    {
-        stringstream ss;
-        ss<<"Warning: read "<<read_name<<" dropped using the minimum overlap cut-off of "<<min_overlap<<
-                " and the minimum identity cut-off of "<<min_identity<<"."<<endl;
-        Log_output::write_out(ss.str(),2);
+//    if( (float)aligned/(float)read_length >= min_overlap && (float)matched/(float)aligned >= min_identity)
+//    {
+//        return true;
+//    }
+//    else if( (float)aligned/(float)read_length < min_overlap && (float)matched/(float)aligned < min_identity )
+//    {
+//        stringstream ss;
+//        ss<<"Warning: read "<<read_name<<" dropped using the minimum overlap cut-off of "<<min_overlap<<
+//                " and the minimum identity cut-off of "<<min_identity<<"."<<endl;
+//        Log_output::write_out(ss.str(),2);
 
-        return false;
-    }
-    else if( (float)aligned/(float)read_length < min_overlap)
-    {
+//        return false;
+//    }
+//    else if( (float)aligned/(float)read_length < min_overlap)
+//    {
 
-        stringstream ss;
-        ss<<"Warning: read "<<read_name<<" dropped using the minimum overlap cut-off of "<<min_overlap<<"."<<endl;
-        Log_output::write_out(ss.str(),2);
+//        stringstream ss;
+//        ss<<"Warning: read "<<read_name<<" dropped using the minimum overlap cut-off of "<<min_overlap<<"."<<endl;
+//        Log_output::write_out(ss.str(),2);
 
-        return false;
-    }
-    else if( (float)matched/(float)aligned < min_identity)
-    {
+//        return false;
+//    }
+//    else if( (float)matched/(float)aligned < min_identity)
+//    {
 
-        stringstream ss;
-        ss<<" Warning: read "<<read_name<<" dropped using the minimum identity cut-off of "<<min_identity<<"."<<endl;
-        Log_output::write_out(ss.str(),2);
+//        stringstream ss;
+//        ss<<" Warning: read "<<read_name<<" dropped using the minimum identity cut-off of "<<min_identity<<"."<<endl;
+//        Log_output::write_out(ss.str(),2);
 
-        return false;
-    }
+//        return false;
+//    }
 
-    return false;
-}
+//    return false;
+//}
 
 
 /**********************************************************************/
 
 
-void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
-{
+//void Reads_aligner::find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
+//{
 
-    multimap<string,string> tid_nodes;
-    bool ignore_tid_tags = true;
+//    multimap<string,string> tid_nodes;
+//    bool ignore_tid_tags = true;
 
-    this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+//    this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
 
-    Exonerate_queries er;
-    bool has_exonerate = true;
-    if(!er.test_executable())
-    {
-        has_exonerate = false;
-        Log_output::write_out("The executable for Exonerate not found! The fast placement search not used!",0);
-    }
+//    Exonerate_queries er;
+//    bool has_exonerate = true;
+//    if(!er.test_executable())
+//    {
+//        has_exonerate = false;
+//        Log_output::write_out("The executable for Exonerate not found! The fast placement search not used!",0);
+//    }
 
-    for(int i=0;i<(int)reads->size();i++)
-    {
-        reads->at(i).node_score = -1.0;
+//    for(int i=0;i<(int)reads->size();i++)
+//    {
+//        reads->at(i).node_score = -1.0;
 
-        string tid = reads->at(i).tid;
-        if( ignore_tid_tags )
-            tid = "<empty>";
+//        string tid = reads->at(i).tid;
+//        if( ignore_tid_tags )
+//            tid = "<empty>";
 
-        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping query: '"+reads->at(i).name+"'",0);
+//        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping query: '"+reads->at(i).name+"'",0);
 
-        // Call Exonerate to reduce the search space
+//        // Call Exonerate to reduce the search space
 
-        map<string,hit> exonerate_hits;
+//        map<string,hit> exonerate_hits;
 
-        if(has_exonerate && Settings_handle::st.is("use-exonerate-local") )
-        {
-            tid_nodes.clear();
-            this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+//        if(has_exonerate && Settings_handle::st.is("use-exonerate-local") )
+//        {
+//            tid_nodes.clear();
+//            this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
 
-            if(tid_nodes.size()>1)
-                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits, true,ignore_tid_tags);
+//            if(tid_nodes.size()>1)
+//                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits, true,ignore_tid_tags);
 
-            if(tid_nodes.size()>1 && Settings_handle::st.is("use-exonerate-gapped"))
-                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
-        }
+//            if(tid_nodes.size()>1 && Settings_handle::st.is("use-exonerate-gapped"))
+//                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
+//        }
 
-        else if(has_exonerate && Settings_handle::st.is("use-exonerate-gapped"))
-        {
-            tid_nodes.clear();
-            this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+//        else if(has_exonerate && Settings_handle::st.is("use-exonerate-gapped"))
+//        {
+//            tid_nodes.clear();
+//            this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
 
-            if(tid_nodes.size()>1)
-                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
-        }
+//            if(tid_nodes.size()>1)
+//                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
+//        }
 
-        // Discarded by Exonerate
+//        // Discarded by Exonerate
 
-        if(reads->at(i).node_to_align == "discarded_read")
-        {
-            if(Settings_handle::st.is("exhaustive-placement"))
-            {
-                reads->at(i).node_to_align = "";
-                tid_nodes.clear();
+//        if(reads->at(i).node_to_align == "discarded_read")
+//        {
+//            if(Settings_handle::st.is("exhaustive-placement"))
+//            {
+//                reads->at(i).node_to_align = "";
+//                tid_nodes.clear();
 
-                this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
-            }
-            else
-            {
-                stringstream ss;
-                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" was discarded by Exonerate.\n";
-                Log_output::write_out(ss.str(),2);
+//                this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+//            }
+//            else
+//            {
+//                stringstream ss;
+//                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" was discarded by Exonerate.\n";
+//                Log_output::write_out(ss.str(),2);
 
-                continue;
-            }
-        }
-
-        // Has TID or exhaustive search
-        if(tid != "")
-        {
-            int matches = tid_nodes.count(tid);
-
-            if( ignore_tid_tags )
-                matches = tid_nodes.size();
-
-
-            // has TID but no matching node
-
-            if(matches == 0)
-            {
-                stringstream ss;
-                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" has no matching node. Aligned to root.\n";
-                Log_output::write_out(ss.str(),2);
-
-                reads->at(i).node_to_align = root->get_name();
-
-            }
-
-
-            // has only one matching node and no need for ranking
-
-            else if(matches == 1 && !Settings_handle::st.is("rank-reads-for-nodes") )
-            {
-                multimap<string,string>::iterator tit = tid_nodes.find(tid);
-
-                if( ignore_tid_tags )
-                    tit = tid_nodes.begin();
-
-                if(tit != tid_nodes.end())
-                {
-                    stringstream ss;
-                    ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" only matches the node "<<tit->second<<"."<<endl;
-                    Log_output::write_out(ss.str(),2);
-
-                    reads->at(i).node_to_align = tit->second;
-
-                }
-            }
-
-
-            // has TID and matching nodes, or exhaustive search
-
-            else
-            {
-                double best_score = -HUGE_VAL;
-                string best_node = root->get_name();
-
-                map<string,Node*> nodes;
-                root->get_all_nodes(&nodes);
-
-                multimap<string,string>::iterator tit;
-                int matching_nodes = 0;
-
-                if( ignore_tid_tags )
-                {
-                    tit = tid_nodes.begin();
-                    matching_nodes = tid_nodes.size();
-                }
-                else
-                {
-                    tit = tid_nodes.find(tid);
-                    matching_nodes = tid_nodes.count(tid);
-                }
-
-                if(tit != tid_nodes.end())
-                {
-
-                    stringstream ss;
-                    ss<<"Read "<<reads->at(i).name<<" with TID "<<tid<<" matches "<<matching_nodes<<" nodes.\n";
-                    Log_output::write_out(ss.str(),2);
-
-                    while(tit != tid_nodes.end() && matching_nodes>0)
-                    {
-                        map<string,Node*>::iterator nit = nodes.find(tit->second);
-                        double score = this->read_match_score( nit->second, &reads->at(i), mf);
-
-                        stringstream ss;
-                        ss<<tit->second<<" with score "<<score<<"\n";
-                        Log_output::write_out(ss.str(),2);
-
-                        if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
-                        {
-                            best_score = score;
-                            best_node.append(" "+tit->second);
-                        }
-                        else if(score>=best_score)
-                        {
-                            best_score = score;
-                            best_node = tit->second;
-                        }
-                        tit++;
-                        matching_nodes--;
-                    }
-                }
-                if(best_score<0.05)
-                {
-                    if(Settings_handle::st.is("align-bad-reads-at-root"))
-                    {
-                        Log_output::write_out("Best node aligns with less than 5% of identical sites. Aligning to root instead.\n",2);
-
-                        reads->at(i).node_to_align = root->get_name();
-
-                    }
-                    else
-                    {
-                        Log_output::write_out("Best node aligns with less than 5% of identical sites. Read is discarded.\n",2);
-
-                        reads->at(i).node_to_align = "discarded_read";
-                    }
-                }
-                else
-                {
-                    stringstream ss;
-                    ss<<"best node "<<best_node<<" (score "<<best_score<<").\n";
-                    Log_output::write_out(ss.str(),2);
-
-                    reads->at(i).node_score = best_score;
-                    reads->at(i).node_to_align = best_node;
-
-                }
-            }
-        }
-
-
-        // no TID, aligning at root
-
-        else
-        {
-            stringstream ss;
-            ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") has no tid. Aligned to root.\n";
-            Log_output::write_out(ss.str(),2);
-
-            reads->at(i).node_to_align = root->get_name();
-        }
-    }
-
-}
-
-
-void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
-{
+//                continue;
+//            }
+//        }
+
+//        // Has TID or exhaustive search
+//        if(tid != "")
+//        {
+//            int matches = tid_nodes.count(tid);
+
+//            if( ignore_tid_tags )
+//                matches = tid_nodes.size();
+
+
+//            // has TID but no matching node
+
+//            if(matches == 0)
+//            {
+//                stringstream ss;
+//                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" has no matching node. Aligned to root.\n";
+//                Log_output::write_out(ss.str(),2);
+
+//                reads->at(i).node_to_align = root->get_name();
+
+//            }
+
+
+//            // has only one matching node and no need for ranking
+
+//            else if(matches == 1 && !Settings_handle::st.is("rank-reads-for-nodes") )
+//            {
+//                multimap<string,string>::iterator tit = tid_nodes.find(tid);
+
+//                if( ignore_tid_tags )
+//                    tit = tid_nodes.begin();
+
+//                if(tit != tid_nodes.end())
+//                {
+//                    stringstream ss;
+//                    ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" only matches the node "<<tit->second<<"."<<endl;
+//                    Log_output::write_out(ss.str(),2);
+
+//                    reads->at(i).node_to_align = tit->second;
+
+//                }
+//            }
+
+
+//            // has TID and matching nodes, or exhaustive search
+
+//            else
+//            {
+//                double best_score = -HUGE_VAL;
+//                string best_node = root->get_name();
+
+//                map<string,Node*> nodes;
+//                root->get_all_nodes(&nodes);
+
+//                multimap<string,string>::iterator tit;
+//                int matching_nodes = 0;
+
+//                if( ignore_tid_tags )
+//                {
+//                    tit = tid_nodes.begin();
+//                    matching_nodes = tid_nodes.size();
+//                }
+//                else
+//                {
+//                    tit = tid_nodes.find(tid);
+//                    matching_nodes = tid_nodes.count(tid);
+//                }
+
+//                if(tit != tid_nodes.end())
+//                {
+
+//                    stringstream ss;
+//                    ss<<"Read "<<reads->at(i).name<<" with TID "<<tid<<" matches "<<matching_nodes<<" nodes.\n";
+//                    Log_output::write_out(ss.str(),2);
+
+//                    while(tit != tid_nodes.end() && matching_nodes>0)
+//                    {
+//                        map<string,Node*>::iterator nit = nodes.find(tit->second);
+//                        double score = this->read_match_score( nit->second, &reads->at(i), mf);
+
+//                        stringstream ss;
+//                        ss<<tit->second<<" with score "<<score<<"\n";
+//                        Log_output::write_out(ss.str(),2);
+
+//                        if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
+//                        {
+//                            best_score = score;
+//                            best_node.append(" "+tit->second);
+//                        }
+//                        else if(score>=best_score)
+//                        {
+//                            best_score = score;
+//                            best_node = tit->second;
+//                        }
+//                        tit++;
+//                        matching_nodes--;
+//                    }
+//                }
+//                if(best_score<0.05)
+//                {
+//                    if(Settings_handle::st.is("align-bad-reads-at-root"))
+//                    {
+//                        Log_output::write_out("Best node aligns with less than 5% of identical sites. Aligning to root instead.\n",2);
+
+//                        reads->at(i).node_to_align = root->get_name();
+
+//                    }
+//                    else
+//                    {
+//                        Log_output::write_out("Best node aligns with less than 5% of identical sites. Read is discarded.\n",2);
+
+//                        reads->at(i).node_to_align = "discarded_read";
+//                    }
+//                }
+//                else
+//                {
+//                    stringstream ss;
+//                    ss<<"best node "<<best_node<<" (score "<<best_score<<").\n";
+//                    Log_output::write_out(ss.str(),2);
+
+//                    reads->at(i).node_score = best_score;
+//                    reads->at(i).node_to_align = best_node;
+
+//                }
+//            }
+//        }
+
+
+//        // no TID, aligning at root
+
+//        else
+//        {
+//            stringstream ss;
+//            ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") has no tid. Aligned to root.\n";
+//            Log_output::write_out(ss.str(),2);
+
+//            reads->at(i).node_to_align = root->get_name();
+//        }
+//    }
+
+//}
+
+
+//void Reads_aligner::find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
+//{
 
-    multimap<string,string> all_tid_nodes;
-    bool ignore_tid_tags = true;
+//    multimap<string,string> all_tid_nodes;
+//    bool ignore_tid_tags = true;
 
-    this->get_target_node_names(root,&all_tid_nodes,&ignore_tid_tags);
+//    this->get_target_node_names(root,&all_tid_nodes,&ignore_tid_tags);
 
-    //
-    // Call Exonerate to reduce the search space
-    //
-    map<string, multimap<string,hit> > exonerate_hits;
+//    //
+//    // Call Exonerate to reduce the search space
+//    //
+//    map<string, multimap<string,hit> > exonerate_hits;
 
-    Exonerate_queries er;
-    bool has_exonerate = true;
-    if(!er.test_executable())
-    {
-        has_exonerate = false;
-        Log_output::write_out("The executable for Exonerate not found! The fast placement search not used!",0);
-    }
+//    Exonerate_queries er;
+//    bool has_exonerate = true;
+//    if(!er.test_executable())
+//    {
+//        has_exonerate = false;
+//        Log_output::write_out("The executable for Exonerate not found! The fast placement search not used!",0);
+//    }
 
-    else if(all_tid_nodes.size()>0)
-        er.all_local_alignments(root,reads,&all_tid_nodes,&exonerate_hits, true, ignore_tid_tags);
-
+//    else if(all_tid_nodes.size()>0)
+//        er.all_local_alignments(root,reads,&all_tid_nodes,&exonerate_hits, true, ignore_tid_tags);
+
 
-    for(int i=0;i<(int)reads->size();i++)
-    {
+//    for(int i=0;i<(int)reads->size();i++)
+//    {
 
-        reads->at(i).node_score = -1.0;
+//        reads->at(i).node_score = -1.0;
 
-        string tid = reads->at(i).tid;
-        if( ignore_tid_tags )
-            tid = "<empty>";
+//        string tid = reads->at(i).tid;
+//        if( ignore_tid_tags )
+//            tid = "<empty>";
 
-        multimap<string,string> tid_nodes;
+//        multimap<string,string> tid_nodes;
 
-        // Discarded by Exonerate
-        //
-        if(reads->at(i).node_to_align == "discarded_read")
-        {
-            if(Settings_handle::st.is("exhaustive-placement"))
-            {
-                this->get_target_node_names(root,&all_tid_nodes,&ignore_tid_tags);
-            }
+//        // Discarded by Exonerate
+//        //
+//        if(reads->at(i).node_to_align == "discarded_read")
+//        {
+//            if(Settings_handle::st.is("exhaustive-placement"))
+//            {
+//                this->get_target_node_names(root,&all_tid_nodes,&ignore_tid_tags);
+//            }
 
-            else
-            {
-                stringstream ss;
-                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" was discarded by Exonerate.\n";
-                Log_output::write_out(ss.str(),1);
+//            else
+//            {
+//                stringstream ss;
+//                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" was discarded by Exonerate.\n";
+//                Log_output::write_out(ss.str(),1);
 
-                continue;
-            }
-        }
-        else
-        {
-            map<string,multimap<string,hit> >::iterator iter = exonerate_hits.find(reads->at(i).name);
-
-            if( iter != exonerate_hits.end() )
-            {
-                multimap<string,hit>::iterator iter2 = iter->second.begin();
-
-                for( ;iter2 != iter->second.end(); iter2++ )
-                    tid_nodes.insert( make_pair<string,string>(iter2->first,iter2->second.node) );
-            }
-
-            if(has_exonerate && tid_nodes.size()>1)
-            {
-                map<string, hit> exonerate_gapped_hits;
-                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_gapped_hits,false,ignore_tid_tags);
-
-                tid_nodes.clear();
-                map<string, hit>::iterator iter2 = exonerate_gapped_hits.begin();
-                if( iter2 != exonerate_gapped_hits.end() )
-                {
-                    tid_nodes.insert( make_pair<string,string>(iter2->first,iter2->second.node) );
-                }
-            }
-        }
-
-
-
-        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping query: '"+reads->at(i).name+"'",0);
-
-
-        int matches = tid_nodes.size();
-
-        // has TID but no matching node
-
-        if(matches == 0)
-        {
-            stringstream ss;
-            ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" has no matching node. Aligned to root.\n";
-            Log_output::write_out(ss.str(),2);
-
-            reads->at(i).node_to_align = root->get_name();
-
-        }
-
-
-        // has only one matching node and no need for ranking
-
-        else if(matches == 1 && !Settings_handle::st.is("rank-reads-for-nodes") )
-        {
-            multimap<string,string>::iterator tit = tid_nodes.begin();
-
-            if(tit != tid_nodes.end())
-            {
-                stringstream ss;
-                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" only matches the node "<<tit->second<<"."<<endl;
-                Log_output::write_out(ss.str(),2);
-
-                reads->at(i).node_to_align = tit->second;
-            }
-        }
-
-
-        // has TID and matching nodes, or exhaustive search
-        //
-        else
-        {
-            double best_score = -HUGE_VAL;
-            string best_node = root->get_name();
-
-            map<string,Node*> nodes;
-            root->get_all_nodes(&nodes);
-
-            multimap<string,string>::iterator tit = tid_nodes.begin();
-            int matching_nodes = tid_nodes.size();
-
-
-            if(tit != tid_nodes.end())
-            {
-
-                stringstream ss;
-                ss<<"Read "<<reads->at(i).name<<" with TID "<<tid<<" matches "<<matching_nodes<<" nodes.\n";
-                Log_output::write_out(ss.str(),2);
-
-                while(tit != tid_nodes.end() && matching_nodes>0)
-                {
-                    map<string,Node*>::iterator nit = nodes.find(tit->second);
-                    double score = this->read_match_score( nit->second, &reads->at(i), mf);
-
-                    stringstream ss;
-                    ss<<tit->second<<" with score "<<score<<"\n";
-                    Log_output::write_out(ss.str(),2);
-
-                    if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
-                    {
-                        best_score = score;
-                        best_node.append(" "+tit->second);
-                    }
-                    else if(score>=best_score)
-                    {
-                        best_score = score;
-                        best_node = tit->second;
-                    }
-                    tit++;
-                    matching_nodes--;
-                }
-            }
-
-            if(best_score<0.05)
-            {
-                if(Settings_handle::st.is("align-bad-reads-at-root"))
-                {
-                    Log_output::write_out("Best node aligns with less than 5% of identical sites. Aligning to root instead.\n",2);
-
-                    reads->at(i).node_to_align = root->get_name();
-
-                }
-                else
-                {
-                    Log_output::write_out("Best node aligns with less than 5% of identical sites. Read is discarded.\n",2);
-
-                    reads->at(i).node_to_align = "discarded_read";
-                }
-            }
-            else
-            {
-                stringstream ss;
-                ss<<"best node "<<best_node<<" (score "<<best_score<<").\n";
-                Log_output::write_out(ss.str(),2);
-
-                reads->at(i).node_score = best_score;
-                reads->at(i).node_to_align = best_node;
-
-            }
-        }
-    }
-}
+//                continue;
+//            }
+//        }
+//        else
+//        {
+//            map<string,multimap<string,hit> >::iterator iter = exonerate_hits.find(reads->at(i).name);
+
+//            if( iter != exonerate_hits.end() )
+//            {
+//                multimap<string,hit>::iterator iter2 = iter->second.begin();
+
+//                for( ;iter2 != iter->second.end(); iter2++ )
+//                    tid_nodes.insert( make_pair<string,string>(iter2->first,iter2->second.node) );
+//            }
+
+//            if(has_exonerate && tid_nodes.size()>1)
+//            {
+//                map<string, hit> exonerate_gapped_hits;
+//                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_gapped_hits,false,ignore_tid_tags);
+
+//                tid_nodes.clear();
+//                map<string, hit>::iterator iter2 = exonerate_gapped_hits.begin();
+//                if( iter2 != exonerate_gapped_hits.end() )
+//                {
+//                    tid_nodes.insert( make_pair<string,string>(iter2->first,iter2->second.node) );
+//                }
+//            }
+//        }
+
+
+
+//        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping query: '"+reads->at(i).name+"'",0);
+
+
+//        int matches = tid_nodes.size();
+
+//        // has TID but no matching node
+
+//        if(matches == 0)
+//        {
+//            stringstream ss;
+//            ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" has no matching node. Aligned to root.\n";
+//            Log_output::write_out(ss.str(),2);
+
+//            reads->at(i).node_to_align = root->get_name();
+
+//        }
+
+
+//        // has only one matching node and no need for ranking
+
+//        else if(matches == 1 && !Settings_handle::st.is("rank-reads-for-nodes") )
+//        {
+//            multimap<string,string>::iterator tit = tid_nodes.begin();
+
+//            if(tit != tid_nodes.end())
+//            {
+//                stringstream ss;
+//                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" only matches the node "<<tit->second<<"."<<endl;
+//                Log_output::write_out(ss.str(),2);
+
+//                reads->at(i).node_to_align = tit->second;
+//            }
+//        }
+
+
+//        // has TID and matching nodes, or exhaustive search
+//        //
+//        else
+//        {
+//            double best_score = -HUGE_VAL;
+//            string best_node = root->get_name();
+
+//            map<string,Node*> nodes;
+//            root->get_all_nodes(&nodes);
+
+//            multimap<string,string>::iterator tit = tid_nodes.begin();
+//            int matching_nodes = tid_nodes.size();
+
+
+//            if(tit != tid_nodes.end())
+//            {
+
+//                stringstream ss;
+//                ss<<"Read "<<reads->at(i).name<<" with TID "<<tid<<" matches "<<matching_nodes<<" nodes.\n";
+//                Log_output::write_out(ss.str(),2);
+
+//                while(tit != tid_nodes.end() && matching_nodes>0)
+//                {
+//                    map<string,Node*>::iterator nit = nodes.find(tit->second);
+//                    double score = this->read_match_score( nit->second, &reads->at(i), mf);
+
+//                    stringstream ss;
+//                    ss<<tit->second<<" with score "<<score<<"\n";
+//                    Log_output::write_out(ss.str(),2);
+
+//                    if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
+//                    {
+//                        best_score = score;
+//                        best_node.append(" "+tit->second);
+//                    }
+//                    else if(score>=best_score)
+//                    {
+//                        best_score = score;
+//                        best_node = tit->second;
+//                    }
+//                    tit++;
+//                    matching_nodes--;
+//                }
+//            }
+
+//            if(best_score<0.05)
+//            {
+//                if(Settings_handle::st.is("align-bad-reads-at-root"))
+//                {
+//                    Log_output::write_out("Best node aligns with less than 5% of identical sites. Aligning to root instead.\n",2);
+
+//                    reads->at(i).node_to_align = root->get_name();
+
+//                }
+//                else
+//                {
+//                    Log_output::write_out("Best node aligns with less than 5% of identical sites. Read is discarded.\n",2);
+
+//                    reads->at(i).node_to_align = "discarded_read";
+//                }
+//            }
+//            else
+//            {
+//                stringstream ss;
+//                ss<<"best node "<<best_node<<" (score "<<best_score<<").\n";
+//                Log_output::write_out(ss.str(),2);
+
+//                reads->at(i).node_score = best_score;
+//                reads->at(i).node_to_align = best_node;
+
+//            }
+//        }
+//    }
+//}
 
 //
 
-void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
-{
-    multimap<string,string> all_tid_nodes;
-    bool ignore_tid_tags = true;
+//void Reads_aligner::find_nodes_for_all_reads_together(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
+//{
+//    multimap<string,string> all_tid_nodes;
+//    bool ignore_tid_tags = true;
 
-    this->get_target_node_names(root,&all_tid_nodes,&ignore_tid_tags);
+//    this->get_target_node_names(root,&all_tid_nodes,&ignore_tid_tags);
 
-    //
-    // Call Exonerate to reduce the search space
-    //
-    Exonerate_queries er;
-    bool has_exonerate = true;
-    if(!er.test_executable())
-    {
-        has_exonerate = false;
-        Log_output::write_out("The executable for Exonerate not found! The fast placement search not used!",0);
-    }
+//    //
+//    // Call Exonerate to reduce the search space
+//    //
+//    Exonerate_queries er;
+//    bool has_exonerate = true;
+//    if(!er.test_executable())
+//    {
+//        has_exonerate = false;
+//        Log_output::write_out("The executable for Exonerate not found! The fast placement search not used!",0);
+//    }
 
-    map<string, multimap<string,hit> > exonerate_hits;
+//    map<string, multimap<string,hit> > exonerate_hits;
 
-    if( has_exonerate && all_tid_nodes.size()>1)
-    {
-        er.all_local_alignments(root,reads,&all_tid_nodes,&exonerate_hits, true, ignore_tid_tags);
-    }
+//    if( has_exonerate && all_tid_nodes.size()>1)
+//    {
+//        er.all_local_alignments(root,reads,&all_tid_nodes,&exonerate_hits, true, ignore_tid_tags);
+//    }
 
-    //
-    // Map one read at time
-    //
-    for(int i=0;i<(int)reads->size();i++)
-    {
+//    //
+//    // Map one read at time
+//    //
+//    for(int i=0;i<(int)reads->size();i++)
+//    {
 
-        reads->at(i).node_score = -1.0;
+//        reads->at(i).node_score = -1.0;
 
-        string tid = reads->at(i).tid;
-        if( ignore_tid_tags )
-            tid = "<empty>";
+//        string tid = reads->at(i).tid;
+//        if( ignore_tid_tags )
+//            tid = "<empty>";
 
-        multimap<string,string> tid_nodes;
+//        multimap<string,string> tid_nodes;
 
-        // Discarded by Exonerate
-        //
-        if(reads->at(i).node_to_align == "discarded_read")
-        {
-            if(Settings_handle::st.is("exhaustive-placement"))
-            {
-                this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
-            }
+//        // Discarded by Exonerate
+//        //
+//        if(reads->at(i).node_to_align == "discarded_read")
+//        {
+//            if(Settings_handle::st.is("exhaustive-placement"))
+//            {
+//                this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
+//            }
 
-            else
-            {
-                stringstream ss;
-                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" was discarded by Exonerate.\n";
-                Log_output::write_out(ss.str(),2);
+//            else
+//            {
+//                stringstream ss;
+//                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" was discarded by Exonerate.\n";
+//                Log_output::write_out(ss.str(),2);
 
-                continue;
-            }
-        }
-        else
-        {
-            map<string,multimap<string,hit> >::iterator iter = exonerate_hits.find(reads->at(i).name);
+//                continue;
+//            }
+//        }
+//        else
+//        {
+//            map<string,multimap<string,hit> >::iterator iter = exonerate_hits.find(reads->at(i).name);
 
-            if( iter != exonerate_hits.end() )
-            {
-                multimap<string,hit>::iterator iter2 = iter->second.begin();
+//            if( iter != exonerate_hits.end() )
+//            {
+//                multimap<string,hit>::iterator iter2 = iter->second.begin();
 
-                for( ;iter2 != iter->second.end(); iter2++ )
-                    tid_nodes.insert( make_pair<string,string>(iter2->first,iter2->second.node) );
-            }
-        }
-
-
-
-        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping query: '"+reads->at(i).name+"'",0);
+//                for( ;iter2 != iter->second.end(); iter2++ )
+//                    tid_nodes.insert( make_pair<string,string>(iter2->first,iter2->second.node) );
+//            }
+//        }
 
 
-        int matches = tid_nodes.size();
 
-        // has TID but no matching node
-
-        if(matches == 0)
-        {
-            stringstream ss;
-            ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" has no matching node. Aligned to root.\n";
-            Log_output::write_out(ss.str(),2);
-
-            reads->at(i).node_to_align = root->get_name();
-        }
+//        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping query: '"+reads->at(i).name+"'",0);
 
 
-        // has only one matching node and no need for ranking
+//        int matches = tid_nodes.size();
 
-        else if(matches == 1 && !Settings_handle::st.is("rank-reads-for-nodes") )
-        {
-            multimap<string,string>::iterator tit = tid_nodes.begin();
+//        // has TID but no matching node
 
-            if(tit != tid_nodes.end())
-            {
-                stringstream ss;
-                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" only matches the node "<<tit->second<<"."<<endl;
-                Log_output::write_out(ss.str(),2);
+//        if(matches == 0)
+//        {
+//            stringstream ss;
+//            ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" has no matching node. Aligned to root.\n";
+//            Log_output::write_out(ss.str(),2);
 
-                reads->at(i).node_to_align = tit->second;
-            }
-        }
+//            reads->at(i).node_to_align = root->get_name();
+//        }
 
 
-        // has TID and matching nodes, or exhaustive search
-        //
-        else
-        {
-            double best_score = -HUGE_VAL;
-            string best_node = root->get_name();
+//        // has only one matching node and no need for ranking
 
-            map<string,Node*> nodes;
-            root->get_all_nodes(&nodes);
+//        else if(matches == 1 && !Settings_handle::st.is("rank-reads-for-nodes") )
+//        {
+//            multimap<string,string>::iterator tit = tid_nodes.begin();
 
-            multimap<string,string>::iterator tit = tid_nodes.begin();
-            int matching_nodes = tid_nodes.size();
+//            if(tit != tid_nodes.end())
+//            {
+//                stringstream ss;
+//                ss<<"Read "<<reads->at(i).name<<" ("<<i+1<<"/"<<reads->size()<<") with the tid "<<tid<<" only matches the node "<<tit->second<<"."<<endl;
+//                Log_output::write_out(ss.str(),2);
+
+//                reads->at(i).node_to_align = tit->second;
+//            }
+//        }
 
 
-            if(tit != tid_nodes.end())
-            {
+//        // has TID and matching nodes, or exhaustive search
+//        //
+//        else
+//        {
+//            double best_score = -HUGE_VAL;
+//            string best_node = root->get_name();
 
-                stringstream ss;
-                ss<<"Read "<<reads->at(i).name<<" with TID "<<tid<<" matches "<<matching_nodes<<" nodes.\n";
-                Log_output::write_out(ss.str(),2);
+//            map<string,Node*> nodes;
+//            root->get_all_nodes(&nodes);
 
-                while(tit != tid_nodes.end() && matching_nodes>0)
-                {
-                    map<string,Node*>::iterator nit = nodes.find(tit->second);
-                    double score = this->read_match_score( nit->second, &reads->at(i), mf);
+//            multimap<string,string>::iterator tit = tid_nodes.begin();
+//            int matching_nodes = tid_nodes.size();
 
-                    stringstream ss;
-                    ss<<tit->second<<" with score "<<score<<"\n";
-                    Log_output::write_out(ss.str(),2);
 
-                    if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
-                    {
-                        best_score = score;
-                        best_node.append(" "+tit->second);
-                    }
-                    else if(score>=best_score)
-                    {
-                        best_score = score;
-                        best_node = tit->second;
-                    }
-                    tit++;
-                    matching_nodes--;
-                }
-            }
+//            if(tit != tid_nodes.end())
+//            {
 
-            if(best_score<0.05)
-            {
-                if(Settings_handle::st.is("align-bad-reads-at-root"))
-                {
-                    Log_output::write_out("Best node aligns with less than 5% of identical sites. Aligning to root instead.\n",2);
+//                stringstream ss;
+//                ss<<"Read "<<reads->at(i).name<<" with TID "<<tid<<" matches "<<matching_nodes<<" nodes.\n";
+//                Log_output::write_out(ss.str(),2);
 
-                    reads->at(i).node_to_align = root->get_name();
-                }
-                else
-                {
-                    Log_output::write_out("Best node aligns with less than 5% of identical sites. Read is discarded.\n",2);
+//                while(tit != tid_nodes.end() && matching_nodes>0)
+//                {
+//                    map<string,Node*>::iterator nit = nodes.find(tit->second);
+//                    double score = this->read_match_score( nit->second, &reads->at(i), mf);
 
-                    reads->at(i).node_to_align = "discarded_read";
-                }
-            }
-            else
-            {
-                stringstream ss;
-                ss<<"best node "<<best_node<<" (score "<<best_score<<").\n";
-                Log_output::write_out(ss.str(),2);
+//                    stringstream ss;
+//                    ss<<tit->second<<" with score "<<score<<"\n";
+//                    Log_output::write_out(ss.str(),2);
 
-                reads->at(i).node_score = best_score;
-                reads->at(i).node_to_align = best_node;
+//                    if(score==best_score && !Settings_handle::st.is("one-placement-only") && !Settings_handle::st.is("exhaustive-placement"))
+//                    {
+//                        best_score = score;
+//                        best_node.append(" "+tit->second);
+//                    }
+//                    else if(score>=best_score)
+//                    {
+//                        best_score = score;
+//                        best_node = tit->second;
+//                    }
+//                    tit++;
+//                    matching_nodes--;
+//                }
+//            }
 
-            }
-        }
-    }
-}
+//            if(best_score<0.05)
+//            {
+//                if(Settings_handle::st.is("align-bad-reads-at-root"))
+//                {
+//                    Log_output::write_out("Best node aligns with less than 5% of identical sites. Aligning to root instead.\n",2);
+
+//                    reads->at(i).node_to_align = root->get_name();
+//                }
+//                else
+//                {
+//                    Log_output::write_out("Best node aligns with less than 5% of identical sites. Read is discarded.\n",2);
+
+//                    reads->at(i).node_to_align = "discarded_read";
+//                }
+//            }
+//            else
+//            {
+//                stringstream ss;
+//                ss<<"best node "<<best_node<<" (score "<<best_score<<").\n";
+//                Log_output::write_out(ss.str(),2);
+
+//                reads->at(i).node_score = best_score;
+//                reads->at(i).node_to_align = best_node;
+
+//            }
+//        }
+//    }
+//}
 
 

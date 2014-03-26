@@ -378,6 +378,18 @@ public:
         }
     }
 
+    void get_internal_node_names(set<string> *list)
+    {
+        if(!this->is_leaf())
+        {
+            left_child->get_internal_node_names(list);
+            right_child->get_internal_node_names(list);
+
+            list->insert(this->get_name());
+        }
+    }
+
+
     void get_node_names(multimap<string,string> *list)
     {
         if(!this->is_leaf())
@@ -386,6 +398,16 @@ public:
             right_child->get_node_names(list);
         }
         list->insert(pair<string,string>(this->get_name(),this->get_name()));
+    }
+
+    void get_node_names(set<string> *list)
+    {
+        if(!this->is_leaf())
+        {
+            left_child->get_node_names(list);
+            right_child->get_node_names(list);
+        }
+        list->insert(this->get_name());
     }
 
     void get_terminal_node_names(multimap<string,string> *list)
@@ -423,6 +445,19 @@ public:
         if(this->get_nhx_tid()!="")
         {
             list->insert(pair<string,string>(this->get_nhx_tid(),this->get_name()));
+        }
+    }
+
+    void get_node_names_with_tid_tag(set<string> *list)
+    {
+        if(!this->is_leaf())
+        {
+            left_child->get_node_names_with_tid_tag(list);
+            right_child->get_node_names_with_tid_tag(list);
+        }
+        if(this->get_nhx_tid()!="")
+        {
+            list->insert(this->get_name());
         }
     }
 
@@ -1224,11 +1259,37 @@ public:
         }
     }
 
+    void get_dna_sequences(map<string,string> *dna_sequences)
+    {
+        if(leaf)
+        {
+            dna_sequences->insert(make_pair( this->get_name(),*this->get_sequence()->get_dna_sequence() ) );
+        }
+        else
+        {
+            this->get_left_child()->get_dna_sequences(dna_sequences);
+            this->get_right_child()->get_dna_sequences(dna_sequences);
+        }
+    }
+
     void get_unaligned_sequences(map<string,string*> *unaligned_sequences)
     {
         if(leaf)
         {
             unaligned_sequences->insert(make_pair( this->get_name(),this->get_sequence()->get_unaligned_sequence() ) );
+        }
+        else
+        {
+            this->get_left_child()->get_unaligned_sequences(unaligned_sequences);
+            this->get_right_child()->get_unaligned_sequences(unaligned_sequences);
+        }
+    }
+
+    void get_unaligned_sequences(map<string,string> *unaligned_sequences)
+    {
+        if(leaf)
+        {
+            unaligned_sequences->insert(make_pair( this->get_name(),*this->get_sequence()->get_unaligned_sequence() ) );
         }
         else
         {

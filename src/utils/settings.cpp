@@ -70,6 +70,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("xml-nhx","output XML alignment with NHX tree")
         ("raxml-tree","use RAxML for guide tree computation [default BppDist]")
         ("no-terminal-edges", "assume terminal gaps as missing data")
+        ("no-bppancestors","no BppAncestors (slow for large alignments)")
         ("noise", po::value<int>(), "output noise level")
         ("log-output-file",po::value<string>(),"output to file instead of stdout")
         ("temp-folder",po::value<string>(),"non-standard place for temp files")
@@ -300,6 +301,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     po::notify(vm);
 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
     if(is("noise"))
         noise = get("noise").as<int>();
 
@@ -371,6 +375,26 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     {
         tunneling_coverage = 1;
     }
+
+
+    if(is("test-every-internal-node") || is("internal-nodes"))
+    {
+        placement_target_nodes = Settings::internal_nodes;
+    }
+    else if(is("test-every-terminal-node") || is("terminal-nodes"))
+    {
+        placement_target_nodes = Settings::terminal_nodes;
+    }
+    else if(is("test-every-node") || is("all-nodes"))
+    {
+        placement_target_nodes = Settings::all_nodes;
+    }
+
+
+
+
+
+    /////////////////////////////////////////////////////////////////////
 
     if (vm.count("help")) {
         this->help();
@@ -522,3 +546,5 @@ int   Settings::exonerate_local_keep_best = 0;
 int   Settings::exonerate_gapped_keep_best = 0;
 
 float Settings::tunneling_coverage = 1;
+
+int Settings::placement_target_nodes = Settings::tid_nodes;

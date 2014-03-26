@@ -36,6 +36,8 @@ class Settings
 
     float version;
     std::string date;
+
+
 public:
     Settings();
     int read_command_line_arguments(int argc, char *argv[]);
@@ -51,6 +53,8 @@ public:
     void print_msg();
     std::string print_log_msg();
 
+    enum Placement_target_nodes {tid_nodes,terminal_nodes,internal_nodes,all_nodes};
+
     static int noise;
     static float resize_factor;
 
@@ -58,6 +62,8 @@ public:
     static int exonerate_gapped_keep_best;
 
     static float tunneling_coverage;
+
+    static int placement_target_nodes;
 };
 
 }
