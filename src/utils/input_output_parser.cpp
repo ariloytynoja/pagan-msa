@@ -653,7 +653,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
         }
 
-        if( Settings_handle::st.is("prune-keep-number") || Settings_handle::st.is("prune-keep-threshold") || Settings_handle::st.is("prune-keep-closest"))
+        if( Settings_handle::st.is("prune-extended-alignment") )
         {
             this->prune_extended_alignment(fr,root,&aligned_sequences);
         }
