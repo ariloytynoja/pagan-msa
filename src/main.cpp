@@ -97,11 +97,12 @@ int main(int argc, char *argv[])
     /*  Threaded alignment: using maximum number by defualt                */
     /***********************************************************************/
 
-    int n_threads = boost::thread::hardware_concurrency();
+    int n_threads = 1;
+    int max_threads = boost::thread::hardware_concurrency();
     if(Settings_handle::st.is("threads"))
     {
         int nt = Settings_handle::st.get("threads").as<int > ();
-        if(nt>0 && nt<=n_threads) { n_threads = nt; }
+        if(nt>0 && nt<=max_threads) { n_threads = nt; }
     }
 
     /***********************************************************************/
