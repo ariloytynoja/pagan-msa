@@ -61,6 +61,10 @@ float Viterbi_alignment::define_tunnel(Sequence *left_sequence,Sequence *right_s
     {
         fa.find_long_substrings(&s1,&s2,&hits,p_len);
     }
+    else if(Settings_handle::st.is("hmmer-anchors"))
+    {
+        fa.find_hmmer_anchors(&s1,&s2,&hits);
+    }
     else
     {
         Exonerate_queries er;

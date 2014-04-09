@@ -126,6 +126,100 @@ void Find_anchors::find_long_substrings(std::string *seq1,std::string *seq2,std:
     }
 }
 
+void Find_anchors::find_hmmer_anchors(std::string *seq1,std::string *seq2,std::vector<Substring_hit> *hits)
+{
+    len1 = seq1->length();
+    len2 = seq2->length();
+
+    ofstream h_in("hmmer_in.fas");
+    h_in<<">1\n"<<*seq1<<endl<<">2\n"<<*seq2<<endl;
+
+    stringstream command;
+    command <<"hmmsearch --max  pagan.hmm hmmer_in.fas 2>&1";
+
+    FILE *fpipe;
+    if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
+    {
+        Log_output::write_out("Problems with hmmer pipe.\nExiting.\n",0);
+        exit(1);
+    }
+
+    char line[256];
+
+    int a,g,h,j,k,m,n;
+    string b,i,l,o;
+    float c,d,e,f,p;
+    Substring_hit hitS;
+    Substring_hit hitE;
+    hitS.length = 5;
+    hitE.length = 5;
+
+    while ( fgets( line, sizeof line, fpipe))
+    {
+        string str(line);
+
+        cout<<line;
+
+        if(str.find(">> 1") != string::npos)
+        {
+            float minE=10000;
+
+            fgets( line, sizeof line, fpipe);
+            fgets( line, sizeof line, fpipe);
+            while ( fgets( line, sizeof line, fpipe))
+            {
+                str = line;
+                if(str.length()<=1)
+                    break;
+
+                stringstream strstr(str);
+                strstr >> a >> b >> c >> d >> e >> f >> g >> h >> i >> j >> k >> l >> m >> n >> o >> p;
+
+                if(e<minE)
+                {
+                    hitS.start_site_1 = j-g+2;
+                    hitE.start_site_1 = k-h+22;
+                    minE = e;
+                }
+                cout<<line;
+//                cout<<e<<" "<<g<<" "<<h<<" "<<j<<" "<<k<<endl;
+            }
+        }
+        if(str.find(">> 2") != string::npos)
+        {
+            float minE=10000;
+
+            fgets( line, sizeof line, fpipe);
+            fgets( line, sizeof line, fpipe);
+            while ( fgets( line, sizeof line, fpipe))
+            {
+                str = line;
+                if(str.length()<=1)
+                    break;
+
+                stringstream strstr(str);
+                strstr >> a >> b >> c >> d >> e >> f >> g >> h >> i >> j >> k >> l >> m >> n >> o >> p;
+
+                if(e<minE)
+                {
+                    hitS.start_site_2 = j-g+2;
+                    hitE.start_site_2 = k-h+22;
+                    minE = e;
+                }
+
+                cout<<line;
+//                cout<<e<<" "<<g<<" "<<h<<" "<<j<<" "<<k<<endl;
+            }
+        }
+    }
+    hits->push_back(hitS);
+    hits->push_back(hitE);
+    cout<<"anchor: "<<hitS.start_site_1<<" "<<hitS.start_site_2<<endl;
+    cout<<"anchor: "<<hitE.start_site_1<<" "<<hitE.start_site_2<<endl;
+    pclose(fpipe);
+
+}
+
 void Find_anchors::check_hits_order_conflict(std::string *seq1,std::string *seq2,vector<Substring_hit> *hits)
 {
     len1 = seq1->length();

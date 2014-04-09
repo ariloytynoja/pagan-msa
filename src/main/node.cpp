@@ -548,7 +548,6 @@ void Node::add_root_consensus(vector<Fasta_entry> *aligned_sequences)
 
 void Node::get_alignment_column_at(int j,vector<string> *column, bool include_internal_nodes)
 {
-
     if(leaf)
     {
         column->push_back(sequence->get_site_at(j)->get_symbol());
