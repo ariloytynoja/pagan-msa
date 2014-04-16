@@ -99,11 +99,11 @@ int main(int argc, char *argv[])
 
     int n_threads = 1;
     int max_threads = boost::thread::hardware_concurrency();
-     if(Settings_handle::st.is("threads"))
-     {
-         int nt = Settings_handle::st.get("threads").as<int > ();
+    if(Settings_handle::st.is("threads"))
+    {
+        int nt = Settings_handle::st.get("threads").as<int > ();
         if(nt>0 && nt<=max_threads) { n_threads = nt; }
-     }
+    }
 
 
     /***********************************************************************/
