@@ -105,7 +105,6 @@ int main(int argc, char *argv[])
         if(nt>0 && nt<=max_threads) { n_threads = nt; }
     }
 
-
     /***********************************************************************/
     stringstream ss;
     ss << "Running with "<<n_threads<<" threads.\n";
