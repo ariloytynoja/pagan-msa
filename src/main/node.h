@@ -110,7 +110,7 @@ public:
              node_has_left_child(false), node_has_right_child(false),
              adjust_left_node_site_index(false), adjust_right_node_site_index(false),
              node_has_sequence_object(false), node_has_sequence(false),
-             has_orf(false), visited(false), use_for_exonarate(false), use_for_exonarate(false) {}
+             has_orf(false), visited(false), use_for_exonarate(false) {}
     ~Node();
 
 
