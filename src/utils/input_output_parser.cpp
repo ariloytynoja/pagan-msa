@@ -769,14 +769,20 @@ void Input_output_parser::prune_extended_alignment(Fasta_reader *fr,Node *root,v
         }
         else
         {
-            tmp_root->unset_has_sequence();
-            tmp_root->set_has_sequence(&readnames);
-            tmp_root->prune_tree();
+            if((int)readnames.size()>1)
+            {
+                tmp_root->unset_has_sequence();
+                tmp_root->set_has_sequence(&readnames);
+                tmp_root->prune_tree();
 
-            this->output_pruned_alignment(fr,root,tmp_root,aligned_sequences,".pruned");
-
-            delete tmp_root;
+                this->output_pruned_alignment(fr,root,tmp_root,aligned_sequences,".pruned");
+            }
+            else
+            {
+                Log_output::write_out("Only one query sequence: pruned alignment without reference not meaningful.\n",0);
+            }
         }
+        delete tmp_root;
     }
 
     if(Settings_handle::st.is("prune-keep-closest"))
