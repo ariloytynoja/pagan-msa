@@ -27,6 +27,7 @@
 #include <string>
 #include <vector>
 #include <sys/stat.h>
+#include <stdlib.h>
 
 using namespace std;
 
@@ -41,8 +42,13 @@ class RAxML_tree
         std::string tmp_dir = "/tmp/";
 
         if(Settings_handle::st.is("temp-folder"))
+        {
             tmp_dir = Settings_handle::st.get("temp-folder").as<string>()+"/";
 
+            char resolved_path[200];
+            realpath(tmp_dir.c_str(), resolved_path);
+            tmp_dir = string(resolved_path)+"/";
+        }
         struct stat st;
         if(stat(tmp_dir.c_str(),&st) != 0)
             tmp_dir = "";

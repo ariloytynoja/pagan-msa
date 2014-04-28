@@ -95,7 +95,7 @@ string RAxML_tree::infer_phylogeny(std::vector<Fasta_entry> *sequences,bool is_p
         stringstream r_name;
         r_name <<tmp_dir<<"RAxML_info.r"<<r;
         ifstream r_file(r_name.str().c_str());
- 
+
         if(!m_file && !r_file)
         {
             m_output.open( m_name.str().c_str(), (ios::out) );
@@ -103,7 +103,6 @@ string RAxML_tree::infer_phylogeny(std::vector<Fasta_entry> *sequences,bool is_p
         }
         r = rand();
     }
-    
     vector<Fasta_entry>::iterator si = sequences->begin();
     m_output <<sequences->size()<<" "<<sequences->at(0).sequence.length()<<endl;
     for(;si!=sequences->end();si++)
