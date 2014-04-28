@@ -37,6 +37,7 @@ bool RAxML_tree::test_executable()
     #if defined (__CYGWIN__)
     char path[200];
     int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
 
     string epath = string(path).substr(0,length);
     epath.replace(epath.rfind("pagan"),string("pagan").size(),string(""));
@@ -64,6 +65,7 @@ bool RAxML_tree::test_executable()
 
     #else
     int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
     epath = string(path).substr(0,length);
     epath.replace(epath.rfind("pagan"),string("pagan").size(),string(""));
 

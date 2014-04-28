@@ -50,6 +50,7 @@ bool Exonerate_queries::test_executable()
     #if defined (__CYGWIN__)
     char path[200];
     int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
 
     string epath = string(path).substr(0,length);
     if (epath.find("/")!=std::string::npos)
@@ -60,31 +61,30 @@ bool Exonerate_queries::test_executable()
 
     #else
 
-    if(WEXITSTATUS(status) != 1)
-    {
-        char path[200];
-        string epath;
+    char path[200];
+    string epath;
 
-        #if defined (__APPLE__)
-        uint32_t size = sizeof(path);
-        _NSGetExecutablePath(path, &size);
-        epath = string(path);
-        if (epath.find("/")!=std::string::npos)
-            epath = epath.substr(0,epath.rfind("/")+1);
-        //epath = "DYLD_LIBRARY_PATH="+epath+" "+epath;
+    #if defined (__APPLE__)
+    uint32_t size = sizeof(path);
+    _NSGetExecutablePath(path, &size);
+    epath = string(path);
+    if (epath.find("/")!=std::string::npos)
+        epath = epath.substr(0,epath.rfind("/")+1);
+    //epath = "DYLD_LIBRARY_PATH="+epath+" "+epath;
 
-        #else
-        int length = readlink("/proc/self/exe",path,200-1);
-        epath = string(path).substr(0,length);
-        if (epath.find("/")!=std::string::npos)
-            epath = epath.substr(0,epath.rfind("/")+1);
+    #else
+    int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
+    epath = string(path).substr(0,length);
+    if (epath.find("/")!=std::string::npos)
+        epath = epath.substr(0,epath.rfind("/")+1);
 
-        #endif
+    #endif
 
-        exoneratepath = epath;
-        epath = epath+"exonerate >/dev/null 2>/dev/null";
-        status = system(epath.c_str());
-    }
+    exoneratepath = epath;
+    epath = epath+"exonerate >/dev/null 2>/dev/null";
+    status = system(epath.c_str());
+
     #endif
 
     if(WEXITSTATUS(status) == 1)
