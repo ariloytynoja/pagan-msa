@@ -63,7 +63,7 @@ class Reads_aligner
     void find_nodes_for_query(Node *root, Fasta_entry *read, Model_factory *mf,bool warnings=false);
 
     void find_targets_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf,map<string,string> *target_sequences);
-    void find_targets_for_query(Node *root, Fasta_entry *read, Model_factory *mf,map<string,string> *target_sequences,bool warnings=false);
+    void find_targets_for_query(Node *root, Fasta_entry *read, Model_factory *mf,map<string,string> *target_sequences,multimap<string, string> *added_sequences, bool warnings=false);
 
     double read_match_score(Node *node, Fasta_entry *read, Model_factory *mf);
     void read_alignment_scores(Node * node, string read_name, string ref_node_name, float *overlap, float *identity);

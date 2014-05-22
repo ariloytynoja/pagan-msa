@@ -638,14 +638,18 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
     map<string,string> target_sequences;
     this->preselect_target_sequences(root,reads,&target_sequences);
 
+    multimap<string,string> added_sequences;
+
     Log_output::write_header("Aligning query sequences",0);
 
 
     for(int i=0;i<(int)reads->size();i++)
     {
 
+        string org_nodes_to_align = reads->at(i).node_to_align;
+
         if((int)target_sequences.size()>0)
-            this->find_targets_for_query(root, &reads->at(i), mf, &target_sequences,i==0);
+            this->find_targets_for_query(root, &reads->at(i), mf, &target_sequences, &added_sequences,i==0);
         else
             this->find_nodes_for_query(root, &reads->at(i), mf,i==0);
 
@@ -676,6 +680,8 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
         root->get_all_nodes(&nodes_map);
 
         map<string,int> nodes_number;
+
+        bool add_to_targets = false;
 
         // do one tagged node at time
         //
@@ -820,10 +826,24 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
                 }
 
                 this->fix_branch_lengths(root,current_root);
+
+                add_to_targets = true;
+
+                stringstream str(org_nodes_to_align);
+                string nname;
+                while(str >> nname)
+                {
+                    added_sequences.insert(make_pair(nname,reads->at(i).name));
+                }
             }
 
 
             global_root = root;
+        }
+
+        if(add_to_targets)
+        {
+            target_sequences.insert(make_pair(reads->at(i).name,reads->at(i).sequence));
         }
     }
 }
@@ -1209,15 +1229,18 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
     map<string,string> target_sequences;
     this->preselect_target_sequences(root,&potential_orfs,&target_sequences);
 
+    multimap<string,string> added_sequences;
+
     Log_output::write_header("Aligning query sequences",0);
 
     for(int i=0;i<(int)potential_orfs.size();i++)
     {
+//        string org_nodes_to_align = potential_orfs->at(i).node_to_align;
 
         Fasta_entry potential_orf = potential_orfs.at(i);
 
         if((int)target_sequences.size()>0)
-            this->find_targets_for_query(root, &potential_orf, mf, &target_sequences,i==0);
+            this->find_targets_for_query(root, &potential_orf, mf, &target_sequences, &added_sequences,i==0);
         else
             this->find_nodes_for_query(root, &potential_orf, mf);
 
@@ -1327,7 +1350,7 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
 
 /**********************************************************************/
 
-void Reads_aligner::find_targets_for_query(Node *root, Fasta_entry *read, Model_factory *mf,map<string,string> *target_sequences,bool warnings)
+void Reads_aligner::find_targets_for_query(Node *root, Fasta_entry *read, Model_factory *mf,map<string,string> *target_sequences, multimap<string,string> *added_sequences,bool warnings)
 {
     Exonerate_queries er;
     bool has_exonerate = true;
@@ -1363,6 +1386,12 @@ void Reads_aligner::find_targets_for_query(Node *root, Fasta_entry *read, Model_
         if(it!=target_sequences->end())
         {
             targets_for_this.insert(make_pair(it->first,it->second));
+            pair <multimap<string,string>::iterator, multimap<string,string>::iterator> ret = added_sequences->equal_range(nodename);
+            for (multimap<string,string>::iterator mit=ret.first; mit!=ret.second; mit++)
+            {
+                it = target_sequences->find(mit->second);
+                targets_for_this.insert(make_pair(it->first,it->second));
+            }
         }
     }
 
