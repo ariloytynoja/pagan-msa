@@ -682,6 +682,8 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
         map<string,int> nodes_number;
 
         bool add_to_targets = false;
+        string add_to_targets_node = "";
+        string add_to_targets_seq = "";
 
         // do one tagged node at time
         //
@@ -827,14 +829,34 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
 
                 this->fix_branch_lengths(root,current_root);
 
-                add_to_targets = true;
+                if(root->get_parent_node(current_root->get_name()) != 0)
+                {
+                    Node *subroot = root->get_parent_node(current_root->get_name());
+                    if(subroot->get_left_child()->get_name() == current_root->get_name())
+                        subroot->reconstruct_one_parsimony_ancestor(mf,true);
+                    else if(subroot->get_right_child()->get_name() == current_root->get_name())
+                        subroot->reconstruct_one_parsimony_ancestor(mf,false);
+                }
 
+                add_to_targets = true;
+                add_to_targets_node = current_root->name;
+                add_to_targets_seq = current_root->get_sequence()->get_sequence_string(false);
+
+                // Only the reference nodes were included as original targets.
+                // The newly added sequence nodes have to be also included and
+                // the mapping can only be done via the refence nodes.
+                //
                 stringstream str(org_nodes_to_align);
                 string nname;
+//                cout<<"\nadded_sequences ("<<added_sequences.size()<<"): "<<reads->at(i).name<<" "<<current_root->name<<"\n";
                 while(str >> nname)
                 {
+//                    cout<<nname<<endl;
                     added_sequences.insert(make_pair(nname,reads->at(i).name));
+                    added_sequences.insert(make_pair(nname,current_root->name));
                 }
+//                cout<<current_root->get_sequence()->get_sequence_string(false)<<endl;
+//                cout<<endl;
             }
 
 
@@ -843,7 +865,10 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
 
         if(add_to_targets)
         {
+//            cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<reads->at(i).name<<endl<<endl;
             target_sequences.insert(make_pair(reads->at(i).name,reads->at(i).sequence));
+//            cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<add_to_targets_node<<endl<<endl;
+            target_sequences.insert(make_pair(add_to_targets_node,add_to_targets_seq));
         }
     }
 }
@@ -857,7 +882,7 @@ void Reads_aligner::fix_branch_lengths(Node *root,Node *current_root)
         subroot->get_alignment(&subalignment,true);
         vector<Fasta_entry>::iterator it = subalignment.begin();
 
-        Fasta_entry lnode,rnode,pnode;
+        Fasta_entry lnode,rnode,pnode,tnode;
 
         for(;it!=subalignment.end();it++)
         {
@@ -865,6 +890,8 @@ void Reads_aligner::fix_branch_lengths(Node *root,Node *current_root)
                 lnode = *it;
             if(it->name == current_root->right_child->get_name())
                 rnode = *it;
+            if(it->name == current_root->get_name())
+                tnode = *it;
             if(it->name == subroot->get_name())
                 pnode = *it;
         }
@@ -873,7 +900,7 @@ void Reads_aligner::fix_branch_lengths(Node *root,Node *current_root)
         int ident12=0; int ident13=0; int ident23=0;
 
         for(int i=0;i<(int)pnode.sequence.length();i++)
-        {
+        {            
             if(pnode.sequence.at(i)!='-' && pnode.sequence.at(i)!='.')
             {
                 if(lnode.sequence.at(i)!='-' && lnode.sequence.at(i)!='.')
@@ -1376,6 +1403,8 @@ void Reads_aligner::find_targets_for_query(Node *root, Fasta_entry *read, Model_
     if( tid=="" )
         tid = "<empty>";
 
+    // Targets for this includes the original hit plus all new sequences that are aligned to those hits
+    //
     map<string,string> targets_for_this;
 
     stringstream str(read->node_to_align);

@@ -1014,6 +1014,38 @@ public:
 
     }
 
+    void reconstruct_one_parsimony_ancestor(Model_factory *mf,bool do_left)
+    {
+        for(int i=1;i<this->get_sequence()->sites_length()-1;i++)
+        {
+            Site *site = this->get_sequence()->get_site_at(i);
+            int state = site->get_state();
+            if(do_left)
+            {
+                if(site->children.left_index >= 0)
+                    this->get_left_child()->reconstruct_one_parsimony_ancestor_at_site(mf,site->children.left_index,state);
+            }
+            else
+            {
+                if(site->children.right_index >= 0)
+                    this->get_right_child()->reconstruct_one_parsimony_ancestor_at_site(mf,site->children.right_index,state);
+            }
+        }
+    }
+
+    void reconstruct_one_parsimony_ancestor_at_site(Model_factory *mf,int pos,int parent_state)
+    {
+
+        if(leaf)
+            return;
+
+        Site *site = this->get_sequence()->get_site_at(pos);
+
+        int new_state = mf->get_child_parsimony_state(parent_state,site->get_state());
+        site->set_state(new_state);
+
+    }
+
     bool has_site_at_alignment_column(int j,string node_name)
     {
 
