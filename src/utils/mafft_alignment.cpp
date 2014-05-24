@@ -94,6 +94,8 @@ void Mafft_alignment::align_sequences(vector<Fasta_entry> *sequences)
     ofstream m_output;
     string tmp_dir = this->get_temp_dir();
 
+    int input_sequences = (int) sequences->size();
+
     stringstream m_name;
 
     int r = rand();
@@ -200,6 +202,14 @@ void Mafft_alignment::align_sequences(vector<Fasta_entry> *sequences)
 
     if(!Settings_handle::st.is("keep-temp-files"))
         this->delete_files(r);
+
+    if( input_sequences != (int) sequences->size() )
+    {
+        Log_output::write_out("Problems with mafft.\nExiting.\n",0);
+        exit(1);
+    }
+
+
 }
 
 void Mafft_alignment::align_sequences_fifo(vector<Fasta_entry> *sequences)

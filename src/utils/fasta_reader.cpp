@@ -1600,7 +1600,6 @@ void Fasta_reader::read_bpp_phylip(istream & input,map<string,string> *sequences
         }
         while (temp.length()>0);
 
-
         sequences->insert(sequences->begin(),pair<string,string>("#"+name+"#",sequence) );
     }
 }
