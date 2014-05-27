@@ -648,7 +648,7 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
 
         string org_nodes_to_align = reads->at(i).node_to_align;
 
-        if((int)target_sequences.size()>0)
+        if((int)target_sequences.size()>0 && !Settings_handle::st.is("no-preselection"))
             this->find_targets_for_query(root, &reads->at(i), mf, &target_sequences, &added_sequences,i==0);
         else
             this->find_nodes_for_query(root, &reads->at(i), mf,i==0);
@@ -772,7 +772,7 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
             {
                 count++;
                 current_root = node_rc;
-
+//                cout<<"\n\nroot "<<current_root->get_name()<<endl;
                 if( orig_dist > current_root->get_distance_to_parent() )
                     orig_dist -= current_root->get_distance_to_parent();
 
@@ -786,8 +786,8 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
                 if(it!=nodes_number.end())
                 {
                     stringstream n;
-                    n<<node->right_child->get_name()<<"."<<it->second;
-                    node->right_child->set_name(n.str());
+                    n<<node_rc->right_child->get_name()<<"."<<it->second;
+                    node_rc->right_child->set_name(n.str());
                     it->second = it->second+1;
                 }
                 else
@@ -827,6 +827,13 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
                     }
                 }
 
+
+                if(Settings_handle::st.is("assembly"))
+                {
+                    current_root->set_nhx_tid(current_root->get_left_child()->get_nhx_tid());
+                    current_root->get_left_child()->set_nhx_tid("");
+                }
+
                 this->fix_branch_lengths(root,current_root);
 
                 if(root->get_parent_node(current_root->get_name()) != 0)
@@ -838,37 +845,41 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
                         subroot->reconstruct_one_parsimony_ancestor(mf,false);
                 }
 
-                add_to_targets = true;
-                add_to_targets_node = current_root->name;
-                add_to_targets_seq = current_root->get_sequence()->get_sequence_string(false);
-
-                // Only the reference nodes were included as original targets.
-                // The newly added sequence nodes have to be also included and
-                // the mapping can only be done via the refence nodes.
-                //
-                stringstream str(org_nodes_to_align);
-                string nname;
-//                cout<<"\nadded_sequences ("<<added_sequences.size()<<"): "<<reads->at(i).name<<" "<<current_root->name<<"\n";
-                while(str >> nname)
+                if(!Settings_handle::st.is("no-preselection"))
                 {
-//                    cout<<nname<<endl;
-                    added_sequences.insert(make_pair(nname,reads->at(i).name));
-                    added_sequences.insert(make_pair(nname,current_root->name));
+                    add_to_targets = true;
+                    add_to_targets_node = current_root->name;
+                    add_to_targets_seq = current_root->get_sequence()->get_sequence_string(false);
+
+                    // Only the reference nodes were included as original targets.
+                    // The newly added sequence nodes have to be also included and
+                    // the mapping can only be done via the refence nodes.
+                    //
+                    stringstream str(org_nodes_to_align);
+                    string nname;
+//                    cout<<"\nadded_sequences ("<<added_sequences.size()<<"): "<<reads->at(i).name<<" "<<current_root->name<<"\n";
+                    while(str >> nname)
+                    {
+//                        cout<<nname<<endl;
+                        if(!Settings_handle::st.is("assembly"))
+                            added_sequences.insert(make_pair(nname,reads->at(i).name));
+                        added_sequences.insert(make_pair(nname,current_root->name));
+                    }
+//                    cout<<current_root->name<<": "<<current_root->get_sequence()->get_sequence_string(false)<<endl;
+//                    cout<<endl;
                 }
-//                cout<<current_root->get_sequence()->get_sequence_string(false)<<endl;
-//                cout<<endl;
             }
-
-
             global_root = root;
-        }
 
-        if(add_to_targets)
-        {
-//            cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<reads->at(i).name<<endl<<endl;
-            target_sequences.insert(make_pair(reads->at(i).name,reads->at(i).sequence));
-//            cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<add_to_targets_node<<endl<<endl;
-            target_sequences.insert(make_pair(add_to_targets_node,add_to_targets_seq));
+
+            if(add_to_targets)
+            {
+//                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<reads->at(i).name<<endl<<endl;
+                if(!Settings_handle::st.is("assembly"))
+                    target_sequences.insert(make_pair(reads->at(i).name,reads->at(i).sequence));
+//                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<add_to_targets_node<<endl<<endl;
+                target_sequences.insert(make_pair(add_to_targets_node,add_to_targets_seq));
+            }
         }
     }
 }
@@ -1379,6 +1390,7 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
 
 void Reads_aligner::find_targets_for_query(Node *root, Fasta_entry *read, Model_factory *mf,map<string,string> *target_sequences, multimap<string,string> *added_sequences,bool warnings)
 {
+
     Exonerate_queries er;
     bool has_exonerate = true;
     if(!er.test_executable())
@@ -1407,6 +1419,10 @@ void Reads_aligner::find_targets_for_query(Node *root, Fasta_entry *read, Model_
     //
     map<string,string> targets_for_this;
 
+    map<string,string>::iterator it = target_sequences->begin();
+    for(;it!=target_sequences->end();it++)
+        cout<<"target: "<<it->first<<endl;
+
     stringstream str(read->node_to_align);
     string nodename;
     while(str >> nodename)
@@ -1418,7 +1434,9 @@ void Reads_aligner::find_targets_for_query(Node *root, Fasta_entry *read, Model_
             pair <multimap<string,string>::iterator, multimap<string,string>::iterator> ret = added_sequences->equal_range(nodename);
             for (multimap<string,string>::iterator mit=ret.first; mit!=ret.second; mit++)
             {
+                cout<<"find "<<mit->second<<endl;
                 it = target_sequences->find(mit->second);
+//                cout<<"crash "<<it->first<<" "<<it->second<<endl;
                 targets_for_this.insert(make_pair(it->first,it->second));
             }
         }

@@ -33,7 +33,7 @@ using namespace std;
 using namespace ppa;
 
 
-Viterbi_alignment::Viterbi_alignment() { tunnel_defined = false; }
+Viterbi_alignment::Viterbi_alignment() { tunnel_defined = false; reduced_terminal_gap_penalties = false; }
 
 float Viterbi_alignment::define_tunnel(Sequence *left_sequence,Sequence *right_sequence,Evol_model *evol_model,bool compute_coverage)
 {

@@ -28,9 +28,7 @@
 using namespace std;
 using namespace ppa;
 
-Reference_alignment::Reference_alignment()
-{
-}
+Reference_alignment::Reference_alignment(){ reduced_terminal_gap_penalties = false; }
 
 
 /********************************************/

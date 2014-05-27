@@ -252,6 +252,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("plot-anchors-for-R","plot for R")
         ("no-reduced-terminal-penalties", "no reduced terminal penalties")
         ("hmmer-anchors","hmmer anchors")
+        ("assembly","assembly with subroot extension")
     ;
 
     boost::program_options::options_description broken("Broken options",100);
