@@ -828,10 +828,11 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
                 }
 
 
-                if(Settings_handle::st.is("assembly"))
+                if(Settings_handle::st.is("tid-for-subroot"))
                 {
                     current_root->set_nhx_tid(current_root->get_left_child()->get_nhx_tid());
                     current_root->get_left_child()->set_nhx_tid("");
+                    current_root->get_right_child()->set_nhx_tid("");
                 }
 
                 this->fix_branch_lengths(root,current_root);
@@ -861,8 +862,7 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
                     while(str >> nname)
                     {
 //                        cout<<nname<<endl;
-                        if(!Settings_handle::st.is("assembly"))
-                            added_sequences.insert(make_pair(nname,reads->at(i).name));
+                        added_sequences.insert(make_pair(nname,reads->at(i).name));
                         added_sequences.insert(make_pair(nname,current_root->name));
                     }
 //                    cout<<current_root->name<<": "<<current_root->get_sequence()->get_sequence_string(false)<<endl;
@@ -875,8 +875,7 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
             if(add_to_targets)
             {
 //                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<reads->at(i).name<<endl<<endl;
-                if(!Settings_handle::st.is("assembly"))
-                    target_sequences.insert(make_pair(reads->at(i).name,reads->at(i).sequence));
+                target_sequences.insert(make_pair(reads->at(i).name,reads->at(i).sequence));
 //                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<add_to_targets_node<<endl<<endl;
                 target_sequences.insert(make_pair(add_to_targets_node,add_to_targets_seq));
             }
@@ -1771,11 +1770,13 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
                     {
                         best_score = score;
                         best_node.append(" "+tit->second);
+                        query_strand = Fasta_entry::forward_strand;
                     }
                     else if(score>=best_score)
                     {
                         best_score = score;
                         best_node = tit->second;
+                        query_strand = Fasta_entry::forward_strand;
                     }
 
                     if(compare_reverse)
@@ -1833,6 +1834,7 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
                 read->node_score = best_score;
                 read->node_to_align = best_node;
                 read->query_strand = query_strand;
+//                cout<<"Read "<<read->name<<" strand "<<read->query_strand<<"\n";
             }
         }
         // All done; continue

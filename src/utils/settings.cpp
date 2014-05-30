@@ -39,21 +39,21 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
-        ("seqfile", po::value<string>(), "sequence infile (FASTA)")
-        ("treefile", po::value<string>(), "tree file")
+        ("seqfile,s", po::value<string>(), "sequence infile (FASTA)")
+        ("treefile,t", po::value<string>(), "tree file")
     ;
 
     boost::program_options::options_description help_update("Help and updates",100);
     help_update.add_options()
-        ("help", "display all program options")
-        ("version","show program version and check for updates")
+        ("help,h", "display all program options")
+        ("version,v","show program version and check for updates")
     ;
 
     boost::program_options::options_description generic("Generic options",100);
     generic.add_options()
-        ("outfile", po::value<string>(), "alignment outfile")
-        ("outformat", po::value<string>(), "alignment format [fasta,nexus,paml,phylipi,phylips,raxml]")
-        ("xml","output XML alignment")
+        ("outfile,o", po::value<string>(), "alignment outfile")
+        ("outformat,f", po::value<string>(), "alignment format [fasta,nexus,paml,phylipi,phylips,raxml]")
+        ("xml,x","output XML alignment")
         ("events","output inferred evolutionary events")
         ("guidetree", "output alignment guidetree (with NHX tags)")
         ("ancestors", "include ancestors in outfile")
@@ -78,9 +78,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description reads_alignment("Alignment extension options",100);
     reads_alignment.add_options()
-        ("ref-seqfile", po::value<string>(), "reference alignment file (FASTA)")
-        ("ref-treefile", po::value<string>(), "reference tree file (NH/NHX)")
-        ("queryfile", po::value<string>(), "query file (FASTA/FASTQ)")
+        ("ref-seqfile,a", po::value<string>(), "reference alignment file (FASTA)")
+        ("ref-treefile,r", po::value<string>(), "reference tree file (NH/NHX)")
+        ("queryfile,q", po::value<string>(), "query file (FASTA/FASTQ)")
         ("fragments", "short queries: place together")
         ("both-strands","consider both strands, keep better (DNA)")
         ("find-orfs", "find ORFs, keep good (DNA)")
@@ -160,6 +160,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     boost::program_options::options_description exonerate("Exonerate options",100);
     exonerate.add_options()
         ("exhaustive-placement","if Exonerate fails, use PAGAN to place the query")
+        ("own-placement","use only PAGAN to place the query")
         ("use-exonerate-local","use Exonerate local to map queries to nodes")
         ("exonerate-local-keep-best",po::value<int>()->default_value(10),"keep best # of local matches")
         ("exonerate-local-keep-above",po::value<float>(),"keep local matches above #% of the best score")
@@ -252,7 +253,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("plot-anchors-for-R","plot for R")
         ("no-reduced-terminal-penalties", "no reduced terminal penalties")
         ("hmmer-anchors","hmmer anchors")
-        ("assembly","assembly with subroot extension")
+        ("tid-for-subroot","placement at subroot only (for assembly)")
+        ("assembly","placement at subroot only (for assembly)")
+
     ;
 
     boost::program_options::options_description broken("Broken options",100);
@@ -384,7 +387,11 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     }
 
 
-
+    if(is("own-placement"))
+    {
+        exonerate_local_keep_best = 0;
+        exonerate_gapped_keep_best = 0;
+    }
 
 
     /////////////////////////////////////////////////////////////////////
