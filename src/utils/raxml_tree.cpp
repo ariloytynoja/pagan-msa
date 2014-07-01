@@ -37,6 +37,7 @@ bool RAxML_tree::test_executable()
     #if defined (__CYGWIN__)
     char path[200];
     int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
 
     string epath = string(path).substr(0,length);
     epath.replace(epath.rfind("pagan"),string("pagan").size(),string(""));
@@ -64,6 +65,7 @@ bool RAxML_tree::test_executable()
 
     #else
     int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
     epath = string(path).substr(0,length);
     epath.replace(epath.rfind("pagan"),string("pagan").size(),string(""));
 
@@ -95,7 +97,7 @@ string RAxML_tree::infer_phylogeny(std::vector<Fasta_entry> *sequences,bool is_p
         stringstream r_name;
         r_name <<tmp_dir<<"RAxML_info.r"<<r;
         ifstream r_file(r_name.str().c_str());
- 
+
         if(!m_file && !r_file)
         {
             m_output.open( m_name.str().c_str(), (ios::out) );
@@ -103,7 +105,6 @@ string RAxML_tree::infer_phylogeny(std::vector<Fasta_entry> *sequences,bool is_p
         }
         r = rand();
     }
-    
     vector<Fasta_entry>::iterator si = sequences->begin();
     m_output <<sequences->size()<<" "<<sequences->at(0).sequence.length()<<endl;
     for(;si!=sequences->end();si++)
@@ -120,6 +121,8 @@ string RAxML_tree::infer_phylogeny(std::vector<Fasta_entry> *sequences,bool is_p
         command << raxmlpath<<"raxml -s "+tmp_dir+"RAxML_input.r"<<r<<" -c 4 -f d -m PROTCATJTT -w "+tmp_dir+" -n r"<<r<<" -p "<<r<<" -T "<<n_threads<<" 2>/dev/null";
     else
         command << raxmlpath<<"raxml -s "+tmp_dir+"RAxML_input.r"<<r<<" -c 4 -f d -m GTRCAT -w "+tmp_dir+" -n r"<<r<<" -p "<<r<<" -T "<<n_threads<<" 2>/dev/null";
+
+    Log_output::write_out("Raxml: command: "+command.str()+"\n",2);
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )

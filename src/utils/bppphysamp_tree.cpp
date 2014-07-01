@@ -40,6 +40,7 @@ bool BppPhySamp_tree::test_executable()
     #if defined (__CYGWIN__)
     char path[200];
     int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
 
     string epath = string(path).substr(0,length);
     if (epath.find("/")!=std::string::npos)
@@ -65,6 +66,7 @@ bool BppPhySamp_tree::test_executable()
 
     #else
     int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
     epath = string(path).substr(0,length);
     if (epath.find("/")!=std::string::npos)
         epath = epath.substr(0,epath.rfind("/")+1);
@@ -166,6 +168,8 @@ void BppPhySamp_tree::reduce_sequences(set<string> *toremove,bool is_protein)
             int number = Settings_handle::st.get("prune-keep-number").as<int>();
             command <<  " sample_size="<<number<<" deletion_method=sample";
         }
+
+        Log_output::write_out("BppPhySamp_tree: command: "+command.str()+"\n",2);
 
 //        cout<<endl<<command.str()<<endl;
         FILE *fpipe;

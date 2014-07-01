@@ -43,7 +43,6 @@ class Reads_aligner
     map<string,string> codon_to_aa;
     map<string,string> aa_to_codon;
 
-    void loop_default_placement(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void translated_pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void query_placement_all(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
@@ -62,9 +61,9 @@ class Reads_aligner
 
     void find_nodes_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
     void find_nodes_for_query(Node *root, Fasta_entry *read, Model_factory *mf,bool warnings=false);
-    void find_nodes_for_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
-    void find_nodes_for_all_reads(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
-    void find_nodes_for_all_reads_together(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
+
+    void find_targets_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf,map<string,string> *target_sequences);
+    void find_targets_for_query(Node *root, Fasta_entry *read, Model_factory *mf,map<string,string> *target_sequences,multimap<string, string> *added_sequences, bool warnings=false);
 
     double read_match_score(Node *node, Fasta_entry *read, Model_factory *mf);
     void read_alignment_scores(Node * node, string read_name, string ref_node_name, float *overlap, float *identity);
@@ -74,6 +73,7 @@ class Reads_aligner
     void find_paired_reads(vector<Fasta_entry> *reads);
 
     bool correct_sites_index(Node *current_root, string ref_node_name, int alignments_done, map<string,Node*> *nodes_map);
+    void preselect_target_sequences(Node *root, vector<Fasta_entry> *reads, map<string,string> *target_sequences);
 
     static bool better_score(const Fasta_entry& a,const Fasta_entry& b)
     {
@@ -199,10 +199,13 @@ class Reads_aligner
         }
     }
 
-    void get_target_node_names(Node *root,multimap<string,string> *tid_nodes, bool *ignore_tid_tags)
+    void get_target_node_names(Node *root,multimap<string,string> *tid_nodes, bool *ignore_tid_tags, bool no_preselect = false)
     {
-
-        if(Settings_handle::st.is("test-every-internal-node") || Settings_handle::st.is("internal-nodes"))
+        if(Settings::placement_preselection && !no_preselect)
+        {
+            root->get_node_names_for_exonerate(tid_nodes);
+        }
+        else if(Settings_handle::st.is("test-every-internal-node") || Settings_handle::st.is("internal-nodes"))
         {
             root->get_internal_node_names(tid_nodes);
         }
@@ -228,6 +231,8 @@ class Reads_aligner
                 root->get_node_names(tid_nodes);
             }
         }
+//        cout<<"\nget nodes "<<tid_nodes->size()<<"\n";
+
     }
 
 public:

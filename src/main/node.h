@@ -104,12 +104,13 @@ public:
     Node *right_child;
 
     bool visited;
+    bool use_for_exonarate;
 
     Node() : leaf(true), dist_to_parent(0), name("undefined"), nhx_tid(""),
              node_has_left_child(false), node_has_right_child(false),
              adjust_left_node_site_index(false), adjust_right_node_site_index(false),
              node_has_sequence_object(false), node_has_sequence(false),
-             has_orf(false), visited(false){}
+             has_orf(false), visited(false), use_for_exonarate(false) {}
     ~Node();
 
 
@@ -377,6 +378,18 @@ public:
         }
     }
 
+    void get_internal_node_names(set<string> *list)
+    {
+        if(!this->is_leaf())
+        {
+            left_child->get_internal_node_names(list);
+            right_child->get_internal_node_names(list);
+
+            list->insert(this->get_name());
+        }
+    }
+
+
     void get_node_names(multimap<string,string> *list)
     {
         if(!this->is_leaf())
@@ -385,6 +398,16 @@ public:
             right_child->get_node_names(list);
         }
         list->insert(pair<string,string>(this->get_name(),this->get_name()));
+    }
+
+    void get_node_names(set<string> *list)
+    {
+        if(!this->is_leaf())
+        {
+            left_child->get_node_names(list);
+            right_child->get_node_names(list);
+        }
+        list->insert(this->get_name());
     }
 
     void get_terminal_node_names(multimap<string,string> *list)
@@ -422,6 +445,19 @@ public:
         if(this->get_nhx_tid()!="")
         {
             list->insert(pair<string,string>(this->get_nhx_tid(),this->get_name()));
+        }
+    }
+
+    void get_node_names_with_tid_tag(set<string> *list)
+    {
+        if(!this->is_leaf())
+        {
+            left_child->get_node_names_with_tid_tag(list);
+            right_child->get_node_names_with_tid_tag(list);
+        }
+        if(this->get_nhx_tid()!="")
+        {
+            list->insert(this->get_name());
         }
     }
 
@@ -487,6 +523,35 @@ public:
             right_child->get_read_dna_sequences(dna_seqs);
         }
     }
+
+    void set_node_names_for_exonerate(set<string> *names)
+    {
+        if(!leaf)
+        {
+            this->get_left_child()->set_node_names_for_exonerate(names);
+            this->get_right_child()->set_node_names_for_exonerate(names);
+        }
+
+        if(names->find(this->get_name()) != names->end() )
+            use_for_exonarate = true;
+        else
+            use_for_exonarate = false;
+    }
+
+    void get_node_names_for_exonerate(multimap<string,string> *list)
+    {
+        if(!this->is_leaf())
+        {
+            this->get_left_child()->get_node_names_for_exonerate(list);
+            this->get_right_child()->get_node_names_for_exonerate(list);
+        }
+
+        if(use_for_exonarate)
+            list->insert(pair<string,string>(this->get_name(),this->get_name()));
+    }
+
+    void set_use_for_exonerate(bool v) { use_for_exonarate = v; }
+    bool get_use_for_exonerate() { return use_for_exonarate; }
 
     bool sequence_site_index_needs_correcting()
     {
@@ -949,6 +1014,38 @@ public:
 
     }
 
+    void reconstruct_one_parsimony_ancestor(Model_factory *mf,bool do_left)
+    {
+        for(int i=1;i<this->get_sequence()->sites_length()-1;i++)
+        {
+            Site *site = this->get_sequence()->get_site_at(i);
+            int state = site->get_state();
+            if(do_left)
+            {
+                if(site->children.left_index >= 0)
+                    this->get_left_child()->reconstruct_one_parsimony_ancestor_at_site(mf,site->children.left_index,state);
+            }
+            else
+            {
+                if(site->children.right_index >= 0)
+                    this->get_right_child()->reconstruct_one_parsimony_ancestor_at_site(mf,site->children.right_index,state);
+            }
+        }
+    }
+
+    void reconstruct_one_parsimony_ancestor_at_site(Model_factory *mf,int pos,int parent_state)
+    {
+
+        if(leaf)
+            return;
+
+        Site *site = this->get_sequence()->get_site_at(pos);
+
+        int new_state = mf->get_child_parsimony_state(parent_state,site->get_state());
+        site->set_state(new_state);
+
+    }
+
     bool has_site_at_alignment_column(int j,string node_name)
     {
 
@@ -1191,6 +1288,45 @@ public:
         {
             this->get_left_child()->get_dna_sequences(dna_sequences);
             this->get_right_child()->get_dna_sequences(dna_sequences);
+        }
+    }
+
+    void get_dna_sequences(map<string,string> *dna_sequences)
+    {
+        if(leaf)
+        {
+            dna_sequences->insert(make_pair( this->get_name(),*this->get_sequence()->get_dna_sequence() ) );
+        }
+        else
+        {
+            this->get_left_child()->get_dna_sequences(dna_sequences);
+            this->get_right_child()->get_dna_sequences(dna_sequences);
+        }
+    }
+
+    void get_unaligned_sequences(map<string,string*> *unaligned_sequences)
+    {
+        if(leaf)
+        {
+            unaligned_sequences->insert(make_pair( this->get_name(),this->get_sequence()->get_unaligned_sequence() ) );
+        }
+        else
+        {
+            this->get_left_child()->get_unaligned_sequences(unaligned_sequences);
+            this->get_right_child()->get_unaligned_sequences(unaligned_sequences);
+        }
+    }
+
+    void get_unaligned_sequences(map<string,string> *unaligned_sequences)
+    {
+        if(leaf)
+        {
+            unaligned_sequences->insert(make_pair( this->get_name(),*this->get_sequence()->get_unaligned_sequence() ) );
+        }
+        else
+        {
+            this->get_left_child()->get_unaligned_sequences(unaligned_sequences);
+            this->get_right_child()->get_unaligned_sequences(unaligned_sequences);
         }
     }
 
@@ -1594,7 +1730,7 @@ public:
     string find_first_nonread_left_parent()
     {
         string name = "";
-        if(this->get_sequence()->is_read_sequence())
+        if(this->get_sequence()->is_read_sequence() && !this->is_leaf())
             name = left_child->find_first_nonread_left_parent();
         else
             name = this->get_name();
@@ -1727,6 +1863,7 @@ public:
             }
             else if(seq->get_data_type() == Model_factory::protein)
             {
+/*
                 string alpha = Model_factory::get_protein_full_char_alphabet();
 
                 for(int j=1;j<seq_length-1;j++)
@@ -1768,6 +1905,7 @@ public:
                         entry.sequence.append(1,c);
                     }
                 }
+*/
             }
 
             contigs->push_back(entry);

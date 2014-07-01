@@ -50,6 +50,7 @@ bool Exonerate_queries::test_executable()
     #if defined (__CYGWIN__)
     char path[200];
     int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
 
     string epath = string(path).substr(0,length);
     if (epath.find("/")!=std::string::npos)
@@ -60,31 +61,30 @@ bool Exonerate_queries::test_executable()
 
     #else
 
-    if(WEXITSTATUS(status) != 1)
-    {
-        char path[200];
-        string epath;
+    char path[200];
+    string epath;
 
-        #if defined (__APPLE__)
-        uint32_t size = sizeof(path);
-        _NSGetExecutablePath(path, &size);
-        epath = string(path);
-        if (epath.find("/")!=std::string::npos)
-            epath = epath.substr(0,epath.rfind("/")+1);
-        //epath = "DYLD_LIBRARY_PATH="+epath+" "+epath;
+    #if defined (__APPLE__)
+    uint32_t size = sizeof(path);
+    _NSGetExecutablePath(path, &size);
+    epath = string(path);
+    if (epath.find("/")!=std::string::npos)
+        epath = epath.substr(0,epath.rfind("/")+1);
+    //epath = "DYLD_LIBRARY_PATH="+epath+" "+epath;
 
-        #else
-        int length = readlink("/proc/self/exe",path,200-1);
-        epath = string(path).substr(0,length);
-        if (epath.find("/")!=std::string::npos)
-            epath = epath.substr(0,epath.rfind("/")+1);
+    #else
+    int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
+    epath = string(path).substr(0,length);
+    if (epath.find("/")!=std::string::npos)
+        epath = epath.substr(0,epath.rfind("/")+1);
 
-        #endif
+    #endif
 
-        exoneratepath = epath;
-        epath = epath+"exonerate >/dev/null 2>/dev/null";
-        status = system(epath.c_str());
-    }
+    exoneratepath = epath;
+    epath = epath+"exonerate >/dev/null 2>/dev/null";
+    status = system(epath.c_str());
+
     #endif
 
     if(WEXITSTATUS(status) == 1)
@@ -190,10 +190,102 @@ void Exonerate_queries::write_exonerate_input(string *str1, string *str2, int *r
     return;
 }
 
+void Exonerate_queries::write_exonerate_input(map<string,string> *target_sequences, vector<Fasta_entry> *reads, int *r)
+{
+
+    // create exonerate input
+    //
+    ofstream q_output;
+    ofstream t_output;
+
+    while(true)
+    {
+
+        stringstream q_name;
+        stringstream t_name;
+
+        string tmp_dir = this->get_temp_dir();
+
+        q_name <<tmp_dir<<"q"<<*r<<".fas";
+        t_name <<tmp_dir<<"t"<<*r<<".fas";
+
+        ifstream q_file(q_name.str().c_str());
+        ifstream t_file(t_name.str().c_str());
+
+        if(!q_file && !t_file)
+        {
+            q_output.open( q_name.str().c_str(), (ios::out) );
+            t_output.open( t_name.str().c_str(), (ios::out) );
+
+            break;
+        }
+        *r = rand();
+    }
+
+    vector<Fasta_entry>::iterator it = reads->begin();
+    for(;it!=reads->end();it++)
+        q_output<<">"<<it->name<<endl<<it->sequence<<endl;
+
+    q_output.close();
+
+
+    map<string,string>::iterator it2 = target_sequences->begin();
+    for(;it2!=target_sequences->end();it2++)
+        t_output<<">"<<it2->first<<endl<<it2->second<<endl;
+
+    t_output.close();
+
+    return;
+}
+
+void Exonerate_queries::write_exonerate_input(map<string,string> *target_sequences, Fasta_entry *read, int *r)
+{
+
+    // create exonerate input
+    //
+    ofstream q_output;
+    ofstream t_output;
+
+    while(true)
+    {
+
+        stringstream q_name;
+        stringstream t_name;
+
+        string tmp_dir = this->get_temp_dir();
+
+        q_name <<tmp_dir<<"q"<<*r<<".fas";
+        t_name <<tmp_dir<<"t"<<*r<<".fas";
+
+        ifstream q_file(q_name.str().c_str());
+        ifstream t_file(t_name.str().c_str());
+
+        if(!q_file && !t_file)
+        {
+            q_output.open( q_name.str().c_str(), (ios::out) );
+            t_output.open( t_name.str().c_str(), (ios::out) );
+
+            break;
+        }
+        *r = rand();
+    }
+
+    q_output<<">"<<read->name<<endl<<read->sequence<<endl;
+
+    q_output.close();
+
+
+    map<string,string>::iterator it2 = target_sequences->begin();
+    for(;it2!=target_sequences->end();it2++)
+        t_output<<">"<<it2->first<<endl<<it2->second<<endl;
+
+    t_output.close();
+
+    return;
+}
+
 void Exonerate_queries::write_exonerate_input(Node *root, vector<Fasta_entry> *reads, map<string,string> *names, int *r)
 {
-    vector<Fasta_entry> aligned_sequences;
-    root->get_alignment(&aligned_sequences,true);
 
     // create exonerate input
     //
@@ -235,21 +327,19 @@ void Exonerate_queries::write_exonerate_input(Node *root, vector<Fasta_entry> *r
     q_output.close();
 
 
-    it = aligned_sequences.begin();
-    for(;it!=aligned_sequences.end();it++)
-    {
-        if(names->find(it->name) != names->end())
-        {
-            string seq = it->sequence;
-            if(Settings_handle::st.is("score-as-dna") && it->dna_sequence.length()>0)
-                seq = it->dna_sequence;
+    map<string,string*> unaligned_seqs;
 
-            for (string::iterator si = seq.begin();si != seq.end();)
-                if(*si == '-')
-                    seq.erase(si);
-                else
-                    si++;
-            t_output<<">"<<it->name<<endl<<seq<<endl;
+    if(Settings_handle::st.is("score-as-dna"))
+        root->get_dna_sequences(&unaligned_seqs);
+    else
+        root->get_unaligned_sequences(&unaligned_seqs);
+
+    map<string,string*>::iterator it2 = unaligned_seqs.begin();
+    for(;it2!=unaligned_seqs.end();it2++)
+    {
+        if(names->find(it2->first) != names->end())
+        {
+            t_output<<">"<<it2->first<<endl<<*(it2->second)<<endl;
         }
     }
     t_output.close();
@@ -344,12 +434,226 @@ void Exonerate_queries::write_exonerate_input(Node *root, Fasta_entry *read, map
     return;
 }
 
-void Exonerate_queries::all_local_alignments(Node *root, vector<Fasta_entry> *reads, std::multimap<std::string,std::string> *tid_nodes, std::map<std::string,std::multimap<std::string,hit> > *hits, bool is_local,bool ignore_tid_tags)
+
+void Exonerate_queries::preselect_targets(map<string,string> *target_sequences, vector<Fasta_entry> *reads, map<string, string> *selected_sequences,map<string, multimap<string,hit> > *best_hits)
+{
+    Log_output::append_msg(" preselecting targets with Exonerate.",0);
+
+    int r = rand();
+    string tmp_dir = this->get_temp_dir();
+
+    this->write_exonerate_input(target_sequences,reads,&r);
+
+
+    // exonerate command for local alignment
+
+    stringstream command;
+    command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
+
+    FILE *fpipe;
+    if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
+    {
+        Log_output::write_out("Problems with exonerate pipe.\nExiting.\n",0);
+        exit(1);
+    }
+
+    Log_output::write_out("Exonerate_queries: command: "+command.str()+"\n",2);
+
+    // read exonerate output, summing the multiple hit scores
+
+    char line[256];
+    map<string,multimap<string,hit> > all_hits;
+
+    while ( fgets( line, sizeof line, fpipe))
+    {
+        this->read_output_line(&all_hits,line);
+    }
+    pclose(fpipe);
+
+
+    this->find_hits_for_queries(&all_hits, reads, best_hits);
+
+//    Log_output::write_out("Exonerate_reads: preselection finds "+Log_output::itos(all_hits.size())+" hits\n",2);
+
+
+    for(vector<Fasta_entry>::iterator ri = reads->begin() ;ri != reads->end(); ri++ )
+    {
+
+        map<string,multimap<string,hit> >::iterator iter = best_hits->find(ri->name);
+        if( iter != best_hits->end() )
+        {
+            multimap<string,hit>::iterator iter2 = iter->second.begin();
+            for( ;iter2 != iter->second.end(); iter2++ )
+            {
+                if(selected_sequences->find(iter2->second.node)==selected_sequences->end())
+                {
+                    string name = iter2->second.node;
+                    string seq = target_sequences->find(name)->second;
+                    selected_sequences->insert(make_pair(name,seq));
+                }
+            }
+        }
+    }
+
+}
+
+
+void Exonerate_queries::read_output_line(map<string,multimap<string,hit> > *all_hits, string line)
+{
+    hit h;
+    bool valid = this->split_sugar_string(string(line),&h);
+
+    if(valid)
+    {
+
+        map<string,multimap<string,hit> >::iterator iter = all_hits->find(h.query);
+
+        if( iter != all_hits->end() )
+        {
+
+            multimap<string,hit>::iterator iter2 = iter->second.find(h.node);
+
+            if( iter2 != iter->second.end() )
+            {
+                if(iter2->second.t_strand == h.t_strand && iter2->second.q_strand == h.q_strand)
+                {
+                    iter2->second.score += h.score;
+
+                    if(iter2->second.q_start > h.q_start)
+                        iter2->second.q_start = h.q_start;
+                    if(iter2->second.q_end < h.q_end)
+                        iter2->second.q_end = h.q_end;
+                    if(iter2->second.t_start > h.t_start)
+                        iter2->second.t_start = h.t_start;
+                    if(iter2->second.t_end < h.t_end)
+                        iter2->second.t_end = h.t_end;
+                }
+                else if(iter2->second.score < h.score)
+                {
+                    iter2->second = h;
+                }
+            }
+            else
+            {
+                iter->second.insert( make_pair(h.node, h) );
+            }
+        }
+        else
+        {
+            multimap<string,hit> new_hit;
+            new_hit.insert( make_pair(h.node, h) );
+            all_hits->insert( make_pair(h.query, new_hit ) );
+        }
+    }
+}
+
+
+void Exonerate_queries::find_hits_for_queries(map<string,multimap<string,hit> > *all_hits, vector<Fasta_entry> *reads, map<string,multimap<string,hit> > *hits, bool is_local)
+{
+    vector<Fasta_entry>::iterator ri = reads->begin();
+
+    for( ;ri != reads->end(); ri++ )
+    {
+
+        map<string,multimap<string,hit> >::iterator iter = all_hits->find(ri->name);
+        if( iter != all_hits->end() )
+        {
+
+            vector<hit> hits_for_this;
+
+            multimap<string,hit>::iterator iter2 = iter->second.begin();
+            for( ;iter2 != iter->second.end(); iter2++ )
+            {
+                hits_for_this.push_back(iter2->second);
+            }
+
+            sort (hits_for_this.begin(), hits_for_this.end(), Exonerate_queries::better);
+
+            multimap<string,hit> best_hits_for_this;
+
+            if( ( is_local && Settings_handle::st.is("exonerate-local-keep-above") &&
+                    Settings_handle::st.get("exonerate-local-keep-above").as<float>()>0 ) ||
+
+                ( !is_local && Settings_handle::st.is("exonerate-gapped-keep-above") &&
+                    Settings_handle::st.get("exonerate-gapped-keep-above").as<float>()>0 ) )
+            {
+                int lim = hits_for_this.at(0).score;
+                if(is_local)
+                    lim = int (lim * Settings_handle::st.get("exonerate-local-keep-above").as<float>() );
+                else
+                    lim = int (lim * Settings_handle::st.get("exonerate-gapped-keep-above").as<float>() );
+
+                for(int i=0; i<(int)hits_for_this.size(); i++)
+                {
+                    if(hits_for_this.at(i).score > lim)
+                    {
+                        best_hits_for_this.insert(pair<string,hit>(hits_for_this.at(i).node,hits_for_this.at(i)));
+
+                        Log_output::write_out("Exonerate_reads: adding "+hits_for_this.at(i).node+" "+Log_output::itos(hits_for_this.at(i).score)+"\n",3);
+                    }
+                }
+            }
+
+            // keep a fixed number of hits
+
+            else
+            {
+                int lim = hits_for_this.size();
+                if( is_local )
+                    lim = Settings::exonerate_local_keep_best;
+
+                if( !is_local )
+                    lim = Settings::exonerate_gapped_keep_best;
+
+                for(int i=0; i<lim && i<(int)hits_for_this.size(); i++)
+                {
+                    best_hits_for_this.insert(pair<string,hit>(hits_for_this.at(i).node,hits_for_this.at(i)));
+
+                    Log_output::write_out("Exonerate_reads: adding "+hits_for_this.at(i).node+" "+Log_output::itos(hits_for_this.at(i).score)+"\n",3);
+                }
+            }
+
+            hits->insert( make_pair<string,multimap<string,hit> >(ri->name,best_hits_for_this) );
+        }
+
+        else if(!Settings_handle::st.is("keep-despite-exonerate-fails"))
+        {
+            ri->node_to_align = "discarded_read";
+        }
+
+    }
+
+    if(Settings::noise>1)
+    {
+        ri = reads->begin();
+        for( ;ri != reads->end(); ri++ )
+        {
+
+            map<string,multimap<string,hit> >::iterator iter = hits->find(ri->name);
+            if( iter != hits->end() )
+            {
+                Log_output::write_out("Exonerate_reads: "+iter->first+" has "+Log_output::itos(iter->second.size())+" hits\n",2);
+
+                multimap<string,hit>::iterator iter2 = iter->second.begin();
+
+                for( ;iter2 != iter->second.end(); iter2++ )
+                {
+                    Log_output::write_out("  "+ri->name+" matches "+iter2->first+" with score "+Log_output::itos(iter2->second.score)+"\n",2);
+
+                }
+            }
+        }
+    }
+
+}
+
+/*
+void Exonerate_queries::all_local_alignments(Node *root, vector<Fasta_entry> *reads, multimap<string,string> *tid_nodes, map<string,multimap<string,hit> > *hits, bool is_local,bool ignore_tid_tags)
 {
     if(is_local)
-        Log_output::write_msg("Running Exonerate with all query sequences (ungapped)",0);
+        Log_output::append_msg(" running Exonerate with all query sequences (ungapped).",0);
     else
-        Log_output::write_msg("Running Exonerate with all query sequences (gapped)",0);
+        Log_output::append_msg(" running Exonerate with all query sequences (gapped).",0);
 
     set<string> tid_tags;
     vector<Fasta_entry>::iterator ri = reads->begin();
@@ -538,29 +842,185 @@ void Exonerate_queries::all_local_alignments(Node *root, vector<Fasta_entry> *re
 
     }
 
-    ri = reads->begin();
-    for( ;ri != reads->end(); ri++ )
+    if(Settings::noise>1)
     {
-
-        map<string,multimap<string,hit> >::iterator iter = hits->find(ri->name);
-        if( iter != hits->end() )
+        ri = reads->begin();
+        for( ;ri != reads->end(); ri++ )
         {
-            Log_output::write_out("Exonerate_reads: "+iter->first+" has "+Log_output::itos(iter->second.size())+" hits\n",2);
 
-            multimap<string,hit>::iterator iter2 = iter->second.begin();
-
-            for( ;iter2 != iter->second.end(); iter2++ )
+            map<string,multimap<string,hit> >::iterator iter = hits->find(ri->name);
+            if( iter != hits->end() )
             {
-                Log_output::write_out("  "+ri->name+" matches "+iter2->first+" with score "+Log_output::itos(iter2->second.score)+"\n",2);
+                Log_output::write_out("Exonerate_reads: "+iter->first+" has "+Log_output::itos(iter->second.size())+" hits\n",2);
 
+                multimap<string,hit>::iterator iter2 = iter->second.begin();
+
+                for( ;iter2 != iter->second.end(); iter2++ )
+                {
+                    Log_output::write_out("  "+ri->name+" matches "+iter2->first+" with score "+Log_output::itos(iter2->second.score)+"\n",2);
+
+                }
             }
         }
     }
 
-
     if(!Settings_handle::st.is("keep-temp-files"))
         this->delete_files(r);
 
+
+}
+*/
+
+void Exonerate_queries::local_alignment(map<string,string> *target_sequences, Fasta_entry *read, map<string,hit> *hits, bool is_local)
+{
+    if(is_local)
+        Log_output::append_msg(" running Exonerate with one query sequence (ungapped).",0);
+    else
+        Log_output::append_msg(" running Exonerate with one query sequence (gapped).",0);
+
+    int r = rand();
+    string tmp_dir = this->get_temp_dir();
+
+
+    this->write_exonerate_input(target_sequences,read,&r);
+
+    // exonerate command for local alignment
+
+    stringstream command;
+    if(is_local)
+        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
+    else
+        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local -E 2>&1";
+
+    Log_output::write_out("Exonerate_local: command: "+command.str()+"\n",2);
+
+    FILE *fpipe;
+    if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
+    {
+        Log_output::write_out("Problems with exonerate pipe.\nExiting.\n",0);
+        exit(1);
+    }
+
+    // read exonerate output, summing the multiple hit scores
+
+    char line[256];
+    map<string,hit> all_hits;
+    vector<string> hit_names;
+
+    while ( fgets( line, sizeof line, fpipe))
+    {
+        hit h;
+        bool valid = split_sugar_string(string(line),&h);
+
+        if(valid)
+        {
+            map<string,hit>::iterator iter = all_hits.find(h.node);
+            if( iter != all_hits.end() )
+            {
+                if(iter->second.t_strand == h.t_strand && iter->second.q_strand == h.q_strand)
+                {
+                    iter->second.score += h.score;
+
+                    if(iter->second.q_start > h.q_start)
+                        iter->second.q_start = h.q_start;
+                    if(iter->second.q_end < h.q_end)
+                        iter->second.q_end = h.q_end;
+                    if(iter->second.t_start > h.t_start)
+                        iter->second.t_start = h.t_start;
+                    if(iter->second.t_end < h.t_end)
+                        iter->second.t_end = h.t_end;
+                }
+                else if(iter->second.score < h.score)
+                {
+                    iter->second = h;
+                }
+            }
+            else
+            {
+                all_hits.insert( make_pair(h.node, h) );
+                hit_names.push_back(h.node);
+            }
+        }
+    }
+    pclose(fpipe);
+
+
+    Log_output::write_out("Exonerate_reads: "+read->name+" has "+Log_output::itos(hit_names.size())+" hits\n",2);
+
+//    Log_output::write_out("Exonerate_reads: "+read->name+" has "+Log_output::itos(hit_names.size())+" hits\n",2);
+
+    if(hit_names.size()>0)
+    {
+        hits->clear();
+
+        vector<hit> best_hits;
+        vector<string>::iterator iter = hit_names.begin();
+
+        for(;iter!=hit_names.end();iter++)
+        {
+             map<string,hit>::iterator iter2 = all_hits.find(*iter);
+             if( iter2 != all_hits.end() )
+             {
+               best_hits.push_back(iter2->second);
+             }
+        }
+
+        sort (best_hits.begin(), best_hits.end(), Exonerate_queries::better);
+
+
+        // keep hits that are above a relative threshold
+
+        if( ( is_local && Settings_handle::st.is("exonerate-local-keep-above") &&
+                Settings_handle::st.get("exonerate-local-keep-above").as<float>()>0 ) ||
+
+            ( !is_local && Settings_handle::st.is("exonerate-gapped-keep-above") &&
+                Settings_handle::st.get("exonerate-gapped-keep-above").as<float>()>0 ) )
+        {
+            int lim = best_hits.at(0).score;
+            if(is_local)
+                lim = int (lim * Settings_handle::st.get("exonerate-local-keep-above").as<float>() );
+            else
+                lim = int (lim * Settings_handle::st.get("exonerate-gapped-keep-above").as<float>() );
+
+
+            for(int i=0; i<(int)hit_names.size(); i++)
+            {
+                if(best_hits.at(i).score > lim)
+                {
+                    hits->insert(pair<string,hit>(best_hits.at(i).node,best_hits.at(i)));
+
+                    Log_output::write_out("Exonerate_reads: adding "+best_hits.at(i).node+" "+Log_output::itos(best_hits.at(i).score)+"\n",3);
+                }
+            }
+        }
+
+
+        // keep a fixed number of hits
+
+        else
+        {
+            int lim = hit_names.size();
+            if( is_local )
+                lim = Settings::exonerate_local_keep_best;
+
+            if( !is_local )
+                lim = Settings::exonerate_gapped_keep_best;
+
+            for(int i=0; i<lim && i<(int)hit_names.size(); i++)
+            {
+                hits->insert(pair<string,hit>(best_hits.at(i).node,best_hits.at(i)));
+
+                Log_output::write_out("Exonerate_reads: adding "+best_hits.at(i).node+" "+Log_output::itos(best_hits.at(i).score)+"\n",3);
+            }
+        }
+    }
+    else if(!Settings_handle::st.is("keep-despite-exonerate-fails"))
+    {
+        read->node_to_align = "discarded_read";
+    }
+
+    if(!Settings_handle::st.is("keep-temp-files"))
+        this->delete_files(r);
 
 }
 
@@ -568,9 +1028,9 @@ void Exonerate_queries::local_alignment(Node *root, Fasta_entry *read, multimap<
 {
 
     if(is_local)
-        Log_output::write_msg("Running Exonerate with one query sequence (ungapped)",0);
+        Log_output::append_msg(" running Exonerate with one query sequence (ungapped).",0);
     else
-        Log_output::write_msg("Running Exonerate with one query sequence (gapped)",0);
+        Log_output::append_msg(" running Exonerate with one query sequence (gapped).",0);
 
 
     int r = rand();
@@ -603,6 +1063,8 @@ void Exonerate_queries::local_alignment(Node *root, Fasta_entry *read, multimap<
         command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
     else
         command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local -E 2>&1";
+
+    Log_output::write_out("Exonerate_local: command: "+command.str()+"\n",2);
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
@@ -750,6 +1212,8 @@ void Exonerate_queries::local_pairwise_alignment(string *str1,string *str2,vecto
 
     stringstream command;
     command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
+
+    Log_output::write_out("Exonerate_pairwise: command: "+command.str()+"\n",2);
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )

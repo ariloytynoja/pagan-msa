@@ -35,30 +35,31 @@ Settings::Settings(){}
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
     version = 0.55;
-    date = "12 March, 2014";
+    date = "24 May, 2014";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
-        ("seqfile", po::value<string>(), "sequence infile (FASTA)")
-        ("treefile", po::value<string>(), "tree file")
+        ("seqfile,s", po::value<string>(), "sequence infile (FASTA)")
+        ("treefile,t", po::value<string>(), "tree file")
     ;
 
     boost::program_options::options_description help_update("Help and updates",100);
     help_update.add_options()
-        ("help", "display all program options")
-        ("version","show program version and check for updates")
+        ("help,h", "display all program options")
+        ("version,v","show program version and check for updates")
     ;
 
     boost::program_options::options_description generic("Generic options",100);
     generic.add_options()
-        ("outfile", po::value<string>(), "alignment outfile")
-        ("outformat", po::value<string>(), "alignment format [fasta,nexus,paml,phylipi,phylips,raxml]")
-        ("xml","output XML alignment")
+        ("outfile,o", po::value<string>(), "alignment outfile")
+        ("outformat,f", po::value<string>(), "alignment format [fasta,nexus,paml,phylipi,phylips,raxml]")
+        ("xml,x","output XML alignment")
         ("events","output inferred evolutionary events")
         ("guidetree", "output alignment guidetree (with NHX tags)")
         ("ancestors", "include ancestors in outfile")
         ("translate", "translate DNA input to protein")
         ("mt-translate", "translate mtDNA input to protein")
+        ("no-terminal-edges", "assume terminal gaps as missing data")
         ("silent","minimal output")
         ("config-file",po::value<string>(),"config file with additional arguments")
         ("config-log-file",po::value<string>(),"log file for given arguments")
@@ -69,7 +70,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     generic2.add_options()
         ("xml-nhx","output XML alignment with NHX tree")
         ("raxml-tree","use RAxML for guide tree computation [default BppDist]")
-        ("no-terminal-edges", "assume terminal gaps as missing data")
+        ("no-bppancestors","no BppAncestors (slow for large alignments)")
         ("noise", po::value<int>(), "output noise level")
         ("log-output-file",po::value<string>(),"output to file instead of stdout")
         ("temp-folder",po::value<string>(),"non-standard place for temp files")
@@ -77,9 +78,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     boost::program_options::options_description reads_alignment("Alignment extension options",100);
     reads_alignment.add_options()
-        ("ref-seqfile", po::value<string>(), "reference alignment file (FASTA)")
-        ("ref-treefile", po::value<string>(), "reference tree file (NH/NHX)")
-        ("queryfile", po::value<string>(), "query file (FASTA/FASTQ)")
+        ("ref-seqfile,a", po::value<string>(), "reference alignment file (FASTA)")
+        ("ref-treefile,r", po::value<string>(), "reference tree file (NH/NHX)")
+        ("queryfile,q", po::value<string>(), "query file (FASTA/FASTQ)")
         ("fragments", "short queries: place together")
         ("both-strands","consider both strands, keep better (DNA)")
         ("find-orfs", "find ORFs, keep good (DNA)")
@@ -91,6 +92,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("terminal-nodes","place query to a terminal node")
         ("one-placement-only", "place only once despite equally good hits")
         ("454", "correct homopolymer error (DNA)")
+        ("guided","guided placement with TID tags")
+
     ;
 
     boost::program_options::options_description reads_alignment2("Additional alignment extension options",100);
@@ -111,13 +114,12 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     boost::program_options::options_description reads_alignment3("Alignment extension output options",100);
     reads_alignment3.add_options()
         ("prune-extended-alignment","remove closely related sequences")
-        ("prune-keep-number",po::value<int>()->default_value(15),"keep N most distantly related sequences (default)")
-        ("prune-keep-threshold",po::value<float>(),"remove sequences with distance below threshold")
-        ("prune-all","remove all reference sequences")
+        ("prune-keep-number",po::value<int>()->default_value(0),"prune output and keep N most distantly related sequences")
+        ("prune-keep-threshold",po::value<float>(),"prune output and remove sequences with distance below threshold")
+        ("prune-keep-closest","prune output and keep only closest reference sequences")
         ("trim-extended-alignment","remove terminal reference sequences")
         ("trim-keep-sites",po::value<int>()->default_value(15),"trim distance around queries")
         ("use-consensus", "use consensus for query ancestors")
-        ("build-contigs", "build contigs of query clusters")
         ("pair-end","connect paired reads (FASTQ)")
         ("show-contig-ancestor", "fill contig gaps with ancestral sequence")
         ("consensus-minimum", po::value<int>()->default_value(5), "threshold for inclusion in contig")
@@ -127,9 +129,10 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     boost::program_options::options_description pileup("Pileup alignment options",100);
     pileup.add_options()
         ("pileup-alignment","make pileup alignment")
-        ("min-orf-length", po::value<int>()->default_value(100),"minimum ORF length to be considered (DNA)")
+        ("min-orf-length", po::value<int>()->default_value(50),"minimum ORF length to be considered (DNA)")
         ("min-orf-coverage", po::value<float>(),"minimum ORF coverage to be considered (DNA)")
         ("query-cluster-attempts", po::value<int>()->default_value(1),"attempts to find overlap")
+        ("build-contigs", "build contigs of query clusters")
         ("inlude-parent-in-contig", "include also ancestral parent in contigs")
         ("use-duplicate-weights", "use NumDuplicates=# to weight consensus counts")
         ("no-read-ordering","do not order reads by duplicate number")
@@ -150,7 +153,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("exonerate-hit-length", po::value<int>()->default_value(30), "Exonerate hit length for anchor (default)")
         ("exonerate-hit-score", po::value<int>(), "Exonerate hit score for anchor")
         ("anchors-offset", po::value<int>()->default_value(15), "anchors offset for alignment")
-        ("anchoring-threshold",po::value<float>()->default_value(0.5,"0.5"),"anchoring coverage threshold for skipping")
+        ("anchoring-threshold",po::value<float>()->default_value(1,"1.0"),"anchoring coverage threshold for skipping")
         ("use-prefix-anchors","use prefix approach to anchor alignment")
         ("prefix-hit-length", po::value<int>()->default_value(30), "prefix hit length for anchor")
         ("keep-temp-files","keep temporary files (mainly for debugging)")
@@ -159,11 +162,12 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     boost::program_options::options_description exonerate("Exonerate options",100);
     exonerate.add_options()
         ("exhaustive-placement","if Exonerate fails, use PAGAN to place the query")
+        ("own-placement","use only PAGAN to place the query")
         ("use-exonerate-local","use Exonerate local to map queries to nodes")
-        ("exonerate-local-keep-best",po::value<int>()->default_value(5),"keep best # of local matches")
+        ("exonerate-local-keep-best",po::value<int>()->default_value(10),"keep best # of local matches")
         ("exonerate-local-keep-above",po::value<float>(),"keep local matches above #% of the best score")
         ("use-exonerate-gapped","use Exonerate gapped to map queries to nodes")
-        ("exonerate-gapped-keep-best",po::value<int>()->default_value(1),"keep best # of gapped matches")
+        ("exonerate-gapped-keep-best",po::value<int>()->default_value(3),"keep best # of gapped matches")
         ("exonerate-gapped-keep-above",po::value<float>(),"keep gapped matches above #% of the best score")
         ("keep-despite-exonerate-fails", "keep queries that Exonerate fails to align")
     ;
@@ -233,6 +237,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("test-every-terminal-node","test every terminal node for each query")
         ("compare-reverse","test also reverse-complement and keep better (DNA)")
         ("find-best-orf", "translate and use best ORF (DNA)")
+        ("no-preselection","do not preselect targets with Exonerate")
+        ("no-bppancestors","no BppAncestors")
 
         ("full-probability", "compute full probability")
         ("output-graph","output ancestral graph")
@@ -248,6 +254,10 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("no-score-scaling","no subsistitution score scaling")
         ("plot-anchors-for-R","plot for R")
         ("no-reduced-terminal-penalties", "no reduced terminal penalties")
+        ("hmmer-anchors","hmmer anchors")
+        ("tid-for-subroot","placement at subroot only (for assembly)")
+        ("assembly","placement at subroot only (for assembly)")
+
     ;
 
     boost::program_options::options_description broken("Broken options",100);
@@ -298,6 +308,9 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     po::notify(vm);
 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
     if(is("noise"))
         noise = get("noise").as<int>();
 
@@ -316,6 +329,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     if(is("use-exonerate-gapped") && get("exonerate-gapped-keep-best").as<int>() > 0 )
         exonerate_gapped_keep_best = get("exonerate-gapped-keep-best").as<int>();
 
+
     if(is("very-fast-placement"))
     {
         exonerate_local_keep_best = 1;
@@ -332,8 +346,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
 
     if(is("fast-placement"))
     {
-        exonerate_local_keep_best = 10;
-        exonerate_gapped_keep_best = 3;
+        exonerate_local_keep_best = 5;
+        exonerate_gapped_keep_best = 1;
 
         if( is("use-exonerate-local") || is("exonerate-local-keep-above") ||
             is("use-exonerate-gapped") || is("exonerate-gapped-keep-above") ||
@@ -359,6 +373,32 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     {
         tunneling_coverage = 1;
     }
+
+
+    if(is("test-every-internal-node") || is("internal-nodes"))
+    {
+        placement_target_nodes = Settings::internal_nodes;
+    }
+    else if(is("test-every-terminal-node") || is("terminal-nodes"))
+    {
+        placement_target_nodes = Settings::terminal_nodes;
+    }
+    else if(is("test-every-node") || is("all-nodes"))
+    {
+        placement_target_nodes = Settings::all_nodes;
+    }
+
+
+    if(is("own-placement"))
+    {
+        exonerate_local_keep_best = 0;
+        exonerate_gapped_keep_best = 0;
+    }
+
+    if(is("no-preselection") || is("guided"))
+        placement_preselection = false;
+
+    /////////////////////////////////////////////////////////////////////
 
     if (vm.count("help")) {
         this->help();
@@ -510,3 +550,7 @@ int   Settings::exonerate_local_keep_best = 0;
 int   Settings::exonerate_gapped_keep_best = 0;
 
 float Settings::tunneling_coverage = 1;
+
+int Settings::placement_target_nodes = Settings::tid_nodes;
+
+bool Settings::placement_preselection = true;

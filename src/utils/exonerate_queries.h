@@ -53,11 +53,16 @@ class Exonerate_queries
 {
     static bool better (hit i,hit j) { return (i.score>j.score); }
 
+    void read_output_line(map<string,multimap<string,hit> > *all_hits, string line);
+    void find_hits_for_queries(map<string,multimap<string,hit> > *all_hits, vector<Fasta_entry> *reads, map<string,multimap<string,hit> > *best_hits, bool is_local=true);
+
     bool split_sugar_string(const std::string& row,hit *h);
     bool split_vulgar_string(const std::string& row,hit *h);
     void write_exonerate_input(string *str1, string *str2, int *r);
     void write_exonerate_input(Node *root, vector<Fasta_entry> *reads, map<string,string> *names, int *r);
     void write_exonerate_input(Node *root, Fasta_entry *read, map<string,string> *names, int *r);
+    void write_exonerate_input(map<string,string> *target_sequences, vector<Fasta_entry> *reads, int *r);
+    void write_exonerate_input(map<string,string> *target_sequences, Fasta_entry *reads, int *r);
     void delete_files(int r);
 
     string get_temp_dir()
@@ -78,8 +83,11 @@ public:
     Exonerate_queries();
     bool test_executable();
 
+    void local_alignment(map<string,string> *target_sequences, Fasta_entry *read, map<string,hit> *hits, bool is_local);
     void local_alignment(Node *root, Fasta_entry *read, std::multimap<std::string,std::string> *good_hits, std::map<std::string,hit> *hits, bool is_local, bool all_nodes=false);
-    void all_local_alignments(Node *root, vector<Fasta_entry> *reads, std::multimap<std::string,std::string> *tid_nodes, std::map<std::string,std::multimap<std::string,hit> > *hits, bool is_local, bool ignore_tid_tags);
+//    void all_local_alignments(Node *root, vector<Fasta_entry> *reads, std::multimap<std::string,std::string> *tid_nodes, std::map<std::string,std::multimap<std::string,hit> > *hits, bool is_local, bool ignore_tid_tags);
+
+    void preselect_targets(map<string, string> *unaligned_sequences, vector<Fasta_entry> *reads, map<string, string> *selected_sequences, map<string, multimap<string, hit> > *best_hits);
 
     void local_pairwise_alignment(string *str1,string *str2,vector<Substring_hit> *hits,int *best_reverse_hit=0);
 };

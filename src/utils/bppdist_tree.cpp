@@ -37,6 +37,7 @@ bool BppDist_tree::test_executable()
     #if defined (__CYGWIN__)
     char path[200];
     int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
 
     string epath = string(path).substr(0,length);
     if (epath.find("/")!=std::string::npos)
@@ -62,6 +63,7 @@ bool BppDist_tree::test_executable()
 
     #else
     int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
     epath = string(path).substr(0,length);
     if (epath.find("/")!=std::string::npos)
         epath = epath.substr(0,epath.rfind("/")+1);
@@ -120,6 +122,7 @@ string BppDist_tree::infer_phylogeny(std::vector<Fasta_entry> *sequences,bool is
 
 //    command << " > bppdist.log";
 
+    Log_output::write_out("BppDist_tree: command: "+command.str()+"\n",2);
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
@@ -199,6 +202,7 @@ string BppDist_tree::infer_phylogeny_fifo(std::vector<Fasta_entry> *sequences,bo
 
 //    command << " > bppdist.log";
 
+    Log_output::write_out("BppDist_tree: command: "+command.str()+"\n",2);
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )

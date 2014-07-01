@@ -47,6 +47,7 @@ bool BppAncestors::test_executable()
     #if defined (__CYGWIN__)
     char path[200];
     int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
 
     string epath = string(path).substr(0,length);
     if (epath.find("/")!=std::string::npos)
@@ -72,6 +73,7 @@ bool BppAncestors::test_executable()
 
     #else
     int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
     epath = string(path).substr(0,length);
     if (epath.find("/")!=std::string::npos)
         epath = epath.substr(0,epath.rfind("/")+1);
@@ -137,20 +139,44 @@ void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_seque
     ////////////
 
 
-    int add = root->get_number_of_leaves();
-
-    string tree = root->print_bppa_tree(&add);
     bool isDna = root->get_sequence()->get_data_type() == Model_factory::dna;
 
 
     ofstream f_output;
     f_output.open( f_name.str().c_str(), (ios::out) );
 
+    int count = 0;
+    map<string,string> tmp_names;
     vector<Fasta_entry>::iterator si = aligned_sequences->begin();
     for(;si!=aligned_sequences->end();si++)
-        f_output<<">"<<si->name<<"\n"<<si->sequence<<"\n";
+    {
+        stringstream name;
+        name<<"seq"<<count++;
+        tmp_names.insert(make_pair(si->name,name.str()));
+
+        if(isCodon)
+        {
+            string seq = si->sequence;
+            string codon = seq.substr(seq.length()-3,3);
+            if(codon == "TGA" || codon == "TAG" || codon == "TAA")
+                seq.replace(seq.length()-3,3,"NNN");
+            f_output<<">"<<name.str()<<"\n"<<seq<<"\n";
+        }
+        else
+            f_output<<">"<<name.str()<<"\n"<<si->sequence<<"\n";
+    }
     f_output.close();
 
+
+    int add = root->get_number_of_leaves();
+    string tree = root->print_bppa_tree(&add);
+
+    for(map<string,string>::iterator it = tmp_names.begin();it != tmp_names.end(); it++)
+    {
+        size_t pos = 0;
+        if((pos = tree.find(it->first)) != std::string::npos)
+            tree.replace(pos, it->first.length(), it->second);
+    }
 
     ofstream t_output;
     t_output.open( t_name.str().c_str(), (ios::out) );

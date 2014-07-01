@@ -42,6 +42,7 @@ bool Mafft_alignment::test_executable()
     #if defined (__CYGWIN__)
     char path[200];
     int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
 
     string epath = string(path).substr(0,length);
     if (epath.find("/")!=std::string::npos)
@@ -66,6 +67,7 @@ bool Mafft_alignment::test_executable()
 
     #else
     int length = readlink("/proc/self/exe",path,200-1);
+    path[length] = '\0';
     epath = string(path).substr(0,length);
     if (epath.find("/")!=std::string::npos)
         epath = epath.substr(0,epath.rfind("/")+1);
@@ -91,6 +93,8 @@ void Mafft_alignment::align_sequences(vector<Fasta_entry> *sequences)
 {
     ofstream m_output;
     string tmp_dir = this->get_temp_dir();
+
+    int input_sequences = (int) sequences->size();
 
     stringstream m_name;
 
@@ -126,6 +130,7 @@ void Mafft_alignment::align_sequences(vector<Fasta_entry> *sequences)
     stringstream command;
     command << mafftpath<<"mafft "<<m_name.str()<<" 2>/dev/null";
 
+    Log_output::write_out("Mafft: command: "+command.str()+"\n",2);
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
@@ -198,6 +203,14 @@ void Mafft_alignment::align_sequences(vector<Fasta_entry> *sequences)
 
     if(!Settings_handle::st.is("keep-temp-files"))
         this->delete_files(r);
+
+    if( input_sequences != (int) sequences->size() )
+    {
+        Log_output::write_out("Problems with mafft.\nExiting.\n",0);
+        exit(1);
+    }
+
+
 }
 
 void Mafft_alignment::align_sequences_fifo(vector<Fasta_entry> *sequences)
@@ -240,6 +253,7 @@ void Mafft_alignment::align_sequences_fifo(vector<Fasta_entry> *sequences)
     stringstream command;
     command << mafftpath<<"mafft "+tmp_dir+"m"<<r<<".fas  2>/dev/null";
 
+    Log_output::write_out("Mafft: command: "+command.str()+"\n",2);
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
