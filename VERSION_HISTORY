@@ -1,3 +1,8 @@
+v.0.55
+Re-writing the program homepage. Compatible with that. Several changes in
+placement heuristics and tree extension
+
+
 v.0.54
 - cleaning up: many unused options removed
 - xml output with nhx tags
