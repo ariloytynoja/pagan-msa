@@ -137,6 +137,8 @@ void Find_anchors::find_hmmer_anchors(std::string *seq1,std::string *seq2,std::v
     stringstream command;
     command <<"hmmsearch --max  pagan.hmm hmmer_in.fas 2>&1";
 
+    Log_output::write_out("Hmmer_anchors: command: "+command.str()+"\n",2);
+
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
     {

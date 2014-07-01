@@ -169,6 +169,8 @@ void BppPhySamp_tree::reduce_sequences(set<string> *toremove,bool is_protein)
             command <<  " sample_size="<<number<<" deletion_method=sample";
         }
 
+        Log_output::write_out("BppPhySamp_tree: command: "+command.str()+"\n",2);
+
 //        cout<<endl<<command.str()<<endl;
         FILE *fpipe;
         if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )

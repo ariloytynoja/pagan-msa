@@ -122,6 +122,7 @@ string BppDist_tree::infer_phylogeny(std::vector<Fasta_entry> *sequences,bool is
 
 //    command << " > bppdist.log";
 
+    Log_output::write_out("BppDist_tree: command: "+command.str()+"\n",2);
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
@@ -201,6 +202,7 @@ string BppDist_tree::infer_phylogeny_fifo(std::vector<Fasta_entry> *sequences,bo
 
 //    command << " > bppdist.log";
 
+    Log_output::write_out("BppDist_tree: command: "+command.str()+"\n",2);
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )

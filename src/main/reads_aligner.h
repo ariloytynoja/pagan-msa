@@ -201,7 +201,7 @@ class Reads_aligner
 
     void get_target_node_names(Node *root,multimap<string,string> *tid_nodes, bool *ignore_tid_tags, bool no_preselect = false)
     {
-        if(!Settings_handle::st.is("no-preselection") && !no_preselect)
+        if(Settings::placement_preselection && !no_preselect)
         {
             root->get_node_names_for_exonerate(tid_nodes);
         }

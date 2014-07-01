@@ -92,6 +92,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("terminal-nodes","place query to a terminal node")
         ("one-placement-only", "place only once despite equally good hits")
         ("454", "correct homopolymer error (DNA)")
+        ("guided","guided placement with TID tags")
+
     ;
 
     boost::program_options::options_description reads_alignment2("Additional alignment extension options",100);
@@ -118,7 +120,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("trim-extended-alignment","remove terminal reference sequences")
         ("trim-keep-sites",po::value<int>()->default_value(15),"trim distance around queries")
         ("use-consensus", "use consensus for query ancestors")
-        ("build-contigs", "build contigs of query clusters")
         ("pair-end","connect paired reads (FASTQ)")
         ("show-contig-ancestor", "fill contig gaps with ancestral sequence")
         ("consensus-minimum", po::value<int>()->default_value(5), "threshold for inclusion in contig")
@@ -128,9 +129,10 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     boost::program_options::options_description pileup("Pileup alignment options",100);
     pileup.add_options()
         ("pileup-alignment","make pileup alignment")
-        ("min-orf-length", po::value<int>()->default_value(100),"minimum ORF length to be considered (DNA)")
+        ("min-orf-length", po::value<int>()->default_value(50),"minimum ORF length to be considered (DNA)")
         ("min-orf-coverage", po::value<float>(),"minimum ORF coverage to be considered (DNA)")
         ("query-cluster-attempts", po::value<int>()->default_value(1),"attempts to find overlap")
+        ("build-contigs", "build contigs of query clusters")
         ("inlude-parent-in-contig", "include also ancestral parent in contigs")
         ("use-duplicate-weights", "use NumDuplicates=# to weight consensus counts")
         ("no-read-ordering","do not order reads by duplicate number")
@@ -393,6 +395,8 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         exonerate_gapped_keep_best = 0;
     }
 
+    if(is("no-preselection") || is("guided"))
+        placement_preselection = false;
 
     /////////////////////////////////////////////////////////////////////
 
@@ -548,3 +552,5 @@ int   Settings::exonerate_gapped_keep_best = 0;
 float Settings::tunneling_coverage = 1;
 
 int Settings::placement_target_nodes = Settings::tid_nodes;
+
+bool Settings::placement_preselection = true;

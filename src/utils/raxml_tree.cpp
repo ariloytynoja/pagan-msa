@@ -122,6 +122,8 @@ string RAxML_tree::infer_phylogeny(std::vector<Fasta_entry> *sequences,bool is_p
     else
         command << raxmlpath<<"raxml -s "+tmp_dir+"RAxML_input.r"<<r<<" -c 4 -f d -m GTRCAT -w "+tmp_dir+" -n r"<<r<<" -p "<<r<<" -T "<<n_threads<<" 2>/dev/null";
 
+    Log_output::write_out("Raxml: command: "+command.str()+"\n",2);
+
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
     {

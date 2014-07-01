@@ -1730,7 +1730,7 @@ public:
     string find_first_nonread_left_parent()
     {
         string name = "";
-        if(this->get_sequence()->is_read_sequence())
+        if(this->get_sequence()->is_read_sequence() && !this->is_leaf())
             name = left_child->find_first_nonread_left_parent();
         else
             name = this->get_name();

@@ -2,6 +2,29 @@
 The three sub-directories contain example data for guided sequence placement with PAGAN
 (protein _placement and ngs_placement) and for NGS read pile-up (454_pileup).
 
+==================
+UNGUIDED PLACEMENT
+==================
+
+The idea of unguided placement is to extend existing alignments with new sequences. The
+optimal location for the new sequences is searched with different heuristics.
+
+The examples are based on simulated data. In these examples, we have reference 
+alignments that include gene sequences from several mammals; the hypothetical gene has 
+duplicated first in the ancestor of primates and rodents and then again in the ancestor
+of rodents. Our new sequences come from a primitive primate, believed to belong 
+phylogenetically between tarsier and lemur, and a rodent, belonging between guinea pig
+and ground squirrel. 
+
+When sequences are placed with PAGAN, it first tries first finds the best location for
+the query sequence and then aligns it there. If sevaral target nodes score equally well,
+the sequence is, by default, assigned to each one of them. Importantly, the relative
+alignment of existing reference sequences is not changed. 
+
+The examples below demonstrate that the selection of the target node for each query
+sequence is not straightforward. Long sequences are placed well but shorter ones
+may be placed to wrong nodes. 
+
 
 ================
 GUIDED PLACEMENT
@@ -66,16 +89,29 @@ The following files are included:
 
 - reference_aa.fas   : simulated reference alignment.
 - reference_tree.nhx : reference phylogeny with some nodes tagged for placement.
+- reference_tree.nwk : reference phylogeny without tags.
 - input_aa_full.fas  : simulated amino-acid sequences.
 - input_aa_frags.fas : a subset of the one above, broken into fragments.
 
 The data can be analysed using the following commands:
 
-pagan --ref-seqfile reference_aa.fas --ref-treefile reference_tree.nhx \
+UNGUIDED PLACEMENT:
+
+pagan --ref-seqfile reference_aa.fas --ref-treefile reference_tree.nwk \
  --queryfile input_aa_full.fas --outfile aa_full_alignment
 
+pagan --ref-seqfile reference_aa.fas --ref-treefile reference_tree.nwk \
+ --queryfile input_aa_frags.fas --outfile aa_frags_alignment --fragments
+
+
+GUIDED PLACEMENT:
+
 pagan --ref-seqfile reference_aa.fas --ref-treefile reference_tree.nhx \
- --queryfile input_aa_frags.fas --outfile aa_frags_alignment
+ --queryfile input_aa_full.fas --outfile aa_full_alignment --guided
+
+pagan --ref-seqfile reference_aa.fas --ref-treefile reference_tree.nhx \
+ --queryfile input_aa_frags.fas --outfile aa_frags_alignment --guided \
+ --fragments
 
 The resulting alignments will be written to files aa_[full|frags]_alignment.fas.
 
@@ -89,20 +125,31 @@ The following files are included:
 
 - reference_codon.fas : simulated reference alignment.
 - reference_tree.nhx  : reference phylogeny with some nodes tagged for placement.
+- reference_tree.nwk  : reference phylogeny without tags.
 - input_ngs.fastq     : simulated Illumina reads.
 - input_ngs_primates.fastq : a subset of the one above.
 
 The data can be analysed using the following command:
 
+UNGUIDED PLACEMENT:
+
+pagan --ref-seqfile reference_codon.fas --ref-treefile reference_tree.nwk \
+ --queryfile input_ngs.fastq --outfile read_alignment --fast --fragments
+
+
+GUIDED PLACEMENT:
+
 pagan --ref-seqfile reference_codon.fas --ref-treefile reference_tree.nhx \
- --queryfile input_ngs.fastq --outfile read_alignment
+ --queryfile input_ngs.fastq --outfile read_alignment --fast --guided \
+ --fragments
 
 The resulting alignments will be written to file read_alignment.fas.
 
 If we add the option '--config-log-file':
 
-pagan --ref-seqfile reference_codon.fas --ref-treefile reference_tree.nhx \
---queryfile input_ngs.fastq --outfile read_alignment --config-log-file simple.cfg
+pagan --ref-seqfile reference_codon.fas --ref-treefile reference_tree.nwk \
+ --queryfile input_ngs.fastq --outfile read_alignment --fast --fragments \
+ --config-log-file simple.cfg
 
 the arguments used for the analysis will be written to the file 'simple.cfg'. This file 
 works as a log file of the specific settings used for the analysis and allows repeating 
@@ -112,10 +159,10 @@ pagan simple.cfg  (or 'pagan --config-file simple.cfg')
 
 The use of config files simplifies complex commands. For example, the following:
  
-pagan --ref-seqfile reference_codon.fas --ref-treefile reference_tree.nhx \
---queryfile input_ngs.fastq --trim-read-ends --build-contigs --use-consensus \
---consensus-minimum 3 --show-contig-ancestor --outfile read_alignment \
---config-log-file contigs.cfg
+pagan --ref-seqfile reference_codon.fas --ref-treefile reference_tree.nwk \
+ --queryfile input_ngs.fastq --build-contigs --use-consensus --show-contig-ancestor \
+ --consensus-minimum 3 --outfile read_alignment --fast --fragments \
+ --config-log-file contigs.cfg
 
 specifies config file 'contigs.cfg'. As the arguments given on the command line 
 override those given in a config file, the following command repeats a similar 
@@ -141,7 +188,7 @@ The following file is included:
 The data can be analysed using the following command:
 
 pagan --pileup-alignment --use-consensus --454 --queryfile 454_reads.fas \
---outfile 454_reads_pagan --config-log-file 454.cfg
+ --outfile 454_reads_pagan --config-log-file 454.cfg
 
 The resulting alignment will be written to file 454_reads_pagan.fas and the the 
 arguments used to '454.cfg'.
@@ -151,17 +198,16 @@ A similar analysis could now be repeated for another input file with the command
 pagan 454.cfg --queryfile more_reads.fas --outfile another_output_pagan
 
 
+
+==================
+strand/ORF_search:
+==================
+
 If the strand of the reads is unknown, PAGAN can be run with an option that performs
 both forward and reverse-complement alignment and chooses the better one:
 
 pagan --pileup-alignment --use-consensus --454 --queryfile 454_reads_reversed.fas \
---outfile 454_reads_reversed_pagan --compare-reverse
-
-
-
-==============
-ngs_placement:
-==============
+ --outfile 454_reads_reversed_pagan --both-strands
 
 If the strand of the reads is unknown and the reads come from protein-coding sequences
 (e.g. from RNA-seq experiment), PAGAN can be run with an option that searches for open
@@ -169,7 +215,7 @@ reading frames in the query (both in forward and reverse-complement strands) and
 chooses the one giving the best alignment:
 
 pagan --pileup-alignment --ref-seqfile human.fas --queryfile input_ngs_primates.fas \
---translate --find-best-orf
+ --translate --find-orfs
 
 The reference sequence should also be DNA or the resulting alignment cannot be 
 back-translated. This option does not correct for reading frames and may not work well

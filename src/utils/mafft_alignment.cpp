@@ -130,6 +130,7 @@ void Mafft_alignment::align_sequences(vector<Fasta_entry> *sequences)
     stringstream command;
     command << mafftpath<<"mafft "<<m_name.str()<<" 2>/dev/null";
 
+    Log_output::write_out("Mafft: command: "+command.str()+"\n",2);
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
@@ -252,6 +253,7 @@ void Mafft_alignment::align_sequences_fifo(vector<Fasta_entry> *sequences)
     stringstream command;
     command << mafftpath<<"mafft "+tmp_dir+"m"<<r<<".fas  2>/dev/null";
 
+    Log_output::write_out("Mafft: command: "+command.str()+"\n",2);
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )

@@ -457,6 +457,7 @@ void Exonerate_queries::preselect_targets(map<string,string> *target_sequences, 
         exit(1);
     }
 
+    Log_output::write_out("Exonerate_queries: command: "+command.str()+"\n",2);
 
     // read exonerate output, summing the multiple hit scores
 
@@ -891,6 +892,8 @@ void Exonerate_queries::local_alignment(map<string,string> *target_sequences, Fa
     else
         command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local -E 2>&1";
 
+    Log_output::write_out("Exonerate_local: command: "+command.str()+"\n",2);
+
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
     {
@@ -1061,6 +1064,8 @@ void Exonerate_queries::local_alignment(Node *root, Fasta_entry *read, multimap<
     else
         command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local -E 2>&1";
 
+    Log_output::write_out("Exonerate_local: command: "+command.str()+"\n",2);
+
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
     {
@@ -1207,6 +1212,8 @@ void Exonerate_queries::local_pairwise_alignment(string *str1,string *str2,vecto
 
     stringstream command;
     command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
+
+    Log_output::write_out("Exonerate_pairwise: command: "+command.str()+"\n",2);
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )

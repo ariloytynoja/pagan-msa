@@ -648,7 +648,7 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
 
         string org_nodes_to_align = reads->at(i).node_to_align;
 
-        if((int)target_sequences.size()>0 && !Settings_handle::st.is("no-preselection"))
+        if((int)target_sequences.size()>0 && Settings::placement_preselection)
             this->find_targets_for_query(root, &reads->at(i), mf, &target_sequences, &added_sequences,i==0);
         else
             this->find_nodes_for_query(root, &reads->at(i), mf,i==0);
@@ -846,7 +846,7 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
                         subroot->reconstruct_one_parsimony_ancestor(mf,false);
                 }
 
-                if(!Settings_handle::st.is("no-preselection"))
+                if(Settings::placement_preselection)
                 {
                     add_to_targets = true;
                     add_to_targets_node = current_root->name;
@@ -1418,9 +1418,9 @@ void Reads_aligner::find_targets_for_query(Node *root, Fasta_entry *read, Model_
     //
     map<string,string> targets_for_this;
 
-    map<string,string>::iterator it = target_sequences->begin();
-    for(;it!=target_sequences->end();it++)
-        cout<<"target: "<<it->first<<endl;
+//    map<string,string>::iterator it = target_sequences->begin();
+//    for(;it!=target_sequences->end();it++)
+//        cout<<"target: "<<it->first<<endl;
 
     stringstream str(read->node_to_align);
     string nodename;
@@ -1433,7 +1433,7 @@ void Reads_aligner::find_targets_for_query(Node *root, Fasta_entry *read, Model_
             pair <multimap<string,string>::iterator, multimap<string,string>::iterator> ret = added_sequences->equal_range(nodename);
             for (multimap<string,string>::iterator mit=ret.first; mit!=ret.second; mit++)
             {
-                cout<<"find "<<mit->second<<endl;
+//                cout<<"find "<<mit->second<<endl;
                 it = target_sequences->find(mit->second);
 //                cout<<"crash "<<it->first<<" "<<it->second<<endl;
                 targets_for_this.insert(make_pair(it->first,it->second));
@@ -2324,7 +2324,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
 
 void Reads_aligner::preselect_target_sequences(Node *root, vector<Fasta_entry> *reads, map<string,string> *target_sequences)
 {
-    if(Settings_handle::st.is("no-preselection"))
+    if(!Settings::placement_preselection)
         return;
 
 

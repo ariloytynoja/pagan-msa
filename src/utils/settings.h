@@ -64,6 +64,8 @@ public:
     static float tunneling_coverage;
 
     static int placement_target_nodes;
+    static bool placement_preselection;
+
 };
 
 }
