@@ -653,10 +653,55 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
         }
 
-        if( Settings_handle::st.is("prune-extended-alignment") )
+        this->prune_extended_alignment(fr,root,&aligned_sequences);
+
+        //////////////////
+
+        if(Settings_handle::st.is("trim-extended-alignment"))
         {
-            this->prune_extended_alignment(fr,root,&aligned_sequences);
+            set<string> readnames;
+            root->get_read_node_names(&readnames);
+
+            int last_site = 0;
+            int first_site = aligned_sequences.at(0).sequence.length();
+
+            vector<Fasta_entry> trimmed_sequences;
+
+            vector<Fasta_entry>::iterator fit = aligned_sequences.begin();
+            for(;fit!=aligned_sequences.end();fit++)
+            {
+                if(readnames.find(fit->name)!=readnames.end())
+                {
+                    for(int i=0;i<(int)fit->sequence.length();i++)
+                    {
+                        if(fit->sequence.at(i)!='-' && i < first_site)
+                            first_site = i;
+                        if(fit->sequence.at(i)!='-' && i > last_site)
+                            last_site = i;
+                    }
+
+                }
+            }
+
+            first_site = max(first_site-Settings_handle::st.get("trim-keep-sites").as<int>(),0);
+            last_site  = min(last_site+Settings_handle::st.get("trim-keep-sites").as<int>(),(int)aligned_sequences.at(0).sequence.length());
+
+            fit = aligned_sequences.begin();
+            for(;fit!=aligned_sequences.end();fit++)
+            {
+                Fasta_entry seq;
+                seq.name = fit->name;
+                seq.comment = fit->comment;
+                seq.sequence = fit->sequence.substr(first_site,last_site-first_site);
+                trimmed_sequences.push_back(seq);
+            }
+
+
+            this->output_pruned_alignment(fr,root,root,&trimmed_sequences,"Trimmed",".trimmed");
+
         }
+
+        //////////////////
 
         if(Settings_handle::st.is("output-ancestors"))
         {
@@ -760,7 +805,7 @@ void Input_output_parser::prune_extended_alignment(Fasta_reader *fr,Node *root,v
                 tmp_root->set_has_sequence(&readnames);
                 tmp_root->prune_tree();
 
-                this->output_pruned_alignment(fr,root,tmp_root,aligned_sequences,".pruned");
+                this->output_pruned_alignment(fr,root,tmp_root,aligned_sequences,"Pruned",".pruned");
             }
             else
             {
@@ -775,7 +820,7 @@ void Input_output_parser::prune_extended_alignment(Fasta_reader *fr,Node *root,v
                 tmp_root->set_has_sequence(&readnames);
                 tmp_root->prune_tree();
 
-                this->output_pruned_alignment(fr,root,tmp_root,aligned_sequences,".pruned");
+                this->output_pruned_alignment(fr,root,tmp_root,aligned_sequences,"Pruned",".pruned");
             }
             else
             {
@@ -809,14 +854,14 @@ void Input_output_parser::prune_extended_alignment(Fasta_reader *fr,Node *root,v
         set<string> leaves_kept;
         tmp_root->get_leaf_node_names(&leaves_kept);
 
-        this->output_pruned_alignment(fr,root,tmp_root,aligned_sequences,".pruned_closest");
+        this->output_pruned_alignment(fr,root,tmp_root,aligned_sequences,"Pruned-with-closest",".pruned_closest");
 
         delete tmp_root;
     }
 
 }
 
-void Input_output_parser::output_pruned_alignment(Fasta_reader *fr,Node *root,Node *tmp_root,vector<Fasta_entry> *aligned_sequences,string prefix)
+void Input_output_parser::output_pruned_alignment(Fasta_reader *fr,Node *root,Node *tmp_root,vector<Fasta_entry> *aligned_sequences,string desc,string prefix)
 {
 
     set<string> readnames;
@@ -838,10 +883,10 @@ void Input_output_parser::output_pruned_alignment(Fasta_reader *fr,Node *root,No
         format = Settings_handle::st.get("outformat").as<string>();
 
     if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
-        Log_output::write_out("Pruned alignment files: "+outfile+fr->get_format_suffix(format)+", "+outfile+".xml\n",0);
+        Log_output::write_out(desc+" alignment files: "+outfile+fr->get_format_suffix(format)+", "+outfile+".xml\n",0);
     else
-        Log_output::write_out("Pruned alignment file: "+outfile+fr->get_format_suffix(format)+"\n",0);
-    Log_output::write_out("Pruned tree file: "+outfile+".tre\n",0);
+        Log_output::write_out(desc+" alignment file: "+outfile+fr->get_format_suffix(format)+"\n",0);
+    Log_output::write_out(desc+" tree file: "+outfile+".tre\n",0);
 
 
     vector<Fasta_entry> pruned_sequences;
