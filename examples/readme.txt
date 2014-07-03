@@ -61,6 +61,16 @@ may be placed to a wrong node. Errors are also more likely between closely-relat
 paralogs than between distant ones.
 
 
+=================
+AMPLICON ANALYSIS
+=================
+
+Amplicon analysis is like standard phylogenetic placement except that it is helpful to
+trim and prune the resulting alignment such that it contains only the target reagion
+and a smaller number (or no) reference sequences. Running the example should explain
+that nicely and more infromation is provided at the program homepage.
+ 
+
 ================
 PILEUP ALIGNMENT
 ================
@@ -176,11 +186,48 @@ for additional options.
 
 
 
+=================
+amplicon analysis
+=================
+
+The following files are included:
+
+- pagan_placement.cfg : config file that runs a basic analysis.
+- query.fas           : amplicon sequences to place in the alignment.
+- reference.fas       : reference alignment (these from Silva).
+- reference.tree      : reference phylogeny.
+
+The data can be analysed using the following command:
+
+pagan pagan_placement.cfg
+
+This produces several output files. 
+
+Files named "pagan_placement.???" contain the full data; "pagan_placement.trimmed.???" 
+contain the target region for all the sequences; "pagan_placement.pruned.???" contain 
+the target region for the query sequences and for N reference sequences (here N=0); and 
+finally those named "pagan_placement.pruned_closest.???" contain the target region for 
+the query sequences and the very closest reference sequences. 
+
+Files ending with ".tre" are the alignment guide trees for each output; those ending 
+with ".fas" and ".xml" are the alignments in FASTA and HSAML format. 
+  
+The same analysis could be performed with the command:
+
+pagan --ref-seqfile reference.fas --ref-treefile reference.tree --queryfile query.fas \
+ --outfile pagan_placement --one-placement-only --trim-extended-alignment \
+ --prune-keep-number 0 --prune-keep-closest --xml
+
+If the amplicon sequences are very closely related to the reference sequences, one can 
+add option '--terminal-nodes' and thus enforce their placement next to the tips.
+
+
+
 ===========
 454_pileup:
 ===========
 
-The following file is included:
+The following files are included:
 
 - 454_reads.fas : simulated overlapping 454 reads
 - 454_reads_reversed.fas : simulated overlapping 454 reads, half of them reversed
@@ -220,3 +267,4 @@ pagan --pileup-alignment --ref-seqfile human.fas --queryfile input_ngs_primates.
 The reference sequence should also be DNA or the resulting alignment cannot be 
 back-translated. This option does not correct for reading frames and may not work well
 with data coming e.g. from 454.
+
