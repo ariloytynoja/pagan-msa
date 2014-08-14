@@ -216,8 +216,8 @@ The same analysis could be performed with the command:
 
 pagan --ref-seqfile reference.fas --ref-treefile reference.tree --queryfile query.fas \
  --outfile pagan_placement --one-placement-only --trim-extended-alignment \
- --prune-keep-number 0 --prune-keep-closest --xml
-
+ --prune-extended-alignment --prune-keep-number 0 --prune-keep-closest --xml
+ 
 If the amplicon sequences are very closely related to the reference sequences, one can 
 add option '--terminal-nodes' and thus enforce their placement next to the tips.
 
