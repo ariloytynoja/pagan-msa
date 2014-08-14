@@ -34,8 +34,8 @@ Settings::Settings(){}
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.55;
-    date = "1 July, 2014";
+    version = 0.56;
+    date = "14 August, 2014";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
