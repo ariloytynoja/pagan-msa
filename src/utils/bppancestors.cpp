@@ -213,28 +213,30 @@ void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_seque
     Log_output::write_out("BppAncestors: command: "+command.str()+"\n",2);
 
 
-    FILE *fpipe;
-    char line[256];
-
-    if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
-    {
-        Log_output::write_out("Problems with bppancestor pipe.\nExiting.\n",0);
-        exit(1);
-    }
-    while ( fgets( line, sizeof line, fpipe))
-    {
-        Log_output::write_out("BppAncestors: "+string(line),3);
-    }
-    pclose(fpipe);
-
-
-    ////////////
-
-
-    map<string,string> bppa_sequences;
-
-    Fasta_reader fr;
     try {
+
+        FILE *fpipe;
+        char line[256];
+
+        if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
+        {
+            Log_output::write_out("Problems with bppancestor pipe.\nExiting.\n",0);
+            exit(1);
+        }
+        while ( fgets( line, sizeof line, fpipe))
+        {
+            Log_output::write_out("BppAncestors: "+string(line),3);
+        }
+        pclose(fpipe);
+
+
+        ////////////
+
+
+        map<string,string> bppa_sequences;
+
+        Fasta_reader fr;
+
         fr.read_bpp_phylip(o_name.str().c_str(),&bppa_sequences);
 
         si = aligned_sequences->begin();

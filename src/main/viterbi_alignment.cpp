@@ -214,7 +214,29 @@ void Viterbi_alignment::align(Sequence *left_sequence,Sequence *right_sequence,E
     max_end.bwd_score = 1.0;
     max_end.full_score = 1.0;
 
-    if(max_end.score==-HUGE_VAL) {
+    if(max_end.score==-HUGE_VAL && tunnel_defined)
+    {
+        Log_output::write_msg("anchored alignment failed: trying again",1);
+
+        for(int j=0;j<j_max;j++)
+        {
+            for(int i=0;i<i_max;i++)
+            {
+                this->compute_fwd_scores(i,j);
+            }
+        }
+
+        left_site = left->get_site_at(i_max);
+        right_site = right->get_site_at(j_max);
+
+        this->iterate_bwd_edges_for_end_corner(left_site,right_site,&max_end);
+        max_end.bwd_score = 1.0;
+        max_end.full_score = 1.0;
+
+    }
+
+    if(max_end.score==-HUGE_VAL)
+    {
         Log_output::write_out("\nViterbi_alignment: max_end.score==-HUGE_VAL\nleft\n"+this->left->print_sequence()+
         "\nright\n"+this->right->print_sequence()+"\nmatrix\n"+this->print_matrices(),1);
     }
