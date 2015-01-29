@@ -310,10 +310,10 @@ void Find_anchors::check_hits_order_conflict(std::string *seq1,std::string *seq2
 }
 
 
-void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<int> *upper_bound,std::vector<int> *lower_bound,string str1,string str2)
+void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<int> *upper_bound,std::vector<int> *lower_bound,string *str1,string *str2)
 {
-    int length1 = str1.length();
-    int length2 = str2.length();
+    int length1 = str1->length();
+    int length2 = str2->length();
 
 //    cout<<"\n>S1\n"<<str1<<"\n>S2\n"<<str2<<"\n";
 
@@ -323,11 +323,11 @@ void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<in
     vector<int> index2;
 
     for(int i=0;i<length1;i++)
-        if(str1.at(i)!='-')
+        if(str1->at(i)!='-')
             index1.push_back(i+1);
 
     for(int i=0;i<length2;i++)
-        if(str2.at(i)!='-')
+        if(str2->at(i)!='-')
             index2.push_back(i+1);
 
 
@@ -451,10 +451,10 @@ void Find_anchors::define_tunnel(std::vector<Substring_hit> *hits,std::vector<in
         s<<"Anchoring: Computing "<<((float)sum/(length1*length2))*100.0<<"% of DP matrix.\n";
         Log_output::write_out(s.str(),1);
     }
-    */
+    //*/
 
     if(Settings_handle::st.is("plot-anchors-for-R")){
-        cout<<"\n\nl1="<<str1.length()<<"; l2="<<str2.length()<<"; plot(1,1,type=\"n\",xlim=c(0,l1),ylim=c(0,l2))\n";
+        cout<<"\n\nl1="<<str1->length()<<"; l2="<<str2->length()<<"; plot(1,1,type=\"n\",xlim=c(0,l1),ylim=c(0,l2))\n";
         cout<<"segments(0,0,l1,0,col=\"red\"); segments(0,l2,l1,l2,col=\"red\"); segments(0,0,0,l2,col=\"red\"); segments(l1,0,l1,l2,col=\"red\")\n";
         stringstream xh;
         stringstream yh;

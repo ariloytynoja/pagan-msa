@@ -91,7 +91,7 @@ float Viterbi_alignment::define_tunnel(Sequence *left_sequence,Sequence *right_s
 
     fa.check_hits_order_conflict(&s1,&s2,&hits);
 
-    fa.define_tunnel(&hits,&upper_bound,&lower_bound,s1,s2);
+    fa.define_tunnel(&hits,&upper_bound,&lower_bound,&s1,&s2);
 
     float coverage = 0;
 

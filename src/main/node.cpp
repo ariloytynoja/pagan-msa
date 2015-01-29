@@ -156,10 +156,10 @@ void Node::build_queues(vector<Node*>& wait_nodes, vector<Node*>& run_nodes) {
             run_nodes.push_back(this);
         }
         else {
-            wait_nodes.push_back(this);
-            
             left_child->build_queues(wait_nodes, run_nodes);
             right_child->build_queues(wait_nodes, run_nodes);
+
+            wait_nodes.push_back(this);
         }
     }
 }

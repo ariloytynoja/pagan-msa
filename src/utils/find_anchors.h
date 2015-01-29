@@ -122,7 +122,7 @@ public:
     void find_long_substrings(std::string *seq1,std::string *seq2,std::vector<Substring_hit> *hits,int min_length);
     void find_hmmer_anchors(std::string *seq1,std::string *seq2,std::vector<Substring_hit> *hits);
     void check_hits_order_conflict(std::string *seq1,std::string *seq2,std::vector<Substring_hit> *hits);
-    void define_tunnel(std::vector<Substring_hit> *hits,std::vector<int> *upper_bound,std::vector<int> *lower_bound,std::string str1, std::string str2);
+    void define_tunnel(std::vector<Substring_hit> *hits,std::vector<int> *upper_bound,std::vector<int> *lower_bound,std::string *str1, std::string *str2);
 };
 
 }
