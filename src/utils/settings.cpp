@@ -257,6 +257,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("hmmer-anchors","hmmer anchors")
         ("tid-for-subroot","placement at subroot only (for assembly)")
         ("assembly","placement at subroot only (for assembly)")
+        ("boost","multi-threading with boost")
 
     ;
 

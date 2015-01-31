@@ -44,6 +44,7 @@ int Node::alignment_number = 0;
 boost::mutex Node::list_mutex;
 boost::mutex Node::model_mutex;
 boost::mutex Node::log_mutex;
+//boost::mutex Node::anchor_mutex;
 
 
 /*******************************************************************************/
@@ -150,6 +151,52 @@ void Node::start_threaded_alignment(Model_factory *mf, int n_threads)
 
 /*******************************************************************************/
 
+void Node::start_openmp_alignment(Model_factory *mf, int n_threads)
+{
+
+    this->number_of_nodes = this->get_number_of_leaves()-1;
+    this->alignment_number = 1;
+
+    vector<Node*> wait_nodes;
+    vector<Node*> run_nodes;
+
+    build_queues(wait_nodes, run_nodes);
+
+    omp_set_num_threads(n_threads);
+
+    while(true) {
+        #pragma omp parallel for
+        for(int i = 0; i < int(run_nodes.size()); ++i) {
+            run_nodes[i]->align_sequences_this_node_openmp(mf);
+        }
+
+        if (wait_nodes.empty()) {
+            break;
+        }
+
+        run_nodes.clear();
+
+        vector<Node*>::iterator it = wait_nodes.begin();
+        while(it != wait_nodes.end()) {
+            if((*it)->left_child->node_has_sequence_object and \
+               (*it)->right_child->node_has_sequence_object) {
+
+                run_nodes.push_back(*it);
+                wait_nodes.erase(it);
+                continue;
+            }
+            ++it;
+        }
+
+    }
+
+    if(Settings_handle::st.is("output-ancestors"))
+        this->reconstruct_parsimony_ancestor(mf);
+
+}
+
+/*******************************************************************************/
+
 void Node::build_queues(vector<Node*>& wait_nodes, vector<Node*>& run_nodes) {
     if(not this->is_leaf()) {
         if(left_child->node_has_sequence_object and right_child->node_has_sequence_object) {
@@ -232,13 +279,15 @@ void Node::align_sequences_this_node_threaded(Model_factory *mf)
     if(!Settings_handle::st.is("silent"))
     {
         stringstream ss;
+        log_mutex.lock();
+
         ss<<" aligning node "<<this->get_name()<<" ("<<alignment_number<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<".";
 
-        log_mutex.lock();
         Log_output::write_msg(ss.str(),0);
+        alignment_number++;
+
         log_mutex.unlock();
 
-        alignment_number++;
     }
 
     double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
@@ -253,7 +302,13 @@ void Node::align_sequences_this_node_threaded(Model_factory *mf)
     float tunnel_coverage = 0;
 
     if( ! Settings_handle::st.is("no-anchors") )
+    {
+//        anchor_mutex.lock();
+
         tunnel_coverage = va.define_tunnel(left_child->get_sequence(),right_child->get_sequence(),&model,false);
+
+//        anchor_mutex.unlock();
+    }
 
     va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
              left_child->get_distance_to_parent(),right_child->get_distance_to_parent());

@@ -9,14 +9,14 @@ CC       = /usr/bin/gcc
 CXX      = /usr/bin/g++
 LEX      = flex
 YACC     = yacc
-CFLAGS   = -pipe -Wall -Wno-unused-parameter -Wno-unused -O2 
-CXXFLAGS = -pipe -Wall -Wno-unused-parameter -Wno-unused -O2
+CFLAGS   = -pipe -Wall -Wno-unused-parameter -Wno-unused -O2 -fopenmp 
+CXXFLAGS = -pipe -Wall -Wno-unused-parameter -Wno-unused -O2 -fopenmp
 LEXFLAGS =
 YACCFLAGS= -d
 INCPATH  = -I/usr/include -I. -I./utils -I./main -I../boost/include
 LINK     = /usr/bin/g++
 LFLAGS   =
-LIBS     = $(SUBLIBS)  -Wl,-rpath, -lboost_program_options -lboost_regex -lboost_thread -lboost_system  -lm -L../boost/lib
+LIBS     = $(SUBLIBS)  -Wl,-rpath, -lboost_program_options -lboost_regex -lboost_thread -lboost_system -lgomp -lm -L../boost/lib
 ifneq ($(UNAME), Darwin)
 LIBS    += -lrt
 endif

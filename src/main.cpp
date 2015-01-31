@@ -185,8 +185,10 @@ int main(int argc, char *argv[])
         // some features only work with 1 thread
         if(n_threads==1)
             root->start_alignment(&mf);
-        else
+        else if(Settings_handle::st.is("boost"))
             root->start_threaded_alignment(&mf,n_threads);
+        else
+            root->start_openmp_alignment(&mf,n_threads);
     }
 
     /***********************************************************************/

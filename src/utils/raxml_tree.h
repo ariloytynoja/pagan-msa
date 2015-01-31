@@ -46,7 +46,7 @@ class RAxML_tree
             tmp_dir = Settings_handle::st.get("temp-folder").as<string>()+"/";
 
             char resolved_path[200];
-            realpath(tmp_dir.c_str(), resolved_path);
+            char* rp = realpath(tmp_dir.c_str(), resolved_path);
             tmp_dir = string(resolved_path)+"/";
         }
         struct stat st;

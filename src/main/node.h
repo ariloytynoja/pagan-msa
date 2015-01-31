@@ -42,6 +42,7 @@
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include <omp.h>
 
 using namespace std;
 
@@ -922,7 +923,11 @@ public:
     void start_threaded_alignment(Model_factory *mf, int n_threads);
     
     /*******************************************************************************/
-    
+
+    void start_openmp_alignment(Model_factory *mf, int n_threads);
+
+    /*******************************************************************************/
+
     void build_queues(vector<Node*>& wait_nodes, vector<Node*>& run_nodes);
 
     /*******************************************************************************/
@@ -935,6 +940,35 @@ public:
 
     /*******************************************************************************/
 
+    void align_sequences_this_node_openmp(Model_factory *mf)
+    {
+        if(!Settings_handle::st.is("silent"))
+        {
+                stringstream ss;
+                ss<<" aligning node "<<this->get_name()<<" ("<<alignment_number<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<".";
+
+                #pragma omp critical
+                Log_output::write_msg(ss.str(),0);
+
+                #pragma omp critical
+                alignment_number++;
+        }
+
+        double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
+
+        Evol_model model(mf->get_sequence_data_type(), dist);
+
+        #pragma omp critical
+        model = mf->alignment_model(dist);
+
+        Viterbi_alignment va;
+        va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
+                 left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
+
+        this->add_ancestral_sequence( va.get_simple_sequence() );
+    }
+
+    /*******************************************************************************/
 
     void print_alignment()
     {

@@ -72,11 +72,12 @@ HEADERS += utils/text_utils.h \
     utils/bppdist_tree.h \
     utils/bppphysamp_tree.h \
     utils/bppancestors.h
-LIBS += -lboost_program_options -lboost_regex -lboost_thread  -lboost_system -lrt
+LIBS += -lboost_program_options -lboost_regex -lboost_thread  -lboost_system -lrt -lgomp
 INCLUDEPATH += /usr/include
 OTHER_FILES +=  ../VERSION_HISTORY
 
-
+QMAKE_CXXFLAGS += -fopenmp
+QMAKE_CFLAGS += -fopenmp
 
 
 
