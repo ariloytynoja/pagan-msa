@@ -30,6 +30,8 @@
 #include <map>
 #include <sys/stat.h>
 
+#include <omp.h>
+
 namespace ppa{
 
 #ifndef EXONERATE_HIT_H

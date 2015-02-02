@@ -1215,11 +1215,16 @@ void Exonerate_queries::local_pairwise_alignment(string *str1,string *str2,vecto
 
     Log_output::write_out("Exonerate_pairwise: command: "+command.str()+"\n",2);
 
+
     FILE *fpipe;
+
+    #pragma omp critical
+    {
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
     {
         Log_output::write_out("Problems with exonerate pipe.\nExiting.\n",0);
         exit(1);
+    }
     }
 
     // read exonerate output, summing the multiple hit scores

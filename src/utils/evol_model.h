@@ -34,6 +34,7 @@ public:
 //    Evol_model() {}
     Evol_model(int data_t,float dist);
     ~Evol_model();
+    Evol_model& operator=(const Evol_model& org);
 //    void copy(Evol_model *org);
 
     Db_matrix *charPi;

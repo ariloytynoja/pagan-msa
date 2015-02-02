@@ -319,6 +319,37 @@ void Node::align_sequences_this_node_threaded(Model_factory *mf)
 
 /*******************************************************************************/
 
+void Node::align_sequences_this_node_openmp(Model_factory *mf)
+{
+    if(!Settings_handle::st.is("silent"))
+    {
+            stringstream ss;
+            #pragma omp critical
+            ss<<" aligning node "<<this->get_name()<<" ("<<alignment_number<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<".";
+
+            #pragma omp critical
+            Log_output::write_msg(ss.str(),0);
+
+            #pragma omp critical
+            alignment_number++;
+    }
+
+    double dist = left_child->get_distance_to_parent()+right_child->get_distance_to_parent();
+
+    Evol_model model(mf->get_sequence_data_type(), dist);
+
+    #pragma omp critical
+    model = mf->alignment_model(dist);
+
+    Viterbi_alignment va;
+    va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
+             left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
+
+    this->add_ancestral_sequence( va.get_simple_sequence() );
+}
+
+/*******************************************************************************/
+
 void Node::add_sequence( Fasta_entry seq_entry, int data_type, bool gapped, bool no_trimming, bool turn_revcomp)
 {
     sequence = new Sequence(seq_entry, data_type, gapped, no_trimming, turn_revcomp);
