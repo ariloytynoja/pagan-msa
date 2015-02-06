@@ -342,6 +342,11 @@ void Node::align_sequences_this_node_openmp(Model_factory *mf)
     model = mf->alignment_model(dist);
 
     Viterbi_alignment va;
+    float tunnel_coverage = 0;
+
+    if( ! Settings_handle::st.is("no-anchors") )
+        tunnel_coverage = va.define_tunnel(left_child->get_sequence(),right_child->get_sequence(),&model,false);
+
     va.align(left_child->get_sequence(),right_child->get_sequence(),&model,
              left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
 
