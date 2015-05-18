@@ -895,7 +895,16 @@ public:
     void read_reference_alignment(Model_factory *mf)
     {
         //Log_output::write_header("Reading reference alignment ",0);
-        this->read_alignment(mf);
+
+        if(Settings_handle::st.is("quick"))
+        {
+            Evol_model model = mf->alignment_model(.5);
+            this->read_alignment(&model);
+        }
+        else
+        {
+            this->read_alignment(mf);
+        }
 
         this->reconstruct_parsimony_ancestor(mf);
     }
@@ -973,6 +982,29 @@ public:
 
         Reference_alignment ra;
         ra.read_alignment(left_child->get_sequence(),right_child->get_sequence(),&model,
+                 left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
+
+        this->add_ancestral_sequence( ra.get_simple_sequence() );
+    }
+
+    void read_alignment(Evol_model *model)
+    {
+        if(leaf)
+            return;
+
+        left_child->read_alignment(model);
+        right_child->read_alignment(model);
+
+        this->read_alignment_this_node(model);
+    }
+
+    void read_alignment_this_node(Evol_model *model)
+    {
+
+        Log_output::write_msg("reading alignment node "+this->get_name()+": "+left_child->get_name()+" - "+right_child->get_name()+".",0);
+
+        Reference_alignment ra;
+        ra.read_alignment(left_child->get_sequence(),right_child->get_sequence(),model,
                  left_child->get_distance_to_parent(),right_child->get_distance_to_parent());
 
         this->add_ancestral_sequence( ra.get_simple_sequence() );

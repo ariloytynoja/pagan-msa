@@ -1264,7 +1264,8 @@ void Exonerate_queries::local_pairwise_alignment(string *str1,string *str2,vecto
             {
                 if(best_reverse_hit != 0)
                     *best_reverse_hit = best_hits.at(i).score;
-                Log_output::write_out("Warning: Anchoring suggests reverse strand hit!\n",1);
+                if(i==0)
+                    Log_output::write_out("Warning: Anchoring suggests reverse strand hit!\n",0);
                 continue;
             }
 

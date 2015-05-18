@@ -240,10 +240,17 @@ void Find_anchors::check_hits_order_conflict(std::string *seq1,std::string *seq2
         hit_site2.push_back(false);
 
 //    cout<<"\nHits "<<hits->size()<<endl;
+    int trim = Settings_handle::st.get("exonerate-hit-trim").as<int>();
 
     vector<Substring_hit>::iterator it1 = hits->begin();
     for(;it1!=hits->end();)
     {
+        it1->start_site_1+trim;
+        if(it1->start_site_1>len1) it1->start_site_1 == len1-1;
+        it1->start_site_2+trim;
+        if(it1->start_site_2>len1) it1->start_site_2 == len2-1;
+        it1->length -= trim*2;
+
         bool overlap = false;
         for(int i=it1->start_site_1,j=it1->start_site_2;i<it1->start_site_1+it1->length && j<it1->start_site_2+it1->length;i++,j++)
         {

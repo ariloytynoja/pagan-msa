@@ -34,8 +34,8 @@ Settings::Settings(){}
 
 int Settings::read_command_line_arguments(int argc, char *argv[])
 {
-    version = 0.56;
-    date = "14 August, 2014";
+    version = 0.57;
+    date = "1 April, 2015";
 
     boost::program_options::options_description minimal("Minimal progressive alignment options",100);
     minimal.add_options()
@@ -151,6 +151,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
     anchoring.add_options()
         ("no-anchors","no anchoring (default: use Exonerate to anchor alignment)")
         ("exonerate-hit-length", po::value<int>()->default_value(30), "Exonerate hit length for anchor (default)")
+        ("exonerate-hit-trim", po::value<int>()->default_value(5), "Exonerate hit trim length")
         ("exonerate-hit-score", po::value<int>(), "Exonerate hit score for anchor")
         ("anchors-offset", po::value<int>()->default_value(15), "anchors offset for alignment")
         ("anchoring-threshold",po::value<float>()->default_value(1,"1.0"),"anchoring coverage threshold for skipping")
@@ -258,7 +259,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("tid-for-subroot","placement at subroot only (for assembly)")
         ("assembly","placement at subroot only (for assembly)")
         ("boost","multi-threading with boost")
-
+        ("quick","quick reconstruction")
     ;
 
     boost::program_options::options_description broken("Broken options",100);
