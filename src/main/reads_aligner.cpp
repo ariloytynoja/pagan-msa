@@ -1272,7 +1272,7 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
 
     for(int i=0;i<(int)potential_orfs.size();i++)
     {
-//        string org_nodes_to_align = potential_orfs->at(i).node_to_align;
+        string org_nodes_to_align = potential_orfs.at(i).node_to_align;
 
         Fasta_entry potential_orf = potential_orfs.at(i);
 
@@ -1286,6 +1286,10 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
 
         stringstream nodestream;
         nodestream << potential_orf.node_to_align;
+
+        bool add_to_targets = false;
+        string add_to_targets_node = "";
+        string add_to_targets_seq = "";
 
         string ref_node_name;
 
@@ -1374,11 +1378,61 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
                     }
                 }
 
+                /* untested here */
+                if(Settings_handle::st.is("tid-for-subroot"))
+                {
+                    current_root->set_nhx_tid(current_root->get_left_child()->get_nhx_tid());
+                    current_root->get_left_child()->set_nhx_tid("");
+                    current_root->get_right_child()->set_nhx_tid("");
+                }
+                /* untested here */
+
                 this->fix_branch_lengths(root,current_root);
+
+                /* untested here */
+                if(root->get_parent_node(current_root->get_name()) != 0)
+                {
+                    Node *subroot = root->get_parent_node(current_root->get_name());
+                    if(subroot->get_left_child()->get_name() == current_root->get_name())
+                        subroot->reconstruct_one_parsimony_ancestor(mf,true);
+                    else if(subroot->get_right_child()->get_name() == current_root->get_name())
+                        subroot->reconstruct_one_parsimony_ancestor(mf,false);
+                }
+                /* untested here */
+
+                if(Settings::placement_preselection)
+                {
+                    add_to_targets = true;
+                    add_to_targets_node = current_root->name;
+                    add_to_targets_seq = current_root->get_sequence()->get_sequence_string(false);
+
+                    // Only the reference nodes were included as original targets.
+                    // The newly added sequence nodes have to be also included and
+                    // the mapping can only be done via the refence nodes.
+                    //
+                    stringstream str(org_nodes_to_align);
+                    string nname;
+//                    cout<<"\nadded_sequences ("<<added_sequences.size()<<"): "<<potential_orf.name<<" "<<current_root->name<<"\n";
+                    while(str >> nname)
+                    {
+                        added_sequences.insert(make_pair(nname,potential_orf.name));
+                        added_sequences.insert(make_pair(nname,current_root->name));
+                    }
+//                    cout<<current_root->name<<": "<<current_root->get_sequence()->get_sequence_string(false)<<endl;
+//                    cout<<endl;
+                }
             }
 
 
             global_root = root;
+
+            if(add_to_targets)
+            {
+//                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<reads->at(i).name<<endl<<endl;
+                target_sequences.insert(make_pair(potential_orf.name,potential_orf.sequence));
+//                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<add_to_targets_node<<endl<<endl;
+                target_sequences.insert(make_pair(add_to_targets_node,add_to_targets_seq));
+            }
 
         }
     }

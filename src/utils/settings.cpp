@@ -374,6 +374,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         tunneling_coverage = 1;
     }
 
+    placement_target_nodes = Settings::all_nodes;
 
     if(is("test-every-internal-node") || is("internal-nodes"))
     {

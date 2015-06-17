@@ -690,7 +690,7 @@ void Exonerate_queries::all_local_alignments(Node *root, vector<Fasta_entry> *re
     if(is_local)
         command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
     else
-        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local -E 2>&1";
+        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local 2>&1";
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
@@ -890,7 +890,7 @@ void Exonerate_queries::local_alignment(map<string,string> *target_sequences, Fa
     if(is_local)
         command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
     else
-        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local -E 2>&1";
+        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local 2>&1";
 
     Log_output::write_out("Exonerate_local: command: "+command.str()+"\n",2);
 
@@ -1062,7 +1062,7 @@ void Exonerate_queries::local_alignment(Node *root, Fasta_entry *read, multimap<
     if(is_local)
         command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
     else
-        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local -E 2>&1";
+        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local 2>&1";
 
     Log_output::write_out("Exonerate_local: command: "+command.str()+"\n",2);
 

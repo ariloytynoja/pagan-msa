@@ -592,7 +592,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             {
                 fr->backtranslate_dna(aligned_sequences,&dna_seqs,dna_sequences,infer_bppa_ancestors);
 
-                ancestors_done = false; //bppa.infer_ancestors(root,&dna_sequences,true);
+                ancestors_done = bppa.infer_ancestors(root,&dna_sequences,true);
 
                 if( ancestors_done )
                 {
