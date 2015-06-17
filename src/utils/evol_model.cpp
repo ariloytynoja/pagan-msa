@@ -36,7 +36,7 @@ Evol_model::Evol_model(int data_t,float dist)
 
     distance = dist;
 
-    if(data_type == Model_factory::dna && Settings_handle::st.is("codons") || data_type == Model_factory::codon)
+    if( ( data_type == Model_factory::dna && Settings_handle::st.is("codons") ) || data_type == Model_factory::codon)
         char_fas = Model_factory::get_codon_full_character_alphabet()->size();
 
     charPi = new Db_matrix(char_fas,"pi_char");

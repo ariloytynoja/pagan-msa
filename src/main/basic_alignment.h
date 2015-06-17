@@ -686,7 +686,7 @@ protected:
 
         if(model->get_data_type() == Model_factory::protein)
             full_char_alphabet = Model_factory::get_protein_full_character_alphabet();
-        else if(model->get_data_type() == Model_factory::dna && Settings_handle::st.is("codons") || model->get_data_type() == Model_factory::codon)
+        else if( ( model->get_data_type() == Model_factory::dna && Settings_handle::st.is("codons") ) || model->get_data_type() == Model_factory::codon)
             full_char_alphabet = Model_factory::get_codon_full_character_alphabet();
 
         stringstream ss;

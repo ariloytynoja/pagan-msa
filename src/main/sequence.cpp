@@ -36,7 +36,7 @@ Sequence::Sequence(Fasta_entry &seq_entry,const int data_t,bool gapped, bool no_
     data_type = data_t;
 
     this->set_gap_symbol("-");
-    if(data_type == Model_factory::dna && Settings_handle::st.is("codons") || data_type == Model_factory::codon)
+    if( ( data_type == Model_factory::dna && Settings_handle::st.is("codons") ) || data_type == Model_factory::codon)
         this->set_gap_symbol("---");
 
     if(gapped)
@@ -116,7 +116,7 @@ Sequence::Sequence(Fasta_entry &seq_entry,const int data_t,bool gapped, bool no_
         this->create_graph_sequence(seq_entry);
 
     else
-        if(data_type == Model_factory::dna && Settings_handle::st.is("codons") || data_type == Model_factory::codon)
+        if( ( data_type == Model_factory::dna && Settings_handle::st.is("codons") ) || data_type == Model_factory::codon)
             this->create_codon_sequence(seq_entry);
         else
             this->create_default_sequence(seq_entry);
@@ -578,7 +578,7 @@ Sequence::Sequence(const int length,const int data_t, string gapped_s)
     data_type = data_t;
 
     this->set_gap_symbol("-");
-    if(data_type == Model_factory::dna && Settings_handle::st.is("codons") || data_type == Model_factory::codon)
+    if( ( data_type == Model_factory::dna && Settings_handle::st.is("codons") ) || data_type == Model_factory::codon)
         this->set_gap_symbol("---");
 
     gapped_seq = gapped_s;
@@ -605,7 +605,7 @@ string Sequence::print_sequence(vector<Site> *sites)
 {
 
     vector<string> *alphabet = 0;
-    if(data_type == Model_factory::dna && Settings_handle::st.is("codons") || data_type == Model_factory::codon)
+    if( ( data_type == Model_factory::dna && Settings_handle::st.is("codons") ) || data_type == Model_factory::codon)
         alphabet = Model_factory::get_codon_full_character_alphabet();
     else if(data_type == Model_factory::dna)
         alphabet = Model_factory::get_dna_full_character_alphabet();
@@ -691,7 +691,7 @@ string Sequence::get_sequence_string(bool with_gaps)
     int seq_length = this->sites_length();
     string seq;
 
-    bool codonstr = (this->get_data_type()==Model_factory::dna && Settings_handle::st.is("codons") || this->get_data_type() == Model_factory::codon);
+    bool codonstr = ( ( this->get_data_type()==Model_factory::dna && Settings_handle::st.is("codons") ) || this->get_data_type() == Model_factory::codon);
 
     if(this->is_terminal_sequence())
     {

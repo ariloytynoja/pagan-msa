@@ -424,7 +424,7 @@ void Input_output_parser::define_alignment_model(Fasta_reader *fr,Model_factory 
     /*  Define the alignment model                                         */
     /***********************************************************************/
 
-    if(data_type==Model_factory::dna && Settings_handle::st.is("codons") || data_type==Model_factory::codon)
+    if( ( data_type==Model_factory::dna && Settings_handle::st.is("codons") ) || data_type==Model_factory::codon)
     {
         // Create a codon alignment model using KHG.
         Log_output::write_out("Model_factory: creating a codon model\n",3);

@@ -1976,7 +1976,7 @@ Evol_model Model_factory::alignment_model(double distance)
 
     /***************************************************************/
 
-    else if(sequence_data_type == Model_factory::dna && Settings_handle::st.is("codons") ||
+    else if( ( sequence_data_type == Model_factory::dna && Settings_handle::st.is("codons") ) ||
             sequence_data_type == Model_factory::codon )
     {
 
