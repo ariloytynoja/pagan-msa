@@ -892,11 +892,11 @@ public:
     }
 
 
-    void read_reference_alignment(Model_factory *mf)
+    void read_reference_alignment(Model_factory *mf, bool quick=false)
     {
         //Log_output::write_header("Reading reference alignment ",0);
 
-        if(Settings_handle::st.is("quick"))
+        if(quick || Settings_handle::st.is("quick"))
         {
             Evol_model model = mf->alignment_model(.5);
             this->read_alignment(&model);
@@ -1570,6 +1570,48 @@ public:
         {
             stringstream ss;
             ss<<"("<<left_child->print_nhx_subtree()<<","<<right_child->print_nhx_subtree()<<"):"<<dist_to_parent<<tid;
+            return ss.str();
+
+        } else {
+            stringstream ss;
+            ss<<name<<":"<<dist_to_parent<<tid;
+            return ss.str();
+        }
+    }
+
+    /************************************/
+
+    string print_nhx_tree_with_intIDs() const {
+        if(!leaf)
+        {
+            string tid = this->get_nhx_tag();
+            if(this->get_nhx_tid() != "")
+                tid += ":TID="+this->get_nhx_tid();
+
+            if(tid != "")
+                tid = "["+tid+"]";
+
+            stringstream ss;
+            ss<<"("<<left_child->print_nhx_subtree_with_intIDs()<<","<<right_child->print_nhx_subtree_with_intIDs()<<")"<<this->get_name()<<":"<<dist_to_parent<<tid<<";";
+            return ss.str();
+        } else {
+            return "";
+        }
+    }
+
+    string print_nhx_subtree_with_intIDs() const {
+
+        string tid = this->get_nhx_tag();
+        if(this->get_nhx_tid() != "")
+            tid += ":TID="+this->get_nhx_tid();
+
+        if(tid != "")
+            tid = "["+tid+"]";
+
+        if(!leaf)
+        {
+            stringstream ss;
+            ss<<"("<<left_child->print_nhx_subtree_with_intIDs()<<","<<right_child->print_nhx_subtree_with_intIDs()<<")"<<this->get_name()<<":"<<dist_to_parent<<tid;
             return ss.str();
 
         } else {

@@ -43,7 +43,7 @@ float Viterbi_alignment::define_tunnel(Sequence *left_sequence,Sequence *right_s
 
     Codon_translation ct;
 
-    if(evol_model->get_data_type() == Model_factory::dna && Settings_handle::st.is("codons"))
+    if(evol_model->get_data_type() == Model_factory::dna && Settings_handle::st.is("codons") || evol_model->get_data_type() == Model_factory::codon)
     {
         ct.define_translation_tables();
         s1 = ct.gapped_DNA_to_protein(&s1);
@@ -82,7 +82,7 @@ float Viterbi_alignment::define_tunnel(Sequence *left_sequence,Sequence *right_s
     s2 = right_sequence->get_sequence_string(true);
 
 //        cout<<s1<<endl<<s2<<endl;
-    if(evol_model->get_data_type() == Model_factory::dna && Settings_handle::st.is("codons"))
+    if(evol_model->get_data_type() == Model_factory::dna && Settings_handle::st.is("codons") || evol_model->get_data_type() == Model_factory::codon)
     {
         s1 = ct.gapped_DNA_to_protein(&s1);
         s2 = ct.gapped_DNA_to_protein(&s2);

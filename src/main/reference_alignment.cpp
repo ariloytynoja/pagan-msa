@@ -83,7 +83,7 @@ void Reference_alignment::read_alignment(Sequence *left_sequence,Sequence *right
     }
 
 
-    bool is_codons = Settings_handle::st.is("codons");
+    bool is_codons = Settings_handle::st.is("codons") || evol_model->get_data_type()==Model_factory::codon;
 
     string::iterator lgi = gapped_left->begin();
     string::iterator rgi = gapped_right->begin();

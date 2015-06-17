@@ -95,7 +95,7 @@ bool BppAncestors::test_executable()
     #endif
 }
 
-void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_sequences,bool isCodon)
+bool BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_sequences,bool isCodon)
 {
 
     string tmp_dir = this->get_temp_dir();
@@ -255,7 +255,12 @@ void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_seque
 
     } catch(Exception e)
     {
-        Log_output::write_out("\nReconstructing ancestral sequences failed. Outputting parsimony ancestors.\n\n",0);
+        Log_output::write_out("\nReconstructing ML ancestral sequences failed. Outputting parsimony ancestors.\n\n",0);
+
+        if(!Settings_handle::st.is("keep-temp-files"))
+            this->delete_files(r);
+
+        return false;
     }
 
     if(!Settings_handle::st.is("keep-temp-files"))
@@ -308,6 +313,7 @@ void BppAncestors::infer_ancestors(Node *root,vector<Fasta_entry> *aligned_seque
             si->sequence = root_seq;
     }
 
+    return true;
 }
 
 void BppAncestors::count_events(Node *root,vector<Fasta_entry> *aligned_sequences,string outfile,bool isCodon)

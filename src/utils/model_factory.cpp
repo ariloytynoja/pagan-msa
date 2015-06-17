@@ -35,6 +35,15 @@ Model_factory::Model_factory(int s)
 {
     sequence_data_type = s;
 
+    charPi=0;
+    charU=0;
+    charV=0;
+    charRoot=0;
+
+    parsimony_table=0;
+    child_parsimony_table=0;
+    char_ambiguity=0;
+
 //    prev_distance = -1;
 //    prev_is_local_alignment = false;
 
@@ -48,8 +57,8 @@ Model_factory::Model_factory(int s)
             this->define_protein_alphabet_groups();
         else
             this->define_protein_alphabet();
-    else if(sequence_data_type == Model_factory::codon)
-        ;
+    else if(sequence_data_type == Model_factory::codon)     
+        this->define_codon_alphabet();
     else
     {
         Log_output::write_out("Model_factory(): invalid sequence data type. Exiting\n",0);
@@ -941,6 +950,9 @@ void Model_factory::define_codon_alphabet()
     /************************************************************/
 
 
+    if(parsimony_table != 0)
+        delete parsimony_table;
+
     parsimony_table = new Int_matrix(char_fas,char_fas,"parsimony_char");
 
     for(int i=0;i<char_fas;i++)
@@ -1080,6 +1092,9 @@ void Model_factory::define_codon_alphabet()
     // if child's state is included in parent's state, use parsimony_table to get the minimum overlap;
     // if child's state is not included, change has happened between child and parent and child is not updated.
 
+    if(child_parsimony_table != 0)
+        delete child_parsimony_table;
+
     child_parsimony_table = new Int_matrix(char_fas,char_fas,"child_parsimony_char");
 
     for(int i=0;i<char_fas;i++)
@@ -1182,6 +1197,9 @@ void Model_factory::define_codon_alphabet()
 
         Log_output::write_out(ss.str(),6);
     }
+
+    if(char_ambiguity != 0)
+        delete char_ambiguity;
 
     char_ambiguity = new Db_matrix(1,1); // not needed?
     char_ambiguity->initialise(0);
@@ -1834,7 +1852,6 @@ Evol_model Model_factory::alignment_model(double distance)
 
     e->computePMatrix(char_as,tmr,twu,twv,twr,distance);
 
-
     Evol_model model(sequence_data_type, distance);
 
     model.log_ext_prob = log(char_ext_prob);
@@ -1959,7 +1976,8 @@ Evol_model Model_factory::alignment_model(double distance)
 
     /***************************************************************/
 
-    else if(sequence_data_type == Model_factory::dna && Settings_handle::st.is("codons"))
+    else if(sequence_data_type == Model_factory::dna && Settings_handle::st.is("codons") ||
+            sequence_data_type == Model_factory::codon )
     {
 
         for(int i=0;i<char_fas;i++)

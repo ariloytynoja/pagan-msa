@@ -175,9 +175,16 @@ Node * Newick_reader::parenthesis_to_node(const string & description) throw (Exc
             node->add_right_child(child_1);
 
 //            node->set_name(description);
-            stringstream ss("");
-            ss<<"node"<<node_index;
-            node->set_name(ss.str());
+            if(elt.nodeid!="")
+            {
+                node->set_name(elt.nodeid);
+            }
+            else
+            {
+                stringstream ss("");
+                ss<<"node"<<node_index;
+                node->set_name(ss.str());
+            }
             node_index++;
             node->is_leaf(false);
         }
@@ -265,7 +272,14 @@ Node * Newick_reader::parenthesis_to_tree(const string & description) throw (Exc
             Node * child_1 = parenthesis_to_node(elements[1]);
             node->add_right_child(child_1);
 
-            node->set_name("root");
+            if(elt.nodeid!="")
+            {
+                node->set_name(elt.nodeid);
+            }
+            else
+            {
+                node->set_name("root");
+            }
         }
         catch(exception e)
         {
@@ -283,7 +297,7 @@ Newick_reader::Element Newick_reader::get_element(const string & elt) throw (Exc
     Element element;
     element.length    = ""; //default
     element.nhx = "";
-
+//cout<<"elt: "<<elt<<endl;
 //    string::size_type colon = elt.rfind(':');
 //    string::size_type colon = elt.find(':');
     try
@@ -326,6 +340,8 @@ Newick_reader::Element Newick_reader::get_element(const string & elt) throw (Exc
             elt2 = eltt;
         }
 
+//        cout<<"elt2: "<<elt2<<endl;
+
         string::size_type lastP = elt2.rfind(')');
         string::size_type firstP = elt2.find('(');
         if(firstP == string::npos)
@@ -340,6 +356,18 @@ Newick_reader::Element Newick_reader::get_element(const string & elt) throw (Exc
                 throw Exception("Newick_reader::get_element. Invalid format: bad closing parenthesis in " + elt2);
 
             element.content = elt2.substr(firstP + 1, lastP - firstP - 1);
+
+            string::size_type firstH = elt2.find('#',lastP);
+            string::size_type lastH = elt2.find('#',firstH+1);
+
+            if(firstH != string::npos)
+            {
+                int num = Text_utils::to_int(elt2.substr(firstH+1,lastH-firstH));
+                if(num>0)
+                {
+                    element.nodeid = elt2.substr(firstH,lastH-firstH+1);
+                }
+            }
         }
     }
     catch(exception e)

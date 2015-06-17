@@ -92,6 +92,7 @@ public:
       string content;
       string length;
       string nhx;
+      string nodeid;
     };
 
     static Element get_element(const string & elt) throw (Exception);

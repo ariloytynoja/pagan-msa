@@ -239,8 +239,6 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("compare-reverse","test also reverse-complement and keep better (DNA)")
         ("find-best-orf", "translate and use best ORF (DNA)")
         ("no-preselection","do not preselect targets with Exonerate")
-        ("no-bppancestors","no BppAncestors")
-
         ("full-probability", "compute full probability")
         ("output-graph","output ancestral graph")
         ("sample-path", "sample the alignment path from posterior probabilities")

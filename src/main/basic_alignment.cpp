@@ -49,9 +49,11 @@ void Basic_alignment::build_ancestral_sequence(Sequence *sequence, vector<Path_p
     this->check_skipped_boundaries(sequence);
 
 
-    Log_output::write_out("ANCESTRAL SEQUENCE:\n"+sequence->print_sequence(),4);
-
-    Log_output::write_out(this->print_path(path),6);
+    if(Settings_handle::st.noise>=4)
+    {
+        Log_output::write_out("ANCESTRAL SEQUENCE:\n"+sequence->print_sequence(),4);
+        Log_output::write_out(this->print_path(path),6);
+    }
 
     sequence->is_read_sequence(is_reads_sequence);
 }

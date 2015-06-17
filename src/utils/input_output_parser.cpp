@@ -424,7 +424,7 @@ void Input_output_parser::define_alignment_model(Fasta_reader *fr,Model_factory 
     /*  Define the alignment model                                         */
     /***********************************************************************/
 
-    if(data_type==Model_factory::dna && Settings_handle::st.is("codons"))
+    if(data_type==Model_factory::dna && Settings_handle::st.is("codons") || data_type==Model_factory::codon)
     {
         // Create a codon alignment model using KHG.
         Log_output::write_out("Model_factory: creating a codon model\n",3);
@@ -493,16 +493,17 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             Log_output::write_out("Guidetree file: "+outfile+".tre\n",0);
 
 
-
+        bool do_ancestors = Settings_handle::st.is("events") || Settings_handle::st.is("output-ancestors") || Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx");
 
         BppAncestors bppa;
         bool infer_bppa_ancestors = ( bppa.test_executable() && not Settings_handle::st.is("no-bppancestors") &&
-                                      ( Settings_handle::st.is("events") || Settings_handle::st.is("output-ancestors") || Settings_handle::st.is("xml")) &&
+                                      ( do_ancestors ) &&
                                       (int)sequences->size()<500 );
 
         if(infer_bppa_ancestors)
         {
-            bppa.infer_ancestors(root,&aligned_sequences);
+            bool worked = bppa.infer_ancestors(root,&aligned_sequences);
+
             bppa.count_events(root,&aligned_sequences,outfile);
 
             if(Settings_handle::st.is("events"))
@@ -514,12 +515,14 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
                     Log_output::write_out("Inferred evolutionary events: "+outfile+".events\n",0);
             }
         }
-        else if(Settings_handle::st.is("events") || Settings_handle::st.is("output-ancestors") || Settings_handle::st.is("xml"))
+        else if( do_ancestors )
         {
             Log_output::write_out("\nWarning: BppAncestors not used. Performing approximate ancestor reconstruction.\n\n",0);
         }
 
 
+        // Write alignment as flatfile (fasta by default)
+        //
         if(Settings_handle::st.is("output-ancestors"))
         {
             fr->write(outfile, aligned_sequences, format, true);
@@ -538,6 +541,8 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             fr->write(outfile, leaf_sequences, format, true);
         }
 
+        // Write alignment as HSAML
+        //
         int count = 1;
         root->set_name_ids(&count);
 
@@ -560,16 +565,15 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
             else
                 Log_output::write_out("Back-translated alignment file: "+outfile+fr->get_format_suffix(format)+"\n",0);
 
-            map<string,string> dna_seqs;
 
+            map<string,string> dna_seqs;
             fr->get_DNA_seqs(root, sequences, &dna_seqs);
 
+
             vector<Fasta_entry> dna_sequences;
-            if(infer_bppa_ancestors && (Settings_handle::st.is("events") || Settings_handle::st.is("output-ancestors") || Settings_handle::st.is("xml") ) )
-            {
-                fr->backtranslate_dna(aligned_sequences,&dna_seqs,dna_sequences,infer_bppa_ancestors);
-            }
-            else
+            bool ancestors_done = false;
+
+            if( not do_ancestors  )
             {
                 vector<Fasta_entry> leaf_sequences;
                 set<string> names;
@@ -584,23 +588,86 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
                 }
                 fr->backtranslate_dna(leaf_sequences,&dna_seqs,dna_sequences,infer_bppa_ancestors);
             }
-
-            if(infer_bppa_ancestors)
+            else if(infer_bppa_ancestors )
             {
-                bppa.infer_ancestors(root,&dna_sequences,true);
-                bppa.count_events(root,&dna_sequences,outfile,true);
+                fr->backtranslate_dna(aligned_sequences,&dna_seqs,dna_sequences,infer_bppa_ancestors);
+
+                ancestors_done = false; //bppa.infer_ancestors(root,&dna_sequences,true);
+
+                if( ancestors_done )
+                {
+                    bppa.count_events(root,&dna_sequences,outfile,true);
+
+                    if( aligned_sequences.size() == dna_sequences.size() )
+                        fr->write(outfile, dna_sequences, format, true);
+                }
             }
 
-            if(Settings_handle::st.is("output-ancestors") && infer_bppa_ancestors)
+            if( do_ancestors && not ancestors_done)
             {
+                Newick_reader nr;
+                Node *croot;
+                croot = nr.parenthesis_to_tree(root->print_nhx_tree_with_intIDs());
+
+//                cout<<root->print_nhx_tree_with_intIDs()<<endl;
+//                cout<<croot->print_nhx_tree_with_intIDs()<<endl;
+
+                vector<Fasta_entry> leaf_sequences;
+                set<string> names;
+                croot->get_leaf_node_names(&names);
+
+                vector<Fasta_entry>::iterator si = aligned_sequences.begin();
+                for(;si!=aligned_sequences.end();si++)
+                {
+                    if(names.find(si->name) != names.end())
+                    {
+                        leaf_sequences.push_back(*si);
+                    }
+                }
+
+                dna_sequences.clear();
+                fr->backtranslate_dna(leaf_sequences,&dna_seqs,dna_sequences,false);
+
+
+                vector<Node*> leaf_nodes;
+                croot->get_leaf_nodes(&leaf_nodes);
+
+                fr->place_sequences_to_nodes(&dna_sequences,&leaf_nodes,true,int(Model_factory::codon));
+
+                Model_factory mf(int(Model_factory::codon));
+                mf.codon_model(&Settings_handle::st);
+
+                croot->read_reference_alignment(&mf,true);
+
+                dna_sequences.clear();
+                croot->get_alignment(&dna_sequences,true);
+
+
                 if( aligned_sequences.size() == dna_sequences.size() )
                     fr->write(outfile, dna_sequences, format, true);
-            }
-            else if(Settings_handle::st.is("output-ancestors") )
-            {
-                Log_output::write_out("\nWarning: BppAncestors not used. Codon ancestors not reconstructed.\n\n",0);
+
+                Log_output::write_out("\nReconstructing ML ancestral codon sequences failed. Outputting parsimony ancestors.\n\n",0);
+
+                if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
+                {
+                    int count = 1;
+                    croot->set_name_ids(&count);
+
+                    Xml_writer xw;
+                    xw.write(outfile, croot, dna_sequences, true);
+                }
+
             }
             else
+            {
+                if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
+                {
+                    Xml_writer xw;
+                    xw.write(outfile, root, dna_sequences, true);
+                }
+            }
+
+            if( not ancestors_done )
             {
                 vector<Fasta_entry> leaf_sequences;
                 set<string> names;
@@ -612,13 +679,6 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
                         leaf_sequences.push_back(*si);
                 }
                 fr->write(outfile, leaf_sequences, format, true);
-            }
-
-
-            if(Settings_handle::st.is("xml") || Settings_handle::st.is("xml-nhx"))
-            {
-                Xml_writer xw;
-                xw.write(outfile, root, dna_sequences, true);
             }
 
 
