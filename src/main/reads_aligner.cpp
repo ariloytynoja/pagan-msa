@@ -736,6 +736,7 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
 
             Log_output::write_out("forward overlap/identity: "+Log_output::ftos(read_overlap)+"/"+Log_output::ftos(read_identity)+"; backward: "+Log_output::ftos(read_overlap_rc)+"/"+Log_output::ftos(read_identity_rc)+"\n",1);
 
+            string unique_read_name = reads->at(i).name;
 
             if(read_overlap > read_overlap_rc && read_overlap > min_overlap && read_identity > min_identity)
             {
@@ -761,6 +762,7 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
                     n<<node->right_child->get_name()<<"."<<it->second;
                     node->right_child->set_name(n.str());
                     it->second = it->second+1;
+                    unique_read_name = n.str();
                 }
                 else
                 {
@@ -858,15 +860,12 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
                     //
                     stringstream str(org_nodes_to_align);
                     string nname;
-//                    cout<<"\nadded_sequences ("<<added_sequences.size()<<"): "<<reads->at(i).name<<" "<<current_root->name<<"\n";
+//                    cout<<"\nadded_sequences ("<<added_sequences.size()<<"): "<<unique_read_name<<" "<<current_root->name<<"\n";
                     while(str >> nname)
                     {
-//                        cout<<nname<<endl;
-                        added_sequences.insert(make_pair(nname,reads->at(i).name));
+                        added_sequences.insert(make_pair(nname,unique_read_name));
                         added_sequences.insert(make_pair(nname,current_root->name));
                     }
-//                    cout<<current_root->name<<": "<<current_root->get_sequence()->get_sequence_string(false)<<endl;
-//                    cout<<endl;
                 }
             }
             global_root = root;
@@ -874,8 +873,8 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
 
             if(add_to_targets)
             {
-//                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<reads->at(i).name<<endl<<endl;
-                target_sequences.insert(make_pair(reads->at(i).name,reads->at(i).sequence));
+//                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<unique_read_name<<endl<<endl;
+                target_sequences.insert(make_pair(unique_read_name,reads->at(i).sequence));
 //                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<add_to_targets_node<<endl<<endl;
                 target_sequences.insert(make_pair(add_to_targets_node,add_to_targets_seq));
             }
@@ -1270,6 +1269,8 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
 
     Log_output::write_header("Aligning query sequences",0);
 
+    map<string,int> nodes_number;
+
     for(int i=0;i<(int)potential_orfs.size();i++)
     {
         string org_nodes_to_align = potential_orfs.at(i).node_to_align;
@@ -1284,24 +1285,25 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
         if(potential_orf.node_to_align == "discarded_read")
             continue;
 
+
+
+        map<string,Node*> nodes_map;
+        root->get_all_nodes(&nodes_map);
+
+
         stringstream nodestream;
         nodestream << potential_orf.node_to_align;
-
-        bool add_to_targets = false;
-        string add_to_targets_node = "";
-        string add_to_targets_seq = "";
 
         string ref_node_name;
 
         while(nodestream >> ref_node_name)
         {
 
+            bool add_to_targets = false;
+            string add_to_targets_node = "";
+            string add_to_targets_seq = "";
+
 //            cout<<"REF "<<ref_node_name<<endl;
-
-            map<string,Node*> nodes_map;
-            root->get_all_nodes(&nodes_map);
-
-            map<string,int> nodes_number;
 
             Node *current_root = nodes_map.find(ref_node_name)->second;
             double orig_dist = current_root->get_distance_to_parent();
@@ -1327,6 +1329,8 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
 
             Log_output::write_out("forward overlap/identity: "+Log_output::ftos(read_overlap)+"/"+Log_output::ftos(read_identity)+"\n",1);
 
+            string unique_potential_orf_name = potential_orf.name;
+
             if(read_overlap > min_overlap && read_identity > min_identity)
             {
                 count++;
@@ -1345,6 +1349,7 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
                     n<<node->right_child->get_name()<<"."<<it->second;
                     node->right_child->set_name(n.str());
                     it->second = it->second+1;
+                    unique_potential_orf_name = n.str();
                 }
                 else
                 {
@@ -1358,6 +1363,8 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
                 node->has_left_child(false);
                 delete node;
             }
+
+
 
             current_root->set_distance_to_parent(orig_dist);
 
@@ -1412,14 +1419,12 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
                     //
                     stringstream str(org_nodes_to_align);
                     string nname;
-//                    cout<<"\nadded_sequences ("<<added_sequences.size()<<"): "<<potential_orf.name<<" "<<current_root->name<<"\n";
+//                    cout<<"\nadded_sequences ("<<added_sequences.size()<<"): "<<unique_potential_orf_name<<" "<<current_root->name<<"\n";
                     while(str >> nname)
                     {
-                        added_sequences.insert(make_pair(nname,potential_orf.name));
+                        added_sequences.insert(make_pair(nname,unique_potential_orf_name));
                         added_sequences.insert(make_pair(nname,current_root->name));
                     }
-//                    cout<<current_root->name<<": "<<current_root->get_sequence()->get_sequence_string(false)<<endl;
-//                    cout<<endl;
                 }
             }
 
@@ -1428,8 +1433,8 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
 
             if(add_to_targets)
             {
-//                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<reads->at(i).name<<endl<<endl;
-                target_sequences.insert(make_pair(potential_orf.name,potential_orf.sequence));
+//                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<unique_potential_orf_name<<endl<<endl;
+                target_sequences.insert(make_pair(unique_potential_orf_name,potential_orf.sequence));
 //                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<add_to_targets_node<<endl<<endl;
                 target_sequences.insert(make_pair(add_to_targets_node,add_to_targets_seq));
             }

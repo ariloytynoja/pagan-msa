@@ -35,7 +35,7 @@ Node::~Node()
 
     if(this->node_has_sequence_object)
         delete sequence;
-      
+
 }
 
 int Node::number_of_nodes = 0;

@@ -657,6 +657,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
                     xw.write(outfile, croot, dna_sequences, true);
                 }
 
+                delete croot;
             }
             else
             {

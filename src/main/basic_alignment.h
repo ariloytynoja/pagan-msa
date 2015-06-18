@@ -564,6 +564,9 @@ protected:
         reduced_terminal_gap_penalties = false;
         pair_end_reads = false;
 
+        x_length = -1;
+        y_length = -1;
+
     }
 
     void set_reads_alignment_settings()
