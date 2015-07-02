@@ -87,7 +87,6 @@ public:
 
     void local_alignment(map<string,string> *target_sequences, Fasta_entry *read, map<string,hit> *hits, bool is_local);
     void local_alignment(Node *root, Fasta_entry *read, std::multimap<std::string,std::string> *good_hits, std::map<std::string,hit> *hits, bool is_local, bool all_nodes=false);
-//    void all_local_alignments(Node *root, vector<Fasta_entry> *reads, std::multimap<std::string,std::string> *tid_nodes, std::map<std::string,std::multimap<std::string,hit> > *hits, bool is_local, bool ignore_tid_tags);
 
     void preselect_targets(map<string, string> *unaligned_sequences, vector<Fasta_entry> *reads, map<string, string> *selected_sequences, map<string, multimap<string, hit> > *best_hits);
 

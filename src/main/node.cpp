@@ -426,7 +426,6 @@ void Node::get_alignment_for_nodes(vector<Fasta_entry> *aligned_sequences,bool i
     }
     else
     {
-
         Sequence *root = this->get_sequence();
         int root_length = root->sites_length();
 
@@ -438,7 +437,6 @@ void Node::get_alignment_for_nodes(vector<Fasta_entry> *aligned_sequences,bool i
 
             if(addition.size()>0)
             {
-
                 for(int l=0;l<(int)addition.size();l++)
                 {
                     vector< vector<string> > columns;
@@ -642,6 +640,7 @@ void Node::get_alignment_column_at(int j,vector<string> *column, bool include_in
     {
         Site_children *offspring = sequence->get_site_at(j)->get_children();
         int lj = offspring->left_index;
+
         if(lj>=0)
         {
             left_child->get_alignment_column_at(lj,column,include_internal_nodes);
@@ -831,6 +830,7 @@ void Node::additional_sites_before_alignment_column(int j,vector<Insertion_at_no
 
     if(rj>=0)
         right_child->additional_sites_before_alignment_column(rj,addition);
+
 
 }
 

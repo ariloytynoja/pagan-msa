@@ -377,7 +377,7 @@ void Reads_aligner::query_placement_all(Node *root, vector<Fasta_entry> *reads, 
 //    else
 //        this->find_nodes_for_queries(root, reads, mf);
 
-    if((int)target_sequences.size()>0)
+    if((int)target_sequences.size()>1)
          this->find_targets_for_queries(root, reads, mf, &target_sequences);
     else
         this->find_nodes_for_queries(root, reads, mf);
@@ -870,7 +870,6 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
             }
             global_root = root;
 
-
             if(add_to_targets)
             {
 //                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<unique_read_name<<endl<<endl;
@@ -887,6 +886,7 @@ void Reads_aligner::fix_branch_lengths(Node *root,Node *current_root)
     if(root->get_parent_node(current_root->get_name()) != 0)
     {
         Node *subroot = root->get_parent_node(current_root->get_name());
+
         vector<Fasta_entry> subalignment;
         subroot->get_alignment(&subalignment,true);
         vector<Fasta_entry>::iterator it = subalignment.begin();
@@ -1039,7 +1039,7 @@ void Reads_aligner::translated_query_placement_all(Node *root, vector<Fasta_entr
     map<string,string> target_sequences;
     this->preselect_target_sequences(root,&potential_orfs,&target_sequences);
 
-    if((int)target_sequences.size()>0)
+    if((int)target_sequences.size()>1)
          this->find_targets_for_queries(root, &potential_orfs, mf, &target_sequences);
     else
         this->find_nodes_for_queries(root, &potential_orfs, mf);
@@ -2759,16 +2759,17 @@ void Reads_aligner::read_alignment_scores(Node * node, string read_name, string 
                                 matched++;
                             if(ref_dna_string.at(ref_pos+2) == read_dna_string.at(read_pos+2))
                                 matched++;
-
-                            aligned += step;
                         }
                     }
                     else
                     {
                         matched++;
-                        aligned++;
                     }
                 }
+                if(as_dna)
+                    aligned += step;
+                else
+                    aligned++;
             }
 
             if(read_has_site)
@@ -2808,16 +2809,17 @@ void Reads_aligner::read_alignment_scores(Node * node, string read_name, string 
                                 matched++;
                             if(ref_dna_string.at(ref_pos+2) == read_dna_string.at(read_pos+2))
                                 matched++;
-
-                            aligned += step;
                         }
                     }
                     else
                     {
                         matched++;
-                        aligned++;
                     }
                 }
+                if(as_dna)
+                    aligned += step;
+                else
+                    aligned++;
             }
 
             if(read_has_site)
@@ -2985,8 +2987,27 @@ bool Reads_aligner::correct_sites_index(Node *current_root, string ref_node_name
         Sequence *parent_sequence = current_parent->get_sequence();
 
         index_delta = 0;
+        int first=0;
+        for(int j=1; j<parent_sequence->sites_length(); j++)
+        {
+            Site *parent_site = parent_sequence->get_site_at(j);
 
-        for(int j=0; j<parent_sequence->sites_length(); j++)
+            if(is_left_child && parent_site->get_children()->left_index > 0)
+            {
+                first = parent_site->get_children()->left_index;
+                break;
+            }
+            else if(!is_left_child && parent_site->get_children()->right_index > 0)
+            {
+                first = parent_site->get_children()->right_index;
+                break;
+            }
+        }
+
+        for(int j=0;j<first;j++)
+            index_delta += sites_index.at(j);
+
+        for(int j=1; j<parent_sequence->sites_length(); j++)
         {
             Site *parent_site = parent_sequence->get_site_at(j);
 

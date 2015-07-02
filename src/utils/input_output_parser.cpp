@@ -459,6 +459,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
 //    root->show_seqs();
 
+
     vector<Fasta_entry> aligned_sequences;
     root->get_alignment(&aligned_sequences,true);
 
