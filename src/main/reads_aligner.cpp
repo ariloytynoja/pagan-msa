@@ -634,7 +634,10 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
     if(min_identity<0)
         min_identity = 0;
 
-    string discarded_filename = Settings_handle::st.get("outfile").as<string>();
+    string discarded_filename = "outfile";
+    if(Settings_handle::st.is("outfile"))
+        discarded_filename = Settings_handle::st.get("outfile").as<string>();
+
     discarded_filename.append(".discarded");
     fstream discarded_fstream;
 
@@ -1258,7 +1261,10 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
     if(min_identity<0)
         min_identity = 0;
 
-    string discarded_filename = Settings_handle::st.get("outfile").as<string>();
+    string discarded_filename = "outfile";
+    if(Settings_handle::st.is("outfile"))
+        discarded_filename = Settings_handle::st.get("outfile").as<string>();
+
     discarded_filename.append(".discarded");
     fstream discarded_fstream;
 
