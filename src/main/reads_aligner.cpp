@@ -62,6 +62,7 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
     }
 
     int data_type = fr.check_sequence_data_type(&reads);
+    bool is_dna = data_type == Model_factory::dna;
 
     if(!fr.check_alphabet(&reads,data_type))
         Log_output::write_out(" Warning: Illegal characters in input reads sequences removed!\n",2);
@@ -126,9 +127,9 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
         {
             Log_output::write_header("Aligning reads: simple placement",0);
             if(Settings_handle::st.is("fragments"))
-                this->query_placement_all(root,&reads,mf,count);
+                this->query_placement_all(root,&reads,mf,count,is_dna);
             else
-                this->query_placement_one(root,&reads,mf,count);
+                this->query_placement_one(root,&reads,mf,count,is_dna);
         }
     }
 
@@ -358,7 +359,7 @@ void Reads_aligner::translated_pileup_alignment(Node *root, vector<Fasta_entry> 
     }
 }
 
-void Reads_aligner::query_placement_all(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
+void Reads_aligner::query_placement_all(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count, bool is_dna)
 {
     bool single_ref_sequence = false;
     if(root->get_number_of_leaves()==1)
@@ -369,18 +370,12 @@ void Reads_aligner::query_placement_all(Node *root, vector<Fasta_entry> *reads, 
                         && mf->get_sequence_data_type()==Model_factory::dna;
 
     map<string,string> target_sequences;
-    this->preselect_target_sequences(root,reads,&target_sequences);
-
-
-//    if(Settings_handle::st.is("upwards-search"))
-//        this->do_upwards_search(root, reads, mf);
-//    else
-//        this->find_nodes_for_queries(root, reads, mf);
+    this->preselect_target_sequences(root,reads,&target_sequences, is_dna);
 
     if((int)target_sequences.size()>1)
-         this->find_targets_for_queries(root, reads, mf, &target_sequences);
+         this->find_targets_for_queries(root, reads, mf, &target_sequences, is_dna);
     else
-        this->find_nodes_for_queries(root, reads, mf);
+        this->find_nodes_for_queries(root, reads, mf, is_dna);
 
 
     float min_overlap = Settings_handle::st.get("min-query-overlap").as<float>();
@@ -615,7 +610,7 @@ void Reads_aligner::query_placement_all(Node *root, vector<Fasta_entry> *reads, 
     }
 }
 
-void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count)
+void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count, bool is_dna)
 {
     bool single_ref_sequence = false;
     if(root->get_number_of_leaves()==1)
@@ -642,7 +637,7 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
     fstream discarded_fstream;
 
     map<string,string> target_sequences;
-    this->preselect_target_sequences(root,reads,&target_sequences);
+    this->preselect_target_sequences(root,reads,&target_sequences, is_dna);
 
     multimap<string,string> added_sequences;
 
@@ -655,9 +650,9 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
         string org_nodes_to_align = reads->at(i).node_to_align;
 
         if((int)target_sequences.size()>0 && Settings::placement_preselection)
-            this->find_targets_for_query(root, &reads->at(i), mf, &target_sequences, &added_sequences,i==0);
+            this->find_targets_for_query(root, &reads->at(i), mf, &target_sequences, &added_sequences, is_dna, i==0);
         else
-            this->find_nodes_for_query(root, &reads->at(i), mf,i==0);
+            this->find_nodes_for_query(root, &reads->at(i), mf, is_dna, i==0);
 
         vector<string> unique_nodes;
 
@@ -694,10 +689,6 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
         root->get_all_nodes(&nodes_map);
 
         map<string,int> nodes_number;
-
-        bool add_to_targets = false;
-        string add_to_targets_node = "";
-        string add_to_targets_seq = "";
 
         // do one tagged node at time
         //
@@ -1062,12 +1053,12 @@ void Reads_aligner::translated_query_placement_all(Node *root, vector<Fasta_entr
     }
 
     map<string,string> target_sequences;
-    this->preselect_target_sequences(root,&potential_orfs,&target_sequences);
+    this->preselect_target_sequences(root,&potential_orfs,&target_sequences, false);
 
     if((int)target_sequences.size()>1)
-         this->find_targets_for_queries(root, &potential_orfs, mf, &target_sequences);
+         this->find_targets_for_queries(root, &potential_orfs, mf, &target_sequences, false);
     else
-        this->find_nodes_for_queries(root, &potential_orfs, mf);
+        this->find_nodes_for_queries(root, &potential_orfs, mf, false);
 
     for(int j=0;j<(int)potential_orfs.size();j++)
     {
@@ -1295,7 +1286,7 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
     }
 
     map<string,string> target_sequences;
-    this->preselect_target_sequences(root,&potential_orfs,&target_sequences);
+    this->preselect_target_sequences(root,&potential_orfs,&target_sequences, false);
 
     multimap<string,string> added_sequences;
 
@@ -1310,9 +1301,9 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
         Fasta_entry potential_orf = potential_orfs.at(i);
 
         if((int)target_sequences.size()>0)
-            this->find_targets_for_query(root, &potential_orf, mf, &target_sequences, &added_sequences,i==0);
+            this->find_targets_for_query(root, &potential_orf, mf, &target_sequences, &added_sequences, false, i==0);
         else
-            this->find_nodes_for_query(root, &potential_orf, mf);
+            this->find_nodes_for_query(root, &potential_orf, mf, false);
 
         if(potential_orf.node_to_align == "discarded_read")
         {
@@ -1338,11 +1329,6 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
 
         while(nodestream >> ref_node_name)
         {
-
-            bool add_to_targets = false;
-            string add_to_targets_node = "";
-            string add_to_targets_seq = "";
-
 //            cout<<"REF "<<ref_node_name<<endl;
 
             Node *current_root = nodes_map.find(ref_node_name)->second;
@@ -1493,7 +1479,7 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
 
 /**********************************************************************/
 
-void Reads_aligner::find_targets_for_query(Node *root, Fasta_entry *read, Model_factory *mf,map<string,string> *target_sequences, multimap<string,string> *added_sequences,bool warnings)
+void Reads_aligner::find_targets_for_query(Node *root, Fasta_entry *read, Model_factory *mf,map<string,string> *target_sequences, multimap<string,string> *added_sequences, bool is_dna, bool warnings)
 {
 
     Exonerate_queries er;
@@ -1556,7 +1542,7 @@ void Reads_aligner::find_targets_for_query(Node *root, Fasta_entry *read, Model_
 
     if(has_exonerate && Settings::exonerate_gapped_keep_best > 0 )
     {
-        er.local_alignment(&targets_for_this,read,&exonerate_hits,false);
+        er.local_alignment(&targets_for_this,read,&exonerate_hits,false,is_dna);
     }
 
 
@@ -1681,7 +1667,7 @@ void Reads_aligner::find_targets_for_query(Node *root, Fasta_entry *read, Model_
 
 
 
-void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_factory *mf,bool warnings)
+void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_factory *mf,bool is_dna,bool warnings)
 {
     Exonerate_queries er;
     bool has_exonerate = true;
@@ -1748,10 +1734,10 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
         this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
 
         if(tid_nodes.size()>1)
-            er.local_alignment(root,read,&tid_nodes,&exonerate_hits, true,ignore_tid_tags);
+            er.local_alignment(root,read,&tid_nodes,&exonerate_hits, true,is_dna,ignore_tid_tags);
 
         if(tid_nodes.size()>1 && Settings::exonerate_gapped_keep_best > 0 )
-            er.local_alignment(root,read,&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
+            er.local_alignment(root,read,&tid_nodes,&exonerate_hits,false,is_dna,ignore_tid_tags);
     }
     else if(has_exonerate && Settings::exonerate_gapped_keep_best > 0 )
     {
@@ -1761,7 +1747,7 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
             this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
         }
         if(tid_nodes.size()>1)
-            er.local_alignment(root,read,&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
+            er.local_alignment(root,read,&tid_nodes,&exonerate_hits,false,is_dna,ignore_tid_tags);
     }
 
 
@@ -1962,7 +1948,7 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
 
 /**********************************************************************/
 
-void Reads_aligner::find_targets_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf,map<string,string> *target_sequences)
+void Reads_aligner::find_targets_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf,map<string,string> *target_sequences, bool is_dna)
 {
     Exonerate_queries er;
     bool has_exonerate = true;
@@ -2020,7 +2006,7 @@ void Reads_aligner::find_targets_for_queries(Node *root, vector<Fasta_entry> *re
 
         if(has_exonerate && Settings::exonerate_gapped_keep_best > 0 )
         {
-            er.local_alignment(&targets_for_this,&reads->at(i),&exonerate_hits,false);
+            er.local_alignment(&targets_for_this,&reads->at(i),&exonerate_hits,false,is_dna);
         }
 
 
@@ -2146,7 +2132,7 @@ void Reads_aligner::find_targets_for_queries(Node *root, vector<Fasta_entry> *re
 
 /**********************************************************************/
 
-void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf)
+void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf,bool is_dna)
 {
     Exonerate_queries er;
     bool has_exonerate = true;
@@ -2216,10 +2202,10 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
             this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
 
             if(tid_nodes.size()>1)
-                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits, true,ignore_tid_tags);
+                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits, true,is_dna,ignore_tid_tags);
 
             if(tid_nodes.size()>1 && Settings::exonerate_gapped_keep_best > 0 )
-                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
+                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,is_dna,ignore_tid_tags);
         }
         else if(has_exonerate && Settings::exonerate_gapped_keep_best > 0 )
         {
@@ -2229,7 +2215,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
                 this->get_target_node_names(root,&tid_nodes,&ignore_tid_tags);
             }
             if(tid_nodes.size()>1)
-                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,ignore_tid_tags);
+                er.local_alignment(root,&reads->at(i),&tid_nodes,&exonerate_hits,false,is_dna,ignore_tid_tags);
         }
 
 //        Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(reads->size())+") mapping query: '"+reads->at(i).name+" "+reads->at(i).comment+"'",0);
@@ -2428,7 +2414,7 @@ void Reads_aligner::find_nodes_for_queries(Node *root, vector<Fasta_entry> *read
     }
 }
 
-void Reads_aligner::preselect_target_sequences(Node *root, vector<Fasta_entry> *reads, map<string,string> *target_sequences)
+void Reads_aligner::preselect_target_sequences(Node *root, vector<Fasta_entry> *reads, map<string,string> *target_sequences, bool is_dna)
 {
     if(!Settings::placement_preselection)
         return;
@@ -2510,7 +2496,7 @@ void Reads_aligner::preselect_target_sequences(Node *root, vector<Fasta_entry> *
         Log_output::write_out("The executable for Exonerate not found! Preselection not done!",0);
 
     else if(unaligned_sequences.size()>0)
-        er.preselect_targets(&unaligned_sequences,reads,target_sequences,&exonerate_hits);
+        er.preselect_targets(&unaligned_sequences,reads,target_sequences,&exonerate_hits,is_dna);
 
     set<string> keep_nodes;
 

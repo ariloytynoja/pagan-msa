@@ -85,10 +85,10 @@ public:
     Exonerate_queries();
     bool test_executable();
 
-    void local_alignment(map<string,string> *target_sequences, Fasta_entry *read, map<string,hit> *hits, bool is_local);
-    void local_alignment(Node *root, Fasta_entry *read, std::multimap<std::string,std::string> *good_hits, std::map<std::string,hit> *hits, bool is_local, bool all_nodes=false);
+    void local_alignment(map<string,string> *target_sequences, Fasta_entry *read, map<string,hit> *hits, bool is_local, bool is_dna);
+    void local_alignment(Node *root, Fasta_entry *read, std::multimap<std::string,std::string> *good_hits, std::map<std::string,hit> *hits, bool is_local, bool is_dna, bool all_nodes=false);
 
-    void preselect_targets(map<string, string> *unaligned_sequences, vector<Fasta_entry> *reads, map<string, string> *selected_sequences, map<string, multimap<string, hit> > *best_hits);
+    void preselect_targets(map<string, string> *unaligned_sequences, vector<Fasta_entry> *reads, map<string, string> *selected_sequences, map<string, multimap<string, hit> > *best_hits, bool is_dna);
 
     void local_pairwise_alignment(string *str1,string *str2,vector<Substring_hit> *hits,int *best_reverse_hit=0);
 };

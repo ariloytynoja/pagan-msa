@@ -45,8 +45,8 @@ class Reads_aligner
 
     void pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void translated_pileup_alignment(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
-    void query_placement_all(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
-    void query_placement_one(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+    void query_placement_all(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count, bool is_dna);
+    void query_placement_one(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count, bool is_dna);
     void translated_query_placement_all(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void translated_query_placement_one(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
 
@@ -59,11 +59,11 @@ class Reads_aligner
     void define_translation_tables();
     string reverse_complement(string dna);
 
-    void find_nodes_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
-    void find_nodes_for_query(Node *root, Fasta_entry *read, Model_factory *mf,bool warnings=false);
+    void find_nodes_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf,bool is_dna);
+    void find_nodes_for_query(Node *root, Fasta_entry *read, Model_factory *mf,bool is_dna,bool warnings=false);
 
-    void find_targets_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf,map<string,string> *target_sequences);
-    void find_targets_for_query(Node *root, Fasta_entry *read, Model_factory *mf,map<string,string> *target_sequences,multimap<string, string> *added_sequences, bool warnings=false);
+    void find_targets_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf,map<string,string> *target_sequences, bool is_dna);
+    void find_targets_for_query(Node *root, Fasta_entry *read, Model_factory *mf,map<string,string> *target_sequences,multimap<string, string> *added_sequences, bool is_dna, bool warnings=false);
 
     double read_match_score(Node *node, Fasta_entry *read, Model_factory *mf);
     void read_alignment_scores(Node * node, string read_name, string ref_node_name, float *overlap, float *identity);
@@ -73,7 +73,7 @@ class Reads_aligner
     void find_paired_reads(vector<Fasta_entry> *reads);
 
     bool correct_sites_index(Node *current_root, string ref_node_name, int alignments_done, map<string,Node*> *nodes_map);
-    void preselect_target_sequences(Node *root, vector<Fasta_entry> *reads, map<string,string> *target_sequences);
+    void preselect_target_sequences(Node *root, vector<Fasta_entry> *reads, map<string,string> *target_sequences, bool is_dna);
 
     static bool better_score(const Fasta_entry& a,const Fasta_entry& b)
     {

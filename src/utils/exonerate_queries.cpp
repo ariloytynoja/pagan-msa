@@ -435,7 +435,7 @@ void Exonerate_queries::write_exonerate_input(Node *root, Fasta_entry *read, map
 }
 
 
-void Exonerate_queries::preselect_targets(map<string,string> *target_sequences, vector<Fasta_entry> *reads, map<string, string> *selected_sequences,map<string, multimap<string,hit> > *best_hits)
+void Exonerate_queries::preselect_targets(map<string,string> *target_sequences, vector<Fasta_entry> *reads, map<string, string> *selected_sequences,map<string, multimap<string,hit> > *best_hits, bool is_dna)
 {
     Log_output::append_msg(" preselecting targets with Exonerate.",0);
 
@@ -445,10 +445,14 @@ void Exonerate_queries::preselect_targets(map<string,string> *target_sequences, 
     this->write_exonerate_input(target_sequences,reads,&r);
 
 
+    string data_type = "-T protein -Q protein";
+    if(is_dna)
+        data_type = "-T dna -Q dna";
+
     // exonerate command for local alignment
 
     stringstream command;
-    command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
+    command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no "<<data_type<<" 2>&1";
 
     FILE *fpipe;
     if ( !(fpipe = (FILE*)popen(command.str().c_str(),"r")) )
@@ -649,7 +653,7 @@ void Exonerate_queries::find_hits_for_queries(map<string,multimap<string,hit> > 
 
 
 
-void Exonerate_queries::local_alignment(map<string,string> *target_sequences, Fasta_entry *read, map<string,hit> *hits, bool is_local)
+void Exonerate_queries::local_alignment(map<string,string> *target_sequences, Fasta_entry *read, map<string,hit> *hits, bool is_local, bool is_dna)
 {
     if(is_local)
         Log_output::append_msg(" running Exonerate with one query sequence (ungapped).",0);
@@ -664,11 +668,15 @@ void Exonerate_queries::local_alignment(map<string,string> *target_sequences, Fa
 
     // exonerate command for local alignment
 
+    string data_type = "-T protein -Q protein";
+    if(is_dna)
+        data_type = "-T dna -Q dna";
+
     stringstream command;
     if(is_local)
-        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
+        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no "<<data_type<<" 2>&1";
     else
-        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local 2>&1";
+        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local "<<data_type<<" 2>&1";
 
     Log_output::write_out("Exonerate_local: command: "+command.str()+"\n",2);
 
@@ -802,7 +810,7 @@ void Exonerate_queries::local_alignment(map<string,string> *target_sequences, Fa
 
 }
 
-void Exonerate_queries::local_alignment(Node *root, Fasta_entry *read, multimap<string,string> *tid_nodes, map<string,hit> *hits, bool is_local, bool all_nodes)
+void Exonerate_queries::local_alignment(Node *root, Fasta_entry *read, multimap<string,string> *tid_nodes, map<string,hit> *hits, bool is_local, bool is_dna, bool all_nodes)
 {
     if(is_local)
         Log_output::append_msg(" running Exonerate with one query sequence (ungapped).",0);
@@ -832,13 +840,17 @@ void Exonerate_queries::local_alignment(Node *root, Fasta_entry *read, multimap<
 
     this->write_exonerate_input(root,read,&names,&r);
 
-    // exonerate command for local alignment
+    string data_type = "-T protein -Q protein";
+    if(is_dna)
+        data_type = "-T dna -Q dna";
+
+   // exonerate command for local alignment
 
     stringstream command;
     if(is_local)
-        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no 2>&1";
+        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no "<<data_type<<" 2>&1";
     else
-        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local 2>&1";
+        command <<exoneratepath << "exonerate -q "+tmp_dir+"q"<<r<<".fas -t "+tmp_dir+"t"<<r<<".fas --showalignment no --showsugar yes --showvulgar no -m affine:local "<<data_type<<" 2>&1";
 
     Log_output::write_out("Exonerate_local: command: "+command.str()+"\n",2);
 
