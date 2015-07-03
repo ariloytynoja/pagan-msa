@@ -868,33 +868,37 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
 
                 if(Settings::placement_preselection)
                 {
-                    add_to_targets = true;
-                    add_to_targets_node = current_root->name;
-                    add_to_targets_seq = current_root->get_sequence()->get_sequence_string(false);
-
-                    // Only the reference nodes were included as original targets.
-                    // The newly added sequence nodes have to be also included and
-                    // the mapping can only be done via the refence nodes.
-                    //
-                    stringstream str(org_nodes_to_align);
-                    string nname;
-//                    cout<<"\nadded_sequences ("<<added_sequences.size()<<"): "<<unique_read_name<<" "<<current_root->name<<"\n";
-                    while(str >> nname)
+                    if(Settings::placement_target_nodes == Settings::all_nodes ||
+                           Settings::placement_target_nodes == Settings::terminal_nodes)
                     {
-                        added_sequences.insert(make_pair(nname,unique_read_name));
-                        added_sequences.insert(make_pair(nname,current_root->name));
+                        target_sequences.insert(make_pair(unique_read_name,reads->at(i).sequence));
+
+                        stringstream str(org_nodes_to_align);
+                        string nname;
+
+                        while(str >> nname)
+                        {
+                            added_sequences.insert(make_pair(nname,unique_read_name));
+                        }
+                    }
+
+                    if(Settings::placement_target_nodes == Settings::all_nodes ||
+                           Settings::placement_target_nodes == Settings::internal_nodes)
+                    {
+                        target_sequences.insert(make_pair(current_root->name,current_root->get_sequence()->get_sequence_string(false)));
+
+                        stringstream str(org_nodes_to_align);
+                        string nname;
+
+                        while(str >> nname)
+                        {
+                            added_sequences.insert(make_pair(nname,current_root->name));
+                        }
                     }
                 }
             }
             global_root = root;
 
-            if(add_to_targets)
-            {
-//                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<unique_read_name<<endl<<endl;
-                target_sequences.insert(make_pair(unique_read_name,reads->at(i).sequence));
-//                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<add_to_targets_node<<endl<<endl;
-                target_sequences.insert(make_pair(add_to_targets_node,add_to_targets_seq));
-            }
         }
     }
 }
@@ -1446,36 +1450,36 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
 
                 if(Settings::placement_preselection)
                 {
-                    add_to_targets = true;
-                    add_to_targets_node = current_root->name;
-                    add_to_targets_seq = current_root->get_sequence()->get_sequence_string(false);
-
-                    // Only the reference nodes were included as original targets.
-                    // The newly added sequence nodes have to be also included and
-                    // the mapping can only be done via the refence nodes.
-                    //
-                    stringstream str(org_nodes_to_align);
-                    string nname;
-//                    cout<<"\nadded_sequences ("<<added_sequences.size()<<"): "<<unique_potential_orf_name<<" "<<current_root->name<<"\n";
-                    while(str >> nname)
+                    if(Settings::placement_target_nodes == Settings::all_nodes ||
+                           Settings::placement_target_nodes == Settings::terminal_nodes)
                     {
-                        added_sequences.insert(make_pair(nname,unique_potential_orf_name));
-                        added_sequences.insert(make_pair(nname,current_root->name));
+                        target_sequences.insert(make_pair(unique_potential_orf_name,potential_orf.sequence));
+
+                        stringstream str(org_nodes_to_align);
+                        string nname;
+
+                        while(str >> nname)
+                        {
+                            added_sequences.insert(make_pair(nname,unique_potential_orf_name));
+                        }
+                    }
+
+                    if(Settings::placement_target_nodes == Settings::all_nodes ||
+                           Settings::placement_target_nodes == Settings::internal_nodes)
+                    {
+                        target_sequences.insert(make_pair(current_root->name,current_root->get_sequence()->get_sequence_string(false)));
+
+                        stringstream str(org_nodes_to_align);
+                        string nname;
+
+                        while(str >> nname)
+                        {
+                            added_sequences.insert(make_pair(nname,current_root->name));
+                        }
                     }
                 }
             }
-
-
             global_root = root;
-
-            if(add_to_targets)
-            {
-//                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<unique_potential_orf_name<<endl<<endl;
-                target_sequences.insert(make_pair(unique_potential_orf_name,potential_orf.sequence));
-//                cout<<"\nadd_to_targets ("<<target_sequences.size()<<"):\n"<<add_to_targets_node<<endl<<endl;
-                target_sequences.insert(make_pair(add_to_targets_node,add_to_targets_seq));
-            }
-
         }
     }
 }
