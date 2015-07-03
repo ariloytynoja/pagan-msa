@@ -634,6 +634,9 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
     if(min_identity<0)
         min_identity = 0;
 
+    string discarded_filename = Settings_handle::st.get("outfile").as<string>();
+    discarded_filename.append(".discarded");
+    fstream discarded_fstream;
 
     map<string,string> target_sequences;
     this->preselect_target_sequences(root,reads,&target_sequences);
@@ -661,6 +664,7 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
 
         while(nodestream >> val)
         {
+
             if(val != "discarded_read")
                 unique_nodes.push_back(val);
         }
@@ -671,6 +675,13 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
             stringstream msg;
             msg<<"Read  "<< reads->at(i).name<<" has no match";
             Log_output::write_warning(msg.str(),0);
+
+            if(Settings_handle::st.is("output-discarded-queries"))
+            {
+                if( ! discarded_fstream.is_open() )
+                    discarded_fstream.open(discarded_filename.c_str(), fstream::out);
+                discarded_fstream << ">" << reads->at(i).name << endl << reads->at(i).sequence << endl;
+            }
             continue;
         }
 
@@ -807,6 +818,13 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
                 {
                     node_rc->has_left_child(false);
                     delete node_rc;
+                }
+
+                if(Settings_handle::st.is("output-discarded-queries"))
+                {
+                    if( ! discarded_fstream.is_open() )
+                        discarded_fstream.open(discarded_filename.c_str(), fstream::out);
+                    discarded_fstream << ">" << reads->at(i).name << endl << reads->at(i).sequence << endl;
                 }
             }
 
@@ -1236,6 +1254,10 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
     if(min_identity<0)
         min_identity = 0;
 
+    string discarded_filename = Settings_handle::st.get("outfile").as<string>();
+    discarded_filename.append(".discarded");
+    fstream discarded_fstream;
+
     vector<Fasta_entry> potential_orfs;
 
     for(int i=0;i<(int)reads->size();i++)
@@ -1283,8 +1305,16 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
             this->find_nodes_for_query(root, &potential_orf, mf);
 
         if(potential_orf.node_to_align == "discarded_read")
-            continue;
+        {
+            if(Settings_handle::st.is("output-discarded-queries"))
+            {
+                if( ! discarded_fstream.is_open() )
+                    discarded_fstream.open(discarded_filename.c_str(), fstream::out);
+                discarded_fstream << ">" << potential_orf.name << endl << potential_orf.sequence << endl;
+            }
 
+            continue;
+        }
 
 
         map<string,Node*> nodes_map;
@@ -1362,6 +1392,13 @@ void Reads_aligner::translated_query_placement_one(Node *root, vector<Fasta_entr
             {
                 node->has_left_child(false);
                 delete node;
+
+                if(Settings_handle::st.is("output-discarded-queries"))
+                {
+                    if( ! discarded_fstream.is_open() )
+                        discarded_fstream.open(discarded_filename.c_str(), fstream::out);
+                    discarded_fstream << ">" << potential_orf.name << endl << potential_orf.sequence << endl;
+                }
             }
 
 
@@ -2784,6 +2821,7 @@ void Reads_aligner::read_alignment_scores(Node * node, string read_name, string 
 
         }
     }
+
     else
     {
         for( int j=1; j < node_sequence->sites_length(); j++ )

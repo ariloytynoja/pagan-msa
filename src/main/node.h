@@ -1147,6 +1147,7 @@ public:
         return false;
     }
 
+
     int get_state_at_alignment_column(int j,string node_name)
     {
 
@@ -1174,6 +1175,56 @@ public:
             }
         }
         return -1;
+    }
+
+    void find_closest_reference(string *ref_name,string query_name)
+    {
+
+        if(leaf)
+            *ref_name = this->get_name();
+        else
+        {
+            string r_name;
+            if(this->get_left_child()->has_reference_child(&r_name) &&
+                    this->get_right_child()->has_child_named(query_name))
+            {
+                *ref_name = r_name;
+            }
+            if(!leaf)
+            {
+                this->get_left_child()->find_closest_reference(ref_name,query_name);
+                this->get_right_child()->find_closest_reference(ref_name,query_name);
+            }
+        }
+    }
+
+    bool has_reference_child(string *ref_name)
+    {
+        if(leaf && !this->get_sequence()->is_read_sequence())
+        {
+            *ref_name = this->get_name();
+            return true;
+        }
+        if(!leaf)
+        {
+            bool has = this->get_left_child()->has_reference_child(ref_name);
+            if(has)
+                return true;
+            return this->get_right_child()->has_reference_child(ref_name);
+        }
+    }
+
+    bool has_child_named(string search_name)
+    {
+        if(this->get_name()==name)
+            return true;
+        if(!leaf)
+        {
+            bool has = this->get_left_child()->has_child_named(search_name);
+            if(has)
+                return true;
+            return this->get_right_child()->has_child_named(search_name);
+        }
     }
 
     bool has_additional_sites_before_alignment_column(int j)

@@ -106,9 +106,10 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("overlap-with-any","accept query overlap with any sequence")
         ("min-query-identity", po::value<float>()->default_value(0.5,"0.5"), "identity threshold for aligned sites")
         ("pair-read-gap-extension", po::value<float>(), "paired read spacer extension probability (DNA)")
-        ("upwards-search","stepwise search from root")
+//        ("upwards-search","stepwise search from root")
         ("score-only-ungapped","score query placement only on ungapped sites")
         ("score-ungapped-limit",po::value<float>()->default_value(0.1,"0.1"),"max. ungapped proportion")
+        ("output-discarded-queries","output discarded queries to a file")
     ;
 
     boost::program_options::options_description reads_alignment3("Alignment extension output options",100);
