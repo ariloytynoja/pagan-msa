@@ -960,9 +960,11 @@ void Reads_aligner::fix_branch_lengths(Node *root,Node *current_root)
         float l1 = 0.5*(d12+d13-d23);
 
         float mult = 1;
-        if(Settings_handle::st.is("ref-guidetree"))
-            mult = (l1+l2)/(current_root->dist_to_parent+current_root->left_child->dist_to_parent);
+//        if(Settings_handle::st.is("ref-guidetree"))
+        if((l1+l2)>0)
+            mult = (current_root->dist_to_parent+current_root->left_child->dist_to_parent)/(l1+l2);
 
+            cout<<"\n\nMULT "<<mult<<"\n"<<l1<<" "<<l2<<" "<<l3<<" "<<current_root->dist_to_parent<<" "<<current_root->left_child->dist_to_parent<<"\n";
         l1*=mult;
         l2*=mult;
         l3*=mult;
