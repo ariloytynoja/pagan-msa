@@ -109,7 +109,10 @@ void Reads_aligner::align(Node *root, Model_factory *mf, int count)
                 this->pileup_alignment(root,&reads,mf,count);
             }
     }
-
+    else if(Settings_handle::st.is("ncbi-hack"))
+    {
+        this->query_placement_one_ncbi(root,&reads,mf,count,is_dna);
+    }
     // Query placement: search for optimal node or TID tags in the tree
     else
     {
@@ -430,7 +433,7 @@ void Reads_aligner::query_placement_all(Node *root, vector<Fasta_entry> *reads, 
     {
         unique_nodes.push_back(*sit);
     }
-    sort(unique_nodes.begin(),unique_nodes.end(),Reads_aligner::nodeIsSmaller);
+    sort(unique_nodes.begin(),unique_nodes.end(),Reads_aligner::node_is_smaller);
 
     map<string,Node*> nodes_map;
     root->get_all_nodes(&nodes_map);
@@ -683,7 +686,7 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
             continue;
         }
 
-        sort(unique_nodes.begin(),unique_nodes.end(),Reads_aligner::nodeIsSmaller);
+        sort(unique_nodes.begin(),unique_nodes.end(),Reads_aligner::node_is_smaller);
 
         map<string,Node*> nodes_map;
         root->get_all_nodes(&nodes_map);
@@ -897,6 +900,248 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
     }
 }
 
+void Reads_aligner::query_placement_one_ncbi(Node *root, vector<Fasta_entry> *queries, Model_factory *mf, int count, bool is_dna)
+{
+    bool single_ref_sequence = false;
+    if(root->get_number_of_leaves()==1)
+        single_ref_sequence = true;
+
+    global_root = root;
+
+    float min_overlap = max( Settings_handle::st.get("min-query-overlap").as<float>(), float(0) );
+    float min_identity = max( Settings_handle::st.get("min-query-identity").as<float>(), float(0) );
+
+
+    string discarded_filename = "outfile";
+    if(Settings_handle::st.is("outfile"))
+        discarded_filename = Settings_handle::st.get("outfile").as<string>();
+
+    discarded_filename.append(".discarded");
+    fstream discarded_fstream;
+
+
+    // Preselect targets: keep 'num_ncbi_targets' best hits for each query
+    //
+    int num_ncbi_targets = 10;
+    this->preselect_target_sequences_ncbi(root,queries,num_ncbi_targets,is_dna);
+
+
+    Log_output::write_header("Aligning query sequences",0);
+
+
+    for(int i=0;i<(int)queries->size();i++)
+    {
+
+
+        // Now get 'num_pagan_targets' best hits for this query
+        //
+        int num_pagan_targets = 3;
+        vector<Ncbi_hit> targets;
+//        ??->get_targets_for_query(&queries->at(i),&targets,num_pagan_targets);
+
+        // place holder ->
+        set<string> leafs;
+        root->get_all_terminal_node_names(&leafs);
+        for(set<string>::iterator it=leafs.begin();it!=leafs.end();it++)
+        {
+            Ncbi_hit hit;
+            hit.tid = *it;
+            hit.qid = queries->at(i).name;
+            hit.score = 1;
+            hit.plus_strand = true;
+
+            targets.push_back(hit);
+
+            // This is a bit problematic: all target sequences are in the same orientation;
+            // if the query hits to reverse strand, it should be in that orientation for all targets.
+            // We now simply pick the orientation of the last hits and use that.
+            //
+            queries->at(i).query_strand = Fasta_entry::forward_strand;
+            if( not hit.plus_strand )
+                queries->at(i).query_strand = Fasta_entry::reverse_strand;
+
+            //for testing
+            if(queries->at(i).name =="reverse")
+                queries->at(i).query_strand = Fasta_entry::reverse_strand;
+        }
+        // <- place holder
+
+
+
+        if((int)targets.size()==0)
+        {
+            stringstream msg;
+            msg<<"Query  "<< queries->at(i).name<<" has no match";
+            Log_output::write_warning(msg.str(),0);
+
+            if(Settings_handle::st.is("output-discarded-queries"))
+            {
+                if( ! discarded_fstream.is_open() )
+                    discarded_fstream.open(discarded_filename.c_str(), fstream::out);
+                discarded_fstream << ">" << queries->at(i).name << endl << queries->at(i).sequence << endl;
+            }
+            continue;
+        }
+        else if((int)targets.size()>1)
+        {
+            stringstream msg;
+            msg << "("<<i+1<<"/"<<queries->size()<<") mapping query: '"<<queries->at(i).name<<" "<<queries->at(i).comment<<"'";
+            Log_output::write_msg(msg.str(),0);
+            select_node_for_query(root,&targets,&queries->at(i),mf,is_dna);
+        }
+
+        // Needs a modified sorting function: dummy function, not implemented
+        //
+        sort(targets.begin(),targets.end(),Reads_aligner::node_is_smaller_ncbi);
+
+
+        map<string,Node*> nodes_map;
+        root->get_all_nodes(&nodes_map);
+
+        map<string,int> nodes_number;
+
+        // do one tagged node at time
+        //
+        for(vector<Ncbi_hit>::iterator sit = targets.begin(); sit != targets.end(); sit++)
+        {
+
+            string ref_node_name = (*sit).tid;
+            string unique_query_name = queries->at(i).name;
+
+            Node *current_root = nodes_map.find(ref_node_name)->second;
+            double orig_dist = current_root->get_distance_to_parent();
+
+            bool alignment_done = false;
+
+
+            Node * node = new Node();
+            stringstream ss;
+            ss<<"#"<<count<<"#";
+            node->set_name(ss.str());
+
+
+            bool is_reverse = false;
+            if( ( Settings_handle::st.is("compare-reverse") || Settings_handle::st.is("both-strands") )
+                                && mf->get_sequence_data_type()==Model_factory::dna )
+                is_reverse = queries->at(i).query_strand==Fasta_entry::reverse_strand;
+
+
+            this->create_temp_node(node,ss.str(), current_root, &queries->at(i),is_reverse);
+            Log_output::write_msg("("+Log_output::itos(i+1)+"/"+Log_output::itos(queries->size())+") aligning read: '"+queries->at(i).name+"'",0);
+            node->align_sequences_this_node(mf,true);
+
+            float read_overlap = -1;
+            float read_identity = -1;
+            this->compute_read_overlap(node,queries->at(i).name,ref_node_name,current_root->get_name(),&read_overlap,&read_identity);
+
+            Log_output::write_out("overlap/identity: "+Log_output::ftos(read_overlap)+"/"+Log_output::ftos(read_identity)+"\n",1);
+
+
+            if(read_overlap > min_overlap && read_identity > min_identity)
+            {
+                alignment_done = true;
+
+                count++;
+                current_root = node;
+
+                if( orig_dist > current_root->get_distance_to_parent() )
+                    orig_dist -= current_root->get_distance_to_parent();
+
+
+                // Add suffix to get unique names
+                map<string,int>::iterator it = nodes_number.find(queries->at(i).name);
+                if(it!=nodes_number.end())
+                {
+                    stringstream n;
+                    n<<node->right_child->get_name()<<"."<<it->second;
+                    node->right_child->set_name(n.str());
+                    it->second = it->second+1;
+                    unique_query_name = n.str();
+                }
+                else
+                {
+                    nodes_number.insert(pair<string,int>(queries->at(i).name,1));
+                }
+            }
+
+            else
+            {
+                node->has_left_child(false);
+                delete node;
+
+                if(Settings_handle::st.is("output-discarded-queries"))
+                {
+                    if( ! discarded_fstream.is_open() )
+                        discarded_fstream.open(discarded_filename.c_str(), fstream::out);
+                    discarded_fstream << ">" << queries->at(i).name << endl << queries->at(i).sequence << endl;
+                }
+            }
+
+
+
+            current_root->set_distance_to_parent(orig_dist);
+
+            if(alignment_done)
+            {
+                if(single_ref_sequence)
+                {
+                    root = current_root;
+                    single_ref_sequence = false;
+                }
+                else
+                {
+                    bool parent_found = this->correct_sites_index(current_root, ref_node_name, 1, &nodes_map);
+
+                    if(!parent_found)
+                    {
+                        root = current_root;
+                    }
+                }
+
+                this->fix_branch_lengths(root,current_root);
+
+                if(root->get_parent_node(current_root->get_name()) != 0)
+                {
+                    Node *subroot = root->get_parent_node(current_root->get_name());
+                    if(subroot->get_left_child()->get_name() == current_root->get_name())
+                        subroot->reconstruct_one_parsimony_ancestor(mf,true);
+                    else if(subroot->get_right_child()->get_name() == current_root->get_name())
+                        subroot->reconstruct_one_parsimony_ancestor(mf,false);
+                }
+
+                // Add newly aligned sequence and/or its parent to the targets
+                // Function for this complete missing
+
+                if(Settings_handle::st.is("tid-for-subroot"))
+                {
+                    current_root->set_nhx_tid(current_root->get_left_child()->get_nhx_tid());
+                    current_root->get_left_child()->set_nhx_tid("");
+                    current_root->get_right_child()->set_nhx_tid("");
+
+                    // ??->add_to_targets(current_root->get_name(),current_root->get_sequence()->get_sequence_string(false));
+                }
+                else
+                {
+                    if(Settings::placement_target_nodes == Settings::all_nodes ||
+                           Settings::placement_target_nodes == Settings::terminal_nodes)
+                    {
+                        // ??->add_to_targets(unique_query_name,queries->at(i).sequence);
+                    }
+
+                    if(Settings::placement_target_nodes == Settings::all_nodes ||
+                           Settings::placement_target_nodes == Settings::internal_nodes)
+                    {
+                        // ??->add_to_targets(current_root->name,current_root->get_sequence()->get_sequence_string(false));
+                    }
+                }
+
+            }
+            global_root = root;
+
+        }
+    }
+}
+
 void Reads_aligner::fix_branch_lengths(Node *root,Node *current_root)
 {
     if(root->get_parent_node(current_root->get_name()) != 0)
@@ -964,7 +1209,6 @@ void Reads_aligner::fix_branch_lengths(Node *root,Node *current_root)
         if((l1+l2)>0)
             mult = (current_root->dist_to_parent+current_root->left_child->dist_to_parent)/(l1+l2);
 
-            cout<<"\n\nMULT "<<mult<<"\n"<<l1<<" "<<l2<<" "<<l3<<" "<<current_root->dist_to_parent<<" "<<current_root->left_child->dist_to_parent<<"\n";
         l1*=mult;
         l2*=mult;
         l3*=mult;
@@ -1114,7 +1358,7 @@ void Reads_aligner::translated_query_placement_all(Node *root, vector<Fasta_entr
     {
         unique_nodes.push_back(*sit);
     }
-    sort(unique_nodes.begin(),unique_nodes.end(),Reads_aligner::nodeIsSmaller);
+    sort(unique_nodes.begin(),unique_nodes.end(),Reads_aligner::node_is_smaller);
 
     map<string,Node*> nodes_map;
     root->get_all_nodes(&nodes_map);
@@ -1950,6 +2194,156 @@ void Reads_aligner::find_nodes_for_query(Node *root, Fasta_entry *read, Model_fa
 
 /**********************************************************************/
 
+
+void Reads_aligner::select_node_for_query(Node *root, vector<Ncbi_hit> *targets, Fasta_entry *query, Model_factory *mf,bool is_dna)
+{
+
+    double best_score = -HUGE_VAL;
+    string best_node = root->get_name();
+    vector<Ncbi_hit> best_targets;
+
+    map<string,Node*> nodes;
+    root->get_all_nodes(&nodes);
+
+    stringstream ss;
+    ss<<"Read "<<query->name<<" has "<<targets->size()<<" target nodes.\n";
+    Log_output::write_out(ss.str(),1); //2);
+
+    for(int i=0;i<targets->size();i++)
+    {
+        map<string,Node*>::iterator nit = nodes.find(targets->at(i).tid);
+        double score = this->query_match_score(nit->second, query, mf);
+
+        stringstream ss;
+        ss<<"matches "<<nit->first<<" with score "<<score<<"\n";
+        Log_output::write_out(ss.str(),1); //2);
+
+        if(score==best_score && !Settings_handle::st.is("one-placement-only"))
+        {
+            best_score = score;
+            best_node.append(" "+nit->first);
+            best_targets.push_back(targets->at(i));
+        }
+        else if(score>=best_score)
+        {
+            best_score = score;
+            best_node = nit->first;
+
+            best_targets.clear();
+            best_targets.push_back(targets->at(i));
+        }
+    }
+
+    if(best_score<0.05)
+    {
+        Log_output::write_out("Best node aligns with less than 5% of identical sites. Read is discarded.\n",1); //2);
+        query->node_score = -1.0;
+        query->node_to_align = "discarded_read";
+    }
+    else
+    {
+        stringstream ss;
+        ss<<"best node "<<best_node<<" (score "<<best_score<<").\n";
+        Log_output::write_out(ss.str(),1); //2);
+
+        query->node_score = best_score;
+        query->node_to_align = best_node;
+
+        targets->clear();
+        targets->insert(targets->begin(),best_targets.begin(),best_targets.end());
+    }
+}
+
+
+/**********************************************************************/
+
+double Reads_aligner::query_match_score(Node *node, Fasta_entry *query, Model_factory *mf)
+{
+
+
+    double org_dist = node->get_distance_to_parent();
+    node->set_distance_to_parent(0.001);
+
+    Node * query_node = new Node();
+    double r_dist = Settings_handle::st.get("query-distance").as<float>();
+    query_node->set_distance_to_parent(r_dist);
+
+    bool revcomp = query->query_strand==Fasta_entry::reverse_strand;
+    this->copy_node_details(query_node,query,revcomp);
+
+    Node * tmpnode = new Node();
+    tmpnode->set_name("(tmp)");
+
+    tmpnode->add_left_child(node);
+    tmpnode->add_right_child(query_node);
+
+    tmpnode->align_sequences_this_node(mf,true);
+
+    node->set_distance_to_parent(org_dist);
+
+    double score = 0;
+
+    if(tmpnode->node_has_sequence_object)
+    {
+
+        // For scoring (below)
+        Evol_model model = mf->alignment_model(r_dist+0.001);
+
+        int matching = 0;
+        int aligned = 0;
+
+        float subst_score = 0;
+        float max_subst_score_l = 0;
+        float max_subst_score_r = 0;
+
+        for( int k=1; k < tmpnode->get_sequence()->sites_length()-1; k++ )
+        {
+            Site *site = tmpnode->get_sequence()->get_site_at(k);
+
+            if(site->get_children()->right_index>=0 && site->get_children()->left_index>=0)
+            {
+
+                Site *site1 = tmpnode->get_right_child()->get_sequence()->get_site_at(site->get_children()->right_index);
+                Site *site2 = tmpnode->get_left_child()->get_sequence()->get_site_at(site->get_children()->left_index);
+
+                if(site1->get_state() == site2->get_state())
+                    matching++;
+
+                subst_score += model.score(site1->get_state(),site2->get_state());
+                max_subst_score_l += model.score(site2->get_state(),site2->get_state());
+
+                aligned++;
+            }
+
+            if(site->get_children()->right_index>=0)
+            {
+                Site *site1 = tmpnode->get_right_child()->get_sequence()->get_site_at(site->get_children()->right_index);
+                max_subst_score_r += model.score(site1->get_state(),site1->get_state());
+            }
+
+        }
+
+        double score_s = (double) matching/ (double) query_node->get_sequence()->sites_length();
+        double score_l = (double) subst_score/ (double) max_subst_score_l;
+        double score_r = (double) subst_score/ (double) max_subst_score_r;
+
+        score = score_r;
+
+        if(Settings_handle::st.is("use-identity-score"))
+            score = score_s;
+        else if(Settings_handle::st.is("use-target-normalised-score"))
+            score = score_l;
+    }
+
+    tmpnode->has_left_child(false);
+    delete tmpnode;
+
+    return score;
+}
+
+/**********************************************************************/
+
+
 void Reads_aligner::find_targets_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf,map<string,string> *target_sequences, bool is_dna)
 {
     Exonerate_queries er;
@@ -2542,6 +2936,67 @@ void Reads_aligner::preselect_target_sequences(Node *root, vector<Fasta_entry> *
     }
 }
 
+void Reads_aligner::preselect_target_sequences_ncbi(Node *root, vector<Fasta_entry> *queries, int num_ncbi_targets, bool is_dna)
+{
+
+    Log_output::write_header("Preselecting target sequences",0);
+
+    map<string,string> target_sequences;
+
+    if(Settings::placement_target_nodes == Settings::terminal_nodes)
+    {
+        root->get_unaligned_sequences(&target_sequences);
+    }
+    else
+    {
+        set<string> node_names;
+
+        if(Settings::placement_target_nodes == Settings::tid_nodes)
+        {
+            root->get_node_names_with_tid_tag(&node_names);
+            if((int)node_names.size()==0)
+            {
+                Settings::placement_target_nodes = Settings::all_nodes;
+                Log_output::write_warning("No TID tags found. Considering all nodes for placement.",0);
+            }
+        }
+
+        if(Settings::placement_target_nodes == Settings::internal_nodes)
+            root->get_internal_node_names(&node_names);
+
+        else if(Settings::placement_target_nodes == Settings::all_nodes)
+            root->get_node_names(&node_names);
+
+        vector<Fasta_entry> aligned_sequences;
+        root->get_alignment(&aligned_sequences,true);
+
+        vector<Fasta_entry>::iterator it = aligned_sequences.begin();
+        for(;it!=aligned_sequences.end();it++)
+        {
+            if(node_names.find(it->name) != node_names.end())
+            {
+                string seq = it->sequence;
+                for (string::iterator si = seq.begin();si != seq.end();)
+                    if(*si == '-')
+                        seq.erase(si);
+                    else
+                        si++;
+
+                target_sequences.insert(make_pair(it->name,seq));
+            }
+        }
+    }
+
+    map<string,string> query_sequences;
+
+    for(int i=0;i<queries->size();i++)
+        query_sequences.insert(make_pair(queries->at(i).name,queries->at(i).sequence));
+
+
+    // Run Blast 'query_sequences' vs. 'target_sequences', record best hits; can use 'is_dna' if needed
+    // ??->preselect_targets(&target_sequences, &query_sequences, num_ncbi_targets, is_dna);
+
+}
 
 void Reads_aligner::find_orfs(Fasta_entry *read,vector<Orf> *open_frames)
 {

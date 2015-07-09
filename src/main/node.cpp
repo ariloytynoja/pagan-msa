@@ -60,8 +60,8 @@ void Node::align_sequences_this_node(Model_factory *mf, bool is_reads_sequence)
             ss<<" aligning node "<<this->get_name()<<" ("<<alignment_number<<"/"<<number_of_nodes<<"): "<<left_child->get_name()<<" - "<<right_child->get_name()<<".";
             Log_output::write_msg(ss.str(),0);
         }
-        else
-            Log_output::append_msg(" to node '"+left_child->get_name()+"'.",0);
+//        else
+//            Log_output::append_msg(" to node '"+left_child->get_name()+"'.",0);
         alignment_number++;
     }
 

@@ -36,6 +36,15 @@ using namespace std;
 namespace ppa
 {
 
+struct Ncbi_hit {
+    string tid;
+    string qid;
+    //
+    //  other stuff
+    //
+    int score;
+    bool plus_strand;
+};
 
 class Reads_aligner
 {
@@ -49,6 +58,8 @@ class Reads_aligner
     void query_placement_one(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count, bool is_dna);
     void translated_query_placement_all(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
     void translated_query_placement_one(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count);
+
+    void query_placement_one_ncbi(Node *root, vector<Fasta_entry> *reads, Model_factory *mf, int count, bool is_dna);
 
     void do_upwards_search(Node *root, Fasta_entry *read, Model_factory *mf);
     void do_upwards_search(Node *root, vector<Fasta_entry> *reads, Model_factory *mf);
@@ -65,7 +76,11 @@ class Reads_aligner
     void find_targets_for_queries(Node *root, vector<Fasta_entry> *reads, Model_factory *mf,map<string,string> *target_sequences, bool is_dna);
     void find_targets_for_query(Node *root, Fasta_entry *read, Model_factory *mf,map<string,string> *target_sequences,multimap<string, string> *added_sequences, bool is_dna, bool warnings=false);
 
+    void select_node_for_query(Node *root, vector<Ncbi_hit> *targets, Fasta_entry *query, Model_factory *mf,bool is_dna);
+
+    double query_match_score(Node *node, Fasta_entry *read, Model_factory *mf);
     double read_match_score(Node *node, Fasta_entry *read, Model_factory *mf);
+
     void read_alignment_scores(Node * node, string read_name, string ref_node_name, float *overlap, float *identity);
     bool read_alignment_overlaps(Node * node, string read_name, string ref_node_name);
 
@@ -74,6 +89,7 @@ class Reads_aligner
 
     bool correct_sites_index(Node *current_root, string ref_node_name, int alignments_done, map<string,Node*> *nodes_map);
     void preselect_target_sequences(Node *root, vector<Fasta_entry> *reads, map<string,string> *target_sequences, bool is_dna);
+    void preselect_target_sequences_ncbi(Node *root, vector<Fasta_entry> *reads, int num_ncbi_targets, bool is_dna);
 
     static bool better_score(const Fasta_entry& a,const Fasta_entry& b)
     {
@@ -105,7 +121,7 @@ class Reads_aligner
         stable_sort(reads->begin(),reads->end(),Reads_aligner::more_copies);
     }
 
-    static bool nodeIsSmaller(const string& l,const string& r)
+    static bool node_is_smaller(const string& l,const string& r)
     {   char a,b,c,d;
         int vl=0; int vr=0;
         stringstream ls(l);
@@ -125,6 +141,8 @@ class Reads_aligner
         return (l<r);
 
     }
+
+    static bool node_is_smaller_ncbi(const Ncbi_hit& l,const Ncbi_hit& r) { return true; }
 
     void copy_node_details(Node *reads_node,Fasta_entry *read,bool turn_revcomp=false)
     {

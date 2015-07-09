@@ -259,6 +259,7 @@ int Settings::read_command_line_arguments(int argc, char *argv[])
         ("assembly","placement at subroot only (for assembly)")
         ("boost","multi-threading with boost")
         ("quick","quick reconstruction")
+        ("ncbi-hack","ncbi hack")
     ;
 
     boost::program_options::options_description broken("Broken options",100);
