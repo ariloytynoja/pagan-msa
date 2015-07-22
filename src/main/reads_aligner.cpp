@@ -673,15 +673,18 @@ void Reads_aligner::query_placement_one(Node *root, vector<Fasta_entry> *reads, 
 
         if((int)unique_nodes.size()==0)
         {
-            stringstream msg;
-            msg<<"Read  "<< reads->at(i).name<<" has no match";
-            Log_output::write_warning(msg.str(),0);
 
             if(Settings_handle::st.is("output-discarded-queries"))
             {
                 if( ! discarded_fstream.is_open() )
                     discarded_fstream.open(discarded_filename.c_str(), fstream::out);
                 discarded_fstream << ">" << reads->at(i).name << endl << reads->at(i).sequence << endl;
+            }
+            else
+            {
+                stringstream msg;
+                msg<<"Query  "<< reads->at(i).name<<" has no match";
+                Log_output::write_warning(msg.str(),0);
             }
             continue;
         }
@@ -970,15 +973,17 @@ void Reads_aligner::query_placement_one_ncbi(Node *root, vector<Fasta_entry> *qu
 
         if((int)targets.size()==0)
         {
-            stringstream msg;
-            msg<<"Query  "<< queries->at(i).name<<" has no match";
-            Log_output::write_warning(msg.str(),0);
-
             if(Settings_handle::st.is("output-discarded-queries"))
             {
                 if( ! discarded_fstream.is_open() )
                     discarded_fstream.open(discarded_filename.c_str(), fstream::out);
                 discarded_fstream << ">" << queries->at(i).name << endl << queries->at(i).sequence << endl;
+            }
+            else
+            {
+                stringstream msg;
+                msg<<"Query  "<< queries->at(i).name<<" has no match";
+                Log_output::write_warning(msg.str(),0);
             }
             continue;
         }
@@ -3439,6 +3444,7 @@ bool Reads_aligner::correct_sites_index(Node *current_root, string ref_node_name
         else
             index_delta++;
     }
+
 
     Node *current_parent = 0;
     map<string,Node*>::iterator mit = nodes_map->begin();

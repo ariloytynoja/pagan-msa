@@ -405,6 +405,7 @@ void Node::get_alignment(vector<Fasta_entry> *aligned_sequences,bool include_int
 
 void Node::get_alignment_for_nodes(vector<Fasta_entry> *aligned_sequences,bool include_internal_nodes)
 {
+//    cout<<"get_alignment_for_nodes "<<this->get_name()<<endl;
     if(!this->sequence_site_index_needs_correcting())
     {
         Sequence *root = this->get_sequence();
@@ -429,6 +430,8 @@ void Node::get_alignment_for_nodes(vector<Fasta_entry> *aligned_sequences,bool i
         Sequence *root = this->get_sequence();
         int root_length = root->sites_length();
 
+        set<string> added;
+
         for(int j=1;j<root_length;j++)
         {
 
@@ -439,6 +442,12 @@ void Node::get_alignment_for_nodes(vector<Fasta_entry> *aligned_sequences,bool i
             {
                 for(int l=0;l<(int)addition.size();l++)
                 {
+                    stringstream un;
+                    un << addition.at(l).node_name_wanted << addition.at(l).start_site;
+//                    cout<<"unique "<<un.str()<<endl;
+                    if(added.find(un.str()) != added.end())
+                        continue;
+
                     vector< vector<string> > columns;
 
                     for(int i=0; i<(int)addition.at(l).length; i++)
@@ -447,8 +456,11 @@ void Node::get_alignment_for_nodes(vector<Fasta_entry> *aligned_sequences,bool i
                         columns.push_back( column );
                     }
 
-                    this->get_multiple_alignment_columns_before(j,&columns,addition.at(l).node_name_wanted,
-                                                                addition.at(l).left_child_wanted,include_internal_nodes);
+//                    cout<<"ins "<<addition.at(l).node_name_wanted<<" "<<addition.at(l).length<<" "<<addition.at(l).start_site<<endl;
+
+//                    this->get_multiple_alignment_columns_before(j,&columns,addition.at(l).node_name_wanted,
+//                                                                addition.at(l).left_child_wanted,include_internal_nodes);
+                    this->get_multiple_alignment_columns_before(addition.at(l),&columns,include_internal_nodes);
 
                     for(int i=0; i<(int)addition.at(l).length; i++)
                     {
@@ -457,7 +469,7 @@ void Node::get_alignment_for_nodes(vector<Fasta_entry> *aligned_sequences,bool i
                             aligned_sequences->at(k).sequence.append(columns.at(i).at(k));
                         }
                     }
-
+                    added.insert(un.str());
                 }
             }
 
@@ -684,6 +696,77 @@ void Node::get_alignment_column_at(int j,vector<string> *column, bool include_in
     }
 }
 
+
+void Node::get_multiple_alignment_columns_before(Insertion_at_node ins,vector< vector<string> > *columns,bool include_internal_nodes)
+{
+    if(this->is_leaf())
+    {
+        for(int i=0;i<(int)columns->size();i++)
+        {
+            columns->at(i).push_back(sequence->get_gap_symbol());
+        }
+        return;
+    }
+
+
+    if(this->get_name() == ins.node_name_wanted)
+    {
+
+        if(ins.left_child_wanted)
+        {
+
+            int k = 0;
+            for(int i = ins.start_site; i <= ins.end_site; i++,k++)
+            {
+                this->get_left_child()->get_alignment_column_at(i,&columns->at(k),include_internal_nodes);
+            }
+
+            if(include_internal_nodes)
+            {
+                for(int i=0;i<(int)columns->size();i++)
+                {
+                    columns->at(i).push_back(sequence->get_gap_symbol());
+                }
+            }
+
+            this->get_right_child()->get_multiple_alignment_columns_before(ins,columns,include_internal_nodes);
+        }
+        else
+        {
+            this->get_left_child()->get_multiple_alignment_columns_before(ins,columns,include_internal_nodes);
+
+            if(include_internal_nodes)
+            {
+                for(int i=0;i<(int)columns->size();i++)
+                {
+                    columns->at(i).push_back(sequence->get_gap_symbol());
+                }
+            }
+
+            int k = 0;
+            for(int i = ins.start_site; i <= ins.end_site; i++,k++)
+            {
+                this->get_right_child()->get_alignment_column_at(i,&columns->at(k),include_internal_nodes);
+            }
+        }
+    }
+    else
+    {
+        this->get_left_child()->get_multiple_alignment_columns_before(ins,columns,include_internal_nodes);
+
+        if(include_internal_nodes)
+        {
+            for(int i=0;i<(int)columns->size();i++)
+            {
+                columns->at(i).push_back(sequence->get_gap_symbol());
+            }
+        }
+
+        this->get_right_child()->get_multiple_alignment_columns_before(ins,columns,include_internal_nodes);
+    }
+
+}
+
 void Node::get_multiple_alignment_columns_before(int j,vector< vector<string> > *columns, string node_name_wanted, bool left_child_wanted,bool include_internal_nodes)
 {
 
@@ -773,13 +856,12 @@ void Node::additional_sites_before_alignment_column(int j,vector<Insertion_at_no
     if(this->is_leaf())
         return;
 
+//    cout<<j<<" additional_sites_before_alignment_column "<<this->get_name()<<endl;
+
     Site_children *offspring = sequence->get_site_at(j)->get_children();
 
     int lj = offspring->left_index;
     int rj = offspring->right_index;
-
-    if(lj>=0)
-        left_child->additional_sites_before_alignment_column(lj,addition);
 
     if(j>0)
     {
@@ -810,23 +892,35 @@ void Node::additional_sites_before_alignment_column(int j,vector<Insertion_at_no
 
         if(lj>0 && prev_lj>=0 && lj-prev_lj != 1)
         {
+            for(int k=prev_lj;k<lj;k++)
+                left_child->additional_sites_before_alignment_column(k,addition);
+
             Insertion_at_node ins;
             ins.node_name_wanted = this->get_name();
             ins.length = lj-prev_lj-1;
             ins.left_child_wanted = true;
+            ins.start_site = prev_lj+1;
+            ins.end_site = lj-1;
             addition->push_back(ins);
         }
 
         if(rj>0 && prev_rj>=0 && rj-prev_rj != 1)
         {
+            for(int k=prev_rj;k<rj;k++)
+                right_child->additional_sites_before_alignment_column(k,addition);
+
             Insertion_at_node ins;
             ins.node_name_wanted = this->get_name();
             ins.length = rj-prev_rj-1;
             ins.left_child_wanted = false;
+            ins.start_site = prev_rj+1;
+            ins.end_site = rj-1;
             addition->push_back(ins);
         }
     }
 
+    if(lj>=0)
+        left_child->additional_sites_before_alignment_column(lj,addition);
 
     if(rj>=0)
         right_child->additional_sites_before_alignment_column(rj,addition);

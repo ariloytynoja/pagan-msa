@@ -55,6 +55,8 @@ struct Insertion_at_node
     string node_name_wanted;
     int length;
     bool left_child_wanted;
+    int start_site;
+    int end_site;
 };
 
 
@@ -1444,6 +1446,8 @@ public:
     }
 
     void get_alignment_column_at(int j,vector<string> *column, bool include_internal_nodes);
+
+    void get_multiple_alignment_columns_before(Insertion_at_node ins,vector< vector<string> > *columns,bool include_internal_nodes);
 
     void get_multiple_alignment_columns_before(int j,vector< vector<string> > *columns, string node_name_wanted,
                                                 bool left_child_wanted, bool include_internal_nodes);
