@@ -258,7 +258,8 @@ void Fasta_reader::read_fasta(istream & input, vector<Fasta_entry> & seqs, bool 
         }
         else
         {
-            Log_output::write_out("Data do not appear to be DNA. Translation not performed.\n",2);
+            Log_output::write_out("Option '--translate' cannot be used for proteins. Exiting.\n\n",0);
+            exit(0);
         }
     }
 }
