@@ -2214,7 +2214,7 @@ void Reads_aligner::select_node_for_query(Node *root, vector<Ncbi_hit> *targets,
     ss<<"Read "<<query->name<<" has "<<targets->size()<<" target nodes.\n";
     Log_output::write_out(ss.str(),1); //2);
 
-    for(int i=0;i<targets->size();i++)
+    for(int i=0;i<(int)targets->size();i++)
     {
         map<string,Node*>::iterator nit = nodes.find(targets->at(i).tid);
         double score = this->query_match_score(nit->second, query, mf);
@@ -2994,7 +2994,7 @@ void Reads_aligner::preselect_target_sequences_ncbi(Node *root, vector<Fasta_ent
 
     map<string,string> query_sequences;
 
-    for(int i=0;i<queries->size();i++)
+    for(int i=0;i<(int)queries->size();i++)
         query_sequences.insert(make_pair(queries->at(i).name,queries->at(i).sequence));
 
 

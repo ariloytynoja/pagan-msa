@@ -435,13 +435,13 @@ void Node::get_alignment_for_nodes(vector<Fasta_entry> *aligned_sequences,bool i
             vector<Insertion_at_node> addition;
             this->additional_sites_before_alignment_column(j,&addition);
 
-            if(addition.size()>0)
+            if((int)addition.size()>0)
             {
 //                cout<<"addition "<<addition.size()<<endl;
 //                for(vector<Insertion_at_node>::iterator it=addition.begin();it!=addition.end();it++)
 //                    cout<<" ins at "<<j<<": "<<it->node_name_wanted<<" "<<it->start_site<<" "<<it->length<<" "<<it->left_child_wanted<<endl;
 
-                for(int l=0;l<addition.size();l++)
+                for(int l=0;l<(int)addition.size();l++)
                 {
                     vector<string> column;
 
