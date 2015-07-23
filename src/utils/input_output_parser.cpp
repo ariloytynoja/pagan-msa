@@ -457,7 +457,7 @@ void Input_output_parser::output_aligned_sequences(Fasta_reader *fr,std::vector<
 
     fr->set_chars_by_line(70);
 
-    cout<<"root: "<<root->get_name()<<endl;
+//    cout<<"root: "<<root->get_name()<<endl;
 //    root->show_seqs();
 
 
