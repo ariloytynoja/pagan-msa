@@ -21,19 +21,22 @@
 #ifndef CHECK_VERSION_H
 #define CHECK_VERSION_H
 
-#include <stdio.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
-#include <netdb.h>
-#include <string.h>
+#include <iostream>
+#include <string>
+
+using namespace std;
 
 namespace ppa{
 
 class Check_version
 {
-    int create_tcp_socket();
-    char *get_ip(const char *host);
+
+static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
+{
+    ((std::string*)userp)->append((char*)contents, size * nmemb);
+    return size * nmemb;
+}
+
 
 public:
     Check_version(float version);

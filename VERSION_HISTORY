@@ -1,3 +1,31 @@
+v.0.61
+Fixed a serious bug in query placement of indeopendent sequences: previously
+substrings (insertions) may have been left out of the resulting alignment.
+Also fixed the branch length computtaion for the new added sequences.
+PAGAN code is now hosted at github: changed the update check to reflect that.
+
+
+v.0.60
+Using now explicit data types for Exonerate. Previously DNA sequences with
+lots of ambiguous characters could be handled as proteins and search failed.
+
+
+v.0.59
+Fixing an issue with multiple placement of the same query. Adding a new option
+"--output-discarded-queries" for one-by-one placement. Enabling placement to newly
+added taxa now also for translated data. Speedup for Exonerate search.
+
+
+v.0.58
+Adding ancestral sequence reconstruction for codon data when "--translate" is used.
+A backup system for cases where BppAncestors fails.
+
+
+v.0.57
+Faster reference build (mainly for aa/codons). Less verbose output. Exonerate hits
+trimmed to avoid overlapping hits.
+
+
 v.0.56
 By mistake, outputted pruned files for every alignment. This now fixed.
 
