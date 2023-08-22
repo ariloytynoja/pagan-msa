@@ -1,13 +1,18 @@
+
+### Note!
+
+This is the original version of the program and the **much improved PAGAN2** can be found at [https://github.com/ariloytynoja/pagan2-msa](https://github.com/ariloytynoja/pagan2-msa).  
+
+---
+
 PAGAN
 =====
+
 
 PAGAN is a general-purpose method for the alignment of sequence graphs. PAGAN is based on the phylogeny-aware progressive alignment algorithm and uses graphs to describe the uncertainty in the presence of characters at certain sequence positions. However, graphs also allow describing the uncertainty in input sequences and modelling e.g. homopolymer errors in Roche 454 reads, or representing inferred ancestral sequences against which other sequences can then be aligned. PAGAN is still under development and will hopefully evolve to an easy-to-use, general-purpose method for phylogenetic sequence alignment.
 
 As the graph representation has features that make PAGAN especially powerful for phylogenetic placement of sequences into existing alignments, the functionality necessary for that was implemented first. The method and its uses for alignment extension are described in  [http://bioinformatics.oxfordjournals.org/content/28/13/1684.full](http://bioinformatics.oxfordjournals.org/content/28/13/1684.full).
 
-### Note!
-
-This is the original version of the program and the **much improved PAGAN2** can be found at [https://github.com/ariloytynoja/pagan2-msa](https://github.com/ariloytynoja/pagan2-msa).  
 
 * * *
 
