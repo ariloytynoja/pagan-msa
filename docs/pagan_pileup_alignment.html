@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PAGAN</title>
+<link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+<h1 id="pagan-pileup-alignment">PAGAN: pileup alignment<a name="top"></a></h1>
+<p> </p>
+<p>PAGAN can make &quot;pileup&quot; alignments by adding the sequences in the order their appear in the input file. This is not recommended for distantly-related sequences but can be useful for highly similar sequences that require alignment. This may be relevant e.g. in the analysis of overlapping noisy reads from the same locus; if the reads have been generated on Roche 454 or Ion Torrent platform, PAGAN&#39;s ability to model the homopolymer errors is especially useful.</p>
+<hr>
+<ul>
+<li><a href="#pileup-alignment-without-a-guide-tree">Pileup alignment without a guide tree</a><ul>
+<li><a href="#example-of-pileup-alignment-of-454-reads">Example of pileup alignment of 454 reads</a></li>
+</ul>
+</li>
+<li><a href="#pileup-alignment-with-strand-search">Pileup alignment with strand search and ORF search</a></li>
+</ul>
+<p><a href="../">Back to PAGAN front page</a></p>
+<h4 id="pileup-alignment-without-a-guide-tree">Pileup alignment without a guide tree</h4>
+<p>Like in any alignment also in a pileup alignment the consensus sequence (the alignment of sequences included so far) and the next sequence to be added should overlap. PAGAN can include sequences that do not overlap but the region in between has to be bridged by other sequences and thus the order of adding the sequences can be important. If the sequences are from the same species, the option to reconstruct the consensus sequence can also be useful.</p>
+<p>The pileup alignment is done by selecting option <code>--pileup-alignment</code> and defining the input file with <code>--queryfile query_sequence_file</code>. Typically one would also add option <code>--use-consensus</code> to specify that the character states are based on consensus, not the last-added and possibly incorrect sequence (e.g. due to contamination of the data), and to output the final consensus sequence. If the sequences are from Roche 454 or Pacific Biosciences CLR, one may also add option <code>--454</code> or <code>--pacbio</code> to tune the parameters specifically for those instruments; many other options are naturally compatible with the pileup alignment, too.</p>
+<p>The many options needed for this can be defined in a config file. Assuming that the file <code>454.cfg</code> contains the following:</p>
+<pre><code>454 = 1
+pileup-alignment = 1
+use-consensus = 1
+build-contigs = 1
+no-terminal-edges = 1
+</code></pre>
+<p>the pile-up alignment for a set of 454 data can then be generated with the command:</p>
+<pre><code>./pagan 454.cfg --queryfile reads_file --outfile output_file
+</code></pre>
+<h5 id="example-of-pileup-alignment-of-454-reads">Example of pileup alignment of 454 reads</h5>
+<p>The PAGAN download files contain an example dataset for pileup alignment of overlapping 454 reads. The dataset can found in directory <a href="../examples/454_pileup">examples/454_pileup</a>. The following file is included:</p>
+<ul>
+<li><code>454_reads.fas</code> : simulated overlapping 454 reads</li>
+</ul>
+<p>The data can be analysed using the following command:</p>
+<pre><code>pagan --pileup-alignment --use-consensus --454 --queryfile 454_reads.fas --outfile 454_reads_pagan
+</code></pre>
+<p>The resulting alignment will be written to file <code>454_reads_pagan.fas</code>.</p>
+<p>Using the config file from above, a similar analysis could be performed with the command:</p>
+<pre><code>pagan 454.cfg --queryfile 454_reads.fas --outfile 454_reads_pagan
+</code></pre>
+<p>The modelling of homopolymer error has an impact even in the alignment of relatively clean data:</p>
+<p>PAGAN alignment</p>
+<p><a href="data/454_reads_pagan.png"><img src="data/454_reads_pagan_m.png" alt=""></a></p>
+<p>Alignments with other popular MSA methods</p>
+<p><a href="data/454_reads_mafft.png"><img src="data/454_reads_mafft_m.png" alt=""></a></p>
+<p><a href="data/454_reads_muscle.png"><img src="data/454_reads_muscle_m.png" alt=""></a></p>
+<p><a href="data/454_reads_clustalw.png"><img src="data/454_reads_clustalw_m.png" alt=""></a></p>
+<h4 id="pileup-alignment-with-strand-search-and-orf-search">Pileup alignment with strand search and ORF search</h4>
+<p>If the correct strands of the reads are unknown, PAGAN can be run with option --both-strands that performs both forward and reverse-complement alignment and chooses the better one:</p>
+<pre><code>pagan --pileup-alignment --use-consensus --454 --queryfile 454_reads_reversed.fas --outfile 454_reads_reversed_pagan --both-strands
+</code></pre>
+<p>If the strand of the reads is unknown and the reads come from protein-coding sequences (e.g. contigs from an RNA-seq experiment), PAGAN can be run with option <code>--find-orfs</code> that searches for open reading frames in the query (both in forward and reverse-complement strands) and chooses the one giving the best alignment:</p>
+<pre><code>pagan --pileup-alignment --ref-seqfile human.fas --queryfile input_ngs_primates.fas --translate --find-orfs --min-orf-length 30
+</code></pre>
+<p>The reference sequence should be DNA (and translated with option <code>--translate</code>) or the resulting alignment cannot be back-translated to DNA. This option does not correct for reading frames and may thus not work well with data coming e.g. from 454.</p>
+<p>In the example above, the length of the DNA sequences is 100bp and their translated length below the default limit of 50. This limit is lowered with option <code>--min-orf-length</code> and the translated reads get aligned. The output is written separately for translated (peptide) and back-translated (DNA) data.</p>
+<p> <br>The dataset above can found in directory <a href="../examples/ngs_placement">examples/ngs_placement</a>.  
+ </p>
+<p><a href="#top">back to top</a></p>
+</body>
+</html>

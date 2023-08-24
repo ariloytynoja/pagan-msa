@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PAGAN</title>
+<link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+<h1 id="pagan-phylogenetic-multiple-alignment-">PAGAN: phylogenetic multiple alignment <a name="phylogenetic-multiple-alignment"></a></h1>
+<ul>
+<li><a href="#phylogenetic-multiple-alignment">Phylogenetic multiple alignment</a><ul>
+<li><a href="#input-and-output-formats">Input and output formats</a></li>
+<li><a href="#codon-alignment-and-translated-alignment">Codon alignment and translated alignment</a></li>
+<li><a href="#alignment-anchoring">Alignment anchoring</a></li>
+<li><a href="#an-example-analysis-with-pagan">An example analysis with PAGAN</a></li>
+</ul>
+</li>
+<li><a href="#inference-of-ancestral-sequences-for-existing-alignments">Inference of ancestral sequences for existing alignments</a></li>
+</ul>
+<p><a href="../">Back to PAGAN front page</a></p>
+<p>PAGAN is based on a progressive algorithm that aligns sequences according to a guide tree. It can compute a guide tree using external programs (MAFFT and BppDist or RAxML) but also allows the user to provide a <strong>rooted</strong> binary tree relating the sequences. The leaf names in the tree and the sequence names (until the first space) in the sequence file have to match exactly. Alignment is only performed for the parts of the guide phylogeny that have sequences associated; the unnecessary branches and sequences are pruned/dropped out.</p>
+<p>The PAGAN binary packages contain helper applications to compute guide trees, anchor alignments and reconstruct ancestral character states. When using one of those, the minimal command to perform the alignment is:</p>
+<pre><code>./pagan --seqfile sequence_file 
+</code></pre>
+<p>Using a user-specified tree, the minimal command to perform the alignment is:</p>
+<pre><code>./pagan --seqfile sequence_file --treefile tree_file 
+</code></pre>
+<p>The resulting alignment will be written in file outfile.fas. If you want to use another file name, you can specify that with option <code>--outfile</code>:</p>
+<pre><code>./pagan --seqfile sequence_file [--treefile tree_file] --outfile another_name
+</code></pre>
+<p>PAGAN will automatically add a suffix for the corresponding output format (by default, <code>.fas</code> for FASTA).</p>
+<h4 id="input-and-output-formats">Input and output formats</h4>
+<p>The sequence input file has to be in FASTA format and the guide tree in Newick tree format, with branch lengths as substitutions per site. By default, the resulting alignment will be written in FASTA format. Other output formats (nexus, paml, phylipi, phylips or raxml) can specified with option <code>--outformat format_name</code>. With option <code>--xml</code>, PAGAN writes an additional file, containing both the alignment and the guide phylogeny, in the XML-based <a href="https://ariloytynoja.github.io/prank-msa/docs/hsaml_format.html">HSAML format</a>.</p>
+<p>PAGAN writes several temporary files to communicate with the helper tools. By default, these files are written to <code>/tmp</code> directory (or current directory if <code>/tmp</code> does not exist) and are deleted afterwards. The directory can be changed with option <code>--temp-folder directory_path</code>.</p>
+<h4 id="codon-alignment-and-translated-alignment">Codon alignment and translated alignment</h4>
+<p>PAGAN supports the alignment of nucleotide, amino-acid and codon sequences as well as translated alignment of nucleotide sequences. The type of data is detected automatically and either DNA or protein model is used. With option <code>--codons</code>, PAGAN can align protein-coding DNA sequences using the codon substitution model. Alternatively, with option <code>--translate</code>, PAGAN translates the DNA sequences to proteins, aligns them as proteins and writes the resulting alignment as proteins and back-translated DNA. Codon and translated alignment are performed in the first reading frame and no frame correction is performed.</p>
+<h4 id="alignment-anchoring">Alignment anchoring</h4>
+<p>PAGAN can significantly speed up the alignment by anchoring the alignments with program Exonerate or by finding long, shared prefixes. Anchoring with Exonerate is used by default while prefix anchoring can chosen with option <code>--use-prefix-anchors</code>. Anchoring can be disabled with option <code>--no-anchors</code>; see <code>pagan --help</code> for related options.</p>
+<h4 id="an-example-analysis-with-pagan">An example analysis with PAGAN</h4>
+<p>As an example of combining several options, the following command:</p>
+<pre><code>./pagan --seqfile cDNA_unaligned.fas --outfile cDNA_aligned  --outformat paml --codons  --config-log-file cDNA_alignment.cfg
+</code></pre>
+<p>would </p>
+<ol>
+<li>read in protein-coding DNA sequences from the file <code>cDNA_unaligned.fas</code> </li>
+<li>translate the sequences to proteins and perform an initial alignment with MAFFT</li>
+<li>infer a guidetree for this protein alignment with BppDist</li>
+<li>treating the sequences as codon sequences, perform the PAGAN alignment using anchors inferred with Exonerate on protein-translated sequences</li>
+<li>write the output alignment to the file <code>cDNA_aligned.phy</code> in a format compatible with PAML and the BppDist-estimated guidetree to the file <code>cDNA_aligned.tre</code> in Newick format.</li>
+</ol>
+<p>The last option tells PAGAN to write the options used to the file <code>cDNA_alignment.cfg</code>: this file can be stored as a record of the analysis performed but it also fully specifies the options for PAGAN and allows repeating the same analysis with the command:</p>
+<pre><code>./pagan cDNA_alignment.cfg
+</code></pre>
+<p>Parameters can overridden and added by specifying them after the config file. For example, a similar analysis as above but with a RAxML-estimated guidetree and output in the Nexus format would be performed with command:</p>
+<pre><code>./pagan cDNA_alignment.cfg --raxml-tree --outformat nexus
+</code></pre>
+<p><a href="#phylogenetic-multiple-alignment">back to top</a></p>
+<hr>
+<p><a name="ancestral-sequences"></a></p>
+<h3 id="inference-of-ancestral-sequences-for-existing-alignments">Inference of ancestral sequences for existing alignments</h3>
+<p>In phylogenetic placement, PAGAN infers evolutionary history for a set of aligned sequences. This functionality can be used without placement, too. Command:</p>
+<pre><code>./pagan --ref-seqfile alignment_file --ref-treefile tree_file --xml
+</code></pre>
+<p>writes the aligned sequences from <code>alignment_file</code> to files <code>outfile.fas</code> and <code>outfile.xml</code>, thus providing a tool to convert FASTA files to HSAML format; the HSAML — and the inferred ancestral sequences included — can be visualised with Wasabi. The ancestral sequences can also be outputted in FASTA format using option <code>--output-ancestors</code>. Command:</p>
+<pre><code>./pagan --ref-seqfile alignment_file --ref-treefile tree_file --output-ancestors
+</code></pre>
+<p>includes the ML-reconstructed internal nodes in the FASTA output, providing a efficient tool to infer gap structure for ancestral sequences based on existing alignments. The tree indicating the ancestral nodes is written in outfile.anctree.</p>
+</body>
+</html>

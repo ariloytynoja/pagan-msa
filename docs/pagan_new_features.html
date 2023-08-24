@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PAGAN</title>
+<link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+<h1 id="pagan-new-features">PAGAN: New features</h1>
+<p><a href="../">Back to PAGAN home.</a></p>
+<h3 id="new-features-in-the-latest-version-of-pagan">New features in the latest version of PAGAN</h3>
+<h4 id="v151">v.1.51</h4>
+<p>First release of PAGAN2. Now using built-in BLAST library (instead of Exonerate)<br>and doing efficient alignment achoring that massively reduces the memory usage.<br>Can now align closely related sequences that are up to megabases long on a regular<br>laptop computer.</p>
+<h4 id="v061">v.0.61</h4>
+<p>Fixed a serious bug in query placement of independent sequences: previously<br>substrings (insertions) may have been left out of the resulting alignment.<br>Also fixed the branch length computation for the new added sequences.<br>PAGAN code is now hosted at github: changed the update check to reflect that.</p>
+<h4 id="v060">v.0.60</h4>
+<p>Using now explicit data types for Exonerate. Previously DNA sequences with<br>lots of ambiguous characters could be handled as proteins and search failed.</p>
+<h4 id="v059">v.0.59</h4>
+<p>Fixing an issue with multiple placement of the same query. Adding a new option<br>“–output-discarded-queries” for one-by-one placement. Enabling placement to newly<br>added taxa now also for translated data. Speed-up for Exonerate search.</p>
+<h4 id="v058">v.0.58</h4>
+<p>Adding ancestral sequence reconstruction for codon data when “–translate” is used.<br>A backup system for cases where BppAncestors fails.</p>
+<h4 id="v057">v.0.57</h4>
+<p>Faster reference build (mainly for aa/codons). Less verbose output. Exonerate hits<br>trimmed to avoid overlapping hits.</p>
+<h4 id="v056">v.0.56</h4>
+<p>By mistake, PAGAN pruned the files even if no option was selected. This is now fixed.</p>
+<h4 id="v055">v.0.55</h4>
+<p>The program homepage has been re-written and PAGAN is now compatible with that. Several changes in placement heuristics and tree extension.</p>
+<h4 id="v054">v.0.54</h4>
+<p>Cleaning up the code: many unused options removed. Xml output with nhx tags. Changed search order of external tools. Now using BppAncestors for ancestor reconstruction.  
+ </p>
+<h4 id="v053">v.0.53</h4>
+<p>TID tags now considered also for ORFs. Fixing the double naming of ORFs. Changed a bad default value for branch-skip-probability (not fixing the bug yet!).  
+ </p>
+<h4 id="v052">v.0.52</h4>
+<p>Consistent naming of nucleotide and protein output of ORF alignments. Improvements for alignment pruning. Option to trim extended alignment.  
+ </p>
+<h4 id="v051">v.0.51</h4>
+<p>Functions for alignment pruning (to reduce large datasets). Anchoring coverage threshold for skipping the DP alignment altogether. Options ‘find-best-orf’ and ‘compare-reverse’ also with placement.  
+ </p>
+<h4 id="v050">v.0.50</h4>
+<p>Improvements for pileup of 454 data. Removal of gaps in query sequences before alignment.  
+ </p>
+<h4 id="v049">v.0.49</h4>
+<p>New option to create a distance tree using ‘bpp_dist’ package. Significant changes (and improvements) for pileup alignment of 454 reads.  
+ </p>
+<h4 id="v048">v.0.48</h4>
+<p>New option’test-every-terminal-node’.  
+ </p>
+<h4 id="v047">v.0.47</h4>
+<p>Compiles on Darwin and Cygwin.  
+ </p>
+<h4 id="v046">v.0.46</h4>
+<p>First integration of MAFFT and RAxML: PAGAN is now capable of computing a guide tree by first calling MAFFT and then RAxML.</p>
+<h4 id="v045">v.0.45</h4>
+<p>Minor: code reorganised and recently created bugs fixed.</p>
+<h4 id="v044">v.0.44</h4>
+<p>PAGAN can now anchor alignments with Exonerate or substring matching. As a result, significant speed ups in the alignment of long and/or very similar similar sequences.</p>
+<h4 id="v043">v.0.43</h4>
+<p>Now properly functional multi-threading for standard multiple alignment: by default, PAGAN uses all the cores available. This can be changed with --threads #.</p>
+<h4 id="v042">v.0.42</h4>
+<p>First attempt to introduce multi-threading for standard multiple alignment.</p>
+<h4 id="prior-v042">prior v.0.42</h4>
+<p>See VERSION_HISTORY in the source code</p>
+</body>
+</html>

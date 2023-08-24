@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PAGAN</title>
+<link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+<h1 id="pagan-guided-placement">PAGAN: guided placement<a name="top"></a></h1>
+<p> </p>
+<p>PAGAN extends existing alignments by aligning the new sequences to their phylogenetic positions in the reference alignment. If the phylogenetic positions of the query sequences are known (e.g. the species in question is an outgroup for the clade X), this information can be provided for the placement. PAGAN allows naming multiple alternative positions for the sequences (because the precise position is not known or the reference contains paralogous genes and the copies which the sequences come from are not known) and it will then choose the one where the sequences matches the best.</p>
+<p>This page explains guided placement. See <a href="pagan_phylogenetic_placement.html">here</a> for unguided phylogenetic placement.</p>
+<hr>
+<ul>
+<li><a href="#guided-placement-with-assignment-of-queries-to-specific-nodes">Guided placement with assignment of queries to specific nodes</a></li>
+<li><a href="#use-of-archaeopteryx-pagan-edition">Use of Archaeopteryx-PAGAN-Edition</a></li>
+<li><a href="#examples-of-guided-placement">Examples of guided placement</a><ul>
+<li><a href="#example-of-guided-placement-of-protein-sequences">Example of guided placement of protein sequences</a></li>
+<li><a href="#example-of-guided-placement-of-ngs-reads">Example of guided placement of NGS reads</a></li>
+</ul>
+</li>
+<li><a href="#454-and-pacbio-data">454 and PacBio data</a></li>
+</ul>
+<p><a href="../">Back to PAGAN front page</a></p>
+<hr>
+<h4 id="guided-placement-with-assignment-of-queries-to-specific-nodes">Guided placement with assignment of queries to specific nodes</h4>
+<p>The minimal command to perform guided sequence placement is:</p>
+<pre><code>pagan --ref-seqfile ref_alignment_file --ref-treefile ref_tree_file --queryfile query_sequence_file --guided
+</code></pre>
+<p> <br>However, guided placement requires certain changes in the input data.  
+ </p>
+<p>Sequences are assigned to a specific node or a set of nodes using the NHX tree format with an additional tag TID; the same tag is then given for the query sequences. The tag identifier can be any string, in the example below we use number 001. One can use any number/combination of tags as long as each node and each sequence has at most one tag.</p>
+<p>As an example, let’s assume</p>
+<p>a reference alignment:</p>
+<pre><code>&gt;A
+CGTCCAATCATACTTGCGCAGGCGGTTTCACAGAACAACCTACTTTCTGT
+CCTTCTGACAATGGTGGTCG
+&gt;B
+CGTCCCATCATAATCGCGCAGGTGGTTTCACAGAACAACCTACTTTCTGT
+CCTTCTGACAATGGTGCTCG
+&gt;C
+CGTCCCATCGTCATTGCGCAGTCTGTTTCACAGAACAACCTACTCTCTGT
+CTTTCTGACAATGGTGCCCA
+</code></pre>
+<p>and a query that we want to add in FASTA:</p>
+<pre><code>&gt;D TID=001
+CTTGCGCAGGCGGTTTCACAGAACAACCTACTTTCTGTCCTTCTGACA
+</code></pre>
+<p>or in FASTQ format:</p>
+<pre><code>@read_D_0001@3@15@13524@18140#0/1 TID=001
+CTTGCGCAGGCGGTTTCACAGAACAACCTACTTTCTGTCCTTCTGACA
++
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+</code></pre>
+<p>The placement of the query in the reference alignment depends on the format of the reference tree:</p>
+<p>a phylogeny in plain Newick format triggers the placement search and adds the query to the node with the best hit:</p>
+<pre><code>((A:0.1,B:0.1):0.05,C:0.15);
+</code></pre>
+<p>a phylogeny in NHX format with one matching label adds the query to that node:</p>
+<pre><code>((A:0.1,B:0.1):0.05[&amp;&amp;NHX:TID=001],C:0.15);
+</code></pre>
+<p>a phylogeny in NHX format with several matching labels finds the best node and adds the query to that:</p>
+<pre><code>((A:0.1,B:0.1):0.05[&amp;&amp;NHX:TID=001],C:0.15):0[&amp;&amp;NHX:TID=001];
+</code></pre>
+<p>With ArchaeopteryxPE, the target nodes are shown with yellow dots and the three tree files look like this:</p>
+<img src="data/tree1.png" width="180px">
+<img src="data/tree2.png" width="180px">
+<img src="data/tree3.png" width="180px">
+
+
+<p>By default, PAGAN places a query sequence to multiple locations if more than one location shares the best score. This can be changed with option <code>--one-placement</code> that places the query only once, at the deepest (or last) node among the possible placements.</p>
+<h4 id="use-of-archaeopteryx-pagan-edition">Use of Archaeopteryx-PAGAN-Edition</h4>
+<p>The NHX phylogeny format used for the tagging of target nodes for guided placement is unique for PAGAN. To facilitate the preparation and visualisation of the reference phylogenies, we have modified Archaeopteryx, the superb phylogeny visualisation program by Christian M Zmasek, to understand the PAGAN-specific tags and allow for their editing. The original Archaeopteryx program and documentation for its use can be found at <a href="http://phylosoft.org/archaeopteryx/">http://phylosoft.org/archaeopteryx/</a>.</p>
+<p>The Archaeopteryx-PAGAN-Edition (here abbreviated as ArchaeopteryxPE) has one additional feature compared to the original program: the program can read, display, edit and write NHX files containing TID=<string> tags used for guided sequence placement with PAGAN. For any other purposes of tree display or editing you should use an up-to-date version of the original Archaeopteryx program. ArchaeopteryxPE is available as <a href="../binaries/other_files/archaeopteryxPE.jar">Java jar-file</a> at the <a href="../binaries/other_files/">download page</a> and can then be started with the command:</p>
+<pre><code>java -jar archaeopteryxPE.jar [reference.nhx]
+</code></pre>
+<p>where the optional argument &#39;reference.nhx&#39; specifies a phylogeny file. (An example of a <a href="../binaries/other_files/reference.nhx">valid tree file</a> is available at the <a href="../binaries/other_files">download page</a>.) This command assumes that the ArchaeopteryxPE program is located in the same directory; if not, type:</p>
+<pre><code>java -jar /path/to/dir/with/archaeopteryxPE.jar reference.nhx
+</code></pre>
+<p>The source files modified to provide the necessary functionality are included in a <a href="../binaries/other_files/archaeopteryxPE.modified_files.src.tgz">separate file</a>. This is provided to comply with the GPL and is not needed by a typical user.</p>
+<p>The tree in the example file provided contains two types of NHX tags, D=Y and TID=0[12]. The red dots indicate duplication nodes (D=Y) and yellow dots the PAGAN target nodes (TID=01 or TID=02). If a yellow node is clicked, a panel with the node data, including the PAGAN TID, is opened. To edit an existing TID tag or add a new tag at another node, the node has to be right-clicked and then &quot;Edit Node Data&quot; selected. This will open an edit panel with the PAGAN TID field in the bottom. The text-insert mode can be activated by clicking (repeatedly) the text field on the right side of the page icon. When saving the tree file, the NHX format can be selected from the file format drop-down menu.</p>
+<h3 id="examples-of-guided-placement">Examples of guided placement</h3>
+<p>The PAGAN download files contain example datasets for guided placement of protein sequences (full length and fragments) and NGS reads. The datasets can found in directories <a href="../examples/protein_placement">examples/protein_placement</a> and <a href="../examples/ngs_placement">examples/ngs_placement</a>.</p>
+<p>The idea of guided placement is to extend existing alignments with new sequences for which the (rough) phylogenetic location is known. The situation may be complicated by paralogous genes and uncertainty of the right target for the new sequences. For such cases, PAGAN allows indicating several potential targets and then chooses the best location by aligning the query sequences to each specified target.</p>
+<p>The examples are based on simulated data. In these examples, we have reference alignments that include gene sequences from several mammals; the hypothetical gene has duplicated first in the ancestor of primates and rodents and then again in the ancestor of rodents. Our new sequences come from a primitive primate, believed to belong phylogenetically between tarsier and lemur, and a rodent, belonging between guinea pig and ground squirrel. Because of the gene duplications, the primate and rodent sequences have two and three potential target locations, respectively, in the phylogeny. These are indicated in the reference phylogenies using special TID tags. The phylogenies and the target locations for guided placement can be viewed and edited with the ArchaeopteryxPE software. ArchaeopteryxPE indicates the duplication nodes with red dots and the TID target nodes with yellow dots and the guide phylogeny looks like this:</p>
+<p><img src="data/guide_tree.png" alt=""></p>
+<p>When sequences are placed with PAGAN, it first tries placing each query sequence to every matching target node and chooses the best node. If several target nodes score equally well, the sequence is assigned to each one of them. PAGAN then starts aligning the sequences to targets, adding several query sequences to the same target using a progressive approach. The complete new subtree is then inserted back to the reference alignment, adding space for the new insertions if necessary. Importantly, the relative alignment of existing reference sequences is not changed.</p>
+<p>The examples demonstrate that the selection of the target node for each query sequence is not straightforward. Long sequences are placed correctly but shorter ones may be placed to a wrong node. Errors are also more likely between closely-related paralogs than between distant ones.</p>
+<h4 id="example-of-guided-placement-of-protein-sequences">Example of guided placement of protein sequences</h4>
+<p>The following files are included in directory <a href="../examples/protein_placement">examples/protein_placement</a>:</p>
+<ul>
+<li><code>reference_aa.fas</code> : simulated reference alignment.</li>
+<li><code>reference_tree.nhx</code> : reference phylogeny with some nodes tagged for placement.</li>
+<li><code>input_aa_full.fas</code> : simulated amino-acid sequences.</li>
+<li><code>input_aa_frags.fas</code> : a subset of the one above, broken into fragments.</li>
+</ul>
+<p>The data can be analysed using the following commands:</p>
+<pre><code>pagan --ref-seqfile reference_aa.fas --ref-treefile reference_tree.nhx --queryfile input_aa_full.fas --outfile aa_full_alignment --guided
+
+pagan --ref-seqfile reference_aa.fas --ref-treefile reference_tree.nhx --queryfile input_aa_frags.fas --outfile aa_frags_alignment --guided --fragments
+</code></pre>
+<p>The resulting alignments will be written to files <code>aa_[full|frags]_alignment.fas</code>.</p>
+<p>By default, PAGAN assigns the newly added sequence and its ancestor node the same TID tag as the reference sequence, and the subsequent alignments can place sequences also to these new targets. If the input query sequence are fragments, the matching of two partially overlapping sequences can cause alignment errors and unnecessary insertions. Option <code>--fragments</code> (in the second command above) disallows placement to newly added terminal sequences and thus prevents this from happening.</p>
+<p>The reference alignment used for the analysis, the true simulated alignment and the resulting PAGAN alignments look like this (click to see larger images):</p>
+<p>Reference alignment</p>
+<p><a href="data/reference_aa.png"><img src="data/reference_aa_m.png" alt=""></a></p>
+<p>True simulated alignment</p>
+<p><a href="data/aa_true_alignment.png"><img src="data/aa_true_alignment_m.png" alt=""></a></p>
+<p>Placement of full sequences</p>
+<p><a href="data/aa_full_alignment.png"><img src="data/aa_full_alignment_m.png" alt=""></a></p>
+<p>Placement of sequence fragments</p>
+<p><a href="data/aa_frags_alignment.png"><img src="data/aa_frags_alignment_m.png" alt=""></a></p>
+<p>The different background colours for the placed sequences indicate their different origin.</p>
+<h5 id="example-of-guided-placement-of-ngs-reads">Example of guided placement of NGS reads</h5>
+<p>The following files are included in directory <a href="../examples/ngs_placement">examples/ngs_placement</a>:</p>
+<ul>
+<li><code>reference_codon.fas</code> : simulated reference alignment.</li>
+<li><code>reference_tree.nhx</code> : reference phylogeny with some nodes tagged for placement.</li>
+<li><code>input_ngs.fastq</code> : simulated Illumina reads.</li>
+<li><code>input_ngs_primates.fastq</code> : a subset of the one above.</li>
+</ul>
+<p>The data can be analysed using the following command:</p>
+<pre><code>pagan --ref-seqfile reference_codon.fas --ref-treefile reference_tree.nhx --queryfile input_ngs.fastq --outfile read_alignment --guided --fragments
+</code></pre>
+<p>The resulting alignments will be written to file <code>read_alignment.fas</code>.</p>
+<p>If we add the option <code>--config-log-file</code>:</p>
+<pre><code>pagan --ref-seqfile reference_codon.fas --ref-treefile reference_tree.nhx --queryfile input\_ngs.fastq --outfile read_alignment --guided --fragments --config-log-file simple.cfg
+</code></pre>
+<p>the arguments used for the analysis will be written to the file simple.cfg. This file works as a log file of the specific settings used for the analysis and allows repeating the same analysis with the command:</p>
+<p><code>pagan simple.cfg</code> (or <code>pagan --config-file simple.cfg</code>)</p>
+<p>The use of config files simplifies complex commands. For example, the following:</p>
+<pre><code>pagan --ref-seqfile reference_codon.fas --ref-treefile reference_tree.nhx --queryfile input_ngs.fastq --build-contigs --use-consensus --consensus-minimum 3 --show-contig-ancestor --outfile read_alignment --guided --fragments --config-log-file contigs.cfg
+</code></pre>
+<p>specifies config file contigs.cfg. As the arguments given on the command line override those given in a config file, the following command repeats a similar analysis for another data set.</p>
+<pre><code>pagan contigs.cfg --queryfile input_ngs_primates.fastq --outfile primate_alignment
+</code></pre>
+<p>The reference alignment used for the analysis, the true simulated alignment and the resulting PAGAN alignments look like this:</p>
+<p>Reference alignment</p>
+<p><a href="data/reference_codon.png"><img src="data/reference_codon_m.png" alt=""></a></p>
+<p>True simulated alignment</p>
+<p><a href="data/true_alignment.png"><img src="data/true_alignment_m.png" alt=""></a></p>
+<p>Placement of all reads</p>
+<p><a href="data/read_alignment.png"><img src="data/read_alignment_m.png" alt=""></a></p>
+<p>Placement of primate reads</p>
+<p><a href="data/primate_alignment.png"><img src="data/primate_alignment_m.png" alt=""></a></p>
+<p>The different background colours for the placed sequences indicate their different origin.</p>
+<p>You may check the content of files <code>read_alignment_contigs.fas</code> and <code>primate_alignment_contigs.fas</code>:<br> 
+Contigs from all reads</p>
+<p><a href="data/read_alignment_contigs.png"><img src="data/read_alignment_contigs_s.png" alt=""></a></p>
+<p>Contigs from primate reads</p>
+<p><a href="data/primate_alignment_contigs.png"><img src="data/primate_alignment_contigs_s.png" alt=""></a></p>
+<p>The quality of contigs is expected to improve with a higher sequencing coverage.</p>
+<p>See pagan --help and the program documentation for additional options. Some relevant options (e.g. strand search and ORF search) are explained in <a href="pagan_phylogenetic_placement.html">unguided placement</a>.</p>
+<p><a href="#top">back to top</a></p>
+<hr>
+<h4 id="454-and-pacbio-clr-data">454 and PacBio CLR data</h4>
+<p>For the alignment of NGS reads, additional options <code>--454</code> and <code>--pacbio</code> can be useful. They model the ambiguous length of mononucleotide runs and the high frequency of insertion-deletions seen in Roche 454 and PacBio CLR data, respectively.</p>
+<p><a href="#top">back to top</a></p>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PAGAN</title>
+<link rel="stylesheet" type="text/css" href="docs/style.css" />
+</head>
+<body>
+<h3 id="note">Note!</h3>
+<p>This is the original version of the program and the <strong>much improved PAGAN2</strong> can be found at <a href="https://github.com/ariloytynoja/pagan2-msa">https://github.com/ariloytynoja/pagan2-msa</a>.  </p>
+<hr>
+<h1 id="pagan">PAGAN</h1>
+<p>PAGAN is a general-purpose method for the alignment of sequence graphs. PAGAN is based on the phylogeny-aware progressive alignment algorithm and uses graphs to describe the uncertainty in the presence of characters at certain sequence positions. However, graphs also allow describing the uncertainty in input sequences and modelling e.g. homopolymer errors in Roche 454 reads, or representing inferred ancestral sequences against which other sequences can then be aligned. PAGAN is still under development and will hopefully evolve to an easy-to-use, general-purpose method for phylogenetic sequence alignment.</p>
+<p>As the graph representation has features that make PAGAN especially powerful for phylogenetic placement of sequences into existing alignments, the functionality necessary for that was implemented first. The method and its uses for alignment extension are described in  <a href="http://bioinformatics.oxfordjournals.org/content/28/13/1684.full">http://bioinformatics.oxfordjournals.org/content/28/13/1684.full</a>.</p>
+<hr>
+<p><img src="docs/data/pagan_logo.png" alt="" width="300px"></p>
+<dl>
+<dt><strong><a href="https://github.com/ariloytynoja/pagan-msa/tree/master/binaries">Download the original PAGAN</a></strong></dt>
+<dd>Pre-compiled binaries for Linux (and OSX).</dd>
+<dt><strong><a href="https://github.com/ariloytynoja/pagan2-msa">Download the fancy new PAGAN2</a></strong><dt>
+<dd>Source and pre-compiled binary for Linux.</dd>
+<dt><strong><a href="docs/pagan_installation.html">Installing PAGAN</a></strong></dt>
+<dd>Instructions for installation and using of PAGAN on different operating systems.</dd>
+<dt><strong><a href="#using-pagan">Using PAGAN</a></strong></dt>
+<dd>Instructions for the use of PAGAN with example commands and test data.</dd>
+<dt><strong><a href="https://github.com/ariloytynoja/pagan2-msa">Building PAGAN2 with Docker</a></strong></dt>
+<dd>Instructions for building PAGAN2 with Docker and using the PAGAN2 Docker container.</dd>
+<dt><strong><a href="docs/pagan_new_features.html">New features</a></strong></dt>
+<dd>Brief description of the new features in the latest versions of the program</dd>
+</dl>
+<hr>
+<h3 id="using-pagan">Using PAGAN</h3>
+<p>At the simplest, PAGAN can be run with command:</p>
+<pre><code>pagan --seqfile input_file
+</code></pre>
+<p>where <code>input_file</code> contains sequences in FASTA format.</p>
+<p>PAGAN2 has <strong>much</strong> improved anchoring and memory handling and often this runs much faster:</p>
+<pre><code>pagan2 --seqfile input_file
+</code></pre>
+<p>Central program options for the different use cases:</p>
+<ul>
+<li><a href="docs/phylogenetic_multiple_alignment.html">Phylogenetic multiple alignment</a></li>
+<li><a href="docs/phylogenetic_multiple_alignment.html#inference-of-ancestral-sequences-for-existing-alignments">Inference of ancestral sequences for existing alignments</a></li>
+<li><a href="docs/pagan_phylogenetic_placement.html">Phylogenetic placement of sequences into an existing alignment</a></li>
+<li><a href="docs/pagan_guided_placement.html">Guided placement with assignment of queries to specific nodes</a></li>
+<li><a href="docs/pagan_amplicon_analysis.html">Phylogenetic placement of amplicon (e.g. 18S) data</a></li>
+<li><a href="docs/pagan_pileup_alignment.html">Pileup alignment without a guide tree</a></li>
+<li><a href="docs/pagan_additional_program_options.html">Additional program options</a></li>
+</ul>
+<hr>
+<h3 id="pagan-command-line-options">PAGAN command-line options</h3>
+<p>PAGAN is a command-line program. It can be used by (a) specifying a list of options (command-line arguments) when executing the program, or (b) creating a configuration file with the options and specifying that when executing the program. The configuration file does not need to be created from scratch as PAGAN can output the options specified for an analysis in a file. This file can then be edited if necessary and specified as the configuration file for another analysis. Alternatively, the file can be considered as a record of a particular analysis with a full description of options and parameters used.</p>
+<p>A list of the most important program options is outputted if no arguments are provided:</p>
+<pre><code>./pagan
+</code></pre>
+<p>and a more complete list is given with the option <code>--help</code>:</p>
+<pre><code>./pagan --help
+</code></pre>
+<p>In general, the option names start with <code>--</code> and the option name and value (if any) are separated by a space. The configuration file makes an exception and can be specified without the option name:</p>
+<pre><code>./pagan option_file
+</code></pre>
+<p>Also this one can be given in the standard format and the following command is equivalent:</p>
+<pre><code>./pagan --config-file option_file
+</code></pre>
+<p>Configuration files contain option names and values separated by <code>=</code> sign, one option per row. Rows starting with a hash sign # are comments and ignored. Thus, if the content of file config.cfg is:</p>
+<pre><code># this is an uninformative comment
+ref-seqfile = reference_alignment.fas
+ref-treefile = reference_tree.nhx
+queryfile = illumina_reads.fastq
+outfile = read_alignment
+xml = 1
+</code></pre>
+<p>the command:</p>
+<pre><code>./pagan config.cfg
+</code></pre>
+<p>(or .<code>/pagan --config-file config.cfg</code>)</p>
+<p>is equivalent to:</p>
+<pre><code>./pagan --ref-seqfile reference_alignment.fas --ref-treefile reference_tree.nhx --queryfile illumina_reads.fastq --outfile read_alignment --xml
+</code></pre>
+<p>By adding the option <code>--config-log-file config.cfg</code> in the command above, PAGAN creates a config file that is equivalent with the one above (with some more comments). Config files can, of course, be written or extended manually using the same format. One should note, however, that also boolean options need a value assigned, such as <code>xml = 1</code> in the example above. If a boolean option is not wanted, it should not specified in the config file (or it should be commented out with a hash sign) as setting an option e.g. <code>0</code> or <code>false</code> does not disable it.</p>
+<p>Options in a config file are overridden by re-defining them on command line. Thus, the command:</p>
+<pre><code>./pagan config.cfg --outfile another_name
+</code></pre>
+<p>is the same as the one above except that the results will be placed to a file with another name.</p>
+<p><a href="#pagan">back to top</a></p>
+</body>
+</html>

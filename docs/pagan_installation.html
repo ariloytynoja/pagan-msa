@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PAGAN</title>
+<link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+<h1 id="installation-of-pagan">Installation of PAGAN</h1>
+<p><img src="http://wasabiapp.org/download/theme/icons/pagan_logo.png" alt=""></p>
+<p>PAGAN is developed and most thoroughly tested on Ubuntu GNU/Linux system.</p>
+<ul>
+<li><a href="#pre-compiled-executables-for-linux">Pre-compiled executables for Linux</a></li>
+<li><a href="#pre-compiled-executables-for-windows">Pre-compiled executables for Windows</a><ul>
+<li><a href="#hints-for-using-pagan-on-windows">Hints for using PAGAN on Windows</a></li>
+</ul>
+</li>
+<li><a href="#pre-compiled_executables_for_Mac_OSX">Pre-compiled executables for Mac OSX</a></li>
+<li><a href="#using-pagan2-dwith-docker">Using PAGAN2 with Docker</a></li>
+<li><a href="#installation-of-pagan-from-source-code">Installation of PAGAN from source code</a><ul>
+<li><a href="#installation-of-boost-libraries">Installation of Boost libraries</a></li>
+<li><a href="#download-and-installation-of-pagan-using-git">Download and installation of PAGAN using git</a></li>
+<li><a href="#installation-of-helper-tools">Installation of Exonerate, MAFFT, RAxML</a></li>
+</ul>
+</li>
+<li><a href="#advanced:-installing-boost-from-source-code">Advanced: installing boost from source code</a></li>
+</ul>
+<p><a href="../">Back to PAGAN home.</a></p>
+<h3 id="pre-compiled-executables-for-linux">Pre-compiled executables for Linux</h3>
+<p>The pre-compiled executables are available in the <a href="https://github.com/ariloytynoja/pagan-msa/tree/master/binaries">binaries folder</a>.</p>
+<p>The PAGAN executable for Linux has been compiled on Red Hat ELS 6.5 (64bit) and confirmed to work also on Ubuntu 13.10 and CentOS 6.0. The package contains the PAGAN executable as well as the helper programs needed for the full functionality.</p>
+<p>Using the command line, the file can be downloaded and unpacked with the commands:</p>
+<pre><code>mkdir ~/programs
+cd ~/programs
+wget http://wasabiapp.org/download/pagan/pagan.linux64.[latest].tgz
+tar xvzf pagan.linux64.[latest].tgz
+./pagan/bin/pagan
+</code></pre>
+<p>For the ease of use, it is recommended to add the directory pagan/bin to the system path or copy its content to a such directory (such as ~/bin or /usr/local/bin). This can be done with commands similar to these:</p>
+<pre><code>echo &quot;export PATH=$PATH:/home/$USER/programs/pagan/bin&quot; &gt;&gt; ~/.bash_profile
+</code></pre>
+<p>or</p>
+<pre><code>cp -R /home/$USER/programs/pagan/bin/* ~/bin/
+</code></pre>
+<p>Note that if the executables of the bundled version are moved or copied, the directory structure (<code>bin/lib</code>) and the location of library dependencies have to be retained.</p>
+<h3 id="pre-compiled-executables-for-windows">Pre-compiled executables for Windows</h3>
+<p>Currently pre-compiled binaries of the latest version of PAGAN are provided for Linux only. The pre-compiled executables of some older versions of PAGAN are available in the <a href="https://github.com/ariloytynoja/pagan-msa/tree/master/binaries">binaries folder</a>.</p>
+<p>It is recommended to place the unpacked content of the zip file to the directory “Program Files”. Here we assume that the file path to the directory “pagan” is <code>C:\Program Files\pagan</code>.</p>
+<p>For the ease of use, it is recommended to add the directory pagan/bin permanently to the system path. On Windows 7, this can be done through the following steps:</p>
+<ul>
+<li>open “Control Panel”</li>
+<li>choose “System”</li>
+<li>on the left panel, choose “Advanced system settings”</li>
+<li>on the new window, click “Environment Variables”</li>
+<li>find “Path” in the lower field, select it and click “Edit”</li>
+<li>leave the existing content intact and add <strong>;C:\&quot;Program Files&quot;\pagan</strong> in the end of the field “Variable value”</li>
+<li>click “OK” three times and close “Control Panel”</li>
+</ul>
+<p>If you now open Command Prompt and write pagan, the program should run and show the options list.</p>
+<p>The executable has been compiled and tested on Windows 7 (32bit) system running in a virtual machine.</p>
+<h4 id="hints-for-using-pagan-on-windows">Hints for using PAGAN on Windows</h4>
+<p>PAGAN is used through commands given in Command Prompt. For those not familiar with moving around files, the following workflow may be useful.</p>
+<ul>
+<li>open “Command Prompt” from “All Programs” -&gt; “Accessories”</li>
+<li>in Command Prompt, type commands</li>
+</ul>
+<pre><code>mkdir analysis
+cd analysis
+explorer .
+</code></pre>
+<ul>
+<li>drag and drop your alignment input file(s) to the Explorer window that was opened</li>
+<li>in Command Prompt, run PAGAN as <code>pagan --seqfile=myfile [other options]</code></li>
+<li>once finished, the result files will appear in the Explorer window</li>
+</ul>
+<h3 id="pre-compiled-executables-for-mac-osx">Pre-compiled executables for Mac OSX</h3>
+<p>Currently pre-compiled binaries of the latest version of PAGAN are provided for Linux only. The pre-compiled executables of some older versions of PAGAN are available in the <a href="https://github.com/ariloytynoja/pagan-msa/tree/master/binaries">binaries folder</a>.</p>
+<p>The PAGAN executable for Mac has been compiled on OSX 10.7.5. The package contains the PAGAN executable as well as the helper programs needed for the full functionality.</p>
+<p>The PAGAN package file can be downloaded and unpacked using graphical software. With the command line, the same can be done with the commands:</p>
+<pre><code>mkdir ~/programs
+cd ~/programs
+curl -O http://wasabiapp.org/download/pagan/pagan.osx64.[latest].tgz
+tar xvzf pagan.osx64.[latest].tgz
+./pagan/bin/pagan
+</code></pre>
+<p>For the ease of use, it is recommended to add the directory pagan/bin to the system path or copy its content to a such directory (such as <code>~/bin</code> or <code>/usr/local/bin</code>). This can be done with commands similar to these:</p>
+<pre><code>echo &quot;export PATH=$PATH:/Users/$USER/programs/pagan/bin&quot; &gt;&gt; ~/.bash_profile
+</code></pre>
+<p>or</p>
+<pre><code>cp -R /Users/$USER/programs/pagan/bin/* ~/bin/
+</code></pre>
+<p>Note that if the executables are moved or copied, the directory structure (bin/mafftlib) and the location of library dependencies have to be retained.</p>
+<h3 id="using-pagan2-with-docker">Using PAGAN2 with Docker</h3>
+<p>PAGAN2 for Linux is provided as Docker image that can be used on all computer platforms supporting <a href="https://www.docker.com/">Docker</a>.  
+ </p>
+<p><strong>Download PAGAN2 image:</strong></p>
+<pre><code>docker pull ariloytynoja/pagan2
+docker tag ariloytynoja/pagan2 pagan2
+</code></pre>
+<p><strong>Run the image:</strong></p>
+<pre><code>docker run --rm -v $path_to_current_directory:/data pagan2 -s infile.fas -o outfile
+</code></pre>
+<p><strong>Alternative: Create a helper script (for Linux or OSX) and run that:</strong></p>
+<pre><code>cat &gt; pagan2.sh &lt;&lt; EOF 
+#!/bin/bash
+docker run --rm -v `pwd`:/data pagan2 &quot;\$@&quot;
+EOF
+
+chmod +x pagan2.sh 
+
+./pagan2.sh -s infile.fas -o outfile
+</code></pre>
+<h3 id="installation-of-pagan-from-source-code">Installation of PAGAN from source code</h3>
+<h4 id="installation-of-boost-libraries">Installation of Boost libraries</h4>
+<p>PAGAN requires <em>-dev versions</em> of three utility libraries from <a href="http://www.boost.org">http://www.boost.org</a> that may not be included in standard OS installations. These libraries have to be installed <strong>before</strong> compiling the PAGAN source code. On Ubuntu, they can be installed using commands:</p>
+<pre><code>apt-cache search libboost-program-options
+apt-cache search libboost-regex
+apt-cache search libboost-system
+apt-cache search libboost-thread
+</code></pre>
+<p>(See which version number, ending with -dev, is provided and edit the command below.)</p>
+<pre><code>sudo apt-get install libboost-program-options1.54-dev
+sudo apt-get install libboost-regex1.54-dev
+sudo apt-get install libboost-system1.54-dev
+sudo apt-get install libboost-thread1.54-dev
+</code></pre>
+<p>If your distribution does not provide Boost libraries (highly unlikely) or you are not allowed to install software on your system, you can download and install the necessary library from the Boost project repositories directly into your PAGAN source code directory. See the Advanced material below for details.</p>
+<p>On MacOSX, Boost can be installed with package management systems such as <a href="http://mxcl.github.com/homebrew/">Homebrew</a>. On OSX 10.7, it can be installed with the following commands:</p>
+<pre><code># uncheck below to install Homebrew
+# sudo /usr/bin/ruby -e &quot;$(curl -fsSL https://raw.github.com/gist/323731)&quot;
+sudo brew install boost
+</code></pre>
+<p>See <a href="http://mxcl.github.com/homebrew/">http://mxcl.github.com/homebrew/</a> for further details.</p>
+<h4 id="download-and-installation-of-pagan-using-git">Download and installation of PAGAN using git</h4>
+<p>The most recent version of the PAGAN source code is available from the git-repository and snapshots of this are downloadable as compressed tar-packages. The git software can be found at <a href="http://git-scm.com">http://git-scm.com</a>. On Ubuntu, it can also be installed using command:</p>
+<pre><code>sudo apt-get install git-core
+</code></pre>
+<p>Given that git is installed, the PAGAN source code can be downloaded and compiled using commands:</p>
+<pre><code>git clone https://github.com/ariloytynoja/pagan-msa.git
+cd pagan-msa/src
+make
+./pagan
+</code></pre>
+<p>Without git, the latest (but possibly not up-to-date) tar-packaged source code can be downloaded and compiled using commands:</p>
+<pre><code>wget https://github.com/ariloytynoja/pagan-msa/blob/master/binaries/pagan.src.[latest].tgz
+tar xzf pagan.src.[latest].tgz
+cd pagan-msa/src
+make
+./pagan
+</code></pre>
+<h4 id="installation-of-helper-tools">Installation of helper tools</h4>
+<p>PAGAN can use MAFFT and RAxML/BppDistTree to infer the guidetree and Exonerate to speed up the alignments; it can also BppAncestor to compute maximum likelihood ancestral character states . Those to work, you need to have MAFFT, RAxML, Exonerate and BppSuite installed and either on the execution path or in the same folder with the PAGAN executable (PAGAN will use the latter if available.).  
+ </p>
+<p>Note that the PAGAN binary packages come with all the helper tools and, if they work on your system, they do not need to be installed separately.</p>
+<p>You can download the programs from <a href="http://www.ebi.ac.uk/~guy/exonerate/">http://www.ebi.ac.uk/~guy/exonerate/</a> (Exonerate), <a href="http://mafft.cbrc.jp/alignment/software/source.html">http://mafft.cbrc.jp/alignment/software/source.html</a> (MAFFT) and <a href="http://sco.h-its.org/exelixis/software.html">http://sco.h-its.org/exelixis/software.html</a> (RAxML), and follow the instructions for their installation. On many popular Linux distributions these programs are available in the software repository and can be installed pre-compiled. On Ubuntu, that is done with the following command:</p>
+<pre><code>sudo apt-get install exonerate
+sudo apt-get install mafft
+sudo apt-get install raxml
+</code></pre>
+<p>Because of dependencies to other programming libraries, the installation on MacOSX is easiest with a package management system such as <a href="http://mxcl.github.com/homebrew/">Homebrew</a>. On OSX 10.7, Exonerate and MAFFT can be installed with the following commands:</p>
+<pre><code># uncheck below to install Homebrew
+# sudo /usr/bin/ruby -e &quot;$(curl -fsSL https://raw.github.com/gist/323731)&quot;
+sudo brew install pkg-config
+sudo brew install exonerate
+sudo brew install mafft
+</code></pre>
+<p>See <a href="http://mxcl.github.com/homebrew/">http://mxcl.github.com/homebrew/</a> for further details.</p>
+<p>BppSuite is provided as pre-compiled binaries for several platforms at <a href="http://home.gna.org/bppsuite/">http://home.gna.org/bppsuite/</a> and is also available in repositories of some popular Linux distros. Unfortunately, the version of BppAncestor provided may contain a critical bug and may not work. See <a href="https://ariloytynoja.github.io/prank-msa/docs/prank_installation.html#installation-of-helper-tools">here</a> for the instructions to re-compile the BppSuite tools.</p>
+<p><a href="#introduction">back to top</a></p>
+<hr>
+<h3 id="advanced-installing-boost-from-source-code">Advanced: installing boost from source code</h3>
+<p>If pre-packaged files are not available for your platform or you are not entitled to install packages and cannot persuade your system administrator to do that, the Boost libraries necessary for the compilation of the PAGAN source code can be installed using following commands:</p>
+<pre><code># make a temporary directory
+mkdir ~/tmp_boost
+cd ~/tmp_boost
+
+# get the source code
+wget -O boost_1_55_0.zip http://sourceforge.net/projects/boost/files/boost/1.55.0/boost_1_55_0.zip/download
+# OR (on OSX)
+# curl --location -o boost_1_55_0.zip http://sourceforge.net/projects/boost/files/boost/1.55.0/boost_1_55_0.zip/download
+unzip boost_1_55_0.zip
+cd boost_1_55_0
+
+# compile and install
+sh ./bootstrap.sh --prefix=$PATH_TO_PAGAN_DIR/boost --with-libraries=program_options,regex,system,thread
+./bjam threading=multi link=static --prefix=$PATH_TO_PAGAN_DIR/boost install
+# on MacOSX, this may be preferred
+# ./bjam macosx-version=10.7 threading=multi link=static --prefix=$PATH_TO_PAGAN_DIR/boost install
+
+# clean up
+cd ../..
+rm -r ./tmp_boost
+</code></pre>
+<p>This compiles static versions of the boost libraries. The good thing is that those get statically linked to the executable and one does not need to worry about library paths. The bad thing is that the executable is rather big in size.</p>
+</body>
+</html>

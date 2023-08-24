@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PAGAN</title>
+<link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+<h1 id="pagan-additional-program-options">PAGAN: additional program options<a name="top"></a></h1>
+<p> 
+This part of the documentation has not been completed.  </p>
+<p> </p>
+<p><a href="../">Back to PAGAN front page</a></p>
+<p>Some of the options printed by <code>./pagan --help</code> relate to unfinished features and may not function properly.</p>
+<h4 id="generic-options">Generic options<a href="#Generic_options"></a></h4>
+<ul>
+<li><p>Option <code>--silent</code> minimises the output (doesn’t quite make it silent, though).</p>
+</li>
+<li><p>Option <code>--xml</code> writes the output alignment also in HSAML format that can be imported to Wasabi.</p>
+</li>
+<li><p>Options <code>--indel-rate</code> can be used adjust the insertion and deletion rates. Although it would be possible to consider the two processes separately, this has not been implemented yet.</p>
+</li>
+<li><p>Options <code>--gap-extension</code> and <code>--end-gap-extension</code> define the gap extension probability for regular and terminal gaps. For meaningful results, the latter should be greater (and, for pair-end data, equal to <code>--pair-read-gap-extension</code>).</p>
+</li>
+<li><p>Options <code>--dna-kappa</code> and <code>--dna-rho</code> affect the DNA substitution scoring matrix; base frequencies are estimated from the data.</p>
+</li>
+<li><p>Options <code>--codons</code> translates DNA sequences to codons and aligns them using the codon substitution model. (experimental)</p>
+</li>
+<li><p>Options <code>--scale-branches</code>, <code>--truncate-branches</code> and <code>--fixed-branches</code> override the branch lengths defined in the guide tree. By default, long branches are truncated to make the scoring matrix more informative; this can be prohibited with <code>--real-branches</code>.</p>
+</li>
+<li><p>Option <code>--output-ancestors</code> writes the parsimony-reconstructed ancestral sequences for the internal nodes of the tree. The tree indicating the nodes is written in <code>outfile.anctree</code>.</p>
+</li>
+<li><p>Option <code>--config-file file_name</code> specifies a config file. If an option is specified both in a config file and as a command-line argument, the latter one overrides the former.</p>
+</li>
+<li><p>Option <code>--config-log-file file_name</code> specifies a log file where (non-default) options used for the analysis are written. The format is compatible with the option input and the file can be used a config file.</p>
+</li>
+</ul>
+<p>There are many parameters related to &quot;insertion calling&quot;, the type and amount of phylogenetic information required to consider insertion-deletion as an insertion and thus prevent the later matching of those sites. These parameters are still experimental (although some of them are used and affect the resulting alignment) and will be described in detail later.</p>
+<h4 id="phylogenetic-placement-options">Phylogenetic placement options<a href="#Phylogenetic_placement_options"></a></h4>
+<p>Some options are only relevant for the placement of sequences into existing alignment.</p>
+<ul>
+<li><p>Option <code>--query-distance</code> sets the expected distance between the query and the pseudo-parent node (against which the query is aligned) and thus affects the substitution scoring used in the alignment. Having the distance very short (default), the alignment is stringent and expects high similarity.</p>
+</li>
+<li><p>Queries with too few sites aligned against sites of reference sequences are discarded. (The stringency of the alignment is set using the option above.) Options <code>--min-query-overlap</code> and <code>--min-query-identity</code> set the required overlap and base identity for accepting the query.</p>
+</li>
+</ul>
+<p>Many options are either not important for basic use or self-explanatory (or both).</p>
+<p><a href="#top">back to top</a></p>
+</body>
+</html>

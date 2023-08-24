@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PAGAN</title>
+<link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+<h1 id="pagan-amplicon-analysis">PAGAN: amplicon analysis<a name="top"></a></h1>
+<p> <br>Amplicon analysis is not much different from standard phylogenetic placement, see <a href="pagan_phylogenetic_placement.html">here</a> for instructions on that. However, in amplicon analysis query sequence are generated with PCR and are thus expected to match a specific target region in the reference alignment. Typically only the region that the query sequences match and only the reference sequences closely-related to the query sequences are of interest. To facilitate amplicon analysis, PAGAN contains options to trim and prune the resulting alignment.</p>
+<hr>
+<p><a href="../">Back to PAGAN front page</a></p>
+<p>The extra options for amplicon analysis are bets explained with an example. The data used in the examples below can be found <a href="../examples/amplicon_analysis">here</a>.</p>
+<p>The following files are included:</p>
+<ul>
+<li><code>pagan_placement.cfg</code> : config file that runs a basic analysis;</li>
+<li><code>query.fas</code> : amplicon sequences to place in the alignment;</li>
+<li><code>reference.fas</code> : reference alignment (these from Silva);</li>
+<li><code>reference.tree</code> : reference phylogeny.</li>
+</ul>
+<p>The data can be analysed using the following command:  
+ </p>
+<pre><code>pagan pagan_placement.cfg
+</code></pre>
+<p>The same analysis could be performed with the command:</p>
+<pre><code>pagan --ref-seqfile reference.fas --ref-treefile reference.tree \
+ --queryfile query.fas --outfile pagan_placement --xml \ 
+ --one-placement-only --trim-extended-alignment \
+ --prune-extended-alignment --prune-keep-number 0 \
+ --prune-keep-closest 
+</code></pre>
+<p>This produces several output files:  
+ </p>
+<ul>
+<li><code>pagan_placement.???</code> contain the full data;</li>
+<li><code>pagan_placement.trimmed.???</code> contain the target region for all the sequences;</li>
+<li><code>pagan_placement.pruned.???</code> contain the target region for the query sequences and for N reference sequences (here N=0);</li>
+<li><code>pagan_placement.pruned_closest.???</code> contain the target region for  the query sequences and the very closest reference sequences.</li>
+</ul>
+<p>Files ending with <code>.tre</code> are the alignment guide trees for each output; those ending 
+with <code>.fas</code> and <code>.xml</code> are the alignments in FASTA and HSAML format.  
+ </p>
+<p>If the amplicon sequences are very closely related to the reference sequences, one can<br>add option <code>--terminal-nodes</code> and thus enforce their placement next to the tips.</p>
+<p>Options related to trimming and pruning are:  
+ </p>
+<ul>
+<li><p><code>--prune-extended-alignment</code> : prune output;</p>
+</li>
+<li><p><code>--prune-keep-number arg</code> : prune output and keep N most distantly related sequences (if = 0, keep only query sequences);</p>
+</li>
+<li><p><code>--prune-keep-threshold arg</code> : prune output and remove sequences with distance below threshold;</p>
+</li>
+<li><p><code>--prune-keep-closest</code> : prune output and keep only closest reference sequences;</p>
+</li>
+<li><p><code>--trim-extended-alignment</code> : trim reference alignment outside query target region;</p>
+</li>
+<li><p><code>--trim-keep-sites arg</code> : trim distance around query sequences.</p>
+</li>
+</ul>
+<p>The <code>.xml</code> output files can be visualised with Wasabi.</p>
+</body>
+</html>
